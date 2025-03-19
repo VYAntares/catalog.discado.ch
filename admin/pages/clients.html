@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Administration Clients - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/clients.css">
+    <!-- Ajouter une police Google pour améliorer la typographie -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="../../public/images/logonpm/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="admin-tabs">
+        <div class="tabs-container">
+            <a href="/admin" class="tab">
+                <i class="fas fa-shopping-cart"></i> Gestion des commandes
+            </a>
+            <a href="/admin/order-history" class="tab">
+                <i class="fas fa-history"></i> Historique des commandes
+            </a>
+            <a href="/admin/clients" class="tab active">
+                <i class="fas fa-users"></i> Client Database
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <h1 class="page-title">
+            <i class="fas fa-database"></i> Base de données clients
+        </h1>
+
+        <!-- Search bar -->
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" 
+                placeholder="Rechercher un client par nom, email, boutique...">
+            <button id="searchBtn" class="search-btn">
+                <i class="fas fa-search"></i> Rechercher
+            </button>
+            <button id="createClientBtn" class="create-btn action-btn">
+                <i class="fas fa-plus"></i> Créer client
+            </button>
+        </div>
+
+        <!-- Client List -->
+        <div class="client-list">
+            <table class="client-table">
+                <thead>
+                    <tr>
+                        <th>ID Client</th>
+                        <th>Nom / Boutique</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="clientTableBody">
+                    <tr>
+                        <td colspan="3" class="loading">Chargement des clients...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Client Details Modal -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="clientDetailsTitle" class="client-details-title">Détails du client</h2>
+            
+            <div id="clientDetailsContent">
+                <!-- Les détails du client seront chargés ici dynamiquement -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal pour les détails de commande -->
+    <div id="orderModal" class="modal order-details-modal">
+        <div class="modal-content">
+            <span class="close-order-modal">&times;</span>
+            <h2 id="orderModalTitle" class="order-details-title">Détails de la commande</h2>
+            <div id="orderModalContent">
+                <!-- Le contenu sera chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal pour créer un nouveau client -->
+    <div id="createClientModal" class="modal">
+        <div class="modal-content">
+            <div class="client-form-header">
+                <h2 class="client-form-title">Créer un nouveau client</h2>
+                <button type="button" class="close-form-btn close-create-modal">&times;</button>
+            </div>
+            
+            <div class="client-form-body">
+                <form id="createClientForm">
+                    <!-- Section des identifiants (obligatoire) -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Identifiants</h3>
+                        
+                        <div class="form-row required-field">
+                            <label for="newUsername" class="form-label">Nom d'utilisateur</label>
+                            <input type="text" id="newUsername" name="username" class="form-input" required>
+                            <div class="field-error">Le nom d'utilisateur est requis (min. 3 caractères)</div>
+                        </div>
+                        
+                        <div class="form-row required-field">
+                            <label for="newPassword" class="form-label">Mot de passe</label>
+                            <input type="password" id="newPassword" name="password" class="form-input" required>
+                            <div class="field-error">Le mot de passe est requis (min. 6 caractères)</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section des informations personnelles (optionnelle) -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Informations personnelles</h3>
+                        
+                        <div class="form-row">
+                            <label for="firstName" class="form-label">Prénom</label>
+                            <input type="text" id="firstName" name="firstName" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="lastName" class="form-label">Nom</label>
+                            <input type="text" id="lastName" name="lastName" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" id="email" name="email" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="phone" class="form-label">Téléphone</label>
+                            <input type="tel" id="phone" name="phone" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="referralSource" class="form-label">Source/Référence</label>
+                            <input type="text" id="referralSource" name="referralSource" class="form-input" placeholder="Ex: Démarchage, Recommandation de...">
+                        </div>
+                    </div>
+                    
+                    <!-- Section des informations boutique (optionnelle) -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Informations boutique</h3>
+                        
+                        <div class="form-row">
+                            <label for="shopName" class="form-label">Nom de la boutique</label>
+                            <input type="text" id="shopName" name="shopName" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="shopAddress" class="form-label">Adresse</label>
+                            <input type="text" id="shopAddress" name="shopAddress" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="shopCity" class="form-label">Ville</label>
+                            <input type="text" id="shopCity" name="shopCity" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="shopZipCode" class="form-label">Code postal</label>
+                            <input type="text" id="shopZipCode" name="shopZipCode" class="form-input">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" id="cancelClientForm">Annuler</button>
+                <button type="button" class="submit-btn" id="submitClientForm">Créer le client</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur de notifications -->
+    <div id="notification-container"></div>
+
+    <!-- Inclure les scripts JS en type module pour supporter ES6 imports -->
+    <script type="module" src="/admin/js/core/app.js"></script>
+</body>
+</html>

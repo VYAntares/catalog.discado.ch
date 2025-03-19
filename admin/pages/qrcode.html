@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur de QR Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #fileInput {
+            display: none;
+        }
+        .upload-btn {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #video {
+            width: 100%;
+            background-color: #f0f0f0;
+            margin-bottom: 10px;
+        }
+        #canvas {
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            min-height: 100px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .scan-btn {
+            background-color: #34a853;
+            color: white;
+        }
+        .copy-btn {
+            background-color: #fbbc05;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lecteur de QR Code</h1>
+        
+        <div>
+            <p>Choisissez comment scanner votre QR code:</p>
+            <div class="buttons">
+                <label for="fileInput" class="upload-btn">Télécharger une image</label>
+                <input type="file" id="fileInput" accept="image/*">
+                <button id="scanButton" class="btn scan-btn">Utiliser la caméra</button>
+            </div>
+        </div>
+        
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+        
+        <div>
+            <h2>Contenu du QR Code:</h2>
+            <div id="result">Le contenu du QR code s'affichera ici</div>
+            <button id="copyButton" class="btn copy-btn">Copier le contenu</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const result = document.getElementById('result');
+        const fileInput = document.getElementById('fileInput');
+        const scanButton = document.getElementById('scanButton');
+        const copyButton = document.getElementById('copyButton');
+        
+        let scanning = false;
+        let stream = null;
+        
+        // Scanner l'image depuis un fichier
+        fileInput.addEventListener('change', (e) => {
+            if (stream) {
+                stopCamera();
+            }
+            
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        displayResult(code.data);
+                    } else {
+                        result.textContent = "Aucun QR code trouvé dans cette image.";
+                    }
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Scanner depuis la caméra
+        scanButton.addEventListener('click', () => {
+            if (scanning) {
+                stopCamera();
+                scanButton.textContent = "Utiliser la caméra";
+                return;
+            }
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then((s) => {
+                        stream = s;
+                        video.srcObject = stream;
+                        scanning = true;
+                        scanButton.textContent = "Arrêter la caméra";
+                        scanQRCode();
+                    })
+                    .catch((error) => {
+                        console.error('Erreur caméra:', error);
+                        result.textContent = "Impossible d'accéder à la caméra. Veuillez vérifier les permissions.";
+                    });
+            } else {
+                result.textContent = "La fonctionnalité caméra n'est pas supportée par votre navigateur.";
+            }
+        });
+        
+        // Copier le résultat
+        copyButton.addEventListener('click', () => {
+            const content = result.textContent;
+            if (content && content !== "Le contenu du QR code s'affichera ici") {
+                navigator.clipboard.writeText(content)
+                    .then(() => {
+                        const originalText = copyButton.textContent;
+                        copyButton.textContent = "Copié!";
+                        setTimeout(() => {
+                            copyButton.textContent = originalText;
+                        }, 2000);
+                    })
+                    .catch((err) => {
+                        console.error('Erreur de copie:', err);
+                    });
+            }
+        });
+        
+        function scanQRCode() {
+            if (!scanning) return;
+            
+            requestAnimationFrame(scanQRCode);
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    displayResult(code.data);
+                    stopCamera();
+                    scanButton.textContent = "Utiliser la caméra";
+                }
+            }
+        }
+        
+        function displayResult(data) {
+            result.textContent = data;
+            console.log("Contenu du QR Code:", data);
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                video.srcObject = null;
+                scanning = false;
+            }
+        }
+    </script>
+</body>
+</html>

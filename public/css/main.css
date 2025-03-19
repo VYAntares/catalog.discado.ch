@@ -1,0 +1,965 @@
+/* =========================================
+   Base Styles & Reset
+   ========================================= */
+   * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    font-size: 14px;
+    max-width: 100%;
+    overflow-x: hidden;
+    padding-top: 100px; /* CORRECTION: Augmenté de 80px à 100px pour éviter le chevauchement du header */
+    color: #333;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+}
+
+input, button, textarea, select {
+    font: inherit;
+}
+
+/* =========================================
+   Typography
+   ========================================= */
+h1, h2, h3, h4, h5, h6 {
+    color: #333;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+h2 {
+    font-size: 20px;
+}
+
+h3 {
+    font-size: 18px;
+}
+
+.page-title, .page-header h2 {
+    margin-bottom: 25px;
+    font-size: 24px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e1e8ed;
+    font-weight: 600;
+}
+
+/* =========================================
+   Layout & Containers
+   ========================================= */
+main {
+    padding: 20px 15px;
+    max-width: 1200px;
+    margin: 0 auto;
+    margin-top: 20px; /* CORRECTION: Ajout de marge en haut pour l'espacement */
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+@media (min-width: 769px) {
+    body {
+        padding: 0 15px;
+        padding-top: 100px; /* CORRECTION: Augmenté la valeur ici aussi */
+    }
+    
+    main {
+        padding-top: 30px;
+    }
+}
+
+/* =========================================
+   Header
+   ========================================= */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 1000;
+    padding: 0;
+    height: 80px; /* CORRECTION: Ajusté à 80px pour être cohérent */
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, height 0.3s ease;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 15px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-container {
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.logo-container img {
+    height: 40px;
+    width: auto;
+}
+
+/* Menu toggle button */
+.menu-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+}
+
+.menu-toggle span {
+    display: block;
+    height: 3px;
+    width: 100%;
+    background-color: #333;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+    position: fixed;
+    top: 80px; /* CORRECTION: Ajusté à 80px pour suivre la hauteur du header */
+    left: 0;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    z-index: 999;
+}
+
+.dropdown-menu.open {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.menu-section {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.menu-section:last-child {
+    border-bottom: none;
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+#searchInput {
+    width: 100%;
+    padding: 10px;
+    padding-right: 40px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#searchInput:focus {
+    border-color: #2575fc;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.2);
+}
+
+#searchButton {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s;
+}
+
+#searchButton:hover {
+    color: #2575fc;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.category-item {
+    padding: 8px 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.category-item:hover {
+    background-color: #e0e0e0;
+}
+
+.category-item.active {
+    background-color: #2575fc;
+    color: white;
+}
+
+/* Icon buttons */
+.icon-btn {
+    position: relative;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-count-badge {
+    background-color: #f44336;
+    color: white;
+    border-radius: 12px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-weight: bold;
+}
+
+.cart-count-badge.large-number {
+    min-width: 24px;
+    padding: 0 8px;
+    font-size: 10px;
+}
+
+/* User menu - CORRECTION: Modifié pour résoudre le problème d'affichage */
+.user-menu {
+    position: fixed;
+    top: 80px; /* CORRECTION: Ajusté pour aligner avec le header */
+    right: 0;
+    background-color: white;
+    box-shadow: -2px 2px 10px rgba(0,0,0,0.1);
+    width: 200px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    z-index: 1001; /* CORRECTION: Augmenté pour être au-dessus du contenu */
+}
+
+.user-menu.open {
+    max-height: 200px;
+    border: 1px solid #eee; /* CORRECTION: Ajout d'une bordure pour améliorer l'apparence */
+}
+
+.user-menu a {
+    display: block;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.user-menu a:hover {
+    background-color: #f5f5f5;
+}
+
+.user-menu a.active {
+    border-left: 3px solid #2575fc;
+    background-color: #f5f5f5;
+    font-weight: 600;
+}
+
+/* Make header compact on scroll */
+.header-compact {
+    height: 50px;
+}
+
+/* Overlay - CORRECTION: Modifié pour fonctionner avec la structure */
+.menu-overlay {
+    position: fixed;
+    top: 80px; /* CORRECTION: Ajusté à 80px pour aligner avec le header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 999; /* CORRECTION: Ajusté pour être entre le menu et le contenu */
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* =========================================
+   Footer
+   ========================================= */
+.site-footer {
+    background-color: #fff;
+    padding: 40px 20px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #eee;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.footer-logo {
+    margin-bottom: 30px;
+}
+
+.footer-logo-img {
+    height: 40px;
+    width: auto;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+}
+
+.footer-section h4 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section li {
+    margin-bottom: 10px;
+}
+
+.footer-section a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-section a:hover {
+    color: #2575fc;
+}
+
+.footer-bottom {
+    max-width: 1200px;
+    margin: 30px auto 0;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+}
+
+/* =========================================
+   Buttons & Form Elements
+   ========================================= */
+.action-btn, .primary-btn, .secondary-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.primary-btn {
+    background-color: #2575fc;
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: #1a5cb8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.secondary-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.secondary-btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Form elements */
+.input-field {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #333;
+    transition: border-color 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #2575fc;
+    box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+}
+
+/* =========================================
+   Modal
+   ========================================= */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal[style*="display: block"] {
+    display: flex !important;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 0 auto;
+    padding: 30px;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal[style*="display: block"] .modal-content {
+    transform: translateY(0);
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* =========================================
+   Notification System
+   ========================================= */
+#notification-container {
+    position: fixed;
+    top: 90px; /* CORRECTION: Ajusté pour être en dessous du header */
+    right: 20px;
+    z-index: 999;
+    width: 300px;
+}
+
+.notification {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    margin-bottom: 10px;
+    overflow: hidden;
+    animation: slideIn 0.5s ease forwards, fadeOut 0.5s ease 3.5s forwards;
+    transform: translateX(120%);
+    max-width: 300px;
+}
+
+.notification-success {
+    border-left: 4px solid #4CAF50;
+}
+
+.notification-error {
+    border-left: 4px solid #F44336;
+}
+
+.notification-info {
+    border-left: 4px solid #2196F3;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+}
+
+.notification-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.notification-success .notification-icon {
+    color: #4CAF50;
+}
+
+.notification-error .notification-icon {
+    color: #F44336;
+}
+
+.notification-info .notification-icon {
+    color: #2196F3;
+}
+
+.notification-message {
+    flex-grow: 1;
+    color: #333;
+    font-size: 14px;
+}
+
+.notification-progress {
+    height: 3px;
+    background-color: #e0e0e0;
+    width: 100%;
+}
+
+.notification-progress-bar {
+    height: 100%;
+    width: 100%;
+    animation: progress 4s linear forwards;
+}
+
+.notification-success .notification-progress-bar {
+    background-color: #4CAF50;
+}
+
+.notification-error .notification-progress-bar {
+    background-color: #F44336;
+}
+
+.notification-info .notification-progress-bar {
+    background-color: #2196F3;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(120%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(120%); }
+}
+
+@keyframes progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* =========================================
+   Loading Indicators
+   ========================================= */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2575fc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+    color: #6c757d;
+    font-size: 16px;
+}
+
+/* =========================================
+   Status Messages
+   ========================================= */
+.error-message {
+    color: #dc3545;
+    text-align: center;
+    padding: 20px;
+    background-color: #f8d7da;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-state p {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* =========================================
+   Responsive Adjustments
+   ========================================= */
+@media (min-width: 769px) {
+    .dropdown-menu {
+        max-width: 300px;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+        padding: 0 10px;
+        padding-top: 80px; /* CORRECTION: Ajusté pour les mobiles */
+    }
+    
+    .page-title, .page-header h2 {
+        font-size: 20px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10px auto;
+        padding: 15px;
+    }
+    
+    .notification {
+        width: 90%;
+        max-width: 300px;
+    }
+    
+    .footer-container {
+        flex-direction: column;
+    }
+    
+    .footer-links {
+        flex-direction: column;
+        gap: 20px;
+    }
+}
+  /* =========================================
+   Correction pour les menus (à placer en dernier dans main.css)
+   ========================================= */
+
+/* 1. Menu déroulant (catégories) */
+.dropdown-menu {
+    position: fixed !important;
+    top: 80px !important;
+    left: 0 !important;
+    right: 0 !important;
+    background-color: white !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease !important;
+    z-index: 1050 !important; /* Valeur élevée pour assurer qu'il est au-dessus de tout */
+    border-bottom: 1px solid #ddd !important;
+  }
+  
+  .dropdown-menu.open {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+  }
+  
+  /* 2. Sections du menu */
+  .menu-section {
+    padding: 15px !important;
+    border-bottom: 1px solid #eee !important;
+    background-color: white !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+  
+  /* 3. Éléments de catégorie */
+  .category-item {
+    padding: 10px 12px !important;
+    background-color: #f5f5f5 !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    margin-bottom: 5px !important;
+    transition: background-color 0.2s !important;
+    color: #333 !important;
+    font-weight: 500 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .category-item:hover {
+    background-color: #e0e0e0 !important;
+  }
+  
+  .category-item.active {
+    background-color: #2575fc !important;
+    color: white !important;
+    box-shadow: 0 2px 5px rgba(37, 117, 252, 0.2) !important;
+  }
+  
+  /* 4. Menu utilisateur */
+  .user-menu {
+    position: fixed !important;
+    top: 80px !important;
+    right: 0 !important;
+    background-color: white !important;
+    box-shadow: -2px 2px 10px rgba(0,0,0,0.2) !important;
+    width: 200px !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease !important;
+    z-index: 1060 !important; /* Encore plus élevé que le menu des catégories */
+    border-radius: 0 0 0 8px !important;
+    border-left: 1px solid #eee !important;
+    border-bottom: 1px solid #eee !important;
+  }
+  
+  .user-menu.open {
+    max-height: 200px !important;
+    overflow-y: auto !important;
+  }
+  
+  .user-menu a {
+    display: block !important;
+    padding: 12px 15px !important;
+    text-decoration: none !important;
+    color: #333 !important;
+    border-bottom: 1px solid #eee !important;
+    transition: background-color 0.2s !important;
+    font-weight: 500 !important;
+  }
+  
+  .user-menu a:hover {
+    background-color: #f5f5f5 !important;
+    color: #2575fc !important;
+  }
+  
+  .user-menu a:last-child {
+    border-bottom: none !important;
+  }
+  
+  /* 5. Overlay commun pour les deux menus */
+  .menu-overlay {
+    position: fixed !important;
+    top: 80px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+    z-index: 1040 !important; /* Entre les valeurs des deux menus pour fonctionner avec les deux */
+  }
+  
+  .menu-overlay.active {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* CSS pour une barre de recherche plus élégante */
+
+/* Conteneur de la barre de recherche */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px 15px;
+  }
+  
+  /* Style de la barre de recherche */
+  #searchInput,
+  input[type="search"],
+  input[type="text"].search-input {
+    width: 100%;
+    height: 46px;
+    padding: 0 20px 0 16px;
+    font-size: 15px;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    outline: none;
+  }
+  
+  /* Style au survol */
+  #searchInput:hover,
+  input[type="search"]:hover,
+  input[type="text"].search-input:hover {
+    border-color: #ccc;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Style au focus */
+  #searchInput:focus,
+  input[type="search"]:focus,
+  input[type="text"].search-input:focus {
+    border-color: #2575fc;
+    box-shadow: 0 3px 10px rgba(37, 117, 252, 0.1);
+  }
+  
+  /* Bouton de recherche */
+  #searchButton,
+  .search-button {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+  
+  /* Style au survol du bouton */
+  #searchButton:hover,
+  .search-button:hover {
+    color: #2575fc;
+  }
+  
+  /* Placeholder style */
+  #searchInput::placeholder,
+  input[type="search"]::placeholder,
+  input[type="text"].search-input::placeholder {
+    color: #aaa;
+    font-style: italic;
+    font-weight: 300;
+  }
+  
+  /* Style pour mobile */
+  @media (max-width: 768px) {
+    .search-wrapper {
+      padding: 8px 10px;
+    }
+    
+    #searchInput,
+    input[type="search"],
+    input[type="text"].search-input {
+      height: 42px;
+      font-size: 14px;
+      padding: 0 15px;
+    }
+    
+    #searchButton,
+    .search-button {
+      right: 20px;
+      font-size: 18px;
+    }
+  }
+
+  

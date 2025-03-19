@@ -1,0 +1,53 @@
+<!-- Footer -->
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-logo">
+            <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo" class="footer-logo-img">
+        </div>
+        
+        <div class="footer-links">
+            <div class="footer-section">
+                <h4>Shop</h4>
+                <ul>
+                    <li><a href="/pages/catalog.html">Catalog</a></li>
+                    <li><a href="#" id="pdf-catalog-link">PDF Catalog</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>My Account</h4>
+                <ul>
+                    <li><a href="/pages/profile.html">My Profile</a></li>
+                    <li><a href="/pages/orders.html">My Orders</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <ul>
+                    <li><a href="mailto:discadoswiss@gmail.com">contact@discado.com</a></li>
+                    <li><a href="tel:+41794573385">+41 79 457 33 85</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <p>&copy; 2025 Discado. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up PDF catalog link
+        const pdfCatalogLink = document.getElementById('pdf-catalog-link');
+        if (pdfCatalogLink) {
+            pdfCatalogLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                // PDF catalog URL (direct download link)
+                const catalogUrl = 'https://www.dropbox.com/scl/fi/0gymxq4jtwdno6q1l5td2/Catalogue-Discado-2025.pdf?rlkey=zx8p1syhojya62atiteib8660&e=1&st=ol0xk3lc&dl=1';
+                window.open(catalogUrl, '_blank');
+            });
+        }
+    });
+</script>

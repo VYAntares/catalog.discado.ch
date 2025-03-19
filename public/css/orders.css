@@ -1,0 +1,454 @@
+/* =========================================
+   Orders Page General
+   ========================================= */
+   .order-page-header {
+    margin-bottom: 30px;
+}
+
+.orders-list {
+    margin-bottom: 40px;
+}
+
+/* =========================================
+   Order Card
+   ========================================= */
+.order-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    position: relative;
+}
+
+.order-card:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(to right, 
+        rgba(0, 0, 0, 0), 
+        rgba(0, 0, 0, 0.1), 
+        rgba(0, 0, 0, 0));
+}
+
+.order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.order-card h3 {
+    color: #2575fc;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.order-date {
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+/* =========================================
+   Order Status
+   ========================================= */
+   .order-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-shipped {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-processing {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Nous gardons cette classe pour la compatibilité avec l'interface admin */
+.status-partial {
+    background-color: #d4edda; /* Même couleur que completed pour le client */
+    color: #155724; /* Même couleur que completed pour le client */
+}
+
+/* =========================================
+   Section des articles en attente
+   ========================================= */
+/* On modifie cette partie pour garder un style différent dans la section "PENDING ITEMS" */
+.pending-delivery-card {
+    background-color: #fff8e1;
+    border-left: 4px solid #ffc107;
+    margin-bottom: 30px;
+}
+
+.pending-delivery-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, #ffc107, transparent);
+    animation: pendingPulse 2s infinite;
+}
+
+/* Section header for pending items */
+.order-section-header td {
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+    color: white;
+}
+
+.delivered-section {
+    background-color: #28a745;
+}
+
+.pending-section {
+    background-color: #ffc107;
+    color: #212529 !important;
+}
+
+/* =========================================
+   Order Details Table
+   ========================================= */
+.order-details-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    margin-bottom: 15px;
+}
+
+.order-details-table th {
+    text-align: left;
+    padding: 10px;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.order-details-table td {
+    padding: 12px 10px;
+    background-color: #fff;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.order-details-table tr:last-child td {
+    border-bottom: none;
+}
+
+.order-details-table .qty-column {
+    width: 10%;
+    text-align: center;
+    font-weight: bold;
+    color: #2575fc;
+}
+
+.order-details-table .product-name-column {
+    width: 50%;
+}
+
+.order-details-table .unit-price-column {
+    width: 20%;
+    text-align: right;
+    color: #6c757d;
+}
+
+.order-details-table .total-price-column {
+    width: 20%;
+    text-align: right;
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* =========================================
+   Order Summary
+   ========================================= */
+.order-summary {
+    margin-top: 20px;
+    text-align: right;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.order-summary-total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2575fc;
+}
+
+.download-invoice-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 15px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.download-invoice-btn:hover {
+    background-color: #218838;
+}
+
+.download-invoice-btn i {
+    margin-right: 8px;
+}
+
+.invoice-not-available {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    margin-left: 15px;
+}
+
+.invoice-not-available i {
+    margin-right: 5px;
+    color: #ffc107;
+}
+
+/* =========================================
+   Pending Items
+   ========================================= */
+.pending-deliveries-button-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.pending-deliveries-btn {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    color: #495057;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pending-deliveries-btn:hover {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.pending-deliveries-btn i {
+    margin-right: 10px;
+    font-size: 1.2em;
+}
+
+.pending-items-count {
+    background-color: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.pending-items-count.hidden {
+    display: none;
+}
+
+.pending-deliveries-container {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease, opacity 0.3s ease;
+    opacity: 0;
+}
+
+.pending-deliveries-container.visible {
+    max-height: 2000px;
+    opacity: 1;
+    margin-bottom: 20px;
+}
+
+.pending-delivery-card {
+    background-color: #fff8e1;
+    border-left: 4px solid #ffc107;
+    margin-bottom: 30px;
+}
+
+.pending-delivery-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, #ffc107, transparent);
+    animation: pendingPulse 2s infinite;
+}
+
+@keyframes pendingPulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
+
+/* Special styles for pending items */
+.category-header {
+    padding: 10px 15px;
+    margin: 15px 0 10px 0;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: #495057;
+    font-weight: 600;
+}
+
+.category-section {
+    margin-bottom: 25px;
+}
+
+.pending-item {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.pending-item td {
+    color: #6c757d;
+}
+
+.pending-item .unit-price-column,
+.pending-item .total-price-column {
+    color: transparent !important;
+    position: relative;
+}
+
+.pending-item .unit-price-column::after,
+.pending-item .total-price-column::after {
+    content: "-";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #666;
+}
+
+.order-section-header td {
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+    color: white;
+}
+
+.delivered-section {
+    background-color: #28a745;
+}
+
+.pending-section {
+    background-color: #ffc107;
+    color: #212529 !important;
+}
+
+.delivered-item {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+/* Animation for pending delivery button */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pending-deliveries-btn.has-items {
+    animation: pulse 2s infinite;
+}
+
+/* =========================================
+   Responsive Adjustments
+   ========================================= */
+@media (max-width: 768px) {
+    .order-details-table {
+        font-size: 0.9em;
+    }
+    
+    .order-details-table th,
+    .order-details-table td {
+        padding: 8px;
+    }
+    
+    .order-summary-total {
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .download-invoice-btn {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}
+
+/* Assurer une bonne visibilité des éléments de catégorie */
+.category-item {
+    padding: 8px 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #333;
+}
+
+.category-item:hover {
+    background-color: #e0e0e0;
+}
+
+.category-item.active {
+    background-color: #2575fc;
+    color: white;
+}
+.category-section {
+    background-color: #f5f7fa;
+    color: #2575fc;
+    font-weight: 600;
+    padding: 8px 15px;
+    text-align: left;
+}
+
+.pending-category {
+    background-color: #fff8e1;
+    color: #ff9800;
+}
+
+.category-header td {
+    padding: 8px 15px;
+}
+
+.delivered-item {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.delivered-item:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+

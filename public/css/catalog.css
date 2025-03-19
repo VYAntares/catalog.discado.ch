@@ -1,0 +1,478 @@
+/* =========================================
+   Product List Styles
+   ========================================= */
+   #productList {
+    padding-bottom: 80px; /* Space for floating button */
+}
+
+li.product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 15px;
+    margin: 8px 0;
+    border-radius: 5px;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.product-img-container {
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+    border-radius: 4px;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+}
+
+.product-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+}
+
+.product-img:hover {
+    transform: scale(1.05);
+}
+
+.product-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-name {
+    text-align: left;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.product-price {
+    text-align: left;
+    font-weight: bold;
+    color: #2575fc;
+}
+
+/* =========================================
+   Product Actions
+   ========================================= */
+.product-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Quantity container without buttons */
+.quantity-container {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 36px;
+    background-color: #fff;
+    width: 70px;
+}
+
+/* Simplified quantity input style */
+.quantity-input.simplified {
+    width: 100%;
+    height: 36px;
+    border: none;
+    text-align: center;
+    font-size: 16px;
+    color: #333;
+    background: white;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    padding: 0 5px;
+}
+
+.quantity-input.simplified::-webkit-inner-spin-button,
+.quantity-input.simplified::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quantity-input.simplified:focus {
+    outline: none;
+    background-color: #f0f0f0;
+}
+
+/* =========================================
+   Floating Add to Cart Button
+   ========================================= */
+.floating-add-to-cart-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.floating-add-to-cart-btn:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.floating-add-to-cart-btn i {
+    margin-right: 8px;
+}
+
+.floating-button-counter {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background-color: #ff6b6b;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* =========================================
+   Image Preview Modal
+   ========================================= */
+.image-preview-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-preview-modal.show-preview {
+    opacity: 1;
+}
+
+.image-preview-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: zoom 0.3s ease;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    padding: 10px;
+}
+
+.close-preview {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    color: white;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+    z-index: 2001;
+}
+
+.close-preview:hover {
+    color: #f44336;
+}
+
+@keyframes zoom {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* =========================================
+   PDF Catalog
+   ========================================= */
+#pdfCatalogToggle:hover i {
+    color: #ff5722;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+/* =========================================
+   Responsive Adjustments
+   ========================================= */
+@media (min-width: 769px) {
+    li.product-item {
+        display: grid;
+        grid-template-columns: 80px 1fr 100px;
+        gap: 20px;
+        padding: 15px 20px;
+    }
+    
+    .product-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 768px) {
+    li.product-item {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px;
+    }
+    
+    .product-img-container {
+        width: 100%;
+        height: 150px;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .product-info {
+        width: 100%;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    
+    .product-actions {
+        align-items: center;
+        flex-direction: row;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .quantity-container {
+        width: 80px;
+    }
+    
+    .image-preview-content {
+        max-width: 95%;
+    }
+    
+    .preview-image {
+        max-height: 80vh;
+    }
+    
+    .close-preview {
+        top: -30px;
+        right: 0;
+        font-size: 24px;
+    }
+}
+
+/* Corrections pour le menu déroulant des catégories */
+
+/* S'assurer que le menu déroulant a un fond blanc */
+.dropdown-menu {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    z-index: 999;
+}
+
+.dropdown-menu.open {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Assurer un fond clair pour les sections du menu */
+.menu-section {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background-color: white;
+}
+
+/* Rendre l'overlay moins opaque */
+.menu-overlay {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.3); /* Réduit de 0.5 à 0.3 pour être moins foncé */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 998;
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Assurer une bonne visibilité des éléments de catégorie */
+.category-item {
+    padding: 8px 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #333;
+}
+
+.category-item:hover {
+    background-color: #e0e0e0;
+}
+
+.category-item.active {
+    background-color: #2575fc;
+    color: white;
+}
+/* Updated Header Styles */
+.logo-and-search-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px; /* Space between logo and search bar */
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* Adjust as needed */
+    margin-bottom: 15px; /* Space between search and content */
+}
+
+#searchInput {
+    width: 100%;
+    padding: 10px;
+    padding-right: 40px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#searchInput:focus {
+    border-color: #2575fc;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.2);
+}
+
+#searchButton {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s;
+}
+
+#searchButton:hover {
+    color: #2575fc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .logo-and-search-container {
+        width: 100%;
+    }
+    
+    .search-wrapper {
+        max-width: 100%;
+        padding: 0 15px;
+    }
+}
+
+/* Styles pour la barre de catégories horizontale */
+.categories-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px auto;
+    padding: 5px 10px;
+    max-width: 1200px;
+  }
+  
+  .category-button {
+    padding: 8px 15px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  
+  .category-button:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .category-button.active {
+    background-color: #333;
+    color: white;
+    border-color: #333;
+  }
+  
+  /* Responsive pour petits écrans */
+  @media (max-width: 768px) {
+    .categories-bar {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      justify-content: flex-start;
+      padding-bottom: 10px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; /* Firefox */
+    }
+    
+    .categories-bar::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Edge */
+    }
+    
+    .category-button {
+      flex: 0 0 auto;
+    }
+  }

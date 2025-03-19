@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Discado - Product Catalog</title>
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/catalog.css">
+<link rel="stylesheet" href="/css/cart.css">
+<!-- Enhanced Header Script -->
+<script src="/js/components/DiscadoHeader.js"></script>
+<!-- Cart Integration Script -->
+<script src="/js/components/CartIntegration.js"></script>
+</head>
+<body>
+<!-- Header will be loaded dynamically -->
+<div id="header-container"></div>
+
+<!-- Main Content -->
+<main>
+  <!-- Catégories horizontales -->
+  <div class="categories-bar" id="categoriesBar">
+    <!-- Les catégories seront ajoutées dynamiquement via JavaScript -->
+  </div>
+
+  <!-- Search Bar Now Above Articles -->
+  <div class="search-wrapper">
+    <input type="text" id="searchInput" placeholder="Search for a product..." aria-label="Search">
+    <button id="searchButton" aria-label="Search"><i class="fas fa-search"></i></button>
+  </div>
+
+  <!-- Product list will be populated by JS -->
+  <ul id="productList"></ul>
+</main>
+
+<!-- Footer -->
+<div id="footer-container"></div>
+
+<!-- Cart modal container -->
+<div id="cart-modal-container"></div>
+
+<!-- Notification container -->
+<div id="notification-container"></div>
+
+<!-- Category Filter Hidden Select (for compatibility) -->
+<select id="categoryFilter" style="display: none;">
+  <option value="all" selected>All Products</option>
+  <!-- Other options will be added dynamically -->
+</select>
+
+<!-- Scripts -->
+<script type="module">
+import { initCatalog, filterProducts } from '/js/modules/catalog/productList.js';
+import { initHorizontalCategories } from '/js/modules/catalog/productFilter.js';
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize header (if not already initialized)
+    if (window.DiscadoHeader) {
+        window.DiscadoHeader.init();
+    }
+    
+    // Initialize cart integration
+    if (window.CartIntegration) {
+        window.CartIntegration.init();
+    }
+    
+    // Load footer component
+    fetch('/components/footer.html')
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('footer-container').innerHTML = data;
+        })
+        .catch(error => {
+            console.error('Error loading footer:', error);
+        });
+    
+    // Initialize catalog functionality
+    initCatalog();
+    
+    // Initialize horizontal categories en passant la fonction de filtrage
+    initHorizontalCategories(filterProducts);
+});
+</script>
+</body>
+</html>

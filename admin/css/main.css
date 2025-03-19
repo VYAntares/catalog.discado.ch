@@ -1,0 +1,448 @@
+/* Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f8fa;
+    color: #333;
+}
+
+/* Header style */
+header {
+    background-color: #fff;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo-container img {
+    height: 40px;
+    width: auto;
+    transition: transform 0.2s ease;
+}
+
+.logo-container img:hover {
+    transform: scale(1.05);
+}
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.admin-user i {
+    font-size: 18px;
+    color: #2575fc;
+}
+
+.logout-btn {
+    padding: 8px 18px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.logout-btn:hover {
+    background-color: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Tabs navigation */
+.admin-tabs {
+    background-color: #2575fc;
+    padding: 0 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.tabs-container {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.tab {
+    padding: 18px 30px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    position: relative;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    letter-spacing: 0.3px;
+}
+
+.tab:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tab.active {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: white;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Main content */
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px 20px 50px;
+}
+
+.page-title {
+    margin-bottom: 25px;
+    color: #333;
+    font-size: 28px;
+    border-bottom: 1px solid #e1e8ed;
+    padding-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Search box */
+.search-container {
+    margin-bottom: 25px;
+    display: flex;
+    gap: 10px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px 18px;
+    border: 1px solid #dfe3e8;
+    border-radius: 6px;
+    font-size: 15px;
+    max-width: 500px;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #2575fc;
+    box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+}
+
+.search-btn {
+    padding: 12px 24px;
+    background-color: #2575fc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+    background-color: #1a5cb8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal commun */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal[style*="display: block"] {
+    display: flex !important;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 0 auto;
+    padding: 30px;
+    width: 90%;
+    max-width: 900px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal[style*="display: block"] .modal-content {
+    transform: translateY(0);
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* Boutons d'action génériques */
+.action-btn {
+    padding: 8px 14px;
+    background-color: #2575fc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 5px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-btn:hover {
+    background-color: #1a5cb8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn i {
+    font-size: 14px;
+}
+
+.primary-btn {
+    background-color: #2575fc;
+    color: white;
+}
+
+.secondary-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Loading indicator */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.loading::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e1e8ed;
+    border-top: 3px solid #2575fc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notification system */
+#notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.notification {
+    margin-bottom: 10px;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    width: 320px;
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.notification-icon {
+    margin-right: 15px;
+    font-size: 18px;
+}
+
+.notification-success .notification-icon {
+    color: #28a745;
+}
+
+.notification-error .notification-icon {
+    color: #dc3545;
+}
+
+.notification-info .notification-icon {
+    color: #17a2b8;
+}
+
+.notification-message {
+    flex: 1;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-state p {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* Responsive globals */
+@media (max-width: 768px) {
+    .tabs-container {
+        justify-content: space-between;
+    }
+
+    .tab {
+        padding: 15px;
+        font-size: 14px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 30px auto;
+    }
+
+    .search-container {
+        flex-direction: column;
+    }
+
+    .search-input {
+        max-width: none;
+    }
+    
+    .page-title {
+        font-size: 22px;
+    }
+    
+    .notification {
+        width: 90%;
+        max-width: 320px;
+    }
+}
+
+/* Réduire la taille du logo, surtout sur mobile */
+.logo-container img {
+    height: 30px; /* Taille réduite par défaut */
+    width: auto;
+}
+
+/* Ajustements pour mobile */
+@media (max-width: 768px) {
+    .logo-container img {
+        height: 25px; /* Encore plus petit sur mobile */
+    }
+
+    .header-container {
+        gap: 10px; /* Espace entre le logo et le bouton */
+    }
+
+    /* Optimisation du bouton de déconnexion sur mobile */
+    .logout-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        min-width: auto;
+    }
+}
+
+/* Pour les très petits écrans comme iPhone SE */
+@media (max-width: 375px) {
+    .logo-container img {
+        height: 20px;
+    }
+
+    .admin-user {
+        font-size: 12px;
+    }
+}

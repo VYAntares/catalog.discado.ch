@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Discado - My Orders</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/orders.css">
+    <link rel="stylesheet" href="/css/cart.css">
+    
+    <!-- Enhanced Header Script -->
+    <script src="/js/components/DiscadoHeader.js"></script>
+    <!-- Cart Integration Script -->
+    <script src="/js/components/CartIntegration.js"></script>
+</head>
+<body>
+    <!-- Header will be loaded dynamically -->
+    <div id="header-container"></div>
+
+    <!-- Main Content -->
+    <main>
+        <div class="order-page-header">
+            <h2>My Orders</h2>
+        </div>
+        
+        <!-- Pending Deliveries Section -->
+        <div class="pending-deliveries-button-container">
+            <button id="pendingDeliveriesBtn" class="pending-deliveries-btn">
+                <i class="fas fa-truck"></i> View pending delivery items
+                <span id="pendingItemsCount" class="pending-items-count">0</span>
+            </button>
+        </div>
+
+        <!-- Pending Deliveries Container - initially hidden -->
+        <div id="pendingDeliveriesContainer" class="pending-deliveries-container">
+            <!-- Will be populated dynamically -->
+        </div>
+        
+        <!-- Orders List -->
+        <div id="ordersList" class="orders-list">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading your orders...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+    
+    <!-- Cart modal container -->
+    <div id="cart-modal-container"></div>
+
+    <!-- Notification container -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="/js/core/app.js"></script>
+    <script type="module">
+        import { initOrdersList } from '/js/modules/orders/orderList.js';
+        import { initPendingItems } from '/js/modules/orders/pendingItems.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize header (if not already initialized)
+            if (window.DiscadoHeader) {
+                window.DiscadoHeader.init();
+            }
+            
+            // Initialize cart integration
+            if (window.CartIntegration) {
+                window.CartIntegration.init();
+            }
+            
+            // Load footer component
+            fetch('/components/footer.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('footer-container').innerHTML = data;
+                });
+            
+            // Initialize orders list
+            initOrdersList();
+            
+            // Initialize pending items
+            initPendingItems();
+        });
+    </script>
+    <!-- Category Navigation Fix -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        // Setup category navigation to redirect to catalog
+        const categoryItems = document.querySelectorAll('.category-item');
+        
+        categoryItems.forEach(item => {
+            item.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            // Navigate to catalog page with category parameter
+            window.location.href = `/pages/catalog.html?category=${category}`;
+            });
+        });
+        });
+    </script>
+</body>
+</html>

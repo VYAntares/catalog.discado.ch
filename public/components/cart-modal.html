@@ -1,0 +1,29 @@
+<!-- Cart Modal -->
+<div id="cart-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2 class="cart-title">Your Cart</h2>
+        
+        <!-- Cart items will be added here dynamically -->
+        <div id="cart-items">
+            <p class="empty-cart">Your cart is empty</p>
+        </div>
+        
+        <div class="cart-total">
+            <strong>Total:</strong> <span id="cart-total-amount">0.00</span> CHF
+        </div>
+        
+        <div class="cart-actions">
+            <button id="clear-cart-btn" class="secondary-btn">Clear Cart</button>
+            <button id="checkout-btn" class="primary-btn">Order Now</button>
+        </div>
+        
+        <!-- Cart confirmation message (initially hidden) -->
+        <div id="cart-confirmation" class="cart-confirmation">
+            <i class="fas fa-check-circle"></i>
+            <p>Your order has been placed successfully!</p>
+            <p class="cart-confirmation-note">You can check your order status in "My Orders" section</p>
+            <button id="view-orders-btn" class="secondary-btn">View My Orders</button>
+        </div>
+    </div>
+</div>
