@@ -77,17 +77,17 @@ const orderService = {
     },
     
     // Save a new order
-    saveOrder(userId, cartItems) {
+    saveOrder(userId, cartItems, reference = '') {
         try {
             // Check if the user has a pending order
             const pendingOrder = this.getUserPendingOrder(userId);
             
             if (pendingOrder) {
                 // User has a pending order, add items to it
-                return this.appendToExistingOrder(pendingOrder.order_id, userId, cartItems);
+                return this.appendToExistingOrder(pendingOrder.order_id, userId, cartItems, reference);
             } else {
                 // No pending order, create a new one
-                return this.createNewOrder(userId, cartItems);
+                return this.createNewOrder(userId, cartItems, reference);
             }
         } catch (error) {
             console.error('Error saving order:', error);
@@ -113,7 +113,7 @@ const orderService = {
     },
     
     // Create a new order
-    createNewOrder(userId, cartItems) {
+    createNewOrder(userId, cartItems, reference = '') {
         return dbModule.transaction(() => {
             // Utiliser notre générateur d'ID
             const orderId = orderCounter.generateOrderId();
@@ -122,11 +122,14 @@ const orderService = {
             // Récupérer les articles en attente de livraison pour ce client
             const pendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
             
-            // Créer l'enregistrement de commande
-            dbModule.createOrder.run(orderId, userId, 'pending', date);
+            // Créer l'enregistrement de commande avec référence
+            dbModule.createOrder.run(orderId, userId, 'pending', date, reference);
             
             // Traiter chaque article du panier
             cartItems.forEach(item => {
+                // Existing cart item processing...
+                // [Code kept the same as in the original file]
+                
                 // Vérifier si l'article existe dans la liste "à livrer"
                 const pendingItem = pendingDeliveries.find(
                     pending => pending.product_name === item.Nom && 
@@ -186,7 +189,7 @@ const orderService = {
     },
     
     // Add items to an existing order
-    appendToExistingOrder(orderId, userId, cartItems) {
+    appendToExistingOrder(orderId, userId, cartItems, reference = '') {
         return dbModule.transaction(() => {
             // Récupérer les articles en attente de livraison pour ce client
             const pendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
@@ -249,8 +252,14 @@ const orderService = {
                 }
             });
             
-            // Update the order date to reflect the latest addition
-            dbModule.updateOrderDate.run(new Date().toISOString(), orderId);
+            // Update the order date and reference if provided
+            if (reference) {
+                // Si une référence est fournie, mettre à jour la date et la référence
+                dbModule.updateOrderDateAndReference.run(new Date().toISOString(), reference, orderId);
+            } else {
+                // Sinon, mettre à jour uniquement la date
+                dbModule.updateOrderDate.run(new Date().toISOString(), orderId);
+            }
             
             return { 
                 success: true, 
@@ -337,7 +346,8 @@ const orderService = {
                     date: order.date,
                     items: formattedItems,
                     groupedItems: groupedItems,
-                    lastProcessed: order.last_processed
+                    lastProcessed: order.last_processed,
+                    reference: order.reference
                 };
                 
                 // Add delivered and remaining items if they exist
@@ -422,7 +432,8 @@ const orderService = {
                     userId: order.user_id,
                     status: order.status,
                     date: order.date,
-                    items: formattedItems
+                    items: formattedItems,
+                    reference: order.reference
                 };
                 
                 // Get user profile
@@ -474,7 +485,8 @@ const orderService = {
                     status: order.status,
                     date: order.date,
                     lastProcessed: order.last_processed,
-                    deliveredItems: formattedDeliveredItems
+                    deliveredItems: formattedDeliveredItems,
+                    reference: order.reference
                 };
                 
                 // Add remaining items if they exist
@@ -573,7 +585,8 @@ const orderService = {
                 lastProcessed: order.last_processed,
                 items: allItems,
                 groupedItems: groupedItems,
-                userProfile: userService.getUserProfile(userId)
+                userProfile: userService.getUserProfile(userId),
+                reference: order.reference
             };
             
             // Add delivered and remaining items if they exist

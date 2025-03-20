@@ -34,12 +34,16 @@ export async function processCheckout() {
     // Récupérer le total
     const total = getCartTotal();
     
+    // Get the order reference (new)
+    const orderReference = document.getElementById('order-reference')?.value || '';
+    
     try {
         // Préparer les données de la commande
         const orderData = {
             items: cart,
             total: total,
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+            reference: orderReference // Include reference in order data
         };
         
         // Envoyer la commande au serveur
@@ -47,7 +51,7 @@ export async function processCheckout() {
         
         if (result.success) {
             // Afficher le message de succès
-            showOrderConfirmation(result.orderId);
+            showOrderConfirmation(result.orderId, orderReference);
             
             // Vider le panier
             clearCart();
@@ -71,16 +75,19 @@ export async function processCheckout() {
 /**
  * Affiche la confirmation de commande
  * @param {string} orderId - ID de la commande
+ * @param {string} reference - Référence de la commande (optional)
  */
-function showOrderConfirmation(orderId) {
+function showOrderConfirmation(orderId, reference) {
     // Masquer les éléments du panier
     const cartItems = document.getElementById('cart-items');
     const cartTotal = document.querySelector('.cart-total');
     const cartActions = document.querySelector('.cart-actions');
+    const referenceContainer = document.querySelector('.order-reference-container');
     
     if (cartItems) cartItems.style.display = 'none';
     if (cartTotal) cartTotal.style.display = 'none';
     if (cartActions) cartActions.style.display = 'none';
+    if (referenceContainer) referenceContainer.style.display = 'none';
     
     // Afficher la confirmation
     const confirmation = document.getElementById('cart-confirmation');
@@ -90,6 +97,16 @@ function showOrderConfirmation(orderId) {
             const confirmationMessage = confirmation.querySelector('p:first-child');
             if (confirmationMessage) {
                 confirmationMessage.textContent = `Your order #${orderId} has been placed successfully!`;
+                
+                // Add reference to confirmation if provided
+                if (reference) {
+                    const referenceNote = document.createElement('p');
+                    referenceNote.className = 'cart-confirmation-note';
+                    referenceNote.textContent = `Your reference: ${reference}`;
+                    
+                    // Insert after first paragraph
+                    confirmationMessage.parentNode.insertBefore(referenceNote, confirmationMessage.nextSibling);
+                }
             }
         }
         

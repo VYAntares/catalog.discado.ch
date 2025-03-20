@@ -277,14 +277,24 @@ function processCheckout() {
     submitOrder(cart);
 }
 
+/**
+ * Function to submit the order with reference
+ * @param {Array} cart - Cart items
+ */
 async function submitOrder(cart) {
     try {
+        // Get the order reference
+        const orderReference = document.getElementById('order-reference')?.value || '';
+        
         const response = await fetch('/api/save-order', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ items: cart })
+            body: JSON.stringify({ 
+                items: cart,
+                reference: orderReference // Include order reference
+            })
         });
         
         const data = await response.json();

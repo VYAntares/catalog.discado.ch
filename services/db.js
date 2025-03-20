@@ -30,7 +30,9 @@ function initDatabase() {
     // Vérifier si la colonne referral_source existe dans la table user_profiles
     const userProfilesColumns = db.prepare("PRAGMA table_info(user_profiles)").all();
     const hasReferralSource = userProfilesColumns.some(col => col.name === 'referral_source');
-    
+    const ordersColumns = db.prepare("PRAGMA table_info(orders)").all();
+    const hasReference = ordersColumns.some(col => col.name === 'reference');
+
     // Create user_profiles table with referral_source column
     if (!hasReferralSource) {
         // Si la table existe déjà, ajouter la colonne
@@ -63,6 +65,20 @@ function initDatabase() {
     } else {
         // La table existe déjà avec la colonne referral_source
         console.log('La colonne referral_source existe déjà dans la table user_profiles');
+    }
+
+    if (!hasReference) {
+        try {
+            db.exec(`
+            ALTER TABLE orders 
+            ADD COLUMN reference TEXT
+            `);
+            console.log('Column reference added to the orders table');
+        } catch (error) {
+            console.error('Error adding reference column to orders table:', error);
+        }
+    } else {
+        console.log('The reference column already exists in the orders table');
     }
 
     // Create products table
@@ -171,7 +187,7 @@ module.exports = {
     getAllProfiles: db.prepare('SELECT * FROM user_profiles'),
     
     // Order queries
-    createOrder: db.prepare('INSERT INTO orders (order_id, user_id, status, date) VALUES (?, ?, ?, ?)'),
+    createOrder: db.prepare('INSERT INTO orders (order_id, user_id, status, date, reference) VALUES (?, ?, ?, ?, ?)'),
     getOrderById: db.prepare('SELECT * FROM orders WHERE order_id = ?'),
     getUserOrders: db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY date DESC'),
     getPendingOrders: db.prepare("SELECT * FROM orders WHERE status = 'pending' ORDER BY date ASC"),
@@ -199,6 +215,14 @@ module.exports = {
         SET date = ? 
         WHERE order_id = ?
     `),
+
+    // Add a new prepared statement to update both date and reference
+    updateOrderDateAndReference: db.prepare(`
+        UPDATE orders 
+        SET date = ?, reference = ? 
+        WHERE order_id = ?
+    `),
+
     
     // Pending deliveries
     addPendingDelivery: db.prepare(`

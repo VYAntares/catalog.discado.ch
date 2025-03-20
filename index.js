@@ -380,9 +380,11 @@ app.get('/api/products', requireLogin, async (req, res) => {
 app.post('/api/save-order', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const cartItems = req.body.items;
+  const reference = req.body.reference || ''; // Ajout de cette ligne pour récupérer la référence
   
   try {
-    const result = orderService.saveOrder(userId, cartItems);
+    // Passage de la référence au service de commande
+    const result = orderService.saveOrder(userId, cartItems, reference);
     res.json(result);
   } catch (error) {
     console.error('Error saving order:', error);

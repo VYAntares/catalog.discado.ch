@@ -349,3 +349,32 @@
       width: 100%;
     }
   }
+
+  .order-reference-container {
+    margin: 15px 0;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+
+.order-reference-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+#order-reference {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+#order-reference:focus {
+    border-color: #999;
+    outline: none;
+    box-shadow: 0 0 3px rgba(0,0,0,0.1);
+}

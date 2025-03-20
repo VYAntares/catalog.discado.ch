@@ -94,7 +94,6 @@ function createOrderCard(order, index, container) {
     const processDate = order.lastProcessed ? formatDate(order.lastProcessed) : '';
     
     // Déterminer le statut de la commande
-    // MODIFICATION: Afficher toutes les commandes traitées comme "Completed"
     let statusText = 'Processing';
     let statusClass = 'status-processing';
     
@@ -116,6 +115,7 @@ function createOrderCard(order, index, container) {
         <div class="order-date">
             Ordered: ${orderDate}
             ${processDate ? `<br>Processed: ${processDate}` : ''}
+            ${order.reference ? `<br><span class="order-reference">Reference: ${order.reference}</span>` : ''}
         </div>
     `;
     
