@@ -380,6 +380,7 @@ function createOrderElement(order) {
         <div class="order-date-info">
             <div>Commandée le: ${orderDate}, ${new Date(order.date).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
             <div>Traitée le: ${processDate}, ${new Date(order.lastProcessed).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
+            ${order.reference ? `<div>Référence client: ${order.reference}</div>` : ''}
         </div>
         
         <div class="order-client-info">

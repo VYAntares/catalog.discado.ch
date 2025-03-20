@@ -15,9 +15,10 @@ class InvoiceService {
    * @param {Object} userProfile - Informations du profil client
    * @param {Date} orderDate - Date de la commande
    * @param {String} orderId - Identifiant de la commande
+   * @param {String} reference - Référence client (optionnelle)
    * @returns {Promise<Object>} - Retourne les totaux calculés
    */
-  static async generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId) {
+  static async generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId, reference = '') {
     // Vérifier que le document est vide avant de commencer
     // Ceci évite la duplication si la fonction est appelée plusieurs fois
     if (doc.page.content.length > 0) {
@@ -26,7 +27,7 @@ class InvoiceService {
     }
     
     // Générer la première page avec la liste des articles et récupérer la position Y finale
-    const { totals, finalYPosition } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId);
+    const { totals, finalYPosition } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId, reference);
     
     // Générer la page de récapitulatif (toujours sur une nouvelle page)
     doc.addPage();
@@ -35,7 +36,8 @@ class InvoiceService {
       ...totals,
       orderDate,
       orderId,
-      userProfile
+      userProfile,
+      reference
     });
     
     return totals;
@@ -67,7 +69,7 @@ class InvoiceService {
    * @private
    * @returns {Object} - Totaux calculés et position Y finale
    */
-  static async generateItemsPage(doc, orderItems, userProfile, orderDate, orderId) {
+  static async generateItemsPage(doc, orderItems, userProfile, orderDate, orderId, reference) {
     const addHeaderElement = (text, x, y, options = {}) => {
       doc.font('Helvetica').fontSize(9).text(text, x, y, options);
     };
@@ -106,9 +108,15 @@ class InvoiceService {
       const titleY = senderY + lineSpacing * 11;
       
       doc.font('Helvetica-Bold').fontSize(14).text(`Invoice ${formattedOrderId}`, 50, titleY + 5);
-      addHeaderElement(`Invoice date: ${orderDate.toLocaleDateString('Fr')}`, 50, titleY + 40);
+      addHeaderElement(`Invoice date: ${orderDate.toLocaleDateString('fr-FR')}`, 50, titleY + 30);
+      
+      // Ajout de la référence client si fournie
+      if (reference && reference.trim() !== '') {
+        addHeaderElement(`Client reference: ${reference}`, 50, titleY + 42);
+        return titleY + 62;
+      }
 
-      return titleY + 60;
+      return titleY + 50;
     };
 
     // Définition des colonnes
@@ -362,13 +370,13 @@ class InvoiceService {
     };
   }
 
-      /**
+  /**
    * Génère la page récapitulative de la facture en utilisant le même en-tête que la facture
    * et ajoute un résumé simple des conditions et du total
    * @private
    */
   static async generateTotalPage(doc, invoiceData) {
-    const { totalHT, montantTVA, totalTTC, orderDate, orderId, userProfile } = invoiceData;
+    const { totalHT, montantTVA, totalTTC, orderDate, orderId, userProfile, reference } = invoiceData;
     
     // Formatage de l'ID de commande
     const formattedOrderId = this.formatOrderId(orderId, orderDate);
@@ -410,9 +418,15 @@ class InvoiceService {
       const titleY = senderY + lineSpacing * 12;
       
       doc.font('Helvetica-Bold').fontSize(14).text(`Invoice ${formattedOrderId}`, 50, titleY + 5);
-      doc.font('Helvetica').fontSize(10).text(`Date: ${orderDate.toLocaleDateString('Fr')}`, 50, titleY + 25);
+      doc.font('Helvetica').fontSize(10).text(`Date: ${orderDate.toLocaleDateString('fr-FR')}`, 50, titleY + 25);
+      
+      // Ajout de la référence client si fournie
+      if (reference && reference.trim() !== '') {
+        doc.font('Helvetica').fontSize(10).text(`Client reference: ${reference}`, 50, titleY + 40);
+        return titleY + 55;
+      }
 
-      return titleY + 60;
+      return titleY + 40;
     };
 
     // Ajouter une ligne simple avec les conditions de paiement et le total
@@ -471,11 +485,11 @@ class InvoiceService {
 }
 
 module.exports = {
-  generateInvoicePDF: (doc, orderItems, userProfile, orderDate, orderId) => {
+  generateInvoicePDF: (doc, orderItems, userProfile, orderDate, orderId, reference = '') => {
     // Assurer qu'on n'appelle la fonction qu'une seule fois
     if (!doc._invoiceGenerated) {
       doc._invoiceGenerated = true;
-      return InvoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
+      return InvoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId, reference);
     } else {
       console.log('La génération de facture a déjà été effectuée pour ce document');
       return Promise.resolve({});

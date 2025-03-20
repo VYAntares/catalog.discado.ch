@@ -9,13 +9,14 @@ const { generateInvoicePDF } = require('./invoiceService');
  * Then automatically generates an invoice as well
  * @param {PDFDocument} doc - PDFKit document instance
  * @param {Array} orderItems - List of items in the order
+ * @param {String} reference -  client order reference (optional)
  * @param {Object} userProfile - Customer profile information
  * @param {Date} orderDate - Date of the order
  * @param {String} orderId - Order identifier (not displayed in simplified version)
  * @param {Array} remainingItems - Items to be delivered later (optional)
  * @returns {Promise<void>}
  */
-async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems = []) {
+async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, reference = '') {
   // Function to add a header element with reduced line spacing
   function addHeaderElement(text, x, y, options = {}) {
     doc.font('Helvetica').fontSize(9).text(text, x, y, options);
@@ -55,8 +56,14 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     doc.font('Helvetica-Bold').fontSize(14).text('Delivery Note', 50, titleY + 5);
     
     // Add the date under the title
-    addHeaderElement(`Order processing date: ${deliveryDate.toLocaleDateString('Fr')}`, 50, titleY + 30);
-
+    addHeaderElement(`Order processing date: ${deliveryDate.toLocaleDateString('fr-FR')}`, 50, titleY + 30);
+    
+    // Add client reference if provided
+    if (reference && reference.trim() !== '') {
+      addHeaderElement(`Client reference: ${reference}`, 50, titleY + 42);
+      return titleY + 62; // Return adjusted position for table to start
+    }
+    
     // Return position for table to start
     return titleY + 50;
   }
@@ -244,7 +251,7 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
 
   // After generating delivery note, add a page break and generate the invoice
   doc.addPage();
-  await generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
+  await generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId, reference);
 }
 
 module.exports = {

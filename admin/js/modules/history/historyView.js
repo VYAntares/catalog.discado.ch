@@ -120,6 +120,7 @@ function displayOrderDetails(order, container) {
                 <div class="order-dates">
                     <div>Commandée le: ${orderDate}</div>
                     <div>Traitée le: ${processDate || '-'}</div>
+                    ${order.reference ? `<div>Référence client: ${order.reference}</div>` : ''}
                 </div>
             </div>
             <div class="order-status">

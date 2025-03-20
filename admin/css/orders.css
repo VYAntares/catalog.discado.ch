@@ -1052,3 +1052,10 @@
       max-height: 60vh;
   }
 }
+
+.order-reference {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 0.9em;
+}

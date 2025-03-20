@@ -75,7 +75,10 @@ function showProcessOrderModal(order, clientProfile) {
         <div class="order-process-container">
             <div class="order-header">
                 <h1>Détails de la Commande #${order.orderId}</h1>
-                <span class="order-date">Commandé le ${orderDate}</span>
+                <div class="order-info">
+                    <span class="order-date">Commandé le ${orderDate}</span>
+                    ${order.reference ? `<span class="order-reference"> | Référence: ${order.reference}</span>` : ''}
+                </div>
             </div>
 
             <div class="client-info-grid">
