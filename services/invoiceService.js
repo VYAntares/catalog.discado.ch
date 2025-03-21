@@ -15,10 +15,9 @@ class InvoiceService {
    * @param {Object} userProfile - Informations du profil client
    * @param {Date} orderDate - Date de la commande
    * @param {String} orderId - Identifiant de la commande
-   * @param {String} reference - Référence client (optionnelle)
    * @returns {Promise<Object>} - Retourne les totaux calculés
    */
-  static async generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId, reference = '') {
+  static async generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId) {
     // Vérifier que le document est vide avant de commencer
     // Ceci évite la duplication si la fonction est appelée plusieurs fois
     if (doc.page.content.length > 0) {
@@ -27,7 +26,7 @@ class InvoiceService {
     }
     
     // Générer la première page avec la liste des articles et récupérer la position Y finale
-    const { totals, finalYPosition } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId, reference);
+    const { totals, finalYPosition } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId);
     
     // Générer la page de récapitulatif (toujours sur une nouvelle page)
     doc.addPage();
@@ -36,8 +35,7 @@ class InvoiceService {
       ...totals,
       orderDate,
       orderId,
-      userProfile,
-      reference
+      userProfile
     });
     
     return totals;
@@ -69,7 +67,7 @@ class InvoiceService {
    * @private
    * @returns {Object} - Totaux calculés et position Y finale
    */
-  static async generateItemsPage(doc, orderItems, userProfile, orderDate, orderId, reference) {
+  static async generateItemsPage(doc, orderItems, userProfile, orderDate, orderId) {
     const addHeaderElement = (text, x, y, options = {}) => {
       doc.font('Helvetica').fontSize(9).text(text, x, y, options);
     };
@@ -87,7 +85,8 @@ class InvoiceService {
       addHeaderElement('Sevelin 4A', 50, senderY + lineSpacing * 2);
       addHeaderElement('1007 Lausanne', 50, senderY + lineSpacing * 3);
       addHeaderElement('+41 79 457 33 85', 50, senderY + lineSpacing * 4);
-      addHeaderElement('discadoswiss@gmail.com', 50, senderY + lineSpacing * 5);
+      addHeaderElement('+41 78 343 36 31', 50, senderY + lineSpacing * 5);
+      addHeaderElement('catalog.discado@gmail.com', 50, senderY + lineSpacing * 6);
       addHeaderElement('TVA CHE-114.139.308', 50, senderY + lineSpacing * 8);
 
       // Informations du client
@@ -108,15 +107,9 @@ class InvoiceService {
       const titleY = senderY + lineSpacing * 11;
       
       doc.font('Helvetica-Bold').fontSize(14).text(`Invoice ${formattedOrderId}`, 50, titleY + 5);
-      addHeaderElement(`Invoice date: ${orderDate.toLocaleDateString('fr-FR')}`, 50, titleY + 30);
-      
-      // Ajout de la référence client si fournie
-      if (reference && reference.trim() !== '') {
-        addHeaderElement(`Client reference: ${reference}`, 50, titleY + 42);
-        return titleY + 62;
-      }
+      addHeaderElement(`Invoice date: ${orderDate.toLocaleDateString('Fr')}`, 50, titleY + 40);
 
-      return titleY + 50;
+      return titleY + 60;
     };
 
     // Définition des colonnes
@@ -370,13 +363,13 @@ class InvoiceService {
     };
   }
 
-  /**
+      /**
    * Génère la page récapitulative de la facture en utilisant le même en-tête que la facture
    * et ajoute un résumé simple des conditions et du total
    * @private
    */
   static async generateTotalPage(doc, invoiceData) {
-    const { totalHT, montantTVA, totalTTC, orderDate, orderId, userProfile, reference } = invoiceData;
+    const { totalHT, montantTVA, totalTTC, orderDate, orderId, userProfile } = invoiceData;
     
     // Formatage de l'ID de commande
     const formattedOrderId = this.formatOrderId(orderId, orderDate);
@@ -399,8 +392,9 @@ class InvoiceService {
       addHeaderElement('Sevelin 4A', 50, senderY + lineSpacing * 2);
       addHeaderElement('1007 Lausanne', 50, senderY + lineSpacing * 3);
       addHeaderElement('+41 79 457 33 85', 50, senderY + lineSpacing * 4);
-      addHeaderElement('discadoswiss@gmail.com', 50, senderY + lineSpacing * 5);
-      addHeaderElement('TVA CHE-114.139.308', 50, senderY + lineSpacing * 8);
+      addHeaderElement('+41 78 343 36 31', 50, senderY + lineSpacing * 5);
+      addHeaderElement('catalog.discado@gmail.com', 50, senderY + lineSpacing * 6);
+      addHeaderElement('TVA CHE-114.139.308', 50, senderY + lineSpacing * 8)
 
       // Informations du client
       const clientStartY = senderY + lineSpacing * 7;
@@ -418,15 +412,9 @@ class InvoiceService {
       const titleY = senderY + lineSpacing * 12;
       
       doc.font('Helvetica-Bold').fontSize(14).text(`Invoice ${formattedOrderId}`, 50, titleY + 5);
-      doc.font('Helvetica').fontSize(10).text(`Date: ${orderDate.toLocaleDateString('fr-FR')}`, 50, titleY + 25);
-      
-      // Ajout de la référence client si fournie
-      if (reference && reference.trim() !== '') {
-        doc.font('Helvetica').fontSize(10).text(`Client reference: ${reference}`, 50, titleY + 40);
-        return titleY + 55;
-      }
+      doc.font('Helvetica').fontSize(10).text(`Date: ${orderDate.toLocaleDateString('Fr')}`, 50, titleY + 25);
 
-      return titleY + 40;
+      return titleY + 60;
     };
 
     // Ajouter une ligne simple avec les conditions de paiement et le total
@@ -485,11 +473,11 @@ class InvoiceService {
 }
 
 module.exports = {
-  generateInvoicePDF: (doc, orderItems, userProfile, orderDate, orderId, reference = '') => {
+  generateInvoicePDF: (doc, orderItems, userProfile, orderDate, orderId) => {
     // Assurer qu'on n'appelle la fonction qu'une seule fois
     if (!doc._invoiceGenerated) {
       doc._invoiceGenerated = true;
-      return InvoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId, reference);
+      return InvoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
     } else {
       console.log('La génération de facture a déjà été effectuée pour ce document');
       return Promise.resolve({});

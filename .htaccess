@@ -1,9 +1,6 @@
 # Activer le module de réécriture
 RewriteEngine On
 
-# Rediriger la page d'accueil vers login.html
-RewriteRule ^$ /public/pages/login.html [L]
-
 # Ne pas appliquer de règles aux fichiers existants
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
