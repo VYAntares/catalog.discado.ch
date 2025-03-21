@@ -16,11 +16,15 @@ const { generateInvoicePDF } = require('./invoiceService');
  * @param {Array} remainingItems - Items to be delivered later (optional)
  * @returns {Promise<void>}
  */
-async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, reference = '') {
+async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, reference) {
   // Function to add a header element with reduced line spacing
   function addHeaderElement(text, x, y, options = {}) {
     doc.font('Helvetica').fontSize(9).text(text, x, y, options);
   }
+
+  const dbModule = require('../db'); // Ajustez le chemin selon votre structure de projet
+  const orderDetails = dbModule.getOrderById.get(orderId);
+  const orderReference = orderDetails?.reference || '';
 
   // Delivery note header with reduced spacing
   function addDeliveryNoteHeader() {
@@ -58,9 +62,10 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     // Add the date under the title
     addHeaderElement(`Order processing date: ${deliveryDate.toLocaleDateString('fr-FR')}`, 50, titleY + 30);
     
+    
     // Add client reference if provided
-    if (reference && reference.trim() !== '') {
-      addHeaderElement(`Client reference: ${reference}`, 50, titleY + 42);
+    if (orderReference && orderReference.trim() !== '') {
+      addHeaderElement(`Customer reference: ${orderReference}`, 50, titleY + 42);    
       return titleY + 62; // Return adjusted position for table to start
     }
     
