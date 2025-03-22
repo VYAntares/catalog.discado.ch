@@ -821,7 +821,7 @@ const orderService = {
                 const date = new Date().toISOString();
                 
                 // Créer l'enregistrement de commande
-                dbModule.createOrder.run(orderId, userId, 'pending', date);
+                dbModule.createOrder.run(orderId, userId, 'pending', date, '');
                 
                 // Ajouter les articles à la commande
                 items.forEach(item => {

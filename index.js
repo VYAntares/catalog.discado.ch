@@ -601,15 +601,24 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
-app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, (req, res) => {
+app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, async (req, res) => {
   const { userId, items } = req.body;
   
+  if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ success: false, message: 'Données invalides' });
+  }
+  
   try {
-      const result = orderService.createOrderFromPendingItems(userId, items);
-      res.json(result);
+    // Ajout de "await" ici si orderService.createOrderFromPendingItems est asynchrone
+    const result = await orderService.createOrderFromPendingItems(userId, items);
+    res.json(result);
   } catch (error) {
-      console.error('Error creating order from pending items:', error);
-      res.status(500).json({ success: false, message: 'Error creating order' });
+    console.error('Error creating order from pending items:', error);
+    // Ajouter plus de détails sur l'erreur dans la réponse pour le débogage
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error creating order: ' + error.message 
+    });
   }
 });
 
