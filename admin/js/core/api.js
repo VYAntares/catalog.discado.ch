@@ -1,6 +1,7 @@
 /**
  * Gestion des appels API centralisée
  * Toutes les requêtes au serveur passent par ce module
+ * admin/js/core/api.js
  */
 
 import * as Notification from '../utils/notification.js';

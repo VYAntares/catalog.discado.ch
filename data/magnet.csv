@@ -97,9 +97,9 @@ Magnet 113 - Zytglogge relief MM;1.70;/images/products/magnet/M113.jpg
 Magnet 114 - Bern badge MM;1.70;/images/products/magnet/M114.jpg
 Magnet 115 - St-Moritz;1.70;/images/products/magnet/M115.jpg
 Magnet 116 - Bottle-opener;2.00;/images/products/magnet/M116.jpg
-Magnet 116 - Bear figurine FIG;3.00;/images/products/magnet/M116.jpg
+Magnet 116-FIG - Bear figurine FIG;3.00;/images/products/magnet/M116-FIG.jpg
 Magnet 117 - Water jet Genève;1.70;/images/products/magnet/M117.jpg
-Magnet 117 - Bear figurine FIG;3.00;/images/products/magnet/M117.jpg
+Magnet 117-FIG - Bear figurine FIG;3.00;/images/products/magnet/M117-FIG.jpg
 Magnet 118 - City Cathedral relief MM;1.70;/images/products/magnet/M118.jpg
 Magnet 119 - Chillon castle MM;1.70;/images/products/magnet/M119.jpg
 Magnet 120 - Swiss badge MM;1.70;/images/products/magnet/M120.jpg
@@ -112,7 +112,8 @@ Magnet 126 - I love Genève water jet MM;1.70;/images/products/magnet/M126.jpg
 Magnet 127 - Cuckoo;1.70;/images/products/magnet/M127.jpg
 Magnet 128 - bottle-opener I love Swiss MM;2.00;/images/products/magnet/M128.jpg
 Magnet 129 - bottle-opener golden cow MM;2.00;/images/products/magnet/M129.jpg
-Magnet 131 - Switzerland cuckoo clock | bottle-opener swiss token MM;2.00;/images/products/magnet/M131.jpg
+Magnet 131 - bottle-opener swiss token MM;2.00;/images/products/magnet/M131.jpg
+Magnet 131 - Switzerland cuckoo clock;1.70;/images/products/magnet/M131C.jpg
 Magnet 132 - Locarno panorama lake;1.70;/images/products/magnet/M132.jpg
 Magnet 134 - Bottle-opener relief MM;2.00;/images/products/magnet/M134.jpg
 Magnet 135 - Zermatt town Matterhorn;1.70;/images/products/magnet/M135.jpg
@@ -167,7 +168,7 @@ Magnet 182 - Red cow head;1.70;/images/products/magnet/M182.jpg
 Magnet 183 - Red cow;1.70;/images/products/magnet/M183.jpg
 Magnet 184 - BW cow switzerland;1.70;/images/products/magnet/M184.jpg
 Magnet 186 - Cuckoo;1.70;/images/products/magnet/M186.jpg
-Magnet 186R - Raclette and wine MM;1.70;/images/products/magnet/M186R.jpg
+Magnet 186F - Raclette and wine MM;1.70;/images/products/magnet/M186F.jpg
 Magnet 187 - Cuckoo;1.70;/images/products/magnet/M187.jpg
 Magnet 188 - Cuckoo;1.70;/images/products/magnet/M188.jpg
 Magnet 189 - Cuckoo;1.70;/images/products/magnet/M189.jpg
@@ -188,7 +189,6 @@ Magnet 204 - Magnet Geneva broken chair;2.00;/images/products/magnet/M204.jpg
 Magnet 252 - Genève water jet;1.70;/images/products/magnet/M252.jpg
 Magnet 257 - Swiss mountains (magnet seins);1.70;/images/products/magnet/M257.jpg
 Magnet 258 - Luzern Kapellbrücke;1.70;/images/products/magnet/M258.jpg
-Magnet 260 - Bear I love Bern MM;;/images/products/magnet/M260.jpg
 Magnet 261 - Metallic Montreux;1.00;/images/products/magnet/M161.jpg
 Magnet 262 - Set Swiss DE;2.40;/images/products/magnet/M262.jpg
 Magnet 263 - Set Swiss FR;2.40;/images/products/magnet/M263.jpg
@@ -198,6 +198,7 @@ Magnet 266 - Metallic Bern;1.00;/images/products/magnet/M266.jpg
 Magnet 267 - Fondue pot | 30x15 Metallic plate MM;1.70;/images/products/magnet/M267.jpg
 Magnet 268 - Metallic Crans-Montana;1.00;/images/products/magnet/M268.jpg
 Magnet 269 - Metallic Lausanne | 30x15 Metallic plate MM;1.00;/images/products/magnet/M269.jpg
+Magnet 270 - Metallic 1291 | 30x15 Metallic plate MM;1.00;/images/products/magnet/M270.jpg
 Magnet 271 - Kapellbrücke Pilatus;1.70;/images/products/magnet/M271.jpg
 Magnet 272 - Swiss map rubber Red;1.00;/images/products/magnet/M272.jpg
 Magnet 273 - Swiss map rubber White;1.00;/images/products/magnet/M273.jpg
@@ -219,10 +220,11 @@ Magnet 289 - Swiss map Zermatt (night);1.00;/images/products/magnet/M289.jpg
 Magnet 290 - Swiss map Zermatt;1.00;/images/products/magnet/M290.jpg
 Magnet 291 - Bear Bern Switzerland;1.70;/images/products/magnet/M291.jpg
 Magnet 292 - Swiss map Zürich;1.00;/images/products/magnet/M292.jpg
+Magnet 292 - Bicycles magnet Zürich;1.70;/images/products/magnet/M292V.jpg
 Magnet 293 - Zytglogge;1.70;/images/products/magnet/M293.jpg
 Magnet 294 - Swiss map Genève;1.00;/images/products/magnet/M294.jpg
 Magnet 295 - Swiss map Bern;1.00;/images/products/magnet/M295.jpg
-Magnet A296 - Cuckoo clock;1.70;/images/products/magnet/MA296.jpg
+Magnet 296 - Cuckoo clock;1.70;/images/products/magnet/M296C.jpg
 Magnet 296 - Swiss map Montreux;1.00;/images/products/magnet/M296.jpg
 Magnet 297 - Swiss map Crans-Montana;1.00;/images/products/magnet/M297.jpg
 Magnet 298 - Metallic Pedestrian Gruyères 10x3cm;1.20;/images/products/magnet/M298.jpg
@@ -234,7 +236,7 @@ Magnet 303 - Red cow over Switzerland text MM;1.70;/images/products/magnet/M303.
 Magnet 304 - Fondue cheese. cow. bell MM;2.00;/images/products/magnet/M304.jpg
 Magnet 305 - Cow bell Switzerland MM;2.00;/images/products/magnet/M305.jpg
 Magnet 306 - Jungfraujoch MM;2.00;/images/products/magnet/M306.jpg
-Magnet 307 - Golden bell swiss flag;1.70;/images/products/magnet/M307.jpg
+Magnet 307 - Golden bell swiss flag;1.70;/images/products/magnet/M307G.jpg
 Magnet 307 - Water jet magnet MM;2.00;/images/products/magnet/M307.jpg
 Magnet 308 - flag. clock. water jet. chocolate MM;2.00;/images/products/magnet/M308.jpg
 Magnet 315 - Bear MM;2.00;/images/products/magnet/M315.jpg
@@ -243,14 +245,13 @@ Magnet 317 - Zytglogge MM;2.00;/images/products/magnet/M317.jpg
 Magnet 318 - Zytglogge MM;1.70;/images/products/magnet/M318.jpg
 Magnet 319 - Heart shaped Zytglogge;1.70;/images/products/magnet/M319.jpg
 Magnet 320 - Bear head trophy 1;1.70;/images/products/magnet/M320.jpg
-Magnet A320 - Bear head trophy 2;1.70;/images/products/magnet/MA320.jpg
 Magnet 321 - Interlaken;2.00;/images/products/magnet/M321.jpg
 Magnet 322 - Montreux;2.00;/images/products/magnet/M322.jpg
 Magnet 323 - Lausanne-Ouchy harbour;1.70;/images/products/magnet/M323.jpg
 Magnet 324 - Cathedral Lausanne MM;2.00;/images/products/magnet/M324.jpg
 Magnet 326 - Lausanne Ouchy harbour MM;1.30;/images/products/magnet/M326.jpg
-Magnet 327 - Metallic Poya;1.00;/images/products/magnet/M327.jpg
-Magnet 336 - Magnet Einstein Crystal;1.00;/images/products/magnet/M336.jpg
+Magnet 336 - Magnet Gruyères MM;2.00;/images/products/magnet/M336.jpg
+Magnet 336E - Magnet Einstein Crystal;1.00;/images/products/magnet/M336E.jpg
 Magnet 337 - Hearth shaped Gruyères;1.70;/images/products/magnet/M337.jpg
 Magnet 338 - Gruyères city double sided MM;1.30;/images/products/magnet/M338.jpg
 Magnet 339 - Crans-Montana double sided MM;1.30;/images/products/magnet/M339.jpg
@@ -278,6 +279,7 @@ Magnet 364 - Limmat MM;2.00;/images/products/magnet/M364.jpg
 Magnet 365 - Hearth shaped Limmat MM;1.70;/images/products/magnet/M365.jpg
 Magnet 366 - double-sided Zytglogge MM;1.30;/images/products/magnet/M366.jpg
 Magnet 367 - Bear. Zytglogge figurine FIG;3.50;/images/products/magnet/M367.jpg
+Magnet 368 - Bear head trophy 2;1.70;/images/products/magnet/M386.jpg
 Magnet 369 - Lausanne City MM;1.30;/images/products/magnet/M369.jpg
 Magnet 370 - Rheinfall MM;2.00;/images/products/magnet/M370.jpg
 Magnet 371 - Grd St-Bernard MM;2.00;/images/products/magnet/M371.jpg
@@ -361,11 +363,13 @@ Magnet 453 - Metallic Pedestrian 10x3cm;1.20;/images/products/magnet/M453.jpg
 Magnet A454 - Bern Bear;1.00;/images/products/magnet/MA454.jpg
 Magnet 454 - Bottle-opener dookie;2.00;/images/products/magnet/M454.jpg
 Magnet B454 - Cheese Fondue spinner;2.60;/images/products/magnet/MB454.jpg
-Magnet 456 - Einstein head E=mc2;1.70;/images/products/magnet/M456.jpg
+Magnet 456-FIG - Einstein head E=mc2;1.70;/images/products/magnet/M456-FIG.jpg
+Magnet 456 - Einstein colors;1.70;/images/products/magnet/M456.jpg
 Magnet 457 - METALLIC MAGNET Vevey;1.00;/images/products/magnet/M457.jpg
 Magnet 458 - Swiss animals MDF (in cork);1.00;/images/products/magnet/M458.jpg
 Magnet 459 - Swiss cities MDF (in cork);1.00;/images/products/magnet/M459.jpg
 Magnet 461 - Swiss ropeway;2.00;/images/products/magnet/M461.jpg
+Magnet 462MM - Fondue Pot Switzerland;2.00;/images/products/magnet/M462MM.jpg
 Magnet 462 - Swiss boat;2.00;/images/products/magnet/M462.jpg
 Magnet 463 - Swiss train;2.00;/images/products/magnet/M463.jpg
 Magnet 465 - Cuckoo clock;5.00;/images/products/magnet/M465.jpg
@@ -375,13 +379,13 @@ Magnet 472 - Heart Basel Switzerland;1.00;/images/products/magnet/M472.jpg
 Magnet 473 - Basel Switzerland map;1.00;/images/products/magnet/M473.jpg
 Magnet 474 - METALLIC MAGNET Vevey;1.00;/images/products/magnet/M474.jpg
 Magnet 477 - Bear magnet resin;1.70;/images/products/magnet/M477.jpg
-Magnet VilleGe - cuckoo Ville Ge;1.70;/images/products/magnet/VilleGe.jpg
-Magnet VilleBe - cuckoo Ville Be;1.70;/images/products/magnet/VilleBe.jpg
-Magnet VilleMo - cuckoo Ville Mo;1.70;/images/products/magnet/VilleMo.jpg
-Magnet VilleLs - cuckoo Ville Ls;1.70;/images/products/magnet/VilleLs.jpg
-Magnet VilleZh - cuckoo Ville Zh;1.70;/images/products/magnet/VilleZh.jpg
-Magnet VilleLu - cuckoo Ville Lu;1.70;/images/products/magnet/VilleLu.jpg
-Magnet VilleLe - cuckoo Ville Leysin;1.70;/images/products/magnet/VilleLe.jpg
+Magnet VilleGe - cuckoo Ville Ge;1.70;/images/products/magnet/Mville.jpg
+Magnet VilleBe - cuckoo Ville Be;1.70;/images/products/magnet/Mville.jpg
+Magnet VilleMo - cuckoo Ville Mo;1.70;/images/products/magnet/Mville.jpg
+Magnet VilleLs - cuckoo Ville Ls;1.70;/images/products/magnet/Mville.jpg
+Magnet VilleZh - cuckoo Ville Zh;1.70;/images/products/magnet/Mville.jpg
+Magnet VilleLu - cuckoo Ville Lu;1.70;/images/products/magnet/Mville.jpg
+Magnet VilleLe - cuckoo Ville Leysin;1.70;/images/products/magnet/Mville.jpg
 
 
 

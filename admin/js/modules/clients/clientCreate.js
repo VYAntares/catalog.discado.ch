@@ -1,6 +1,7 @@
 /**
  * Création d'un nouveau client
  * Ce module gère la création de nouveaux comptes clients
+ * admin/js/modules/clients/clientCreate.js
  */
 
 import * as API from '../../core/api.js';

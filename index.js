@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const session = require('express-session');
 const PDFDocument = require('pdfkit');
@@ -20,12 +22,14 @@ app.use(express.json());
 
 // Configure express-session middleware
 app.use(session({
-  secret: 'discado-session-secret',
+  secret: process.env.SESSION_SECRET || 'discado-dev-secret',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'strict'
   }
 }));
 
