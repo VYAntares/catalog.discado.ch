@@ -1,6 +1,7 @@
 /**
  * Module des articles en attente
  * Gère l'affichage et l'interaction avec les articles en attente de livraison
+ * public/js/modules/orders/pendingItems.js
  */
 
 import { fetchUserOrders } from '../../core/api.js';

@@ -425,7 +425,9 @@ async function createOrderFromPendingItems(clientId, items) {
         const result = await response.json();
         
         if (result.success) {
-            Notification.showNotification('Commande créée avec succès', 'success');
+            // Message unifié, sans condition sur result.merged
+            Notification.showNotification('Commande mise à jour avec succès', 'success');
+            
             // Rafraîchir l'affichage
             viewClientDetails(clientId);
         } else {

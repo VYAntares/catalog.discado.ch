@@ -2,6 +2,7 @@
  * API Core Module - Version corrigée
  * Centralisation de tous les appels API
  * Toutes les requêtes au serveur passent par ce module
+ * public/js/core/api.js
  */
 
 import { showNotification } from '../utils/notification.js';

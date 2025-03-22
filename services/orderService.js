@@ -816,52 +816,59 @@ const orderService = {
     createOrderFromPendingItems(userId, items) {
         try {
             return dbModule.transaction(() => {
-                // Utiliser notre générateur d'ID
-                const orderId = orderCounter.generateOrderId();
-                const date = new Date().toISOString();
+                // Utiliser la méthode existante pour vérifier si une commande en attente existe
+                const pendingOrder = this.getUserPendingOrder(userId);
                 
-                // Créer l'enregistrement de commande
-                dbModule.createOrder.run(orderId, userId, 'pending', date, '');
-                
-                // Ajouter les articles à la commande
-                items.forEach(item => {
-                    dbModule.addOrderItem.run(
-                        orderId,
-                        item.Nom,
-                        parseFloat(item.prix),
-                        item.quantity,
-                        item.categorie,
-                        'pending'
-                    );
+                if (pendingOrder) {
+                    // Réutiliser la fonction existante appendToExistingOrder
+                    const result = this.appendToExistingOrder(pendingOrder.order_id, userId, items);
+                    return result; // Cette fonction retourne déjà { success: true, orderId, merged: true, message: '...' }
+                } else {
+                    // Pas de commande en attente, créer une nouvelle
+                    const orderId = orderCounter.generateOrderId();
+                    const date = new Date().toISOString();
                     
-                    // Trouver cet article dans les articles en attente de livraison
-                    const pendingDeliveryItem = dbModule.findPendingDeliveryItem.get(
-                        userId,
-                        item.Nom,
-                        item.categorie
-                    );
+                    // Créer l'enregistrement de commande
+                    dbModule.createOrder.run(orderId, userId, 'pending', date, '');
                     
-                    if (pendingDeliveryItem) {
-                        // Si l'article existe dans les livraisons en attente et la quantité est égale,
-                        // supprimer l'entrée
-                        if (pendingDeliveryItem.quantity === item.quantity) {
-                            dbModule.removePendingDelivery.run(pendingDeliveryItem.id);
-                        } else if (pendingDeliveryItem.quantity > item.quantity) {
-                            // Si la quantité de pending est supérieure, réduire la quantité
-                            const newQuantity = pendingDeliveryItem.quantity - item.quantity;
-                            dbModule.updatePendingDeliveryQuantity.run(
-                                newQuantity,
-                                pendingDeliveryItem.id
-                            );
+                    // Ajouter les articles à la commande
+                    items.forEach(item => {
+                        dbModule.addOrderItem.run(
+                            orderId,
+                            item.Nom,
+                            parseFloat(item.prix),
+                            item.quantity,
+                            item.categorie,
+                            'pending'
+                        );
+                        
+                        // Trouver et supprimer cet article des livraisons en attente
+                        // (Cette partie reste inchangée)
+                        const pendingDeliveryItem = dbModule.findPendingDeliveryItem.get(
+                            userId,
+                            item.Nom,
+                            item.categorie
+                        );
+                        
+                        if (pendingDeliveryItem) {
+                            if (pendingDeliveryItem.quantity === item.quantity) {
+                                dbModule.removePendingDelivery.run(pendingDeliveryItem.id);
+                            } else if (pendingDeliveryItem.quantity > item.quantity) {
+                                const newQuantity = pendingDeliveryItem.quantity - item.quantity;
+                                dbModule.updatePendingDeliveryQuantity.run(
+                                    newQuantity,
+                                    pendingDeliveryItem.id
+                                );
+                            }
                         }
-                    }
-                });
-                
-                return {
-                    success: true,
-                    orderId,
-                    message: 'Commande créée avec succès'
-                };
+                    });
+                    
+                    return {
+                        success: true,
+                        orderId,
+                        message: 'Commande créée avec succès'
+                    };
+                }
             });
         } catch (error) {
             console.error('Error creating order from pending items:', error);

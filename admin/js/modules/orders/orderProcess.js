@@ -1,6 +1,7 @@
 /**
  * Traitement des commandes en attente
  * Ce module gère le traitement et la validation des commandes
+ * admin/js/modules/orders/orderProcess.js
  */
 
 import * as API from '../../core/api.js';

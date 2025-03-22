@@ -1,6 +1,7 @@
 /**
  * Gestion de l'affichage des commandes en attente
  * Ce module gère le chargement et l'affichage de la liste des commandes
+ * admin/js/modules/orders/orderList.js
  */
 
 import * as API from '../../core/api.js';
