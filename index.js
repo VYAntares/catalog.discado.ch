@@ -103,39 +103,6 @@ app.use('/pages/', (req, res, next) => {
   next();
 });
 
-// This is temporary until user management is fully migrated to database
-const allowedUsers = [
-  { username: 'admin', password: 'admin', role: 'admin' }
-];
-
-// Migration: Add default users to database
-(async function migrateUsers() {
-  try {
-    // Check if users exist in database
-    const db = require('./services/db').db;
-    const { count } = db.prepare('SELECT COUNT(*) as count FROM users').get();
-    
-    if (count === 0) {
-      console.log('Migrating default users to database...');
-      
-      // Add users in a transaction
-      db.transaction((users) => {
-        for (const user of users) {
-          try {
-            userService.createUser(user.username, user.password, user.role);
-          } catch (error) {
-            console.error(`Error adding user ${user.username}:`, error);
-          }
-        }
-      })(allowedUsers);
-      
-      console.log('User migration completed');
-    }
-  } catch (error) {
-    console.error('Error during user migration:', error);
-  }
-})();
-
 // Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
@@ -156,32 +123,10 @@ app.post('/login', (req, res) => {
       }
     }
   } else {
-    // Check legacy list (temporary during migration)
-    const legacyUser = allowedUsers.find(u => u.username === username && u.password === password);
-    
-    if (legacyUser) {
-      // Create user in database for future logins
-      try {
-        userService.createUser(legacyUser.username, legacyUser.password, legacyUser.role);
-      } catch (error) {
-        console.error('Error creating user in database:', error);
-      }
-      
-      req.session.user = legacyUser;
-      
-      if (legacyUser.role === 'admin') {
-        return res.redirect('/admin');
-      } else {
-        if (userService.isProfileComplete(username)) {
-          return res.redirect('/pages/catalog.html');
-        } else {
-          return res.redirect('/profile');
-        }
-      }
-    }
+    // Remplacer cette section qui vérifie allowedUsers
+    // Par un simple message d'erreur
+    return res.status(401).send('Invalid credentials. <a href="/">Try again</a>');
   }
-  
-  res.status(401).send('Invalid credentials. <a href="/">Try again</a>');
 });
 
 // Logout route
