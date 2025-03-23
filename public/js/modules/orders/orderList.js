@@ -203,7 +203,7 @@ function createOrderItemsTable(order) {
     if (pendingItems.length > 0) {
         tableHTML += `
             <tr class="order-section-header">
-                <td colspan="4" class="pending-section">PENDING ITEMS</td>
+                <td colspan="4" class="pending-section">PENDING ITEMS - We will deliver as soon as stock is available</td>
             </tr>
         `;
         

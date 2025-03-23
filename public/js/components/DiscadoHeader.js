@@ -1,6 +1,6 @@
 /**
  * Enhanced Header Component for Discado
- * Header 100% statique - ne bouge pas du tout pendant le défilement
+ * Version 2.0 - Responsive and Professional
  */
 
 // Function to initialize the header
@@ -22,76 +22,62 @@ function initDiscadoHeader() {
     <!-- Header -->
     <header class="discado-header-initialized">
         <div class="header-container">
-            <button id="menuToggle" class="menu-toggle" aria-label="Toggle menu">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+            <!-- Left Section: PDF Catalog & Contact Info -->
+            <div class="left-section">
+                <div class="pdf-catalog-container">
+                    <button id="pdfCatalogToggle" class="icon-btn-with-text" aria-label="PDF Catalog">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>Catalog PDF</span>
+                    </button>
+                </div>
                 
-            <!-- Logo -->
+                <!-- Contact information with icons -->
+                <div class="contact-info">
+                    <div class="contact-details">
+                        <div class="contact-item">
+                            <a href="tel:+41783433631"><i class="fas fa-phone"></i><span>+41 78 343 36 31</span></a>
+                        </div>
+                        <div class="contact-item">
+                            <a href="mailto:catalog.discado@gmail.com"><i class="fas fa-envelope"></i><span>catalog.discado@gmail.com</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Logo, centered -->
             <div class="logo-container">
                 <a href="/pages/catalog.html">
                     <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo" id="logo">
                 </a>
             </div>
-
+            
+            <!-- Right section for cart and user -->
             <div class="header-right">
-                <button id="pdfCatalogToggle" class="icon-btn" aria-label="PDF Catalog">
-                    <i class="fas fa-file-pdf"></i>
-                </button>
-
                 <button id="cartToggle" class="icon-btn" aria-label="Shopping cart">
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cartCountBadge" class="cart-count-badge">0</span>
                 </button>
-                
                 <button id="userMenuToggle" class="icon-btn" aria-label="User menu">
                     <i class="fas fa-user"></i>
                 </button>
             </div>
         </div>
     </header>
-
-    <!-- Dropdown Menu -->
-    <div id="dropdownMenu" class="dropdown-menu">
-        <div class="menu-section">
-            <h3>Category</h3>
-            <ul class="category-list">
-                <li class="category-item active" data-category="all">All Products</li>
-                <li class="category-item" data-category="magnet">MAGNETS</li>
-                <li class="category-item" data-category="keyring">KEYRINGS</li>
-                <li class="category-item" data-category="bags">TOTEBAGS & BAGS</li>
-                <li class="category-item" data-category="gadget">GADGETS</li>
-                <li class="category-item" data-category="patches">PATCHES</li>
-                <li class="category-item" data-category="cloths">CLOTHS</li>
-                <li class="category-item" data-category="plates">PLATES</li>
-                <li class="category-item" data-category="bells">BELLS</li>
-                <li class="category-item" data-category="lighter">LIGHTERS</li>
-                <li class="category-item" data-category="tshirt">T-SHIRTS</li>
-                <li class="category-item" data-category="caps">CAPS</li>
-                <li class="category-item" data-category="hats">HATS</li>
-                <li class="category-item" data-category="pens">PENS</li>
-                <li class="category-item" data-category="softtoy">SOFT TOYS</li>
-            </ul>
-        </div>
-    </div>
-
     <!-- User Menu -->
     <div id="userMenu" class="user-menu">
-        <a href="/pages/profile.html">My Profile</a>
-        <a href="/pages/orders.html">My Orders</a>
-        <a href="/logout">Log Out</a>
+        <a href="/pages/profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+        <a href="/pages/orders.html"><i class="fas fa-shopping-bag"></i> My Orders</a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
-
     <!-- Menu Overlay -->
     <div id="menuOverlay" class="menu-overlay"></div>
     `;
 
     // Initialize functionality
-    setupMobileMenu();
     setupUserMenu();
     setupPdfCatalog();
-    // SUPPRIMÉ: setupScrollBehavior(); - On ne change plus rien au scroll
+    setupCartEvents();
+    setupClickOutsideListener();
 
     // Load cart count badge
     updateCartCountBadge();
@@ -133,52 +119,10 @@ function getCartItemCount() {
         const cart = JSON.parse(cartJson);
         if (!Array.isArray(cart)) return 0;
         
-        return cart.reduce((total, item) => total + (item.quantity || 0), 0);
+        return cart.reduce((total, item) => total + (parseInt(item.quantity) || 0), 0);
     } catch (e) {
         console.warn('Error getting cart count:', e);
         return 0;
-    }
-}
-
-/**
- * Setup mobile menu toggle functionality
- */
-function setupMobileMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    const menuOverlay = document.getElementById('menuOverlay');
-    
-    if (!menuToggle || !dropdownMenu || !menuOverlay) return;
-    
-    menuToggle.addEventListener('click', function() {
-        toggleDropdownMenu();
-    });
-    
-    menuOverlay.addEventListener('click', function() {
-        closeAllMenus();
-    });
-}
-
-/**
- * Toggle the dropdown menu
- */
-function toggleDropdownMenu() {
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    const menuOverlay = document.getElementById('menuOverlay');
-    
-    if (!dropdownMenu || !menuOverlay) return;
-    
-    // Close user menu if open
-    closeUserMenu();
-    
-    // Toggle dropdown menu
-    dropdownMenu.classList.toggle('open');
-    
-    // Toggle overlay
-    if (dropdownMenu.classList.contains('open')) {
-        menuOverlay.classList.add('active');
-    } else {
-        menuOverlay.classList.remove('active');
     }
 }
 
@@ -192,9 +136,13 @@ function setupUserMenu() {
     
     if (!userMenuToggle || !userMenu || !menuOverlay) return;
     
-    userMenuToggle.addEventListener('click', function() {
+    userMenuToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
         toggleUserMenu();
     });
+
+    // Close when overlay is clicked
+    menuOverlay.addEventListener('click', closeAllMenus);
 }
 
 /**
@@ -206,9 +154,6 @@ function toggleUserMenu() {
     
     if (!userMenu || !menuOverlay) return;
     
-    // Close dropdown menu if open
-    closeDropdownMenu();
-    
     // Toggle user menu
     userMenu.classList.toggle('open');
     
@@ -218,6 +163,23 @@ function toggleUserMenu() {
     } else {
         menuOverlay.classList.remove('active');
     }
+}
+
+/**
+ * Setup click outside listener to close menus
+ */
+function setupClickOutsideListener() {
+    document.addEventListener('click', function(e) {
+        const userMenu = document.getElementById('userMenu');
+        const userMenuToggle = document.getElementById('userMenuToggle');
+        
+        if (userMenu && userMenu.classList.contains('open')) {
+            // Check if click is outside the menu and the toggle button
+            if (!userMenu.contains(e.target) && !userMenuToggle.contains(e.target)) {
+                closeAllMenus();
+            }
+        }
+    });
 }
 
 /**
@@ -232,21 +194,9 @@ function closeUserMenu() {
 }
 
 /**
- * Close the dropdown menu
- */
-function closeDropdownMenu() {
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    
-    if (dropdownMenu && dropdownMenu.classList.contains('open')) {
-        dropdownMenu.classList.remove('open');
-    }
-}
-
-/**
  * Close all menus
  */
 function closeAllMenus() {
-    closeDropdownMenu();
     closeUserMenu();
     
     const menuOverlay = document.getElementById('menuOverlay');
@@ -256,20 +206,27 @@ function closeAllMenus() {
 }
 
 /**
- * Setup PDF catalog
+ * Setup PDF catalog with confirmation dialog
  */
 function setupPdfCatalog() {
     const pdfToggle = document.getElementById('pdfCatalogToggle');
     
     if (pdfToggle) {
         pdfToggle.addEventListener('click', function() {
+            // PDF catalog URL
             const pdfUrl = 'https://www.dropbox.com/scl/fi/0gymxq4jtwdno6q1l5td2/Catalogue-Discado-2025.pdf?rlkey=zx8p1syhojya62atiteib8660&e=1&st=ol0xk3lc&dl=1';
-            window.open(pdfUrl, '_blank');
+            
+            // Ask for confirmation before downloading
+            if (confirm('Voulez-vous télécharger le catalogue PDF?')) {
+                window.open(pdfUrl, '_blank');
+            }
         });
     }
 }
 
-// Handle cart-related events
+/**
+ * Setup cart-related events
+ */
 function setupCartEvents() {
     const cartToggle = document.getElementById('cartToggle');
     if (cartToggle) {
@@ -285,17 +242,26 @@ function setupCartEvents() {
     
     // Update cart badge when custom events are triggered
     document.addEventListener('cartUpdated', updateCartCountBadge);
+    
+    // Also listen for storage events to update cart across tabs
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'discado_cart') {
+            updateCartCountBadge();
+        }
+    });
 }
 
 // Connect cart functionality to the header (to be called after cart module is loaded)
 function connectCartToHeader() {
     setupCartEvents();
+    updateCartCountBadge();
 }
 
 // Export functions for use in other modules
 window.DiscadoHeader = {
     init: initDiscadoHeader,
-    connectCart: connectCartToHeader
+    connectCart: connectCartToHeader,
+    updateCartBadge: updateCartCountBadge
 };
 
 // Initialize header when script loads

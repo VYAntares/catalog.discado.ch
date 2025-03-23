@@ -6,15 +6,26 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 
+// Import du module de clés cryptographiques
+const keys = require('./config/keys');
+
 // Import services
 const userService = require('./services/userService');
 const orderService = require('./services/orderService');
 const productService = require('./services/productService');
 const invoiceService = require('./services/invoiceService');
-
+const cryptoService = require('./services/cryptoService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Vérification de la configuration de sécurité
+console.log('Vérification de la configuration de sécurité...');
+if (!process.env.ENCRYPTION_KEY || !process.env.ENCRYPTION_IV) {
+  console.warn('⚠️ Attention: Certaines clés de sécurité utilisent des valeurs par défaut. Utilisez le fichier .env en production.');
+} else {
+  console.log('✅ Configuration de sécurité chargée correctement.');
+}
 
 // Middleware for parsing form data and JSON
 app.use(express.urlencoded({ extended: true }));
@@ -22,7 +33,7 @@ app.use(express.json());
 
 // Configure express-session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'discado-dev-secret',
+  secret: keys.SECRET_KEY, // Utilisation de la clé depuis le module de configuration
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -87,7 +98,6 @@ app.use('/admin/js', (req, res, next) => {
   next();
 });
 
-// Admin static files (protected by requireAdmin middleware later for admin routes)
 app.use('/admin/css', express.static(path.join(__dirname, 'admin/css')));
 app.use('/admin/js', express.static(path.join(__dirname, 'admin/js')));
 
@@ -107,15 +117,20 @@ app.use('/pages/', (req, res, next) => {
   next();
 });
 
-// Login route
+
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   
   // Check database for user
   const user = userService.getUser(username);
   
-  if (user && user.password === password) {
-    req.session.user = user;
+  // Vérifier si l'utilisateur existe et si le mot de passe est correct
+  if (user && cryptoService.verifyPassword(user.password, password)) {
+    // On n'expose pas le mot de passe dans la session
+    req.session.user = {
+      username: user.username,
+      role: user.role
+    };
     
     if (user.role === 'admin') {
       return res.redirect('/admin');
@@ -127,8 +142,6 @@ app.post('/login', (req, res) => {
       }
     }
   } else {
-    // Remplacer cette section qui vérifie allowedUsers
-    // Par un simple message d'erreur
     return res.status(401).send('Invalid credentials. <a href="/">Try again</a>');
   }
 });
@@ -234,7 +247,8 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
         });
       }
       
-      if (user.password !== currentPassword) {
+      // Utiliser cryptoService.verifyPassword pour vérifier le mot de passe
+      if (!cryptoService.verifyPassword(user.password, currentPassword)) {
         console.log(`Tentative de changement de mot de passe avec un mot de passe actuel incorrect pour ${userId}`);
         return res.status(401).json({
           success: false, 
@@ -253,9 +267,9 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
         
         console.log(`Mot de passe mis à jour avec succès pour l'utilisateur ${userId}`);
         
-        // Mettre à jour également l'utilisateur dans la session
+        // Ne plus exposer le mot de passe dans la session
         if (req.session.user) {
-          req.session.user.password = newPassword;
+          delete req.session.user.password;
         }
         
         // Supprimer les données de mot de passe du profil pour ne pas les stocker
@@ -484,7 +498,6 @@ app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
     // NOUVEAU CODE: Générer d'abord le bon de livraison, puis la facture
     // Importer les deux services
     const deliveryNoteService = require('./services/deliveryNoteService');
-    const invoiceService = require('./services/invoiceService');
     
     // 1. Générer le bon de livraison (sans section facture)
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
@@ -541,7 +554,6 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
     // NOUVEAU CODE: Générer d'abord le bon de livraison, puis la facture
     // Importer les deux services
     const deliveryNoteService = require('./services/deliveryNoteService');
-    const invoiceService = require('./services/invoiceService');
     
     // 1. Générer le bon de livraison (sans section facture)
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
@@ -579,7 +591,7 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
       });
     }
     
-    // Create user
+    // Create user (le mot de passe sera haché dans userService.createUser)
     userService.createUser(username, password, 'client');
     
     // Create profile if data is provided
@@ -645,7 +657,7 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
   }
 });
 
-// Route pour changer le mot de passe utilisateur
+// Route pour changer le mot de passe utilisateur - mise à jour pour utiliser cryptoService
 app.post('/api/change-password', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const { currentPassword, newPassword } = req.body;
@@ -654,7 +666,7 @@ app.post('/api/change-password', requireLogin, (req, res) => {
     // Vérifier que le mot de passe actuel est correct
     const user = userService.getUser(userId);
     
-    if (!user || user.password !== currentPassword) {
+    if (!user || !cryptoService.verifyPassword(user.password, currentPassword)) {
       return res.status(401).json({
         success: false,
         message: 'Mot de passe actuel incorrect',

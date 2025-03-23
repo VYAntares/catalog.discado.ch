@@ -1,5 +1,7 @@
 // userService.js - Handle user and profile operations
 const dbModule = require('./db');
+const cryptoService = require('./cryptoService');
+
 
 // Service for managing users and profiles
 const userService = {
@@ -16,7 +18,11 @@ const userService = {
     // Create a new user
     createUser(username, password, role) {
         try {
-            return dbModule.createUser.run(username, password, role);
+            // Hacher le mot de passe avant de créer l'utilisateur
+            const hashedPassword = cryptoService.hashPassword(password);
+            
+            // Utiliser le mot de passe haché pour la création
+            return dbModule.createUser.run(username, hashedPassword, role);
         } catch (error) {
             console.error('Error creating user:', error);
             throw error;
@@ -54,24 +60,23 @@ const userService = {
         }
     },
     
-    // Vérifier si le mot de passe est identique au nom d'utilisateur
-    isPasswordSameAsUsername(username) {
-        try {
-            // Récupérer l'utilisateur 
-            const user = this.getUser(username);
-            
-            if (!user) {
+    // Méthode corrigée pour vérifier si le mot de passe est identique au nom d'utilisateur
+        isPasswordSameAsUsername(username) {
+            try {
+                // Récupérer l'utilisateur 
+                const user = this.getUser(username);
+                
+                if (!user) {
+                    return false;
+                }
+                
+                // Vérifier si le nom d'utilisateur (utilisé comme mot de passe) correspond au mot de passe haché
+                return cryptoService.verifyPassword(user.password, username);
+            } catch (error) {
+                console.error('Erreur lors de la vérification du mot de passe:', error);
                 return false;
             }
-            
-            // Vérifier si le mot de passe est identique au nom d'utilisateur
-            return user.password === username;
-            
-        } catch (error) {
-            console.error('Erreur lors de la vérification du mot de passe:', error);
-            return false;
-        }
-    },
+        },
     
     // Sauvegarder le profil utilisateur
     saveUserProfile(profileData, username) {
@@ -317,10 +322,13 @@ const userService = {
                 console.log(`Nettoyage effectué: entrées dupliquées pour ${username} supprimées`);
             }
             
-            // 3. Mise à jour du mot de passe avec journalisation détaillée
+            // 3. Hacher le mot de passe avant la mise à jour
+            const hashedPassword = cryptoService.hashPassword(newPassword);
             console.log(`Début de mise à jour du mot de passe pour ${username}`);
+            
+            // 4. Mise à jour du mot de passe haché avec journalisation détaillée
             const updateStmt = db.prepare('UPDATE users SET password = ? WHERE username = ?');
-            const updateResult = updateStmt.run(newPassword, username);
+            const updateResult = updateStmt.run(hashedPassword, username);
             
             console.log(`Résultat de la mise à jour: ${updateResult.changes} ligne(s) modifiée(s)`);
             
@@ -328,14 +336,14 @@ const userService = {
                 throw new Error('Aucune ligne mise à jour dans la base de données');
             }
             
-            // 4. Vérification que le mot de passe a bien été mis à jour
+            // 5. Vérification que le mot de passe a bien été mis à jour (sans vérifier l'égalité directe)
             const updatedUser = this.getUser(username);
-            if (!updatedUser || updatedUser.password !== newPassword) {
-                console.error('Échec de vérification du mot de passe après mise à jour');
-                throw new Error('Le mot de passe n\'a pas été correctement mis à jour');
+            if (!updatedUser) {
+                console.error('Échec de vérification après mise à jour');
+                throw new Error('L\'utilisateur n\'a pas été correctement mis à jour');
             }
             
-            // 5. Nettoyage du cache de session si applicable
+            // 6. Nettoyage du cache de session si applicable
             if (global.sessionCache && global.sessionCache[username]) {
                 delete global.sessionCache[username];
                 console.log(`Cache de session nettoyé pour ${username}`);
