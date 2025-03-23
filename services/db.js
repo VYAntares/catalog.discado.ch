@@ -141,6 +141,14 @@ initDatabase();
 
 // Function to check if a column exists in a table
 function columnExists(tableName, columnName) {
+    // Liste blanche des tables autorisées
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries'];
+    
+    if (!allowedTables.includes(tableName)) {
+        console.error(`Tentative d'accès à une table non autorisée: ${tableName}`);
+        return false;
+    }
+    
     const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
     return columns.some(column => column.name === columnName);
 }

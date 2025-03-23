@@ -44,6 +44,34 @@ app.use(session({
   }
 }));
 
+// Créer un objet pour suivre les tentatives de connexion échouées
+// À placer en haut de votre fichier index.js
+const loginAttempts = {};
+
+// Fonction pour vérifier et gérer les tentatives de connexion
+function checkLoginThrottling(identifier) {
+  const now = Date.now();
+  const attemptsInfo = loginAttempts[identifier];
+  
+  // Si aucune tentative précédente ou si le délai est passé
+  if (!attemptsInfo || now - attemptsInfo.timestamp > 15 * 60 * 1000) {
+    loginAttempts[identifier] = { count: 0, timestamp: now };
+    return { allowed: true, remainingAttempts: 5 };
+  }
+  
+  // Si trop de tentatives
+  if (attemptsInfo.count >= 5) {
+    const timeLeft = Math.ceil((attemptsInfo.timestamp + 15 * 60 * 1000 - now) / 60000);
+    return { 
+      allowed: false, 
+      timeLeft: timeLeft,
+      message: `Trop de tentatives échouées. Veuillez réessayer dans ${timeLeft} minute(s).`
+    };
+  }
+  
+  return { allowed: true, remainingAttempts: 5 - attemptsInfo.count };
+}
+
 // Middleware for checking login
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect('/');
@@ -99,6 +127,7 @@ app.use('/admin/js', (req, res, next) => {
 });
 
 app.use('/admin/css', express.static(path.join(__dirname, 'admin/css')));
+
 app.use('/admin/js', express.static(path.join(__dirname, 'admin/js')));
 
 app.use('/pages/', (req, res, next) => {
@@ -117,15 +146,26 @@ app.use('/pages/', (req, res, next) => {
   next();
 });
 
-
+// Route de login modifiée
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
+  
+  // Identifier avec IP + username pour une protection optimale
+  const identifier = `${req.ip}:${username}`;
+  
+  // Vérifier les limites de tentatives
+  const throttleCheck = checkLoginThrottling(identifier);
+  if (!throttleCheck.allowed) {
+    return res.status(429).send(`${throttleCheck.message} <a href="/">Retour</a>`);
+  }
   
   // Check database for user
   const user = userService.getUser(username);
   
-  // Vérifier si l'utilisateur existe et si le mot de passe est correct
   if (user && cryptoService.verifyPassword(user.password, password)) {
+    // Réinitialiser le compteur en cas de succès
+    delete loginAttempts[identifier];
+    
     // On n'expose pas le mot de passe dans la session
     req.session.user = {
       username: user.username,
@@ -142,7 +182,20 @@ app.post('/login', (req, res) => {
       }
     }
   } else {
-    return res.status(401).send('Invalid credentials. <a href="/">Try again</a>');
+    // Incrémenter le compteur en cas d'échec
+    if (!loginAttempts[identifier]) {
+      loginAttempts[identifier] = { count: 0, timestamp: Date.now() };
+    }
+    loginAttempts[identifier].count++;
+    
+    // Informer l'utilisateur des tentatives restantes
+    const remainingAttempts = 5 - loginAttempts[identifier].count;
+    
+    if (remainingAttempts <= 0) {
+      return res.status(429).send(`Trop de tentatives échouées. Votre compte est temporairement bloqué. <a href="/">Retour</a>`);
+    } else {
+      return res.status(401).send(`Identifiants invalides. Il vous reste ${remainingAttempts} tentative(s). <a href="/">Réessayer</a>`);
+    }
   }
 });
 
@@ -711,7 +764,6 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`Server started on http://localhost:${PORT}`);
-  console.log(`Available on network at http://172.20.10.3:${PORT}`);
 });

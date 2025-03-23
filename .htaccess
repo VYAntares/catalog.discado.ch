@@ -1,6 +1,28 @@
 # Activer le module de réécriture
 RewriteEngine On
 
+# Bloquer l'accès aux fichiers sensibles (ajout de plus de fichiers sensibles)
+<Files ~ "^\.(env|git|htaccess|config|log|sql|ini|lock|db)$|^(composer\.json|package\.json|package-lock\.json)$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Désactiver l'affichage du contenu des répertoires
+Options -Indexes
+
+# Limiter les méthodes HTTP (GET, POST seulement)
+<LimitExcept GET POST>
+    Deny from all
+</LimitExcept>
+
+# Protéger contre les attaques XSS et certaines injections
+<IfModule mod_headers.c>
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+
 # Ne pas appliquer de règles aux fichiers existants
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
