@@ -1,23 +1,37 @@
-// db.js - Ajout des fonctions manquantes
+// db.js - Module de gestion de base de données
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure database directory exists
+// Création du répertoire de la base de données si nécessaire
 const dbDir = path.join(__dirname, '../database');
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }
 
+// Initialisation de la connexion à la base de données
 const dbPath = path.join(dbDir, 'discado.db');
 const db = new Database(dbPath);
 
-// Enable foreign keys
+// Activation des clés étrangères
 db.pragma('foreign_keys = ON');
 
-// Initialize database schema
+
+// Vérification de l'existence d'une colonne dans une table
+function columnExists(tableName, columnName) {
+    // Liste blanche des tables autorisées
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries'];
+    
+    if (!allowedTables.includes(tableName)) {
+        return false;
+    }
+    
+    const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
+    return columns.some(column => column.name === columnName);
+}
+
 function initDatabase() {
-    // Create users table
+    // Création de la table users
     db.exec(`
     CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
@@ -27,23 +41,17 @@ function initDatabase() {
     )
     `);
 
-    // Vérifier si la colonne referral_source existe dans la table user_profiles
+    // Vérification et mise à jour de la table user_profiles
     const userProfilesColumns = db.prepare("PRAGMA table_info(user_profiles)").all();
     const hasReferralSource = userProfilesColumns.some(col => col.name === 'referral_source');
-    const ordersColumns = db.prepare("PRAGMA table_info(orders)").all();
-    const hasReference = ordersColumns.some(col => col.name === 'reference');
-
-    // Create user_profiles table with referral_source column
+    
     if (!hasReferralSource) {
-        // Si la table existe déjà, ajouter la colonne
         try {
             db.exec(`
             ALTER TABLE user_profiles 
             ADD COLUMN referral_source TEXT
             `);
-            console.log('Colonne referral_source ajoutée à la table user_profiles');
         } catch (error) {
-            // La table n'existe pas encore, on la crée avec la colonne
             db.exec(`
             CREATE TABLE IF NOT EXISTS user_profiles (
                 username TEXT PRIMARY KEY,
@@ -60,28 +68,25 @@ function initDatabase() {
                 FOREIGN KEY (username) REFERENCES users(username)
             )
             `);
-            console.log('Table user_profiles créée avec la colonne referral_source');
         }
-    } else {
-        // La table existe déjà avec la colonne referral_source
-        console.log('La colonne referral_source existe déjà dans la table user_profiles');
     }
 
+    // Vérification et mise à jour de la table orders
+    const ordersColumns = db.prepare("PRAGMA table_info(orders)").all();
+    const hasReference = ordersColumns.some(col => col.name === 'reference');
+    
     if (!hasReference) {
         try {
             db.exec(`
             ALTER TABLE orders 
             ADD COLUMN reference TEXT
             `);
-            console.log('Column reference added to the orders table');
         } catch (error) {
-            console.error('Error adding reference column to orders table:', error);
+            // Gestion silencieuse de l'erreur
         }
-    } else {
-        console.log('The reference column already exists in the orders table');
     }
 
-    // Create products table
+    // Création de la table products
     db.exec(`
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,7 +98,7 @@ function initDatabase() {
     )
     `);
 
-    // Create orders table
+    // Création de la table orders
     db.exec(`
     CREATE TABLE IF NOT EXISTS orders (
         order_id TEXT PRIMARY KEY,
@@ -105,7 +110,7 @@ function initDatabase() {
     )
     `);
 
-    // Create order_items table
+    // Création de la table order_items
     db.exec(`
     CREATE TABLE IF NOT EXISTS order_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,12 +119,12 @@ function initDatabase() {
         product_price REAL NOT NULL,
         quantity INTEGER NOT NULL,
         category TEXT,
-        status TEXT DEFAULT 'pending', -- pending, delivered, remaining
+        status TEXT DEFAULT 'pending',
         FOREIGN KEY (order_id) REFERENCES orders(order_id)
     )
     `);
 
-    // Create pending_deliveries table for items waiting to be delivered
+    // Création de la table pending_deliveries
     db.exec(`
     CREATE TABLE IF NOT EXISTS pending_deliveries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,40 +137,108 @@ function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(username)
     )
     `);
-
-    console.log('Database initialized successfully');
 }
 
-// Initialize the database
+// Initialisation de la base de données
 initDatabase();
 
-// Function to check if a column exists in a table
-function columnExists(tableName, columnName) {
-    // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries'];
-    
-    if (!allowedTables.includes(tableName)) {
-        console.error(`Tentative d'accès à une table non autorisée: ${tableName}`);
-        return false;
-    }
-    
-    const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
-    return columns.some(column => column.name === columnName);
-}
-
-// Export database instance and prepared statements
+// Export du module avec toutes les requêtes préparées organisées par catégorie
 module.exports = {
+    // Instance de base de données
     db,
     
-    // Column checking utility
+    // Utilitaire de vérification de colonnes
     columnExists,
     
-    // User-related queries
+    // Transactions
+    transaction: (callback) => {
+        const runTransaction = db.transaction(callback);
+        return runTransaction();
+    },
+    
+    // Requêtes liées aux utilisateurs
+    users: {
+        getByUsername: db.prepare('SELECT * FROM users WHERE username = ?'),
+        create: db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)'),
+        getAll: db.prepare('SELECT * FROM users')
+    },
+    
+    // Requêtes liées aux profils utilisateurs
+    profiles: {
+        getByUsername: db.prepare('SELECT * FROM user_profiles WHERE username = ?'),
+        create: db.prepare(`
+            INSERT INTO user_profiles 
+            (username, first_name, last_name, email, phone, shop_name, shop_address, shop_city, shop_zip_code, referral_source, last_updated) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `),
+        update: db.prepare(`
+            UPDATE user_profiles 
+            SET first_name = ?, last_name = ?, email = ?, phone = ?, 
+                shop_name = ?, shop_address = ?, shop_city = ?, shop_zip_code = ?, referral_source = ?, last_updated = ?
+            WHERE username = ?
+        `),
+        // Requêtes de compatibilité sans referral_source
+        fallbackCreate: db.prepare(`
+            INSERT INTO user_profiles 
+            (username, first_name, last_name, email, phone, shop_name, shop_address, shop_city, shop_zip_code, last_updated) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `),
+        fallbackUpdate: db.prepare(`
+            UPDATE user_profiles 
+            SET first_name = ?, last_name = ?, email = ?, phone = ?, 
+                shop_name = ?, shop_address = ?, shop_city = ?, shop_zip_code = ?, last_updated = ?
+            WHERE username = ?
+        `),
+        getAll: db.prepare('SELECT * FROM user_profiles')
+    },
+    
+    // Requêtes liées aux commandes
+    orders: {
+        create: db.prepare('INSERT INTO orders (order_id, user_id, status, date, reference) VALUES (?, ?, ?, ?, ?)'),
+        getById: db.prepare('SELECT * FROM orders WHERE order_id = ?'),
+        getByUser: db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY date DESC'),
+        getPending: db.prepare("SELECT * FROM orders WHERE status = 'pending' ORDER BY date ASC"),
+        getTreated: db.prepare("SELECT * FROM orders WHERE status IN ('completed', 'partial') ORDER BY date DESC"),
+        updateStatus: db.prepare('UPDATE orders SET status = ?, last_processed = ? WHERE order_id = ?'),
+        updateDate: db.prepare('UPDATE orders SET date = ? WHERE order_id = ?'),
+        updateDateAndReference: db.prepare('UPDATE orders SET date = ?, reference = ? WHERE order_id = ?')
+    },
+    
+    // Requêtes liées aux articles de commande
+    orderItems: {
+        add: db.prepare(`
+            INSERT INTO order_items (order_id, product_name, product_price, quantity, category, status) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `),
+        getByOrder: db.prepare('SELECT * FROM order_items WHERE order_id = ?'),
+        getByOrderAndStatus: db.prepare('SELECT * FROM order_items WHERE order_id = ? AND status = ?'),
+        updateStatus: db.prepare('UPDATE order_items SET status = ? WHERE order_id = ? AND product_name = ?'),
+        updateQuantity: db.prepare(`
+            UPDATE order_items 
+            SET quantity = ? 
+            WHERE order_id = ? AND product_name = ? AND category = ?
+        `)
+    },
+    
+    // Requêtes liées aux livraisons en attente
+    pendingDeliveries: {
+        add: db.prepare(`
+            INSERT INTO pending_deliveries (user_id, product_name, product_price, quantity, category) 
+            VALUES (?, ?, ?, ?, ?)
+        `),
+        getByUser: db.prepare('SELECT * FROM pending_deliveries WHERE user_id = ?'),
+        remove: db.prepare('DELETE FROM pending_deliveries WHERE id = ?'),
+        updateQuantity: db.prepare('UPDATE pending_deliveries SET quantity = ? WHERE id = ?'),
+        findItem: db.prepare(`
+            SELECT * FROM pending_deliveries 
+            WHERE user_id = ? AND product_name = ? AND category = ?
+        `)
+    },
+    
+    // Maintien des anciennes références pour la compatibilité avec le code existant
     getUserByUsername: db.prepare('SELECT * FROM users WHERE username = ?'),
     createUser: db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)'),
     getAllUsers: db.prepare('SELECT * FROM users'),
-    
-    // User profile queries with referral_source
     getUserProfile: db.prepare('SELECT * FROM user_profiles WHERE username = ?'),
     createUserProfile: db.prepare(`
         INSERT INTO user_profiles 
@@ -178,8 +251,6 @@ module.exports = {
             shop_name = ?, shop_address = ?, shop_city = ?, shop_zip_code = ?, referral_source = ?, last_updated = ?
         WHERE username = ?
     `),
-    
-    // Fallback queries without referral_source for compatibility
     fallbackCreateUserProfile: db.prepare(`
         INSERT INTO user_profiles 
         (username, first_name, last_name, email, phone, shop_name, shop_address, shop_city, shop_zip_code, last_updated) 
@@ -191,18 +262,13 @@ module.exports = {
             shop_name = ?, shop_address = ?, shop_city = ?, shop_zip_code = ?, last_updated = ?
         WHERE username = ?
     `),
-    
     getAllProfiles: db.prepare('SELECT * FROM user_profiles'),
-    
-    // Order queries
     createOrder: db.prepare('INSERT INTO orders (order_id, user_id, status, date, reference) VALUES (?, ?, ?, ?, ?)'),
     getOrderById: db.prepare('SELECT * FROM orders WHERE order_id = ?'),
     getUserOrders: db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY date DESC'),
     getPendingOrders: db.prepare("SELECT * FROM orders WHERE status = 'pending' ORDER BY date ASC"),
     getTreatedOrders: db.prepare("SELECT * FROM orders WHERE status IN ('completed', 'partial') ORDER BY date DESC"),
     updateOrderStatus: db.prepare('UPDATE orders SET status = ?, last_processed = ? WHERE order_id = ?'),
-    
-    // Order items queries
     addOrderItem: db.prepare(`
         INSERT INTO order_items (order_id, product_name, product_price, quantity, category, status) 
         VALUES (?, ?, ?, ?, ?, ?)
@@ -210,29 +276,21 @@ module.exports = {
     getOrderItems: db.prepare('SELECT * FROM order_items WHERE order_id = ?'),
     getOrderItemsByStatus: db.prepare('SELECT * FROM order_items WHERE order_id = ? AND status = ?'),
     updateOrderItemStatus: db.prepare('UPDATE order_items SET status = ? WHERE order_id = ? AND product_name = ?'),
-    // Requête pour mettre à jour la quantité d'un article de commande
     updateOrderItemQuantity: db.prepare(`
         UPDATE order_items 
         SET quantity = ? 
         WHERE order_id = ? AND product_name = ? AND category = ?
     `),
-
-    // Requête pour mettre à jour la date d'une commande
     updateOrderDate: db.prepare(`
         UPDATE orders 
         SET date = ? 
         WHERE order_id = ?
     `),
-
-    // Add a new prepared statement to update both date and reference
     updateOrderDateAndReference: db.prepare(`
         UPDATE orders 
         SET date = ?, reference = ? 
         WHERE order_id = ?
     `),
-
-    
-    // Pending deliveries
     addPendingDelivery: db.prepare(`
         INSERT INTO pending_deliveries (user_id, product_name, product_price, quantity, category) 
         VALUES (?, ?, ?, ?, ?)
@@ -240,16 +298,8 @@ module.exports = {
     getUserPendingDeliveries: db.prepare('SELECT * FROM pending_deliveries WHERE user_id = ?'),
     removePendingDelivery: db.prepare('DELETE FROM pending_deliveries WHERE id = ?'),
     updatePendingDeliveryQuantity: db.prepare('UPDATE pending_deliveries SET quantity = ? WHERE id = ?'),
-    
-    // Nouvelle requête pour trouver un article en attente de livraison spécifique
     findPendingDeliveryItem: db.prepare(`
         SELECT * FROM pending_deliveries 
         WHERE user_id = ? AND product_name = ? AND category = ?
-    `),
-
-    // Transaction wrapper
-    transaction: (callback) => {
-        const runTransaction = db.transaction(callback);
-        return runTransaction();
-    }
+    `)
 };

@@ -1,32 +1,23 @@
 // services/deliveryNoteService.js
+// Service de génération de bons de livraison PDF
 const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { generateInvoicePDF } = require('./invoiceService');
 
-/**
- * Generates a PDF delivery note - SIMPLIFIED VERSION WITHOUT PRICES
- * Then automatically generates an invoice as well
- * @param {PDFDocument} doc - PDFKit document instance
- * @param {Array} orderItems - List of items in the order
- * @param {Object} userProfile - Customer profile information
- * @param {Date} orderDate - Date of the order
- * @param {String} orderId - Order identifier (not displayed in simplified version)
- * @param {Array} remainingItems - Items to be delivered later (optional)
- * @returns {Promise<void>}
- */
+// Génération du bon de livraison PDF (version simplifiée sans prix)
 async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems = []) {
-  // Function to add a header element with reduced line spacing
+  // Ajout d'un élément d'en-tête
   function addHeaderElement(text, x, y, options = {}) {
     doc.font('Helvetica').fontSize(9).text(text, x, y, options);
   }
 
-  // Delivery note header with reduced spacing
+  // En-tête du bon de livraison
   function addDeliveryNoteHeader() {
     const rootDir = path.resolve(__dirname, '..');
     doc.image(path.join(rootDir, 'public', 'images', 'logo', 'logo_discado_noir.png'), 50, 35, { width: 90 });
 
-    // Sender information
+    // Informations expéditeur
     const senderY = 50;
     const lineSpacing = 12;
     
@@ -36,7 +27,7 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     addHeaderElement('+41 79 457 33 85', 50, senderY + lineSpacing * 4);
     addHeaderElement('discadoswiss@gmail.com', 50, senderY + lineSpacing * 5);
     
-    // Client information - now at the SAME level as sender (not offset vertically)
+    // Informations client (au même niveau que l'expéditeur)
     const clientY = senderY;
     
     addHeaderElement(`${userProfile.firstName} ${userProfile.lastName}`, 350, clientY + lineSpacing * 1);
@@ -48,20 +39,19 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
       clientY + lineSpacing * 4
     );
 
-    // Determine position for title (after both sender and client info sections)
-    const titleY = senderY + lineSpacing * 8; // Adjusted position
+    // Position pour le titre
+    const titleY = senderY + lineSpacing * 8;
     
-    // Add the delivery note title WITHOUT number
+    // Titre du bon de livraison sans numéro
     doc.font('Helvetica-Bold').fontSize(14).text('Delivery Note', 50, titleY + 5);
     
-    // Add the date under the title
+    // Date sous le titre
     addHeaderElement(`Order processing date: ${deliveryDate.toLocaleDateString('Fr')}`, 50, titleY + 30);
 
-    // Return position for table to start
     return titleY + 50;
   }
 
-  // Création du tableau structuré (comparable à celui de invoiceService)
+  // Création du tableau
   const createCompactTable = (startY) => {
     const columns = [
       { title: 'Description', width: 350, align: 'left' },
@@ -134,28 +124,28 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     return rowY + rowHeight;
   };
 
-  // Ajouter une nouvelle page avec tableau
+  // Ajout d'une nouvelle page
   const addNewPage = () => {
     doc.addPage();
     return createCompactTable(40).yPosition;
   };
 
-  // Vérifier si une nouvelle page est nécessaire
+  // Vérification besoin nouvelle page
   const needsNewPage = (currentY, requiredHeight = 30) => {
     return currentY + requiredHeight > doc.page.height - 120;
   };
 
-  // Set the delivery date
+  // Date de livraison
   const deliveryDate = orderDate;
   
-  // Add delivery note header
+  // Ajout en-tête
   let yPos = addDeliveryNoteHeader();
   
-  // Initialiser le tableau
+  // Initialisation tableau
   const tableConfig = createCompactTable(yPos);
   yPos = tableConfig.yPosition;
 
-  // Group items by category
+  // Groupement par catégorie
   const groupedItems = {};
   orderItems.forEach(item => {
     const category = item.categorie || 'autres';
@@ -165,10 +155,10 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     groupedItems[category].push(item);
   });
 
-  // Sort categories alphabetically
+  // Tri des catégories
   const sortedCategories = Object.keys(groupedItems).sort();
   
-  // Ajouter les articles au tableau par catégorie
+  // Ajout des articles par catégorie
   for (const category of sortedCategories) {
     if (needsNewPage(yPos)) {
       yPos = addNewPage();
@@ -185,23 +175,23 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     }
   }
   
-  // Process remaining items section
+  // Traitement des articles restants
   if (remainingItems && remainingItems.length > 0) {
-    // Always start on a new page for the remaining items section
+    // Nouvelle page pour les articles restants
     doc.addPage();
     yPos = 40;
     
-    // Title for remaining items
+    // Titre pour les articles restants
     doc.font('Helvetica-Bold').fontSize(14).text('Items to be delivered later', 50, yPos);
     yPos += 20;
     doc.font('Helvetica').fontSize(9).text('The following items from your order will be delivered at a later date.', 50, yPos);
     yPos += 25;
     
-    // Créer un nouveau tableau pour les articles restants
+    // Nouveau tableau pour articles restants
     const remainingTableConfig = createCompactTable(yPos);
     yPos = remainingTableConfig.yPosition;
     
-    // Group remaining items by category
+    // Groupement des articles restants
     const groupedRemainingItems = {};
     remainingItems.forEach(item => {
       const category = item.categorie || 'autres';
@@ -211,10 +201,10 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
       groupedRemainingItems[category].push(item);
     });
     
-    // Sort remaining categories alphabetically
+    // Tri des catégories restantes
     const sortedRemainingCategories = Object.keys(groupedRemainingItems).sort();
     
-    // Process remaining items by category
+    // Ajout des articles restants par catégorie
     for (const category of sortedRemainingCategories) {
       if (needsNewPage(yPos)) {
         yPos = addNewPage();
@@ -231,7 +221,7 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
       }
     }
     
-    // Note
+    // Note de bas de page
     if (needsNewPage(yPos, 30)) {
       doc.addPage();
       yPos = 40;
@@ -242,7 +232,7 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     doc.text('These items will be delivered as soon as they are available in stock.', 50, yPos, { align: 'center', width: doc.page.width - 100 });
   }
 
-  // After generating delivery note, add a page break and generate the invoice
+  // Ajout d'une page et génération de la facture
   doc.addPage();
   await generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
 }

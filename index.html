@@ -139,37 +139,42 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check authentication status
-            fetch('/api/check-auth')
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    }
-                    throw new Error('Not authenticated');
-                })
-                .then(data => {
-                    // User is logged in
-                    const authStatus = document.getElementById('auth-status');
-                    const loginBtn = document.getElementById('login-btn');
-                    
-                    authStatus.textContent = `Welcome back, ${data.username || 'User'}!`;
-                    authStatus.classList.add('logged-in');
-                    authStatus.style.display = 'block';
-                    
-                    // Change login button to "My Account"
-                    loginBtn.textContent = 'My Account';
-                    loginBtn.href = '/pages/profile.html';
-                    
-                    // Redirect to catalog after 1.5 seconds
-                    setTimeout(() => {
-                        window.location.href = '/pages/catalog.html';
-                    }, 1500);
-                })
-                .catch(error => {
-                    // User is not logged in - no need to show anything
-                });
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check authentication status
+        fetch('/api/check-auth')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                // Ne pas lancer d'erreur, simplement retourner null pour indiquer "non connecté"
+                return null;
+            })
+            .then(data => {
+                // Si data est null, l'utilisateur n'est pas connecté
+                if (!data) return;
+                
+                // User is logged in
+                const authStatus = document.getElementById('auth-status');
+                const loginBtn = document.getElementById('login-btn');
+                
+                authStatus.textContent = `Welcome back, ${data.username || 'User'}!`;
+                authStatus.classList.add('logged-in');
+                authStatus.style.display = 'block';
+                
+                // Change login button to "My Account"
+                loginBtn.textContent = 'My Account';
+                loginBtn.href = '/pages/profile.html';
+                
+                // Redirect to catalog after 1.5 seconds
+                setTimeout(() => {
+                    window.location.href = '/pages/catalog.html';
+                }, 1500);
+            })
+            .catch(error => {
+                // Gérer les erreurs de réseau, pas les erreurs d'authentification
+                console.log('Network error:', error);
+            });
+    });
     </script>
 </body>
 </html>

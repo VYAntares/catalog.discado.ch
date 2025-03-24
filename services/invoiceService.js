@@ -1,36 +1,23 @@
 // services/invoiceService.js
+// Service de génération de factures PDF
 const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 
-/**
- * Service unifié pour la génération de factures PDF complètes
- * Gère à la fois la page des articles et la page de récapitulatif
- */
+// Service unifié pour la génération de factures PDF
 class InvoiceService {
-  /**
-   * Génère une facture PDF complète avec gestion intelligente des pages
-   * @param {PDFDocument} doc - Instance PDFKit
-   * @param {Array} orderItems - Liste des articles commandés
-   * @param {Object} userProfile - Informations du profil client
-   * @param {Date} orderDate - Date de la commande
-   * @param {String} orderId - Identifiant de la commande
-   * @returns {Promise<Object>} - Retourne les totaux calculés
-   */
+  // Génère une facture PDF complète (page articles + page récapitulatif)
   static async generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId) {
-    // Vérifier que le document est vide avant de commencer
-    // Ceci évite la duplication si la fonction est appelée plusieurs fois
+    // Vérifier que le document est vide
     if (doc.page.content.length > 0) {
-      // Si le document contient déjà du contenu, on le réinitialise
       doc = new PDFDocument({ autoFirstPage: true });
     }
     
-    // Générer la première page avec la liste des articles et récupérer la position Y finale
+    // Génération de la page des articles
     const { totals, finalYPosition } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId);
     
-    // Générer la page de récapitulatif (toujours sur une nouvelle page)
+    // Génération de la page de récapitulatif
     doc.addPage();
-    
     await this.generateTotalPage(doc, {
       ...totals,
       orderDate,
@@ -41,12 +28,7 @@ class InvoiceService {
     return totals;
   }
 
-  /**
-   * Formatte l'identifiant de commande selon le format standard
-   * @param {String} orderId - Identifiant de commande brut
-   * @param {Date} orderDate - Date de la commande
-   * @returns {String} - Identifiant formatté
-   */
+  // Formatage de l'identifiant de commande
   static formatOrderId(orderId, orderDate) {
     if (!orderId.match(/\d{4}-\d{4}/)) {
       const orderDateObj = new Date(orderDate);
@@ -61,23 +43,19 @@ class InvoiceService {
     }
   }
 
-  /**
-   * Génère la première page de la facture avec la liste des articles
-   * et ajoute les totaux correctement alignés
-   * @private
-   * @returns {Object} - Totaux calculés et position Y finale
-   */
+  // Génération de la page des articles
   static async generateItemsPage(doc, orderItems, userProfile, orderDate, orderId) {
+    // Fonction pour ajouter un élément d'en-tête
     const addHeaderElement = (text, x, y, options = {}) => {
       doc.font('Helvetica').fontSize(9).text(text, x, y, options);
     };
 
-    // En-tête de facture avec espacement réduit
+    // Génération de l'en-tête de la facture
     const addInvoiceHeader = () => {
       const rootDir = path.resolve(__dirname, '..');
       doc.image(path.join(rootDir, 'public', 'images', 'logo', 'logo_discado_noir.png'), 50, 35, { width: 90 });
 
-      // Informations de l'expéditeur
+      // Informations expéditeur
       const senderY = 50;
       const lineSpacing = 12;
       
@@ -89,7 +67,7 @@ class InvoiceService {
       addHeaderElement('catalog.discado@gmail.com', 50, senderY + lineSpacing * 6);
       addHeaderElement('TVA CHE-114.139.308', 50, senderY + lineSpacing * 8);
 
-      // Informations du client
+      // Informations client
       const clientStartY = senderY + lineSpacing * 7;
       
       addHeaderElement(`${userProfile.firstName} ${userProfile.lastName}`, 350, clientStartY);
@@ -101,9 +79,8 @@ class InvoiceService {
         clientStartY + lineSpacing * 3
       );
 
-      // Détails de la facture
+      // Détails facture
       const formattedOrderId = this.formatOrderId(orderId, orderDate);
-      
       const titleY = senderY + lineSpacing * 11;
       
       doc.font('Helvetica-Bold').fontSize(14).text(`Invoice ${formattedOrderId}`, 50, titleY + 5);
@@ -112,9 +89,9 @@ class InvoiceService {
       return titleY + 60;
     };
 
-    // Définition des colonnes
+    // Création de l'en-tête du tableau
     const createTableHeader = (startY) => {
-      // Configuration des colonnes
+      // Configuration colonnes
       const columns = [
         { title: 'Description', width: 230, align: 'left' },
         { title: 'Quantity', width: 70, align: 'center' },
@@ -125,7 +102,7 @@ class InvoiceService {
       const tableX = 50;
       const tableWidth = columns.reduce((sum, col) => sum + col.width, 0);
       
-      // Dessiner l'en-tête du tableau
+      // Dessin de l'en-tête
       doc.rect(tableX, startY, tableWidth, 25).stroke();
       
       let currentX = tableX;
@@ -206,23 +183,23 @@ class InvoiceService {
       return rowY + rowHeight;
     };
 
-    // Ajouter une nouvelle page avec tableau
+    // Ajout d'une nouvelle page
     const addNewPage = () => {
       doc.addPage();
       return createTableHeader(40).yPosition;
     };
 
-    // Vérifier si une nouvelle page est nécessaire
+    // Vérification besoin nouvelle page
     const needsNewPage = (currentY, requiredHeight = 30) => {
       return currentY + requiredHeight > doc.page.height - 120;
     };
 
-    // Début de la génération
+    // Début génération
     let yPos = addInvoiceHeader();
     const tableConfig = createTableHeader(yPos);
     yPos = tableConfig.yPosition;
     
-    // Grouper les articles par catégorie
+    // Groupement par catégorie
     const groupedItems = {};
     orderItems.forEach(item => {
       const category = item.categorie || 'autres';
@@ -232,7 +209,7 @@ class InvoiceService {
       groupedItems[category].push(item);
     });
     
-    // Ajouter les articles au tableau par catégorie
+    // Ajout des articles par catégorie
     let totalHT = 0;
     const sortedCategories = Object.keys(groupedItems).sort();
     
@@ -253,49 +230,44 @@ class InvoiceService {
       }
     }
     
-    // Calculs des totaux
+    // Calcul des totaux
     const TVA = 0.081;
     const montantTVA = totalHT * TVA;
     const totalTTC = totalHT + montantTVA;
     
-    // Vérifier s'il reste assez d'espace pour les totaux
+    // Vérification espace pour totaux
     if (needsNewPage(yPos, 80)) {
       doc.addPage();
       yPos = 40;
     }
     
-    // Extraire les positions des colonnes pour un alignement correct
+    // Extraction positions des colonnes
     const { tableX, tableWidth, columns } = tableConfig;
     const col1Width = columns[0].width;
     const col2Width = columns[1].width;
     const col3Width = columns[2].width;
     const col4Width = columns[3].width;
     
-    // Position de début pour les colonnes
+    // Positions colonnes
     const col1X = tableX;
     const col2X = col1X + col1Width;
     const col3X = col2X + col2Width;
     const col4X = col3X + col3Width;
     
-    // Hauteur de ligne pour les totaux
+    // Hauteur ligne totaux
     const totalRowHeight = 20;
     
-    // Ligne pour Sous-total HT
-    // Cellule vide (col1 + col2)
+    // Ligne sous-total HT
     doc.rect(col1X, yPos, col1Width + col2Width, totalRowHeight).stroke();
-    // Cellule "SOUS-TOTAL HT" (col3)
     doc.rect(col3X, yPos, col3Width, totalRowHeight).stroke();
-    // Cellule pour le montant (col4)
     doc.rect(col4X, yPos, col4Width, totalRowHeight).stroke();
     
-    // Texte "SOUS-TOTAL HT"
     doc.font('Helvetica-Bold').fontSize(9);
     doc.text("SOUS-TOTAL HT", col3X + 5, yPos + 6, {
       width: col3Width - 10,
       align: 'left'
     });
     
-    // Montant HT
     doc.text(`${totalHT.toFixed(2)} CHF`, col4X + 5, yPos + 6, {
       width: col4Width - 10,
       align: 'right'
@@ -303,21 +275,16 @@ class InvoiceService {
     
     yPos += totalRowHeight;
     
-    // Ligne pour TVA
-    // Cellule vide (col1 + col2)
+    // Ligne TVA
     doc.rect(col1X, yPos, col1Width + col2Width, totalRowHeight).stroke();
-    // Cellule "TVA 8.1%" (col3)
     doc.rect(col3X, yPos, col3Width, totalRowHeight).stroke();
-    // Cellule pour le montant (col4)
     doc.rect(col4X, yPos, col4Width, totalRowHeight).stroke();
     
-    // Texte "TVA 8.1%"
     doc.text("TVA 8.1%", col3X + 5, yPos + 6, {
       width: col3Width - 10,
       align: 'left'
     });
     
-    // Montant TVA
     doc.text(`${montantTVA.toFixed(2)} CHF`, col4X + 5, yPos + 6, {
       width: col4Width - 10,
       align: 'right'
@@ -325,22 +292,16 @@ class InvoiceService {
     
     yPos += totalRowHeight;
     
-    // Ligne pour TOTAL TTC et CONDITIONS DE PAIEMENT
-    // Cellule "CONDITIONS DE PAIEMENT" (col1 + col2)
+    // Ligne total TTC
     doc.rect(col1X, yPos, col1Width + col2Width, totalRowHeight).stroke();
-    // Cellule "TOTAL TTC" (col3)
     doc.rect(col3X, yPos, col3Width, totalRowHeight).stroke();
-    // Cellule pour le montant (col4)
     doc.rect(col4X, yPos, col4Width, totalRowHeight).stroke();
     
-    
-    // Texte "TOTAL TTC"
     doc.text("TOTAL TTC", col3X + 5, yPos + 6, {
       width: col3Width - 10,
       align: 'left'
     });
     
-    // Montant TTC
     doc.text(`${totalTTC.toFixed(2)} CHF`, col4X + 5, yPos + 6, {
       width: col4Width - 10,
       align: 'right'
@@ -348,7 +309,7 @@ class InvoiceService {
     
     yPos += totalRowHeight;
     
-    // Note en bas de page
+    // Note bas de page
     yPos += 20;
     doc.font('Helvetica-Bold').fontSize(10);
     doc.text('See next page for the payment slip.', 50, yPos);
@@ -359,32 +320,28 @@ class InvoiceService {
         montantTVA,
         totalTTC
       },
-      finalYPosition: yPos + 20 // Retourner la position Y finale ajustée
+      finalYPosition: yPos + 20
     };
   }
 
-      /**
-   * Génère la page récapitulative de la facture en utilisant le même en-tête que la facture
-   * et ajoute un résumé simple des conditions et du total
-   * @private
-   */
+  // Génération de la page récapitulative
   static async generateTotalPage(doc, invoiceData) {
     const { totalHT, montantTVA, totalTTC, orderDate, orderId, userProfile } = invoiceData;
     
-    // Formatage de l'ID de commande
+    // Formatage ID commande
     const formattedOrderId = this.formatOrderId(orderId, orderDate);
     
-    // En-tête identique à celui de la facture
+    // Fonction pour élément d'en-tête
     const addHeaderElement = (text, x, y, options = {}) => {
       doc.font('Helvetica').fontSize(9).text(text, x, y, options);
     };
 
-    // En-tête de facture avec espacement réduit (identique à la première page)
+    // Génération en-tête identique
     const addInvoiceHeader = () => {
       const rootDir = path.resolve(__dirname, '..');
       doc.image(path.join(rootDir, 'public', 'images', 'logo', 'logo_discado_noir.png'), 50, 35, { width: 90 });
 
-      // Informations de l'expéditeur
+      // Infos expéditeur
       const senderY = 50;
       const lineSpacing = 12;
       
@@ -396,7 +353,7 @@ class InvoiceService {
       addHeaderElement('catalog.discado@gmail.com', 50, senderY + lineSpacing * 6);
       addHeaderElement('TVA CHE-114.139.308', 50, senderY + lineSpacing * 8)
 
-      // Informations du client
+      // Infos client
       const clientStartY = senderY + lineSpacing * 7;
       
       addHeaderElement(`${userProfile.firstName} ${userProfile.lastName}`, 350, clientStartY);
@@ -408,7 +365,7 @@ class InvoiceService {
         clientStartY + lineSpacing * 3
       );
 
-      // Détails de la facture
+      // Détails facture
       const titleY = senderY + lineSpacing * 12;
       
       doc.font('Helvetica-Bold').fontSize(14).text(`Invoice ${formattedOrderId}`, 50, titleY + 5);
@@ -417,29 +374,26 @@ class InvoiceService {
       return titleY + 60;
     };
 
-    // Ajouter une ligne simple avec les conditions de paiement et le total
+    // Ajout résumé avec conditions paiement
     const addSimpleTotalLine = (yPosition) => {
-      // Calculer le centre de la page (entre l'en-tête et le bulletin de paiement)
       const pageHeight = doc.page.height;
       const pageWidth = doc.page.width;
-      const receiptHeight = pageHeight / 2.8; // Estimation de la hauteur du bulletin
+      const receiptHeight = pageHeight / 2.8;
       const availableHeight = pageHeight - receiptHeight - yPosition;
-      const centerY = yPosition + (availableHeight / 2) - 70; // Centre vertical avec ajustement
+      const centerY = yPosition + (availableHeight / 2) - 70;
       
-      // Position horizontale centrée
       const horizontalCenter = Math.floor(pageWidth / 2);
       
-      // Total TTC en premier
       doc.font('Helvetica-Bold').fontSize(12);
       doc.text(`TOTAL TTC: ${totalTTC.toFixed(2)} CHF`, horizontalCenter - 90, centerY);
       
       doc.font('Helvetica-Bold').fontSize(10);
       doc.text('PAYMENT TERMS: net 30 days', horizontalCenter - 95, centerY + 50);
       
-      return centerY + 50; // Retourner la position Y après la ligne
+      return centerY + 50;
     };
 
-    // Bulletin de paiement (conservé tel quel)
+    // Ajout bulletin paiement
     const addPaymentSlip = () => {
       const rootDir = path.resolve(__dirname, '..');
       const receiptImagePath = path.join(rootDir, 'public', 'images', 'logo', 'recepisse.png');
@@ -455,7 +409,6 @@ class InvoiceService {
       doc.lineWidth(0.5);
       doc.moveTo(0, receiptYPosition - 10).lineTo(pageWidth, receiptYPosition - 10).stroke();
       
-      // Empêcher le chevauchement en vérifiant si l'image a déjà été ajoutée
       if (!doc._receiptAdded) {
         doc.image(receiptImagePath, 0, receiptYPosition, { 
           width: receiptImageWidth,
@@ -465,21 +418,20 @@ class InvoiceService {
       }
     };
 
-    // Générer la page récapitulative avec une ligne simple pour le total
+    // Génération page récapitulative
     const headerEndY = addInvoiceHeader();
     const totalLineEndY = addSimpleTotalLine(headerEndY);
     addPaymentSlip();
   }
 }
 
+// Export du module
 module.exports = {
   generateInvoicePDF: (doc, orderItems, userProfile, orderDate, orderId) => {
-    // Assurer qu'on n'appelle la fonction qu'une seule fois
     if (!doc._invoiceGenerated) {
       doc._invoiceGenerated = true;
       return InvoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
     } else {
-      console.log('La génération de facture a déjà été effectuée pour ce document');
       return Promise.resolve({});
     }
   }

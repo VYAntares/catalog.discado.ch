@@ -1,28 +1,26 @@
-/**
- * Enhanced Header Component for Discado
- * Version 2.0 - Responsive and Professional
- */
+// Composant Header pour Discado
+// Version 2.0 - Responsive et Professionnel
 
-// Function to initialize the header
+// Initialisation du header
 function initDiscadoHeader() {
-    // Check if header already exists to prevent duplication
+    // Vérifier si le header existe déjà
     if (document.querySelector('.discado-header-initialized')) {
         return;
     }
 
-    // Add header HTML structure
+    // Récupérer le conteneur
     const headerContainer = document.getElementById('header-container');
     if (!headerContainer) {
         console.error('Header container not found on page');
         return;
     }
 
-    // Add header content
+    // Injecter le HTML du header
     headerContainer.innerHTML = `
     <!-- Header -->
     <header class="discado-header-initialized">
         <div class="header-container">
-            <!-- Left Section: PDF Catalog & Contact Info -->
+            <!-- Section gauche: Catalogue PDF & Informations de contact -->
             <div class="left-section">
                 <div class="pdf-catalog-container">
                     <button id="pdfCatalogToggle" class="icon-btn-with-text" aria-label="PDF Catalog">
@@ -31,7 +29,7 @@ function initDiscadoHeader() {
                     </button>
                 </div>
                 
-                <!-- Contact information with icons -->
+                <!-- Informations de contact avec icônes -->
                 <div class="contact-info">
                     <div class="contact-details">
                         <div class="contact-item">
@@ -44,14 +42,14 @@ function initDiscadoHeader() {
                 </div>
             </div>
             
-            <!-- Logo, centered -->
+            <!-- Logo, centré -->
             <div class="logo-container">
                 <a href="/pages/catalog.html">
                     <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo" id="logo">
                 </a>
             </div>
             
-            <!-- Right section for cart and user -->
+            <!-- Section droite pour panier et utilisateur -->
             <div class="header-right">
                 <button id="cartToggle" class="icon-btn" aria-label="Shopping cart">
                     <i class="fas fa-shopping-cart"></i>
@@ -63,29 +61,27 @@ function initDiscadoHeader() {
             </div>
         </div>
     </header>
-    <!-- User Menu -->
+    <!-- Menu Utilisateur -->
     <div id="userMenu" class="user-menu">
         <a href="/pages/profile.html"><i class="fas fa-user-circle"></i> Profile</a>
         <a href="/pages/orders.html"><i class="fas fa-shopping-bag"></i> My Orders</a>
         <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
-    <!-- Menu Overlay -->
+    <!-- Overlay du Menu -->
     <div id="menuOverlay" class="menu-overlay"></div>
     `;
 
-    // Initialize functionality
+    // Initialiser les fonctionnalités
     setupUserMenu();
     setupPdfCatalog();
     setupCartEvents();
     setupClickOutsideListener();
 
-    // Load cart count badge
+    // Mettre à jour le badge du panier
     updateCartCountBadge();
 }
 
-/**
- * Update the cart count badge
- */
+// Mise à jour du badge de comptage du panier
 function updateCartCountBadge() {
     try {
         const cartCount = getCartItemCount();
@@ -107,12 +103,9 @@ function updateCartCountBadge() {
     }
 }
 
-/**
- * Get cart item count
- */
+// Obtenir le nombre d'articles dans le panier
 function getCartItemCount() {
     try {
-        // Try to get cart from localStorage
         const cartJson = localStorage.getItem('discado_cart');
         if (!cartJson) return 0;
         
@@ -126,9 +119,7 @@ function getCartItemCount() {
     }
 }
 
-/**
- * Setup user menu toggle functionality
- */
+// Configuration du menu utilisateur
 function setupUserMenu() {
     const userMenuToggle = document.getElementById('userMenuToggle');
     const userMenu = document.getElementById('userMenu');
@@ -141,23 +132,18 @@ function setupUserMenu() {
         toggleUserMenu();
     });
 
-    // Close when overlay is clicked
     menuOverlay.addEventListener('click', closeAllMenus);
 }
 
-/**
- * Toggle the user menu
- */
+// Basculer le menu utilisateur
 function toggleUserMenu() {
     const userMenu = document.getElementById('userMenu');
     const menuOverlay = document.getElementById('menuOverlay');
     
     if (!userMenu || !menuOverlay) return;
     
-    // Toggle user menu
     userMenu.classList.toggle('open');
     
-    // Toggle overlay
     if (userMenu.classList.contains('open')) {
         menuOverlay.classList.add('active');
     } else {
@@ -165,16 +151,13 @@ function toggleUserMenu() {
     }
 }
 
-/**
- * Setup click outside listener to close menus
- */
+// Configuration de l'écoute des clics en dehors
 function setupClickOutsideListener() {
     document.addEventListener('click', function(e) {
         const userMenu = document.getElementById('userMenu');
         const userMenuToggle = document.getElementById('userMenuToggle');
         
         if (userMenu && userMenu.classList.contains('open')) {
-            // Check if click is outside the menu and the toggle button
             if (!userMenu.contains(e.target) && !userMenuToggle.contains(e.target)) {
                 closeAllMenus();
             }
@@ -182,9 +165,7 @@ function setupClickOutsideListener() {
     });
 }
 
-/**
- * Close the user menu
- */
+// Fermer le menu utilisateur
 function closeUserMenu() {
     const userMenu = document.getElementById('userMenu');
     
@@ -193,9 +174,7 @@ function closeUserMenu() {
     }
 }
 
-/**
- * Close all menus
- */
+// Fermer tous les menus
 function closeAllMenus() {
     closeUserMenu();
     
@@ -205,18 +184,14 @@ function closeAllMenus() {
     }
 }
 
-/**
- * Setup PDF catalog with confirmation dialog
- */
+// Configuration du catalogue PDF
 function setupPdfCatalog() {
     const pdfToggle = document.getElementById('pdfCatalogToggle');
     
     if (pdfToggle) {
         pdfToggle.addEventListener('click', function() {
-            // PDF catalog URL
             const pdfUrl = 'https://www.dropbox.com/scl/fi/0gymxq4jtwdno6q1l5td2/Catalogue-Discado-2025.pdf?rlkey=zx8p1syhojya62atiteib8660&e=1&st=ol0xk3lc&dl=1';
             
-            // Ask for confirmation before downloading
             if (confirm('Voulez-vous télécharger le catalogue PDF?')) {
                 window.open(pdfUrl, '_blank');
             }
@@ -224,9 +199,7 @@ function setupPdfCatalog() {
     }
 }
 
-/**
- * Setup cart-related events
- */
+// Configuration des événements du panier
 function setupCartEvents() {
     const cartToggle = document.getElementById('cartToggle');
     if (cartToggle) {
@@ -234,16 +207,13 @@ function setupCartEvents() {
             if (window.showCartModal) {
                 window.showCartModal();
             } else {
-                // Fallback - redirect to catalog page which has the cart
                 window.location.href = '/pages/catalog.html';
             }
         });
     }
     
-    // Update cart badge when custom events are triggered
     document.addEventListener('cartUpdated', updateCartCountBadge);
     
-    // Also listen for storage events to update cart across tabs
     window.addEventListener('storage', function(e) {
         if (e.key === 'discado_cart') {
             updateCartCountBadge();
@@ -251,18 +221,18 @@ function setupCartEvents() {
     });
 }
 
-// Connect cart functionality to the header (to be called after cart module is loaded)
+// Connecter les fonctionnalités du panier au header
 function connectCartToHeader() {
     setupCartEvents();
     updateCartCountBadge();
 }
 
-// Export functions for use in other modules
+// Exporter les fonctions
 window.DiscadoHeader = {
     init: initDiscadoHeader,
     connectCart: connectCartToHeader,
     updateCartBadge: updateCartCountBadge
 };
 
-// Initialize header when script loads
+// Initialiser le header au chargement
 document.addEventListener('DOMContentLoaded', initDiscadoHeader);

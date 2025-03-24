@@ -1,29 +1,17 @@
-/**
- * Module de liste des commandes
- * Gère l'affichage de l'historique des commandes de l'utilisateur
- */
-
 import { fetchUserOrders, getInvoiceDownloadLink } from '../../core/api.js';
 import { showNotification } from '../../utils/notification.js';
 import { formatDate, formatPrice } from '../../utils/formatter.js';
 
-/**
- * Initialise la liste des commandes
- */
+// Initialize orders list page
 export function initOrdersList() {
-    console.log('Orders list module initialized');
     loadOrders();
 }
 
-/**
- * Charge les commandes de l'utilisateur
- */
+// Load user's orders from API
 async function loadOrders() {
-    // Récupérer le conteneur des commandes
     const ordersContainer = document.getElementById('ordersList');
     if (!ordersContainer) return;
     
-    // Afficher l'indicateur de chargement
     ordersContainer.innerHTML = `
         <div class="loading-container">
             <div class="loading-spinner"></div>
@@ -32,37 +20,30 @@ async function loadOrders() {
     `;
     
     try {
-        // Charger les commandes depuis l'API
         const orders = await fetchUserOrders();
-        
-        // Afficher les commandes
         displayOrders(orders, ordersContainer);
     } catch (error) {
-        console.error('Error loading orders:', error);
-        
-        // Afficher un message d'erreur
-        ordersContainer.innerHTML = `
-            <div class="error-message">
-                <p>Error loading your orders. Please try again later.</p>
-                <button id="retry-orders-btn" class="primary-btn">Retry</button>
-            </div>
-        `;
-        
-        // Ajouter un écouteur pour le bouton de réessai
-        const retryBtn = document.getElementById('retry-orders-btn');
-        if (retryBtn) {
-            retryBtn.addEventListener('click', loadOrders);
-        }
+        handleOrderLoadError(ordersContainer);
     }
 }
 
-/**
- * Affiche les commandes dans le conteneur
- * @param {Array} orders - Liste des commandes
- * @param {HTMLElement} container - Conteneur pour les commandes
- */
+// Handle error when loading orders
+function handleOrderLoadError(container) {
+    container.innerHTML = `
+        <div class="error-message">
+            <p>Error loading your orders. Please try again later.</p>
+            <button id="retry-orders-btn" class="primary-btn">Retry</button>
+        </div>
+    `;
+    
+    const retryBtn = document.getElementById('retry-orders-btn');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', loadOrders);
+    }
+}
+
+// Display orders in the container
 function displayOrders(orders, container) {
-    // Vérifier s'il y a des commandes à afficher
     if (!orders || orders.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -73,41 +54,54 @@ function displayOrders(orders, container) {
         return;
     }
     
-    // Vider le conteneur
     container.innerHTML = '';
     
-    // Exclure les commandes spéciales (articles en attente)
     const standardOrders = orders.filter(order => !order.isToDeliverItems);
     
-    // Trier les commandes de la plus récente à la plus ancienne
-    standardOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    // Créer une carte pour chaque commande
-    standardOrders.forEach((order, index) => {
-        createOrderCard(order, index, container);
-    });
+    standardOrders
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .forEach((order, index) => {
+            createOrderCard(order, index, container);
+        });
 }
 
+// Create individual order card
 function createOrderCard(order, index, container) {
-    // Formater la date de commande
-    const orderDate = formatDate(order.date);
-    const processDate = order.lastProcessed ? formatDate(order.lastProcessed) : '';
+    const orderCard = document.createElement('div');
+    orderCard.className = 'order-card';
     
-    // Déterminer le statut de la commande
+    const { statusText, statusClass } = determineOrderStatus(order);
+    
+    orderCard.innerHTML = createOrderCardHeader(order, index, statusText, statusClass);
+    
+    const itemsTable = createOrderItemsTable(order);
+    orderCard.appendChild(itemsTable);
+    
+    const orderSummary = createOrderSummary(order);
+    orderCard.appendChild(orderSummary);
+    
+    container.appendChild(orderCard);
+}
+
+// Determine order status
+function determineOrderStatus(order) {
     let statusText = 'Processing';
     let statusClass = 'status-processing';
     
-    if (order.status === 'completed' || order.status === 'shipped' || order.status === 'partial') {
+    if (['completed', 'shipped', 'partial'].includes(order.status)) {
         statusText = 'Completed';
         statusClass = 'status-shipped';
     }
     
-    // Créer la carte de commande
-    const orderCard = document.createElement('div');
-    orderCard.className = 'order-card';
+    return { statusText, statusClass };
+}
+
+// Create order card header
+function createOrderCardHeader(order, index, statusText, statusClass) {
+    const orderDate = formatDate(order.date);
+    const processDate = order.lastProcessed ? formatDate(order.lastProcessed) : '';
     
-    // En-tête de la carte
-    orderCard.innerHTML = `
+    return `
         <div class="order-card-header">
             <h3>Order #${order.orderId.split('_').pop() || index + 1}</h3>
             <span class="order-status ${statusClass}">${statusText}</span>
@@ -118,47 +112,40 @@ function createOrderCard(order, index, container) {
             ${order.reference ? `<br><span class="order-reference">Reference: ${order.reference}</span>` : ''}
         </div>
     `;
-    
-    // Ajouter le tableau des articles
-    const itemsTable = createOrderItemsTable(order);
-    orderCard.appendChild(itemsTable);
-    
-    // Ajouter le résumé de la commande (total + téléchargement facture)
-    const orderSummary = createOrderSummary(order);
-    orderCard.appendChild(orderSummary);
-    
-    // Ajouter la carte au conteneur
-    container.appendChild(orderCard);
 }
 
+// Create order items table
 function createOrderItemsTable(order) {
     const tableContainer = document.createElement('div');
     
-    // Determine which items to display according to the status
+    const { itemsToDisplay, pendingItems } = processOrderItems(order);
+    
+    const tableHTML = generateOrderTableHTML(itemsToDisplay, pendingItems);
+    
+    tableContainer.innerHTML = tableHTML;
+    return tableContainer;
+}
+
+// Process order items based on order status
+function processOrderItems(order) {
     let itemsToDisplay, pendingItems;
     
     if (order.status === 'partial' && order.deliveredItems) {
-        // For partial orders, display delivered and pending items
         itemsToDisplay = order.deliveredItems || [];
         pendingItems = order.remainingItems || [];
     } else {
-        // For other orders, display all items
         itemsToDisplay = order.items || [];
         pendingItems = [];
     }
     
-    // Group items by category
-    const groupedItems = {};
+    return { itemsToDisplay, pendingItems };
+}
+
+// Generate HTML for order items table
+function generateOrderTableHTML(itemsToDisplay, pendingItems) {
+    const groupedItems = groupItemsByCategory(itemsToDisplay);
+    const groupedPendingItems = groupItemsByCategory(pendingItems);
     
-    itemsToDisplay.forEach(item => {
-        const category = item.categorie || 'autres';
-        if (!groupedItems[category]) {
-            groupedItems[category] = [];
-        }
-        groupedItems[category].push(item);
-    });
-    
-    // Create the table structure
     let tableHTML = `
         <table class="order-details-table">
             <thead>
@@ -172,76 +159,19 @@ function createOrderItemsTable(order) {
             <tbody>
     `;
     
-    // Sort categories alphabetically
-    const sortedCategories = Object.keys(groupedItems).sort();
-    
-    // Add delivered items by category
-    for (const category of sortedCategories) {
-        // Add category header
-        tableHTML += `
-            <tr class="category-header">
-                <td colspan="4" class="category-section">${category.charAt(0).toUpperCase() + category.slice(1)}</td>
-            </tr>
-        `;
-        
-        // Add items in this category
-        groupedItems[category].forEach(item => {
-            const itemTotal = parseFloat(item.prix) * item.quantity;
-            
-            tableHTML += `
-                <tr class="delivered-item">
-                    <td class="qty-column">${item.quantity}</td>
-                    <td class="product-name-column">${item.Nom}</td>
-                    <td class="unit-price-column">${formatPrice(item.prix)} CHF</td>
-                    <td class="total-price-column">${formatPrice(itemTotal)} CHF</td>
-                </tr>
-            `;
-        });
-    }
+    // Add delivered items
+    tableHTML += addItemsByCategory(groupedItems, 'delivered-item');
     
     // Add pending items if any
-    if (pendingItems.length > 0) {
+    if (Object.keys(groupedPendingItems).length > 0) {
         tableHTML += `
             <tr class="order-section-header">
-                <td colspan="4" class="pending-section">PENDING ITEMS - We will deliver as soon as stock is available</td>
+                <td colspan="4" class="pending-section">
+                    PENDING ITEMS - We will deliver as soon as stock is available
+                </td>
             </tr>
         `;
-        
-        // Group pending items by category
-        const groupedPendingItems = {};
-        
-        pendingItems.forEach(item => {
-            const category = item.categorie || 'autres';
-            if (!groupedPendingItems[category]) {
-                groupedPendingItems[category] = [];
-            }
-            groupedPendingItems[category].push(item);
-        });
-        
-        // Sort pending categories alphabetically
-        const sortedPendingCategories = Object.keys(groupedPendingItems).sort();
-        
-        // Add pending items by category
-        for (const category of sortedPendingCategories) {
-            // Add category header
-            tableHTML += `
-                <tr class="category-header">
-                    <td colspan="4" class="category-section pending-category">${category.charAt(0).toUpperCase() + category.slice(1)}</td>
-                </tr>
-            `;
-            
-            // Add items in this category
-            groupedPendingItems[category].forEach(item => {
-                tableHTML += `
-                    <tr class="pending-item">
-                        <td class="qty-column">${item.quantity}</td>
-                        <td class="product-name-column">${item.Nom}</td>
-                        <td class="unit-price-column">-</td>
-                        <td class="total-price-column">-</td>
-                    </tr>
-                `;
-            });
-        }
+        tableHTML += addItemsByCategory(groupedPendingItems, 'pending-item', true);
     }
     
     tableHTML += `
@@ -249,35 +179,112 @@ function createOrderItemsTable(order) {
         </table>
     `;
     
-    tableContainer.innerHTML = tableHTML;
-    return tableContainer;
+    return tableHTML;
 }
 
+// Group items by category
+function groupItemsByCategory(items) {
+    const groupedItems = {};
+    
+    items.forEach(item => {
+        const category = item.categorie || 'others';
+        if (!groupedItems[category]) {
+            groupedItems[category] = [];
+        }
+        groupedItems[category].push(item);
+    });
+    
+    return groupedItems;
+}
+
+// Add items to table by category
+function addItemsByCategory(groupedItems, itemClass, isPending = false) {
+    let tableHTML = '';
+    
+    Object.keys(groupedItems)
+        .sort()
+        .forEach(category => {
+            // Add category header
+            tableHTML += `
+                <tr class="category-header">
+                    <td colspan="4" class="category-section ${isPending ? 'pending-category' : ''}">
+                        ${category.charAt(0).toUpperCase() + category.slice(1)}
+                    </td>
+                </tr>
+            `;
+            
+            // Add items in this category
+            groupedItems[category].forEach(item => {
+                tableHTML += isPending 
+                    ? createPendingItemRow(item)
+                    : createDeliveredItemRow(item);
+            });
+        });
+    
+    return tableHTML;
+}
+
+// Create row for delivered item
+function createDeliveredItemRow(item) {
+    const itemTotal = parseFloat(item.prix) * item.quantity;
+    
+    return `
+        <tr class="delivered-item">
+            <td class="qty-column">${item.quantity}</td>
+            <td class="product-name-column">${item.Nom}</td>
+            <td class="unit-price-column">${formatPrice(item.prix)} CHF</td>
+            <td class="total-price-column">${formatPrice(itemTotal)} CHF</td>
+        </tr>
+    `;
+}
+
+// Create row for pending item
+function createPendingItemRow(item) {
+    return `
+        <tr class="pending-item">
+            <td class="qty-column">${item.quantity}</td>
+            <td class="product-name-column">${item.Nom}</td>
+            <td class="unit-price-column">-</td>
+            <td class="total-price-column">-</td>
+        </tr>
+    `;
+}
+
+// Create order summary section
 function createOrderSummary(order) {
     const summaryContainer = document.createElement('div');
     summaryContainer.className = 'order-summary';
     
-    // Calculer le montant total
-    let totalAmount;
+    const totalAmount = calculateOrderTotal(order);
     
+    summaryContainer.innerHTML = createOrderSummaryHTML(order, totalAmount);
+    
+    setupInvoiceDownload(summaryContainer, order);
+    
+    return summaryContainer;
+}
+
+// Calculate order total
+function calculateOrderTotal(order) {
     if (order.status === 'partial' && order.deliveredItems) {
-        // Pour les commandes partielles, calculer le total des articles livrés
-        totalAmount = order.deliveredItems.reduce((total, item) => 
-            total + (parseFloat(item.prix) * item.quantity), 0
-        );
-    } else {
-        // Pour les autres commandes, utiliser le total existant ou calculer
-        totalAmount = order.total || order.items.reduce((total, item) => 
+        return order.deliveredItems.reduce((total, item) => 
             total + (parseFloat(item.prix) * item.quantity), 0
         );
     }
     
-    // Créer le contenu du résumé
-    // MODIFICATION: Permettre le téléchargement des factures pour les commandes partielles aussi
-    summaryContainer.innerHTML = `
+    return order.total || order.items.reduce((total, item) => 
+        total + (parseFloat(item.prix) * item.quantity), 0
+    );
+}
+
+// Create HTML for order summary
+function createOrderSummaryHTML(order, totalAmount) {
+    const isInvoiceAvailable = order.status !== 'pending' && order.status !== 'in progress';
+    
+    return `
         <div class="order-summary-total">
             Total: ${formatPrice(totalAmount)} CHF
-            ${order.status !== 'pending' && order.status !== 'in progress' ? 
+            ${isInvoiceAvailable ? 
                 `<button class="download-invoice-btn" data-order-id="${order.orderId}">
                     <i class="fas fa-file-pdf"></i> Download Invoice
                 </button>` : 
@@ -287,23 +294,19 @@ function createOrderSummary(order) {
             }
         </div>
     `;
-    
-    // Ajouter l'écouteur pour le téléchargement de la facture
-    const invoiceBtn = summaryContainer.querySelector('.download-invoice-btn');
-    if (invoiceBtn) {
-        invoiceBtn.addEventListener('click', function() {
-            const orderId = this.getAttribute('data-order-id');
-            window.open(getInvoiceDownloadLink(orderId), '_blank');
-        });
-    }
-    
-    return summaryContainer;
 }
 
-/**
- * Recherche de commandes par terme
- * @param {string} searchTerm - Terme de recherche
- */
+// Setup invoice download functionality
+function setupInvoiceDownload(summaryContainer, order) {
+    const invoiceBtn = summaryContainer.querySelector('.download-invoice-btn');
+    if (invoiceBtn) {
+        invoiceBtn.addEventListener('click', () => {
+            window.open(getInvoiceDownloadLink(order.orderId), '_blank');
+        });
+    }
+}
+
+// Placeholder for order search functionality
 export function searchOrders(searchTerm) {
-    // À implémenter si nécessaire
+    // To be implemented if needed
 }

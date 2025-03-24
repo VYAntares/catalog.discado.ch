@@ -1,6 +1,5 @@
 /**
  * Module de gestion du panier
- * Gère toutes les interactions avec le panier d'achat
  */
 
 import { showNotification } from '../../utils/notification.js';
@@ -13,30 +12,22 @@ import { formatPrice } from '../../utils/formatter.js';
 import { showModal, hideModal, showConfirmModal } from '../../utils/modal.js';
 import { initCheckout } from './checkout.js';
 
+// ===== INITIALISATION =====
+
 /**
  * Initialise le gestionnaire de panier
  */
 export function initCartManager() {
-    // Initialiser le modal du panier
     setupCartModal();
-    
-    // Configurer les écouteurs d'événements
     setupEventListeners();
-    
-    // Initialiser le processus de checkout
     initCheckout();
-    
-    // Mettre à jour le compteur du panier
     updateCartCountDisplay();
-    
-    console.log('Cart manager initialized');
 }
 
 /**
  * Configure le modal du panier
  */
 function setupCartModal() {
-    // Trouver tous les boutons qui ouvrent le panier
     const cartToggleButtons = document.querySelectorAll('#cartToggle, .cart-toggle');
     
     cartToggleButtons.forEach(button => {
@@ -50,7 +41,7 @@ function setupCartModal() {
         });
     });
     
-    // Événements pour les boutons du panier
+    // Gestion du bouton de vidage du panier
     const clearCartBtn = document.getElementById('clear-cart-btn');
     if (clearCartBtn) {
         clearCartBtn.addEventListener('click', clearCartHandler);
@@ -58,6 +49,38 @@ function setupCartModal() {
     
     document.addEventListener('cartUpdated', updateCartCountDisplay);
 }
+
+/**
+ * Configure les écouteurs d'événements
+ */
+function setupEventListeners() {
+    // Gestionnaire pour l'événement de mise à jour du panier
+    document.addEventListener('cartUpdated', function() {
+        updateCartCountDisplay();
+        
+        // Mettre à jour l'affichage du panier s'il est ouvert
+        const cartModal = document.getElementById('cart-modal');
+        if (cartModal && cartModal.style.display === 'flex') {
+            displayCart();
+        }
+    });
+    
+    // Gestionnaire pour le bouton de checkout
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', processCheckout);
+    }
+    
+    // Gestionnaire pour le bouton "View My Orders" après le checkout
+    const viewOrdersBtn = document.getElementById('view-orders-btn');
+    if (viewOrdersBtn) {
+        viewOrdersBtn.addEventListener('click', function() {
+            window.location.href = '/pages/orders.html';
+        });
+    }
+}
+
+// ===== AFFICHAGE DU PANIER =====
 
 /**
  * Affiche le contenu du panier dans le modal
@@ -141,40 +164,10 @@ function updateCartCountDisplay() {
     });
 }
 
-/**
- * Configure les écouteurs d'événements
- */
-function setupEventListeners() {
-    // Gestionnaire pour l'événement de mise à jour du panier
-    document.addEventListener('cartUpdated', function() {
-        updateCartCountDisplay();
-        
-        // Mettre à jour l'affichage du panier s'il est ouvert
-        const cartModal = document.getElementById('cart-modal');
-        if (cartModal && cartModal.style.display === 'flex') {
-            displayCart();
-        }
-    });
-    
-    // Gestionnaire pour le bouton de checkout
-    const checkoutBtn = document.getElementById('checkout-btn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', processCheckout);
-    }
-    
-    // Gestionnaire pour le bouton "View My Orders" après le checkout
-    const viewOrdersBtn = document.getElementById('view-orders-btn');
-    if (viewOrdersBtn) {
-        viewOrdersBtn.addEventListener('click', function() {
-            window.location.href = '/pages/orders.html';
-        });
-    }
-}
+// ===== GESTION DES ARTICLES =====
 
 /**
  * Ajoute un produit au panier
- * @param {Object} product - Produit à ajouter
- * @param {number} quantity - Quantité à ajouter
  */
 export function addToCart(product, quantity) {
     if (!product || !product.Nom || !product.prix) {
@@ -199,7 +192,6 @@ export function addToCart(product, quantity) {
 
 /**
  * Supprime un article du panier
- * @param {number} index - Index de l'article à supprimer
  */
 export function removeFromCart(index) {
     // Récupérer l'article avant de le supprimer pour afficher son nom
@@ -251,6 +243,8 @@ async function clearCartHandler() {
     }
 }
 
+// ===== PROCESSUS DE COMMANDE =====
+
 /**
  * Lance le processus de commande
  */
@@ -278,8 +272,7 @@ function processCheckout() {
 }
 
 /**
- * Function to submit the order with reference
- * @param {Array} cart - Cart items
+ * Envoie la commande au serveur avec référence
  */
 async function submitOrder(cart) {
     try {
@@ -293,7 +286,7 @@ async function submitOrder(cart) {
             },
             body: JSON.stringify({ 
                 items: cart,
-                reference: orderReference // Include order reference
+                reference: orderReference
             })
         });
         
@@ -317,7 +310,7 @@ async function submitOrder(cart) {
                 document.querySelector('#cart-confirmation p:first-child').textContent = successMessage;
             }
             
-            // Notification de succès (optionnelle si la confirmation visuelle est déjà présente)
+            // Notification de succès
             showNotification(successMessage, 'success');
         } else {
             // En cas d'erreur, revenir à l'affichage normal du panier
@@ -335,8 +328,6 @@ async function submitOrder(cart) {
             showNotification(data.message || 'Error placing order', 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
-        
         // En cas d'erreur, revenir à l'affichage normal du panier
         document.getElementById('cart-items').style.display = 'block';
         document.querySelector('.cart-total').style.display = 'block';

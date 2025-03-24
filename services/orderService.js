@@ -1,13 +1,15 @@
-// orderService.js - Handle order operations
+// orderService.js
+// Service de gestion des commandes et articles
 const fs = require('fs');
 const path = require('path');
 const dbModule = require('./db');
 const userService = require('./userService');
 
-// Objet pour gérer le compteur de commandes
+// Gestionnaire du compteur de commandes
 const orderCounter = {
   counterFilePath: path.join(__dirname, '../data/orderCounter.json'),
   
+  // Chargement du compteur depuis le fichier
   loadCounter() {
     try {
       if (fs.existsSync(this.counterFilePath)) {
@@ -16,11 +18,12 @@ const orderCounter = {
         return parsed.counter || 1;
       }
     } catch (error) {
-      console.error('Erreur lors du chargement du compteur:', error);
+      // Silencieux en cas d'erreur
     }
     return 1; // Valeur par défaut
   },
   
+  // Sauvegarde du compteur dans le fichier
   saveCounter(counter) {
     try {
       const dir = path.dirname(this.counterFilePath);
@@ -30,75 +33,60 @@ const orderCounter = {
       
       fs.writeFileSync(this.counterFilePath, JSON.stringify({ counter }, null, 2), 'utf8');
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du compteur:', error);
+      // Silencieux en cas d'erreur
     }
   },
   
+  // Génération d'ID de commande au format YYMMDD-XXXX
   generateOrderId(date = new Date()) {
-    // Charger le compteur actuel
     let counter = this.loadCounter();
     
-    // Format de date YYMMDD
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     
     const datePrefix = `${year}${month}${day}`;
-    
-    // Formater le compteur sur 4 chiffres
     const counterStr = counter.toString().padStart(4, '0');
     
-    // Incrémenter le compteur pour la prochaine utilisation
     counter++;
+    if (counter > 9999) counter = 1;
     
-    // Réinitialiser le compteur s'il dépasse 9999
-    if (counter > 9999) {
-      counter = 1;
-    }
-    
-    // Sauvegarder le nouveau compteur
     this.saveCounter(counter);
-    
-    // Retourner l'ID formaté
     return `${datePrefix}-${counterStr}`;
   },
   
+  // Réinitialisation du compteur
   resetCounter(value = 1) {
     this.saveCounter(value);
     return value;
   }
 };
 
-// Service for managing orders
+// Service de gestion des commandes
 const orderService = {
-    // Réinitialiser le compteur manuellement
+    // Réinitialisation manuelle du compteur
     resetOrderCounter(value = 1) {
         return orderCounter.resetCounter(value);
     },
     
-    // Save a new order
+    // Sauvegarde d'une nouvelle commande ou ajout à une commande existante
     saveOrder(userId, cartItems, reference = '') {
         try {
-            // Check if the user has a pending order
             const pendingOrder = this.getUserPendingOrder(userId);
             
             if (pendingOrder) {
-                // User has a pending order, add items to it
                 return this.appendToExistingOrder(pendingOrder.order_id, userId, cartItems, reference);
             } else {
-                // No pending order, create a new one
                 return this.createNewOrder(userId, cartItems, reference);
             }
         } catch (error) {
-            console.error('Error saving order:', error);
             throw error;
         }
     },
     
-    // Get user's pending order (if any)
+    // Récupération d'une commande en attente pour un utilisateur
     getUserPendingOrder(userId) {
         try {
-            // Find the most recent pending order for this user
             const pendingOrderQuery = dbModule.db.prepare(`
                 SELECT * FROM orders 
                 WHERE user_id = ? AND status = 'pending' 
@@ -107,43 +95,29 @@ const orderService = {
             
             return pendingOrderQuery.get(userId);
         } catch (error) {
-            console.error('Error getting pending order:', error);
             return null;
         }
     },
     
-    // Create a new order
+    // Création d'une nouvelle commande
     createNewOrder(userId, cartItems, reference = '') {
         return dbModule.transaction(() => {
-            // Utiliser notre générateur d'ID
             const orderId = orderCounter.generateOrderId();
             const date = new Date().toISOString();
-            
-            // Récupérer les articles en attente de livraison pour ce client
             const pendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
             
-            // Créer l'enregistrement de commande avec référence
             dbModule.createOrder.run(orderId, userId, 'pending', date, reference);
             
-            // Traiter chaque article du panier
             cartItems.forEach(item => {
-                // Existing cart item processing...
-                // [Code kept the same as in the original file]
-                
-                // Vérifier si l'article existe dans la liste "à livrer"
                 const pendingItem = pendingDeliveries.find(
                     pending => pending.product_name === item.Nom && 
                             pending.category === item.categorie
                 );
                 
                 if (pendingItem) {
-                    // L'article existe dans "à livrer", gérer la déduction
                     if (pendingItem.quantity <= item.quantity) {
-                        // La quantité commandée est supérieure ou égale à celle "à livrer"
-                        // Supprimer complètement l'article de "à livrer"
                         dbModule.removePendingDelivery.run(pendingItem.id);
                         
-                        // Ajouter à la commande normalement
                         dbModule.addOrderItem.run(
                             orderId,
                             item.Nom,
@@ -153,15 +127,12 @@ const orderService = {
                             'pending'
                         );
                     } else {
-                        // La quantité commandée est inférieure à celle "à livrer"
-                        // Réduire la quantité dans "à livrer"
                         const newPendingQuantity = pendingItem.quantity - item.quantity;
                         dbModule.updatePendingDeliveryQuantity.run(
                             newPendingQuantity,
                             pendingItem.id
                         );
                         
-                        // Ajouter à la commande normalement
                         dbModule.addOrderItem.run(
                             orderId,
                             item.Nom,
@@ -172,7 +143,6 @@ const orderService = {
                         );
                     }
                 } else {
-                    // L'article n'existe pas dans "à livrer", l'ajouter normalement
                     dbModule.addOrderItem.run(
                         orderId,
                         item.Nom,
@@ -188,32 +158,22 @@ const orderService = {
         });
     },
     
-    // Add items to an existing order
+    // Ajout d'articles à une commande existante
     appendToExistingOrder(orderId, userId, cartItems, reference = '') {
         return dbModule.transaction(() => {
-            // Récupérer les articles en attente de livraison pour ce client
             const pendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
-            
-            // Get existing items in the order
             const existingItems = dbModule.getOrderItems.all(orderId);
             
-            // Process each new item
             cartItems.forEach(item => {
-                // Vérifier si l'article existe dans la liste "à livrer"
                 const pendingItem = pendingDeliveries.find(
                     pending => pending.product_name === item.Nom && 
                             pending.category === item.categorie
                 );
                 
                 if (pendingItem) {
-                    // L'article existe dans "à livrer", gérer la déduction
                     if (pendingItem.quantity <= item.quantity) {
-                        // La quantité commandée est supérieure ou égale à celle "à livrer"
-                        // Supprimer complètement l'article de "à livrer"
                         dbModule.removePendingDelivery.run(pendingItem.id);
                     } else {
-                        // La quantité commandée est inférieure à celle "à livrer"
-                        // Réduire la quantité dans "à livrer"
                         const newPendingQuantity = pendingItem.quantity - item.quantity;
                         dbModule.updatePendingDeliveryQuantity.run(
                             newPendingQuantity,
@@ -222,17 +182,14 @@ const orderService = {
                     }
                 }
                 
-                // Vérifier si l'article existe déjà dans la commande
                 const existingItem = existingItems.find(
                     existing => existing.product_name === item.Nom && 
                                 existing.category === item.categorie
                 );
                 
                 if (existingItem) {
-                    // Item exists, update the quantity
                     const newQuantity = existingItem.quantity + item.quantity;
                     
-                    // Update the item quantity
                     dbModule.updateOrderItemQuantity.run(
                         newQuantity,
                         orderId,
@@ -240,7 +197,6 @@ const orderService = {
                         item.categorie
                     );
                 } else {
-                    // New item, add it to the order
                     dbModule.addOrderItem.run(
                         orderId,
                         item.Nom,
@@ -252,12 +208,9 @@ const orderService = {
                 }
             });
             
-            // Update the order date and reference if provided
             if (reference) {
-                // Si une référence est fournie, mettre à jour la date et la référence
                 dbModule.updateOrderDateAndReference.run(new Date().toISOString(), reference, orderId);
             } else {
-                // Sinon, mettre à jour uniquement la date
                 dbModule.updateOrderDate.run(new Date().toISOString(), orderId);
             }
             
@@ -270,75 +223,34 @@ const orderService = {
         });
     },
     
-    // Get all orders for a user
+    // Récupération de toutes les commandes d'un utilisateur
     getUserOrders(userId) {
         try {
             const orders = dbModule.getUserOrders.all(userId);
             const enrichedOrders = [];
             
             for (const order of orders) {
-                // Get order items
                 const items = dbModule.getOrderItems.all(order.order_id);
                 
-                // Format items to match expected structure
-                const formattedItems = items.map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
+                // Formater et regrouper les articles
+                const formattedItems = this._formatItems(items);
+                const groupedItems = this._groupItemsByCategory(formattedItems);
                 
-                // Group items by category
-                const groupedItems = {};
-                formattedItems.forEach(item => {
-                    const category = item.categorie || 'autres';
-                    if (!groupedItems[category]) {
-                        groupedItems[category] = [];
-                    }
-                    groupedItems[category].push(item);
-                });
-                
-                // Get delivered items
+                // Récupérer les articles livrés
                 const deliveredItems = items
                     .filter(item => item.status === 'delivered')
-                    .map(item => ({
-                        Nom: item.product_name,
-                        prix: item.product_price.toString(),
-                        quantity: item.quantity,
-                        categorie: item.category
-                    }));
+                    .map(item => this._formatSingleItem(item));
                 
-                // Group delivered items by category
-                const groupedDeliveredItems = {};
-                deliveredItems.forEach(item => {
-                    const category = item.categorie || 'autres';
-                    if (!groupedDeliveredItems[category]) {
-                        groupedDeliveredItems[category] = [];
-                    }
-                    groupedDeliveredItems[category].push(item);
-                });
+                const groupedDeliveredItems = this._groupItemsByCategory(deliveredItems);
                 
-                // Get remaining items
+                // Récupérer les articles restants
                 const remainingItems = items
                     .filter(item => item.status === 'remaining')
-                    .map(item => ({
-                        Nom: item.product_name,
-                        prix: item.product_price.toString(),
-                        quantity: item.quantity,
-                        categorie: item.category
-                    }));
+                    .map(item => this._formatSingleItem(item));
                 
-                // Group remaining items by category
-                const groupedRemainingItems = {};
-                remainingItems.forEach(item => {
-                    const category = item.categorie || 'autres';
-                    if (!groupedRemainingItems[category]) {
-                        groupedRemainingItems[category] = [];
-                    }
-                    groupedRemainingItems[category].push(item);
-                });
+                const groupedRemainingItems = this._groupItemsByCategory(remainingItems);
                 
-                // Build order object
+                // Créer l'objet commande
                 const orderObj = {
                     orderId: order.order_id,
                     userId: order.user_id,
@@ -350,7 +262,6 @@ const orderService = {
                     reference: order.reference
                 };
                 
-                // Add delivered and remaining items if they exist
                 if (deliveredItems.length > 0) {
                     orderObj.deliveredItems = deliveredItems;
                     orderObj.groupedDeliveredItems = groupedDeliveredItems;
@@ -361,124 +272,112 @@ const orderService = {
                     orderObj.groupedRemainingItems = groupedRemainingItems;
                 }
                 
-                // Get user profile
                 orderObj.userProfile = userService.getUserProfile(userId);
                 
                 enrichedOrders.push(orderObj);
             }
             
-            // Check for pending deliveries
-            const pendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
-            
-            if (pendingDeliveries.length > 0) {
-                // Format pending deliveries
-                const pendingItems = pendingDeliveries.map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
-                
-                // Group by category
-                const groupedItems = {};
-                pendingItems.forEach(item => {
-                    const category = item.categorie || 'autres';
-                    if (!groupedItems[category]) {
-                        groupedItems[category] = [];
-                    }
-                    groupedItems[category].push(item);
-                });
-                
-                // Add pending delivery "order"
-                enrichedOrders.unshift({
-                    orderId: 'pending-delivery',
-                    userId: userId,
-                    status: 'pending-delivery',
-                    date: new Date().toISOString(),
-                    items: pendingItems,
-                    isToDeliverItems: true,
-                    groupedItems: groupedItems
-                });
-            }
+            // Vérifier les livraisons en attente
+            this._addPendingDeliveriesToOrders(userId, enrichedOrders);
             
             return enrichedOrders;
         } catch (error) {
-            console.error('Error getting user orders:', error);
-            return []; // Return empty array instead of legacy fallback
+            return [];
         }
     },
     
-    // Get pending orders (for admin)
+    // Formatage d'un seul article
+    _formatSingleItem(item) {
+        return {
+            Nom: item.product_name,
+            prix: item.product_price.toString(),
+            quantity: item.quantity,
+            categorie: item.category
+        };
+    },
+    
+    // Formatage d'une liste d'articles
+    _formatItems(items) {
+        return items.map(item => this._formatSingleItem(item));
+    },
+    
+    // Regroupement des articles par catégorie
+    _groupItemsByCategory(items) {
+        const groupedItems = {};
+        items.forEach(item => {
+            const category = item.categorie || 'autres';
+            if (!groupedItems[category]) {
+                groupedItems[category] = [];
+            }
+            groupedItems[category].push(item);
+        });
+        return groupedItems;
+    },
+    
+    // Ajout des livraisons en attente à la liste des commandes
+    _addPendingDeliveriesToOrders(userId, enrichedOrders) {
+        const pendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
+        
+        if (pendingDeliveries.length > 0) {
+            const pendingItems = pendingDeliveries.map(item => this._formatSingleItem(item));
+            const groupedItems = this._groupItemsByCategory(pendingItems);
+            
+            enrichedOrders.unshift({
+                orderId: 'pending-delivery',
+                userId: userId,
+                status: 'pending-delivery',
+                date: new Date().toISOString(),
+                items: pendingItems,
+                isToDeliverItems: true,
+                groupedItems: groupedItems
+            });
+        }
+    },
+    
+    // Récupération des commandes en attente (pour admin)
     getPendingOrders() {
         try {
             const pendingOrders = dbModule.getPendingOrders.all();
             const enrichedOrders = [];
             
             for (const order of pendingOrders) {
-                // Get order items
                 const items = dbModule.getOrderItems.all(order.order_id);
+                const formattedItems = this._formatItems(items);
                 
-                // Format items to match expected structure
-                const formattedItems = items.map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
-                
-                // Build order object
                 const orderObj = {
                     orderId: order.order_id,
                     userId: order.user_id,
                     status: order.status,
                     date: order.date,
                     items: formattedItems,
-                    reference: order.reference
+                    reference: order.reference,
+                    userProfile: userService.getUserProfile(order.user_id)
                 };
-                
-                // Get user profile
-                orderObj.userProfile = userService.getUserProfile(order.user_id);
                 
                 enrichedOrders.push(orderObj);
             }
             
             return enrichedOrders;
         } catch (error) {
-            console.error('Error getting pending orders:', error);
-            return []; // Return empty array instead of legacy fallback
+            return [];
         }
     },
     
-    // Get treated orders (for admin)
+    // Récupération des commandes traitées (pour admin)
     getTreatedOrders() {
         try {
             const treatedOrders = dbModule.getTreatedOrders.all();
             const enrichedOrders = [];
             
             for (const order of treatedOrders) {
-                // Get delivered items
+                // Articles livrés
                 const deliveredItems = dbModule.getOrderItemsByStatus.all(order.order_id, 'delivered');
+                const formattedDeliveredItems = this._formatItems(deliveredItems);
                 
-                // Format items to match expected structure
-                const formattedDeliveredItems = deliveredItems.map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
-                
-                // Get remaining items
+                // Articles restants
                 const remainingItems = dbModule.getOrderItemsByStatus.all(order.order_id, 'remaining');
+                const formattedRemainingItems = this._formatItems(remainingItems);
                 
-                // Format remaining items
-                const formattedRemainingItems = remainingItems.map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
-                
-                // Build order object
                 const orderObj = {
                     orderId: order.order_id,
                     userId: order.user_id,
@@ -486,28 +385,24 @@ const orderService = {
                     date: order.date,
                     lastProcessed: order.last_processed,
                     deliveredItems: formattedDeliveredItems,
-                    reference: order.reference
+                    reference: order.reference,
+                    userProfile: userService.getUserProfile(order.user_id)
                 };
                 
-                // Add remaining items if they exist
                 if (formattedRemainingItems.length > 0) {
                     orderObj.remainingItems = formattedRemainingItems;
                 }
-                
-                // Get user profile
-                orderObj.userProfile = userService.getUserProfile(order.user_id);
                 
                 enrichedOrders.push(orderObj);
             }
             
             return enrichedOrders;
         } catch (error) {
-            console.error('Error getting treated orders:', error);
-            return []; // Return empty array instead of legacy fallback
+            return [];
         }
     },
     
-    // Get order details
+    // Récupération des détails d'une commande
     getOrderDetails(orderId, userId) {
         try {
             const order = dbModule.getOrderById.get(orderId);
@@ -516,67 +411,26 @@ const orderService = {
                 throw new Error('Order not found');
             }
             
-            // Get all items
             const items = dbModule.getOrderItems.all(orderId);
             
-            // Format items based on status
+            // Articles livrés
             const deliveredItems = items
                 .filter(item => item.status === 'delivered')
-                .map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
+                .map(item => this._formatSingleItem(item));
             
-            // Group delivered items by category
-            const groupedDeliveredItems = {};
-            deliveredItems.forEach(item => {
-                const category = item.categorie || 'autres';
-                if (!groupedDeliveredItems[category]) {
-                    groupedDeliveredItems[category] = [];
-                }
-                groupedDeliveredItems[category].push(item);
-            });
+            const groupedDeliveredItems = this._groupItemsByCategory(deliveredItems);
             
+            // Articles restants
             const remainingItems = items
                 .filter(item => item.status === 'remaining')
-                .map(item => ({
-                    Nom: item.product_name,
-                    prix: item.product_price.toString(),
-                    quantity: item.quantity,
-                    categorie: item.category
-                }));
+                .map(item => this._formatSingleItem(item));
             
-            // Group remaining items by category
-            const groupedRemainingItems = {};
-            remainingItems.forEach(item => {
-                const category = item.categorie || 'autres';
-                if (!groupedRemainingItems[category]) {
-                    groupedRemainingItems[category] = [];
-                }
-                groupedRemainingItems[category].push(item);
-            });
+            const groupedRemainingItems = this._groupItemsByCategory(remainingItems);
             
-            // All items (for pending orders)
-            const allItems = items.map(item => ({
-                Nom: item.product_name,
-                prix: item.product_price.toString(),
-                quantity: item.quantity,
-                categorie: item.category
-            }));
+            // Tous les articles
+            const allItems = this._formatItems(items);
+            const groupedItems = this._groupItemsByCategory(allItems);
             
-            // Group all items by category
-            const groupedItems = {};
-            allItems.forEach(item => {
-                const category = item.categorie || 'autres';
-                if (!groupedItems[category]) {
-                    groupedItems[category] = [];
-                }
-                groupedItems[category].push(item);
-            });
-            
-            // Build order object
             const orderObj = {
                 orderId: order.order_id,
                 userId: order.user_id,
@@ -589,7 +443,6 @@ const orderService = {
                 reference: order.reference
             };
             
-            // Add delivered and remaining items if they exist
             if (deliveredItems.length > 0) {
                 orderObj.deliveredItems = deliveredItems;
                 orderObj.groupedDeliveredItems = groupedDeliveredItems;
@@ -602,59 +455,32 @@ const orderService = {
             
             return orderObj;
         } catch (error) {
-            console.error('Error getting order details:', error);
-            throw error; // Just propagate the error instead of fallback
+            throw error;
         }
     },
     
-    // Mise à jour de la fonction processOrder
+    // Traitement d'une commande (livraison partielle ou complète)
     processOrder(orderId, userId, deliveredItems) {
         try {
             const date = new Date().toISOString();
             
             return dbModule.transaction(() => {
-                // Get the order first
                 const order = dbModule.getOrderById.get(orderId);
                 
                 if (!order) {
                     throw new Error('Order not found');
                 }
                 
-                // Get all order items
                 const allItems = dbModule.getOrderItems.all(orderId);
-                
-                // Track remaining items
                 const remainingItems = [];
-                
-                // Récupérer les articles déjà en attente de livraison pour cet utilisateur
                 const existingPendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
                 
-                // Process each original item
                 allItems.forEach(item => {
-                    // Find if the item was delivered
-                    const deliveredItem = deliveredItems.find(
-                        d => d.Nom === item.product_name
-                    );
+                    const deliveredItem = deliveredItems.find(d => d.Nom === item.product_name);
                     
                     if (deliveredItem && deliveredItem.quantity > 0) {
                         if (deliveredItem.quantity >= item.quantity) {
-                            // Fully delivered or excess quantity - update both status and quantity
-                            
-                            // Modifier la quantité de l'article original pour refléter la quantité réellement livrée
-                            dbModule.updateOrderItemQuantity.run(
-                                deliveredItem.quantity, // Utiliser la quantité réellement livrée (même si > commandée)
-                                orderId,
-                                item.product_name,
-                                item.category
-                            );
-                            
-                            // Marquer l'article comme livré
-                            dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
-                        } else if (deliveredItem.quantity < item.quantity) {
-                            // Partially delivered - create two entries
-                            const remainingQuantity = item.quantity - deliveredItem.quantity;
-                            
-                            // Modifier la quantité de l'article original pour refléter ce qui a été livré
+                            // Livraison complète
                             dbModule.updateOrderItemQuantity.run(
                                 deliveredItem.quantity,
                                 orderId,
@@ -662,10 +488,20 @@ const orderService = {
                                 item.category
                             );
                             
-                            // Marquer l'article comme livré
+                            dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
+                        } else {
+                            // Livraison partielle
+                            const remainingQuantity = item.quantity - deliveredItem.quantity;
+                            
+                            dbModule.updateOrderItemQuantity.run(
+                                deliveredItem.quantity,
+                                orderId,
+                                item.product_name,
+                                item.category
+                            );
+                            
                             dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
                             
-                            // Créer un nouvel article avec la quantité restante
                             dbModule.addOrderItem.run(
                                 orderId,
                                 item.product_name,
@@ -675,7 +511,6 @@ const orderService = {
                                 'remaining'
                             );
                             
-                            // Add to remaining items
                             remainingItems.push({
                                 Nom: item.product_name,
                                 prix: item.product_price.toString(),
@@ -683,36 +518,19 @@ const orderService = {
                                 categorie: item.category
                             });
                             
-                            // Gérer les articles en attente de livraison
-                            // Rechercher si l'article existe déjà dans les articles en attente
-                            const existingPendingItem = existingPendingDeliveries.find(
-                                p => p.product_name === item.product_name && p.category === item.category
+                            this._updatePendingDeliveryItem(
+                                userId, 
+                                item.product_name, 
+                                item.category, 
+                                remainingQuantity, 
+                                item.product_price, 
+                                existingPendingDeliveries
                             );
-                            
-                            if (existingPendingItem) {
-                                // L'article est déjà en attente, mettre à jour la quantité
-                                // Nous additionnons la quantité restante à la quantité existante
-                                const updatedQuantity = existingPendingItem.quantity + remainingQuantity;
-                                dbModule.updatePendingDeliveryQuantity.run(
-                                    updatedQuantity,
-                                    existingPendingItem.id
-                                );
-                            } else {
-                                // L'article n'existe pas encore, l'ajouter
-                                dbModule.addPendingDelivery.run(
-                                    userId,
-                                    item.product_name,
-                                    item.product_price,
-                                    remainingQuantity,
-                                    item.category
-                                );
-                            }
                         }
                     } else {
-                        // Not delivered at all, mark as remaining
+                        // Aucune livraison
                         dbModule.updateOrderItemStatus.run('remaining', orderId, item.product_name);
                         
-                        // Add to remaining items
                         remainingItems.push({
                             Nom: item.product_name,
                             prix: item.product_price.toString(),
@@ -720,36 +538,18 @@ const orderService = {
                             categorie: item.category
                         });
                         
-                        // Gérer les articles en attente de livraison
-                        // Rechercher si l'article existe déjà dans les articles en attente
-                        const existingPendingItem = existingPendingDeliveries.find(
-                            p => p.product_name === item.product_name && p.category === item.category
+                        this._updatePendingDeliveryItem(
+                            userId, 
+                            item.product_name, 
+                            item.category, 
+                            item.quantity, 
+                            item.product_price, 
+                            existingPendingDeliveries
                         );
-                        
-                        if (existingPendingItem) {
-                            // L'article est déjà en attente, mettre à jour la quantité
-                            // Nous additionnons la quantité non livrée à la quantité existante
-                            const updatedQuantity = existingPendingItem.quantity + item.quantity;
-                            dbModule.updatePendingDeliveryQuantity.run(
-                                updatedQuantity,
-                                existingPendingItem.id
-                            );
-                        } else {
-                            // L'article n'existe pas encore, l'ajouter
-                            dbModule.addPendingDelivery.run(
-                                userId,
-                                item.product_name,
-                                item.product_price,
-                                item.quantity,
-                                item.category
-                            );
-                        }
                     }
                 });
                 
-                // Déterminer le statut de la commande
                 const newStatus = remainingItems.length > 0 ? 'partial' : 'completed';
-                
                 dbModule.updateOrderStatus.run(newStatus, date, orderId);
                 
                 return {
@@ -758,25 +558,40 @@ const orderService = {
                 };
             });
         } catch (error) {
-            console.error('Error processing order:', error);
             throw error;
         }
     },
+    
+    // Mise à jour des articles en attente de livraison
+    _updatePendingDeliveryItem(userId, productName, category, quantity, price, existingPendingDeliveries) {
+        const existingItem = existingPendingDeliveries.find(
+            p => p.product_name === productName && p.category === category
+        );
+        
+        if (existingItem) {
+            const updatedQuantity = existingItem.quantity + quantity;
+            dbModule.updatePendingDeliveryQuantity.run(
+                updatedQuantity,
+                existingItem.id
+            );
+        } else {
+            dbModule.addPendingDelivery.run(
+                userId,
+                productName,
+                price,
+                quantity,
+                category
+            );
+        }
+    },
 
-    /**
- * Supprime les articles en attente de livraison
- * @param {string} userId - ID de l'utilisateur
- * @param {Array} items - Articles à supprimer
- * @returns {Object} Résultat de l'opération
- */
+    // Suppression d'articles en attente de livraison
     deletePendingItems(userId, items) {
         try {
             return dbModule.transaction(() => {
                 let totalDeleted = 0;
                 
-                // Traiter chaque article à supprimer
                 items.forEach(item => {
-                    // Rechercher l'article dans la table pending_deliveries
                     const pendingItem = dbModule.findPendingDeliveryItem.get(
                         userId,
                         item.Nom,
@@ -784,13 +599,10 @@ const orderService = {
                     );
                     
                     if (pendingItem) {
-                        // Si la quantité à supprimer est égale à la quantité en attente,
-                        // supprimer complètement l'entrée
                         if (pendingItem.quantity === item.quantity) {
                             dbModule.removePendingDelivery.run(pendingItem.id);
                             totalDeleted++;
                         } else if (pendingItem.quantity > item.quantity) {
-                            // Si la quantité en attente est supérieure, réduire la quantité
                             const newQuantity = pendingItem.quantity - item.quantity;
                             dbModule.updatePendingDeliveryQuantity.run(
                                 newQuantity,
@@ -808,30 +620,24 @@ const orderService = {
                 };
             });
         } catch (error) {
-            console.error('Erreur lors de la suppression des articles en attente:', error);
             throw error;
         }
     },
 
+    // Création d'une commande à partir d'articles en attente de livraison
     createOrderFromPendingItems(userId, items) {
         try {
             return dbModule.transaction(() => {
-                // Utiliser la méthode existante pour vérifier si une commande en attente existe
                 const pendingOrder = this.getUserPendingOrder(userId);
                 
                 if (pendingOrder) {
-                    // Réutiliser la fonction existante appendToExistingOrder
-                    const result = this.appendToExistingOrder(pendingOrder.order_id, userId, items);
-                    return result; // Cette fonction retourne déjà { success: true, orderId, merged: true, message: '...' }
+                    return this.appendToExistingOrder(pendingOrder.order_id, userId, items);
                 } else {
-                    // Pas de commande en attente, créer une nouvelle
                     const orderId = orderCounter.generateOrderId();
                     const date = new Date().toISOString();
                     
-                    // Créer l'enregistrement de commande
                     dbModule.createOrder.run(orderId, userId, 'pending', date, '');
                     
-                    // Ajouter les articles à la commande
                     items.forEach(item => {
                         dbModule.addOrderItem.run(
                             orderId,
@@ -842,8 +648,6 @@ const orderService = {
                             'pending'
                         );
                         
-                        // Trouver et supprimer cet article des livraisons en attente
-                        // (Cette partie reste inchangée)
                         const pendingDeliveryItem = dbModule.findPendingDeliveryItem.get(
                             userId,
                             item.Nom,
@@ -871,7 +675,6 @@ const orderService = {
                 }
             });
         } catch (error) {
-            console.error('Error creating order from pending items:', error);
             throw error;
         }
     }

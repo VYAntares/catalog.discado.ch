@@ -1,6 +1,6 @@
 /**
  * Visualisation détaillée d'un client
- * Ce module gère l'affichage des détails d'un client et de son historique
+ * admin/js/modules/clients/clientView.js
  */
 
 import * as API from '../../core/api.js';
@@ -9,44 +9,29 @@ import * as Formatter from '../../utils/formatter.js';
 import * as Modal from '../../utils/modal.js';
 import * as HistoryView from '../history/historyView.js';
 
-// Références DOM
 let clientModal;
 let clientDetailsContent;
 let clientDetailsTitle;
 
-/**
- * Affiche les détails d'un client
- * @param {string} clientId - ID du client
- */
+//Affiche les détails d'un client dans une modale
 async function viewClientDetails(clientId) {
-    // Obtenir les références DOM
     clientModal = document.getElementById('clientModal');
     clientDetailsContent = document.getElementById('clientDetailsContent');
     clientDetailsTitle = document.getElementById('clientDetailsTitle');
     
-    if (!clientModal || !clientDetailsContent) {
-        console.error("Modal de détails client non trouvée");
-        return;
-    }
+    if (!clientModal || !clientDetailsContent) return;
     
-    // Afficher l'indicateur de chargement
     clientDetailsContent.innerHTML = `<div class="loading">Chargement des détails...</div>`;
     
-    // Afficher la modale
     Modal.showModal(clientModal);
     
     try {
-        // Récupérer tous les profils clients
         const clients = await API.fetchClientProfiles();
-        
-        // Rechercher le client par son ID
         const client = clients.find(c => c.clientId === clientId);
         
         if (client) {
-            // Afficher les détails du client
             displayClientDetails(client);
         } else {
-            // Afficher un message si le client n'est pas trouvé
             clientDetailsContent.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-user-slash"></i>
@@ -56,9 +41,6 @@ async function viewClientDetails(clientId) {
             `;
         }
     } catch (error) {
-        console.error('Erreur lors du chargement des détails du client:', error);
-        
-        // Afficher un message d'erreur
         clientDetailsContent.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -67,7 +49,6 @@ async function viewClientDetails(clientId) {
             </div>
         `;
         
-        // Ajouter l'écouteur pour le bouton de réessai
         const retryButton = document.getElementById('retryLoadClient');
         if (retryButton) {
             retryButton.addEventListener('click', function() {
@@ -77,18 +58,12 @@ async function viewClientDetails(clientId) {
     }
 }
 
-/**
- * Affiche les détails d'un client dans la modale
- * @param {Object} client - Données du client
- */
+//Affiche les détails d'un client dans la modale
 async function displayClientDetails(client) {
-    // Mettre en titre l'ID du client
     clientDetailsTitle.textContent = `Détails du client: ${client.clientId || 'N/A'}`;
     
-    // Formatter la date de dernière mise à jour
     const lastUpdated = client.lastUpdated ? Formatter.formatDate(client.lastUpdated) : 'N/A';
     
-    // Construire le contenu HTML pour les détails du client avec le nouveau design
     let html = `
         <div class="client-section">
             <div class="client-header">
@@ -155,35 +130,25 @@ async function displayClientDetails(client) {
         </div>
     `;
     
-    // Mettre à jour le contenu de la modale
     clientDetailsContent.innerHTML = html;
     
-    // Ajouter un gestionnaire d'événements pour le bouton de fermeture
     document.getElementById('closeClientModal').addEventListener('click', function() {
         Modal.hideModal(clientModal);
     });
     
     try {
-        // Charger l'historique des commandes du client
         const orders = await API.fetchClientOrders(client.clientId);
         
-        // Obtenir les références des conteneurs
         const pendingDeliveryContainer = document.getElementById('pending-delivery-container');
         const ordersContainer = document.getElementById('client-orders-container');
         
-        // Séparer les commandes normales et la pending-delivery
         const pendingDelivery = orders.find(order => order.orderId === 'pending-delivery');
         const regularOrders = orders.filter(order => order.orderId !== 'pending-delivery');
         
-        // Afficher les articles en attente de livraison
         displayPendingDelivery(pendingDeliveryContainer, pendingDelivery, client.clientId);
         
-        // Afficher l'historique des commandes normales
         displayOrderHistory(ordersContainer, regularOrders, client.clientId);
     } catch (error) {
-        console.error('Erreur lors du chargement des commandes:', error);
-        
-        // Afficher les erreurs
         document.getElementById('pending-delivery-container').innerHTML = `
             <div class="empty-state">
                 <p>Erreur lors du chargement des articles en attente</p>
@@ -198,19 +163,12 @@ async function displayClientDetails(client) {
     }
 }
 
-/**
- * Affiche les articles en attente de livraison
- * @param {HTMLElement} container - Conteneur à remplir
- * @param {Object} pendingDelivery - Données des articles en attente
- * @param {string} clientId - ID du client
- */
+//Affiche les articles en attente de livraison
 function displayPendingDelivery(container, pendingDelivery, clientId) {
     if (!pendingDelivery || !pendingDelivery.items || pendingDelivery.items.length === 0) {
-        // Aucun article en attente - ne pas afficher la section
         return;
     }
     
-    // Grouper les articles par catégorie
     const groupedItems = {};
     pendingDelivery.items.forEach(item => {
         const category = item.categorie || 'autres';
@@ -220,7 +178,6 @@ function displayPendingDelivery(container, pendingDelivery, clientId) {
         groupedItems[category].push(item);
     });
     
-    // Construire le HTML pour les articles en attente avec le nouveau design
     let html = `
         <div class="delivery-section">
             <h3 class="info-section-title">
@@ -240,13 +197,10 @@ function displayPendingDelivery(container, pendingDelivery, clientId) {
                     <tbody>
     `;
     
-    // Trier les catégories par ordre alphabétique
     const sortedCategories = Object.keys(groupedItems).sort();
     
-    // Variable pour générer des IDs uniques
     let itemCounter = 0;
     
-    // Ajouter les articles par catégorie
     sortedCategories.forEach(category => {
         html += `
             <tr>
@@ -290,19 +244,13 @@ function displayPendingDelivery(container, pendingDelivery, clientId) {
     </div>
     `;
     
-    // Mettre à jour le conteneur
     container.innerHTML = html;
     
-    // Ajouter les écouteurs d'événements après avoir inséré le HTML
     setupPendingDeliveryEvents(clientId);
 }
 
-/**
- * Configure les écouteurs d'événements pour les articles en attente
- * @param {string} clientId - ID du client
- */
+//Configure les écouteurs d'événements pour les articles en attente
 function setupPendingDeliveryEvents(clientId) {
-    // Sélectionner/désélectionner tous les articles
     const selectAllCheckbox = document.getElementById('select-all-pending');
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function() {
@@ -313,7 +261,6 @@ function setupPendingDeliveryEvents(clientId) {
         });
     }
     
-    // Bouton pour créer une commande à partir des articles sélectionnés
     const createOrderBtn = document.getElementById('create-order-from-pending');
     if (createOrderBtn) {
         createOrderBtn.addEventListener('click', function() {
@@ -335,7 +282,6 @@ function setupPendingDeliveryEvents(clientId) {
         });
     }
     
-    // Bouton pour supprimer les articles sélectionnés
     const deleteSelectedBtn = document.getElementById('delete-selected-items');
     if (deleteSelectedBtn) {
         deleteSelectedBtn.addEventListener('click', function() {
@@ -358,33 +304,19 @@ function setupPendingDeliveryEvents(clientId) {
     }
 }
 
-/**
- * Supprime les articles sélectionnés
- * @param {string} clientId - ID du client
- * @param {Array} items - Articles à supprimer
- */
+//Supprime les articles sélectionnés
 async function deleteSelectedItems(clientId, items) {
-    // Demander confirmation avant de supprimer
     const confirmDelete = confirm(`Êtes-vous sûr de vouloir supprimer définitivement les ${items.length} articles sélectionnés ?`);
     
-    if (!confirmDelete) {
-        return;
-    }
+    if (!confirmDelete) return;
     
     try {
-        // Utilisez la méthode fetch directement plutôt que d'appeler une fonction d'API qui pourrait ne pas être à jour
         const response = await fetch('/api/admin/delete-pending-items', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                userId: clientId,
-                items: items
-            })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({userId: clientId, items: items})
         });
         
-        // Vérifiez la réponse HTTP avant de traiter le JSON
         if (!response.ok) {
             throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
         }
@@ -393,61 +325,40 @@ async function deleteSelectedItems(clientId, items) {
         
         if (result.success) {
             Notification.showNotification('Articles supprimés avec succès', 'success');
-            // Rafraîchir l'affichage
             viewClientDetails(clientId);
         } else {
             Notification.showNotification(`Erreur: ${result.message}`, 'error');
         }
     } catch (error) {
-        console.error('Erreur:', error);
         Notification.showNotification('Erreur de communication avec le serveur: ' + error.message, 'error');
     }
 }
 
-/**
- * Crée une commande à partir des articles en attente sélectionnés
- * @param {string} clientId - ID du client
- * @param {Array} items - Articles sélectionnés
- */
+//Crée une commande à partir des articles en attente sélectionnés
 async function createOrderFromPendingItems(clientId, items) {
     try {
         const response = await fetch('/api/admin/create-order-from-pending', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                userId: clientId,
-                items: items
-            })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({userId: clientId, items: items})
         });
         
         const result = await response.json();
         
         if (result.success) {
-            // Message unifié, sans condition sur result.merged
             Notification.showNotification('Commande mise à jour avec succès', 'success');
-            
-            // Rafraîchir l'affichage
             viewClientDetails(clientId);
         } else {
             Notification.showNotification(`Erreur: ${result.message}`, 'error');
         }
     } catch (error) {
-        console.error('Erreur:', error);
         Notification.showNotification('Erreur de communication avec le serveur', 'error');
     }
 }
 
-/**
- * Affiche l'historique des commandes d'un client
- * @param {HTMLElement} container - Conteneur à remplir
- * @param {Array} orders - Liste des commandes
- * @param {string} clientId - ID du client
- */
+//Affiche l'historique des commandes d'un client
 function displayOrderHistory(container, orders, clientId) {
     if (!orders || orders.length === 0) {
-        // Aucune commande
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-shopping-cart"></i>
@@ -457,10 +368,8 @@ function displayOrderHistory(container, orders, clientId) {
         return;
     }
     
-    // Trier les commandes par date (les plus récentes d'abord)
     orders.sort((a, b) => new Date(b.lastProcessed || b.date) - new Date(a.lastProcessed || a.date));
     
-    // Construire le HTML pour l'historique des commandes avec le nouveau design
     let html = `
         <div class="orders-history-section">
             <h3 class="info-section-title">Historique des commandes</h3>
@@ -478,24 +387,19 @@ function displayOrderHistory(container, orders, clientId) {
     `;
     
     orders.forEach(order => {
-        // Ne pas inclure pending-delivery
         if (order.orderId === 'pending-delivery') return;
         
-        // Formater les dates
         const orderDate = Formatter.formatDate(order.date);
         const processDate = order.lastProcessed ? Formatter.formatDate(order.lastProcessed) : 'N/A';
         
-        // Déterminer le statut
         let statusText = 'EN ATTENTE';
         let statusClass = 'status-pending';
         
-        // Toutes les commandes traitées (completed ou partial) sont considérées comme complètes
         if (order.status === 'completed' || order.status === 'partial') {
             statusText = 'COMPLÈTE';
             statusClass = 'status-completed';
         }
         
-        // Calculer le nombre total d'articles
         const totalItems = (order.deliveredItems || order.items || []).reduce((sum, item) => sum + item.quantity, 0);
         
         html += `
@@ -522,16 +426,13 @@ function displayOrderHistory(container, orders, clientId) {
         </div>
     `;
     
-    // Mettre à jour le conteneur
     container.innerHTML = html;
     
-    // Mettre la fonction viewOrderDetails dans l'objet window pour l'accessibilité via onclick
     window.viewOrderDetails = function(orderId, userId) {
         HistoryView.viewOrderDetails(orderId, userId);
     };
 }
 
-// Exposer les fonctions publiques
 export {
     viewClientDetails,
     displayClientDetails,

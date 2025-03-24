@@ -1,39 +1,42 @@
 require('dotenv').config();
 
+// ===== IMPORTATIONS =====
+// Modules externes
 const express = require('express');
 const session = require('express-session');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 
-// Import du module de clés cryptographiques
+// Configuration et services
 const keys = require('./config/keys');
-
-// Import services
 const userService = require('./services/userService');
 const orderService = require('./services/orderService');
 const productService = require('./services/productService');
 const invoiceService = require('./services/invoiceService');
 const cryptoService = require('./services/cryptoService');
+const deliveryNoteService = require('./services/deliveryNoteService');
 
+// ===== CONFIGURATION DE BASE =====
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Vérification de la configuration de sécurité
-console.log('Vérification de la configuration de sécurité...');
 if (!process.env.ENCRYPTION_KEY || !process.env.ENCRYPTION_IV) {
   console.warn('⚠️ Attention: Certaines clés de sécurité utilisent des valeurs par défaut. Utilisez le fichier .env en production.');
 } else {
   console.log('✅ Configuration de sécurité chargée correctement.');
 }
 
-// Middleware for parsing form data and JSON
+// ===== MIDDLEWARES PRINCIPAUX =====
+
 app.use(express.urlencoded({ extended: true }));
+
 app.use(express.json());
 
-// Configure express-session middleware
+// Configuration de la session
 app.use(session({
-  secret: keys.SECRET_KEY, // Utilisation de la clé depuis le module de configuration
+  secret: keys.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -44,8 +47,8 @@ app.use(session({
   }
 }));
 
-// Créer un objet pour suivre les tentatives de connexion échouées
-// À placer en haut de votre fichier index.js
+// ===== SYSTÈME DE SÉCURITÉ =====
+// Gestion des tentatives de connexion
 const loginAttempts = {};
 
 // Fonction pour vérifier et gérer les tentatives de connexion
@@ -53,13 +56,11 @@ function checkLoginThrottling(identifier) {
   const now = Date.now();
   const attemptsInfo = loginAttempts[identifier];
   
-  // Si aucune tentative précédente ou si le délai est passé
   if (!attemptsInfo || now - attemptsInfo.timestamp > 15 * 60 * 1000) {
     loginAttempts[identifier] = { count: 0, timestamp: now };
     return { allowed: true, remainingAttempts: 5 };
   }
   
-  // Si trop de tentatives
   if (attemptsInfo.count >= 5) {
     const timeLeft = Math.ceil((attemptsInfo.timestamp + 15 * 60 * 1000 - now) / 60000);
     return { 
@@ -72,26 +73,27 @@ function checkLoginThrottling(identifier) {
   return { allowed: true, remainingAttempts: 5 - attemptsInfo.count };
 }
 
-// Middleware for checking login
+// ===== MIDDLEWARES D'AUTORISATION =====
+// Middleware pour vérifier la connexion
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect('/');
   next();
 }
 
-// Middleware for admin access
+// Middleware pour l'accès administrateur
 function requireAdmin(req, res, next) {
   if (req.session.user && req.session.user.role === 'admin') return next();
   res.status(403).send('Access denied');
 }
 
-// Middleware for complete profile
+// Middleware pour vérifier que le profil est complet
 function requireCompleteProfile(req, res, next) {
   if (!req.session.user) {
     return res.redirect('/');
   }
   
   if (req.session.user.role === 'admin') {
-    return next(); // Admins don't need complete profiles
+    return next();
   }
   
   if (!userService.isProfileComplete(req.session.user.username)) {
@@ -101,7 +103,8 @@ function requireCompleteProfile(req, res, next) {
   next();
 }
 
-// Only serve the login page and index.html from public root
+// ===== ROUTES PUBLIQUES =====
+// Pages d'accueil et de connexion
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -110,26 +113,27 @@ app.get('/pages/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'login.html'));
 });
 
-// Serve non-sensitive static assets without authentication
+// ===== RESSOURCES STATIQUES =====
+// Ressources publiques sans authentification
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/fonts', express.static(path.join(__dirname, 'public/fonts')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/components', express.static(path.join(__dirname, 'public/components')));
 
-// Configure ES6 modules for admin JS files
+// Configuration des modules ES6 pour les fichiers admin JS
 app.use('/admin/js', (req, res, next) => {
-  // Serve JS files with appropriate Content-Type header for ES modules
   if (req.path.endsWith('.js')) {
     res.set('Content-Type', 'application/javascript; charset=UTF-8');
   }
   next();
 });
 
+// Ressources admin
 app.use('/admin/css', express.static(path.join(__dirname, 'admin/css')));
-
 app.use('/admin/js', express.static(path.join(__dirname, 'admin/js')));
 
+// Protection des pages
 app.use('/pages/', (req, res, next) => {
   const requestPath = req.path;
   
@@ -137,36 +141,30 @@ app.use('/pages/', (req, res, next) => {
     return next();
   }
   
-  // Require authentication for all other pages
   if (!req.session.user) {
     return res.redirect('/');
   }
   
-  // Continue for authenticated users
   next();
 });
 
-// Route de login modifiée
+// ===== ROUTES D'AUTHENTIFICATION =====
+// Route de login
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   
-  // Identifier avec IP + username pour une protection optimale
   const identifier = `${req.ip}:${username}`;
   
-  // Vérifier les limites de tentatives
   const throttleCheck = checkLoginThrottling(identifier);
   if (!throttleCheck.allowed) {
     return res.status(429).send(`${throttleCheck.message} <a href="/">Retour</a>`);
   }
   
-  // Check database for user
   const user = userService.getUser(username);
   
   if (user && cryptoService.verifyPassword(user.password, password)) {
-    // Réinitialiser le compteur en cas de succès
     delete loginAttempts[identifier];
     
-    // On n'expose pas le mot de passe dans la session
     req.session.user = {
       username: user.username,
       role: user.role
@@ -182,13 +180,11 @@ app.post('/login', (req, res) => {
       }
     }
   } else {
-    // Incrémenter le compteur en cas d'échec
     if (!loginAttempts[identifier]) {
       loginAttempts[identifier] = { count: 0, timestamp: Date.now() };
     }
     loginAttempts[identifier].count++;
     
-    // Informer l'utilisateur des tentatives restantes
     const remainingAttempts = 5 - loginAttempts[identifier].count;
     
     if (remainingAttempts <= 0) {
@@ -199,7 +195,7 @@ app.post('/login', (req, res) => {
   }
 });
 
-// Logout route
+// Route de déconnexion
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) return res.send('Error during logout');
@@ -207,7 +203,7 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Protected routes - With proper middleware
+// ===== ROUTES ADMINISTRATEUR PROTÉGÉES =====
 app.get('/admin', requireLogin, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
@@ -224,7 +220,7 @@ app.get('/admin/order-history', requireLogin, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'order-history.html'));
 });
 
-// Protected client routes - All with requireLogin
+// ===== ROUTES CLIENT PROTÉGÉES =====
 app.get('/pages/catalog.html', requireLogin, requireCompleteProfile, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'catalog.html'));
 });
@@ -245,7 +241,8 @@ app.get('/pages/orders.html', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'orders.html'));
 });
 
-// API routes for checking authentication
+// ===== API ROUTES - GÉNÉRALES =====
+// Vérification de l'authentification
 app.get('/api/check-auth', (req, res) => {
   if (req.session.user) {
     res.json({ 
@@ -258,28 +255,22 @@ app.get('/api/check-auth', (req, res) => {
   }
 });
 
-// API routes for user profile
+// ===== API ROUTES - PROFIL UTILISATEUR =====
+// Récupération du profil utilisateur
 app.get('/api/user-profile', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const profile = userService.getUserProfile(userId);
   res.json(profile || {});
 });
 
-/**
- * Route pour sauvegarder le profil utilisateur et gérer le changement de mot de passe
- * Gère à la fois la mise à jour du profil et le changement de mot de passe si nécessaire
- */
+// Sauvegarde du profil utilisateur
 app.post('/api/save-profile', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const profileData = req.body;
   
   try {
-    console.log(`Traitement de la sauvegarde de profil pour l'utilisateur: ${userId}`);
-    
     // Vérifier si une demande de changement de mot de passe est incluse
     if (profileData.passwordChange) {
-      console.log('Demande de changement de mot de passe détectée');
-      
       const { currentPassword, newPassword } = profileData.passwordChange;
       
       if (!currentPassword || !newPassword) {
@@ -289,46 +280,35 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
         });
       }
       
-      // Vérifier que le mot de passe actuel est correct
       const user = userService.getUser(userId);
       
       if (!user) {
-        console.error(`Utilisateur ${userId} non trouvé dans la base de données`);
         return res.status(404).json({
           success: false, 
           message: 'Utilisateur non trouvé'
         });
       }
       
-      // Utiliser cryptoService.verifyPassword pour vérifier le mot de passe
       if (!cryptoService.verifyPassword(user.password, currentPassword)) {
-        console.log(`Tentative de changement de mot de passe avec un mot de passe actuel incorrect pour ${userId}`);
         return res.status(401).json({
           success: false, 
           message: 'Le mot de passe actuel est incorrect'
         });
       }
       
-      // Mettre à jour le mot de passe
       try {
-        // Utiliser le service utilisateur pour mettre à jour le mot de passe
         const updateResult = userService.updateUserPassword(userId, newPassword);
         
         if (!updateResult) {
           throw new Error('Échec de la mise à jour du mot de passe');
         }
         
-        console.log(`Mot de passe mis à jour avec succès pour l'utilisateur ${userId}`);
-        
-        // Ne plus exposer le mot de passe dans la session
         if (req.session.user) {
           delete req.session.user.password;
         }
         
-        // Supprimer les données de mot de passe du profil pour ne pas les stocker
         delete profileData.passwordChange;
       } catch (pwError) {
-        console.error(`Erreur lors de la mise à jour du mot de passe pour ${userId}:`, pwError);
         return res.status(500).json({ 
           success: false, 
           message: `Erreur lors de la mise à jour du mot de passe: ${pwError.message}`,
@@ -337,7 +317,7 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
       }
     }
     
-    // Validation des données du profil (facultatif mais recommandé)
+    // Validation des données du profil
     if (!profileData.firstName || !profileData.lastName || !profileData.email) {
       return res.status(400).json({
         success: false,
@@ -345,35 +325,25 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
       });
     }
     
-    // Continuer avec la sauvegarde normale du profil
-    console.log(`Sauvegarde du profil pour l'utilisateur ${userId}`);
     const result = userService.saveUserProfile(profileData, userId);
     
     if (!result) {
       throw new Error('Échec de la sauvegarde du profil');
     }
     
-    // Vérifier si le profil est complet
-    const isComplete = userService.isProfileComplete(userId);
-    
-    // Récupérer le profil mis à jour pour vérification
     const updatedProfile = userService.getUserProfile(userId);
     
-    // Réponse améliorée avec plus de détails
     res.json({ 
       success: true,
-      passwordSameAsUsername: result.passwordSameAsUsername, // Ajouter cet attribut
-      message: result.message, // Utiliser le message provenant du résultat 
+      passwordSameAsUsername: result.passwordSameAsUsername,
+      message: result.message,
       passwordChanged: profileData.passwordChange !== undefined,
       isProfileComplete: result.isProfileComplete,
       profile: updatedProfile,
-      shouldRedirect: result.shouldRedirect, // Ceci sera false si passwordSameAsUsername est true
+      shouldRedirect: result.shouldRedirect,
       redirectUrl: result.shouldRedirect ? '/pages/catalog.html' : null
     });
-    
-    console.log(`Profil sauvegardé avec succès pour l'utilisateur ${userId}`);
   } catch (error) {
-    console.error(`Erreur lors de la sauvegarde du profil pour ${userId}:`, error);
     res.status(500).json({ 
       success: false, 
       message: `Erreur lors de la sauvegarde du profil: ${error.message}`,
@@ -382,33 +352,63 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
   }
 });
 
-// API route for getting products - ALSO REQUIRES LOGIN
+// Changement de mot de passe
+app.post('/api/change-password', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  const { currentPassword, newPassword } = req.body;
+  
+  try {
+    const user = userService.getUser(userId);
+    
+    if (!user || !cryptoService.verifyPassword(user.password, currentPassword)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mot de passe actuel incorrect',
+        code: 'INVALID_CURRENT_PASSWORD'
+      });
+    }
+    
+    const result = userService.updateUserPassword(userId, newPassword);
+    
+    res.json({
+      success: true,
+      message: 'Mot de passe mis à jour avec succès'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour du mot de passe',
+      error: error.message
+    });
+  }
+});
+
+// ===== API ROUTES - PRODUITS ET COMMANDES =====
+// Récupération des produits
 app.get('/api/products', requireLogin, async (req, res) => {
   try {
     const products = await productService.getProducts();
     res.json(products);
   } catch (error) {
-    console.error('Error getting products:', error);
     res.status(500).json({ error: 'Error getting products' });
   }
 });
 
+// Sauvegarde d'une commande
 app.post('/api/save-order', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const cartItems = req.body.items;
-  const reference = req.body.reference || ''; // Ajout de cette ligne pour récupérer la référence
+  const reference = req.body.reference || '';
   
   try {
-    // Passage de la référence au service de commande
     const result = orderService.saveOrder(userId, cartItems, reference);
     res.json(result);
   } catch (error) {
-    console.error('Error saving order:', error);
     res.status(500).json({ success: false, message: 'Error saving order' });
   }
 });
 
-// API route for getting user orders
+// Récupération des commandes utilisateur
 app.get('/api/user-orders', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   
@@ -416,42 +416,82 @@ app.get('/api/user-orders', requireLogin, (req, res) => {
     const orders = orderService.getUserOrders(userId);
     res.json(orders);
   } catch (error) {
-    console.error('Error getting user orders:', error);
     res.status(500).json({ error: 'Error getting user orders' });
   }
 });
 
-// Admin API routes
+// Téléchargement de facture (client)
+app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
+  const userId = req.session.user.username;
+  const orderId = req.params.orderId;
+  
+  try {
+    const orderDetails = orderService.getOrderDetails(orderId, userId);
+    const userProfile = userService.getUserProfile(userId);
+    
+    if (!orderDetails || !userProfile) {
+      return res.status(404).json({ error: 'Order or user profile not found' });
+    }
+    
+    if (orderDetails.status !== 'completed' && orderDetails.status !== 'partial' && 
+        (!orderDetails.deliveredItems || orderDetails.deliveredItems.length === 0)) {
+      return res.status(403).json({ 
+        error: 'This order has not been delivered yet. No invoice available.' 
+      });
+    }
+    
+    const orderItems = orderDetails.deliveredItems || orderDetails.items;
+    const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
+    const remainingItems = orderDetails.remainingItems || [];
+    
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Invoice_${userId}_${orderId}.pdf`);
+    
+    doc.pipe(res);
+    
+    await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
+    await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
+    
+    doc.end();
+  } catch (error) {
+    res.status(500).json({ error: 'Error generating invoice' });
+  }
+});
+
+// ===== API ROUTES - ADMINISTRATEUR =====
+// Commandes en attente
 app.get('/api/admin/pending-orders', requireLogin, requireAdmin, (req, res) => {
   try {
     const pendingOrders = orderService.getPendingOrders();
     res.json(pendingOrders);
   } catch (error) {
-    console.error('Error getting pending orders:', error);
     res.status(500).json({ error: 'Error getting pending orders' });
   }
 });
 
+// Commandes traitées
 app.get('/api/admin/treated-orders', requireLogin, requireAdmin, (req, res) => {
   try {
     const treatedOrders = orderService.getTreatedOrders();
     res.json(treatedOrders);
   } catch (error) {
-    console.error('Error getting treated orders:', error);
     res.status(500).json({ error: 'Error getting treated orders' });
   }
 });
 
+// Profils clients
 app.get('/api/admin/client-profiles', requireLogin, requireAdmin, (req, res) => {
   try {
     const profiles = userService.getAllClientProfiles();
     res.json(profiles);
   } catch (error) {
-    console.error('Error getting client profiles:', error);
     res.status(500).json({ error: 'Error getting client profiles' });
   }
 });
 
+// Profil client spécifique
 app.get('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, res) => {
   const userId = req.params.userId;
   
@@ -464,11 +504,11 @@ app.get('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, r
       res.status(404).json({ error: 'Client profile not found' });
     }
   } catch (error) {
-    console.error('Error getting client profile:', error);
     res.status(500).json({ error: 'Error getting client profile' });
   }
 });
 
+// Traitement de commande
 app.post('/api/admin/process-order', requireLogin, requireAdmin, (req, res) => {
   const { userId, orderId, deliveredItems } = req.body;
   
@@ -480,11 +520,11 @@ app.post('/api/admin/process-order', requireLogin, requireAdmin, (req, res) => {
     const result = orderService.processOrder(orderId, userId, deliveredItems);
     res.json(result);
   } catch (error) {
-    console.error('Error processing order:', error);
     res.status(500).json({ error: 'Error processing order' });
   }
 });
 
+// Détails de commande
 app.get('/api/admin/order-details/:orderId/:userId', requireLogin, requireAdmin, (req, res) => {
   const { orderId, userId } = req.params;
   
@@ -492,11 +532,11 @@ app.get('/api/admin/order-details/:orderId/:userId', requireLogin, requireAdmin,
     const orderDetails = orderService.getOrderDetails(orderId, userId);
     res.json(orderDetails);
   } catch (error) {
-    console.error('Error getting order details:', error);
     res.status(500).json({ error: 'Error getting order details' });
   }
 });
 
+// Commandes d'un client
 app.get('/api/admin/client-orders/:clientId', requireLogin, requireAdmin, (req, res) => {
   const clientId = req.params.clientId;
   
@@ -504,84 +544,22 @@ app.get('/api/admin/client-orders/:clientId', requireLogin, requireAdmin, (req, 
     const orders = orderService.getUserOrders(clientId);
     res.json(orders);
   } catch (error) {
-    console.error('Error getting client orders:', error);
     res.status(500).json({ error: 'Error getting client orders' });
   }
 });
 
-// Route pour télécharger la facture (client)
-app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
-  const userId = req.session.user.username;
-  const orderId = req.params.orderId;
-  
-  try {
-    // Get order details
-    const orderDetails = orderService.getOrderDetails(orderId, userId);
-    
-    // Get user profile
-    const userProfile = userService.getUserProfile(userId);
-    
-    if (!orderDetails || !userProfile) {
-      return res.status(404).json({ error: 'Order or user profile not found' });
-    }
-    
-    // Check if order has delivered items
-    if (orderDetails.status !== 'completed' && orderDetails.status !== 'partial' && 
-        (!orderDetails.deliveredItems || orderDetails.deliveredItems.length === 0)) {
-      return res.status(403).json({ 
-        error: 'This order has not been delivered yet. No invoice available.' 
-      });
-    }
-    
-    // Get delivered items
-    const orderItems = orderDetails.deliveredItems || orderDetails.items;
-    const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
-    const remainingItems = orderDetails.remainingItems || [];
-    
-    // Create PDF
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
-    
-    // Set headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Invoice_${userId}_${orderId}.pdf`);
-    
-    // Pipe to response
-    doc.pipe(res);
-    
-    // NOUVEAU CODE: Générer d'abord le bon de livraison, puis la facture
-    // Importer les deux services
-    const deliveryNoteService = require('./services/deliveryNoteService');
-    
-    // 1. Générer le bon de livraison (sans section facture)
-    await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
-    
-    // 2. Générer la facture sur une nouvelle page (elle ajoutera sa propre page)
-    await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
-    
-    // Finalize PDF
-    doc.end();
-  } catch (error) {
-    console.error('Error generating invoice:', error);
-    res.status(500).json({ error: 'Error generating invoice' });
-  }
-});
-
-// Faire la même chose pour la route admin:
+// Téléchargement de facture (admin)
 app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdmin, async (req, res) => {
   const { orderId, userId } = req.params;
   
   try {
-    // Get order details
     const orderDetails = orderService.getOrderDetails(orderId, userId);
-    
-    // Get user profile
     const userProfile = userService.getUserProfile(userId);
     
     if (!orderDetails || !userProfile) {
       return res.status(404).json({ error: 'Order or user profile not found' });
     }
     
-    // Check if order has delivered items
     if (orderDetails.status !== 'completed' && orderDetails.status !== 'partial' && 
         (!orderDetails.deliveredItems || orderDetails.deliveredItems.length === 0)) {
       return res.status(403).json({ 
@@ -589,40 +567,27 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
       });
     }
     
-    // Get delivered items
     const orderItems = orderDetails.deliveredItems || orderDetails.items;
     const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
     const remainingItems = orderDetails.remainingItems || [];
     
-    // Create PDF
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     
-    // Set headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Invoice_${userId}_${orderId}.pdf`);
     
-    // Pipe to response
     doc.pipe(res);
     
-    // NOUVEAU CODE: Générer d'abord le bon de livraison, puis la facture
-    // Importer les deux services
-    const deliveryNoteService = require('./services/deliveryNoteService');
-    
-    // 1. Générer le bon de livraison (sans section facture)
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
-    
-    // 2. Générer la facture sur une nouvelle page (elle ajoutera sa propre page)
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
     
-    // Finalize PDF
     doc.end();
   } catch (error) {
-    console.error('Error generating invoice:', error);
     res.status(500).json({ error: 'Error generating invoice' });
   }
 });
 
-// Route for creating a new client account (admin only)
+// Création d'un compte client
 app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   const { username, password, profileData } = req.body;
   
@@ -634,7 +599,6 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   }
   
   try {
-    // Check if user already exists
     const existingUser = userService.getUser(username);
     
     if (existingUser) {
@@ -644,10 +608,8 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
       });
     }
     
-    // Create user (le mot de passe sera haché dans userService.createUser)
     userService.createUser(username, password, 'client');
     
-    // Create profile if data is provided
     if (profileData) {
       userService.saveUserProfile(profileData, username);
     }
@@ -658,7 +620,6 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
       username
     });
   } catch (error) {
-    console.error('Erreur lors de la création du client:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Erreur lors de la création du client'
@@ -666,6 +627,7 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
+// Création de commande à partir d'articles en attente
 app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, async (req, res) => {
   const { userId, items } = req.body;
   
@@ -674,12 +636,9 @@ app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, asy
   }
   
   try {
-    // Ajout de "await" ici si orderService.createOrderFromPendingItems est asynchrone
     const result = await orderService.createOrderFromPendingItems(userId, items);
     res.json(result);
   } catch (error) {
-    console.error('Error creating order from pending items:', error);
-    // Ajouter plus de détails sur l'erreur dans la réponse pour le débogage
     res.status(500).json({ 
       success: false, 
       message: 'Error creating order: ' + error.message 
@@ -687,7 +646,7 @@ app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, asy
   }
 });
 
-// Route pour supprimer des articles en attente (dans la section des API routes admin)
+// Suppression d'articles en attente
 app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, res) => {
   const { userId, items } = req.body;
   
@@ -702,7 +661,6 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
     const result = orderService.deletePendingItems(userId, items);
     res.json(result);
   } catch (error) {
-    console.error('Error deleting pending items:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression des articles: ' + error.message
@@ -710,50 +668,16 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
   }
 });
 
-// Route pour changer le mot de passe utilisateur - mise à jour pour utiliser cryptoService
-app.post('/api/change-password', requireLogin, (req, res) => {
-  const userId = req.session.user.username;
-  const { currentPassword, newPassword } = req.body;
-  
-  try {
-    // Vérifier que le mot de passe actuel est correct
-    const user = userService.getUser(userId);
-    
-    if (!user || !cryptoService.verifyPassword(user.password, currentPassword)) {
-      return res.status(401).json({
-        success: false,
-        message: 'Mot de passe actuel incorrect',
-        code: 'INVALID_CURRENT_PASSWORD'
-      });
-    }
-    
-    // Mettre à jour le mot de passe
-    const result = userService.updateUserPassword(userId, newPassword);
-    
-    res.json({
-      success: true,
-      message: 'Mot de passe mis à jour avec succès'
-    });
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour du mot de passe:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour du mot de passe',
-      error: error.message
-    });
-  }
-});
-
-// Catch-all route - Redirect to login for unauthorized users
+// ===== ROUTES DE GESTION DES ERREURS =====
+// Route catch-all
 app.get('*', (req, res) => {
   if (!req.session.user) {
     return res.redirect('/');
   }
-  // For authenticated users, try to serve the file or send 404
   res.status(404).send('Page not found. <a href="/">Return to homepage</a>');
 });
 
-// Error handling middleware
+// Middleware de gestion des erreurs
 app.use((req, res, next) => {
   res.status(404).send('Page not found. <a href="/">Return to homepage</a>');
 });
@@ -763,7 +687,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Server error occurred. Please try again later.');
 });
 
-// Start server
+// ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`Server started on http://localhost:${PORT}`);
 });

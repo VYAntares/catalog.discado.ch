@@ -1,13 +1,9 @@
-// Save this as /public/js/components/CartIntegration.js
+// Module d'intégration du panier
+// Connecte les fonctionnalités du panier à n'importe quelle page
 
-/**
- * Cart Integration Module
- * Properly connects the cart functionality to any page
- */
-
-// Load cart modal HTML
+// Chargement du HTML du modal panier
 function loadCartModal() {
-    // Create container if it doesn't exist
+    // Création du conteneur si nécessaire
     let cartModalContainer = document.getElementById('cart-modal-container');
     if (!cartModalContainer) {
         cartModalContainer = document.createElement('div');
@@ -15,16 +11,12 @@ function loadCartModal() {
         document.body.appendChild(cartModalContainer);
     }
 
-    // Load cart modal HTML
+    // Chargement du HTML du modal
     fetch('/components/cart-modal.html')
         .then(response => response.text())
         .then(data => {
             cartModalContainer.innerHTML = data;
-            
-            // After loading the cart HTML, set up the close button
             setupCartCloseButton();
-            
-            // Then initialize the cart manager
             initializeCartManager();
         })
         .catch(error => {
@@ -32,49 +24,43 @@ function loadCartModal() {
         });
 }
 
-// Specifically set up the cart close button
+// Configuration du bouton de fermeture
 function setupCartCloseButton() {
     const cartModal = document.getElementById('cart-modal');
     const closeButton = cartModal?.querySelector('.close-modal');
     
     if (cartModal && closeButton) {
-        // Add direct click handler to close button
+        // Gestionnaire de clic sur le bouton
         closeButton.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             hideCartModal();
         });
         
-        // Add ESC key handler
+        // Gestionnaire de touche ESC
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape' && isCartModalOpen()) {
                 hideCartModal();
             }
         });
         
-        // Add click outside handler
+        // Gestionnaire de clic en dehors
         cartModal.addEventListener('click', function(event) {
             if (event.target === cartModal) {
                 hideCartModal();
             }
         });
-        
-        console.log('Cart close button setup complete');
-    } else {
-        console.warn('Could not find cart modal or close button');
     }
 }
 
-// Hide cart modal function
+// Masquer le modal panier
 function hideCartModal() {
     const cartModal = document.getElementById('cart-modal');
     if (!cartModal) return;
     
-    // First try to use the modal utility if available
     if (window.hideModal) {
         window.hideModal(cartModal);
     } else {
-        // Fallback to direct style manipulation
         cartModal.style.opacity = '0';
         setTimeout(() => {
             cartModal.style.display = 'none';
@@ -83,27 +69,26 @@ function hideCartModal() {
     }
 }
 
-// Check if cart modal is open
+// Vérifier si le modal est ouvert
 function isCartModalOpen() {
     const cartModal = document.getElementById('cart-modal');
     return cartModal && (cartModal.style.display === 'flex' || cartModal.style.display === 'block');
 }
 
-// Show cart modal function
+// Afficher le modal panier
 function showCartModal() {
     const cartModal = document.getElementById('cart-modal');
     if (!cartModal) return;
     
-    // Display cart contents first
+    // Afficher le contenu du panier d'abord
     if (window.displayCart) {
         window.displayCart();
     }
     
-    // Then show the modal
+    // Puis afficher le modal
     if (window.showModal) {
         window.showModal(cartModal);
     } else {
-        // Fallback to direct style manipulation
         cartModal.style.display = 'flex';
         cartModal.style.opacity = '0';
         setTimeout(() => {
@@ -112,26 +97,25 @@ function showCartModal() {
     }
 }
 
-// Initialize cart manager
+// Initialisation du gestionnaire de panier
 function initializeCartManager() {
-    // Import cart manager module
     import('/js/modules/cart/cartManager.js')
         .then(module => {
-            // Store reference to display cart function globally
+            // Rendre les fonctions disponibles globalement
             window.displayCart = module.displayCart;
             window.showCartModal = showCartModal;
             
-            // Initialize cart functionality
+            // Initialiser les fonctionnalités
             if (module.initCartManager) {
                 module.initCartManager();
             }
             
-            // Connect the cart functionality to the header
+            // Connecter au header
             if (window.DiscadoHeader && window.DiscadoHeader.connectCart) {
                 window.DiscadoHeader.connectCart();
             }
             
-            // Connect cart toggle button manually
+            // Connecter le bouton de basculement
             const cartToggle = document.getElementById('cartToggle');
             if (cartToggle) {
                 cartToggle.addEventListener('click', showCartModal);
@@ -142,7 +126,7 @@ function initializeCartManager() {
         });
 }
 
-// Import modal utilities if needed
+// Importer les utilitaires de modal
 function importModalUtils() {
     return import('/js/utils/modal.js')
         .then(module => {
@@ -155,23 +139,21 @@ function importModalUtils() {
         });
 }
 
-// Initialize everything when DOM is ready
+// Initialisation globale
 function init() {
-    // First import modal utilities
     importModalUtils()
         .then(() => {
-            // Then load cart modal
             loadCartModal();
         });
 }
 
-// Make functions available globally
+// Rendre les fonctions disponibles globalement
 window.CartIntegration = {
-    init: init,
-    loadCartModal: loadCartModal,
-    showCartModal: showCartModal,
-    hideCartModal: hideCartModal
+    init,
+    loadCartModal,
+    showCartModal,
+    hideCartModal
 };
 
-// Auto-initialize when script loads
+// Auto-initialisation
 document.addEventListener('DOMContentLoaded', init);

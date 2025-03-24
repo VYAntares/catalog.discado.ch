@@ -1,6 +1,6 @@
 /**
  * Visualisation détaillée d'une commande de l'historique
- * Ce module gère l'affichage des détails d'une commande traitée
+ * admin/js/modules/history/historyView.js
  */
 
 import * as API from '../../core/api.js';
@@ -8,33 +8,24 @@ import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as Modal from '../../utils/modal.js';
 
-/**
- * Affiche les détails d'une commande
- * @param {string} orderId - ID de la commande
- * @param {string} userId - ID de l'utilisateur
- */
+//Affiche les détails d'une commande
 async function viewOrderDetails(orderId, userId) {
-    // Obtenir les références DOM
     const orderModal = document.getElementById('orderModal');
     const orderDetailsContent = document.getElementById('orderModalContent');
     
     if (!orderModal) {
-        console.error("Modal de détails de commande non trouvée");
         Notification.showNotification("Erreur: Modal de détails non trouvée", "error");
         return;
     }
     
-    // Si orderDetailsContent n'existe pas, essayons de trouver un autre conteneur dans la modale
     let contentContainer = orderDetailsContent;
     if (!contentContainer) {
         contentContainer = orderModal.querySelector('.modal-content');
-        // Si on trouve toujours pas de conteneur, on en crée un
         if (!contentContainer) {
             const newContent = document.createElement('div');
             newContent.id = 'orderModalContent';
             newContent.className = 'order-modal-content';
             
-            // Si la modale a une structure basique, on ajoute notre conteneur
             if (orderModal.firstElementChild) {
                 orderModal.firstElementChild.appendChild(newContent);
             } else {
@@ -51,27 +42,18 @@ async function viewOrderDetails(orderId, userId) {
         }
     }
     
-    // Afficher l'indicateur de chargement
     contentContainer.innerHTML = `<div class="loading">Chargement des détails...</div>`;
     
-    // Afficher la modale - d'abord essayer la fonction du module Modal
     try {
         Modal.showModal(orderModal);
     } catch (e) {
-        // Fallback en cas d'erreur - afficher manuellement
         orderModal.style.display = 'flex';
     }
     
     try {
-        // Récupérer les détails de la commande
         const orderDetails = await API.fetchOrderDetails(orderId, userId);
-        
-        // Afficher les détails de la commande
         displayOrderDetails(orderDetails, contentContainer);
     } catch (error) {
-        console.error('Erreur lors du chargement des détails de la commande:', error);
-        
-        // Afficher un message d'erreur
         contentContainer.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -83,27 +65,19 @@ async function viewOrderDetails(orderId, userId) {
             </div>
         `;
         
-        // Notification d'erreur
         Notification.showNotification("Erreur lors du chargement des détails", "error");
     }
 }
 
-/**
- * Affiche les détails d'une commande dans la modale
- * @param {Object} order - Détails de la commande
- * @param {HTMLElement} container - Conteneur pour afficher les détails
- */
+//Affiche les détails d'une commande dans la modale
 function displayOrderDetails(order, container) {
-    // Formater les dates pour l'affichage (garder cette partie inchangée)
     const orderDate = Formatter.formatDate(order.date);
     const processDate = Formatter.formatDate(order.lastProcessed);
     
-    // Calculer le montant total uniquement pour les articles livrés (garder cette partie inchangée)
     const totalAmount = (order.deliveredItems || []).reduce((total, item) => {
         return total + (parseFloat(item.prix) * item.quantity);
     }, 0).toFixed(2);
     
-    // Déterminer le statut de la commande (garder cette partie inchangée)
     let statusText = 'COMPLÈTE';
     let statusClass = 'status-completed';
     
@@ -112,7 +86,6 @@ function displayOrderDetails(order, container) {
         statusClass = 'status-partial';
     }
     
-    // Construire le contenu HTML des détails de la commande
     let detailsHTML = `
         <div class="order-detail-header">
             <div class="order-detail-title">
@@ -142,9 +115,7 @@ function displayOrderDetails(order, container) {
                 <tbody>
     `;
     
-    // Ajouter les articles livrés groupés par catégorie
     if (order.deliveredItems && order.deliveredItems.length > 0) {
-        // Grouper les articles par catégorie
         const groupedItems = {};
         order.deliveredItems.forEach(item => {
             const category = item.categorie || 'autres';
@@ -154,10 +125,8 @@ function displayOrderDetails(order, container) {
             groupedItems[category].push(item);
         });
         
-        // Trier les catégories par ordre alphabétique
         const sortedCategories = Object.keys(groupedItems).sort();
         
-        // Ajouter chaque catégorie et ses articles
         sortedCategories.forEach(category => {
             detailsHTML += `
                 <tr>
@@ -196,7 +165,6 @@ function displayOrderDetails(order, container) {
         </div>
     `;
     
-    // Ajouter la section des articles en attente s'il y en a
     if (order.remainingItems && order.remainingItems.length > 0) {
         detailsHTML += `
             <div class="pending-items-section">
@@ -213,7 +181,6 @@ function displayOrderDetails(order, container) {
                     <tbody>
         `;
         
-        // Grouper les articles en attente par catégorie
         const groupedRemainingItems = {};
         order.remainingItems.forEach(item => {
             const category = item.categorie || 'autres';
@@ -223,10 +190,8 @@ function displayOrderDetails(order, container) {
             groupedRemainingItems[category].push(item);
         });
         
-        // Trier les catégories par ordre alphabétique
         const sortedRemainingCategories = Object.keys(groupedRemainingItems).sort();
         
-        // Ajouter chaque catégorie et ses articles
         sortedRemainingCategories.forEach(category => {
             detailsHTML += `
                 <tr>
@@ -261,7 +226,6 @@ function displayOrderDetails(order, container) {
         `;
     }
     
-    // Ajouter le total et les informations du client
     detailsHTML += `
         <div class="order-summary">
             <div class="order-total">
@@ -306,10 +270,8 @@ function displayOrderDetails(order, container) {
         </div>
     `;
     
-    // Mettre à jour le contenu de la modale
     container.innerHTML = detailsHTML;
     
-    // Ajouter des styles spécifiques pour la modale de détails
     const styleEl = document.createElement('style');
     styleEl.textContent = `
         .order-detail-header {
@@ -530,18 +492,11 @@ function displayOrderDetails(order, container) {
     container.appendChild(styleEl);
 }
 
-/**
- * Afficher les détails d'une commande directement depuis la vue client
- * @param {string} orderId - ID de la commande
- * @param {string} userId - ID du client
- */
+//Affiche les détails d'une commande directement depuis la vue client
 function showOrderDetailsFromClientView(orderId, userId) {
-    // Vérifier si la modale existe
     let orderModal = document.getElementById('orderModal');
     
-    // Si la modale n'existe pas, la créer
     if (!orderModal) {
-        // Créer la structure HTML de la modale
         const modalHTML = `
             <div id="orderModal" class="modal">
                 <div class="modal-content">
@@ -556,15 +511,12 @@ function showOrderDetailsFromClientView(orderId, userId) {
             </div>
         `;
         
-        // Ajouter la modale au DOM
         const modalContainer = document.createElement('div');
         modalContainer.innerHTML = modalHTML;
         document.body.appendChild(modalContainer.firstElementChild);
         
-        // Récupérer la référence mise à jour
         orderModal = document.getElementById('orderModal');
         
-        // Ajouter le gestionnaire d'événement pour fermer la modale
         const closeBtn = orderModal.querySelector('.close-modal');
         if (closeBtn) {
             closeBtn.addEventListener('click', function() {
@@ -572,7 +524,6 @@ function showOrderDetailsFromClientView(orderId, userId) {
             });
         }
         
-        // Fermeture en cliquant à l'extérieur
         window.addEventListener('click', function(event) {
             if (event.target === orderModal) {
                 orderModal.style.display = 'none';
@@ -580,30 +531,19 @@ function showOrderDetailsFromClientView(orderId, userId) {
         });
     }
     
-    // Afficher la modale
     orderModal.style.display = 'block';
     
-    // Utiliser directement la fonction viewOrderDetails 
-    // (qui existe dans le même fichier)
     viewOrderDetails(orderId, userId);
 }
 
-/**
- * Génère le lien de téléchargement de facture
- * @param {string} orderId - ID de la commande
- * @param {string} userId - ID de l'utilisateur
- * @returns {string} URL de téléchargement
- */
+//Génère le lien de téléchargement de facture
 function generateInvoiceLink(orderId, userId) {
     return API.getInvoiceDownloadLink(orderId, userId);
 }
 
-// Exposer les fonctions dans window pour les rendres accessibles depuis HTML
 window.viewOrderDetails = viewOrderDetails;
 window.showOrderDetailsFromClientView = showOrderDetailsFromClientView;
 
-
-// Exposer les fonctions publiques
 export {
     viewOrderDetails,
     displayOrderDetails,

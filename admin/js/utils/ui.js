@@ -1,43 +1,34 @@
 /**
  * Utilitaires d'interface utilisateur
- * Ce module gère les interactions avec l'UI globale (onglets, navigation, etc.)
+ * admin/js/utils/ui.js
  */
 
-/**
- * Initialise les onglets et leur comportement
- */
+// Initialise les onglets et leur comportement
 function initTabs() {
     const tabBtns = document.querySelectorAll('.tab-btn, .tab');
     const tabContents = document.querySelectorAll('.tab-content');
     
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function(e) {
-            // Si c'est un lien, empêcher la navigation par défaut
             if (btn.tagName === 'A' && !btn.getAttribute('href').startsWith('#')) {
-                return; // Laisser le navigateur gérer les liens externes
+                return;
             }
             
             e.preventDefault();
             
-            // Activer l'onglet cliqué
             activateTab(this.getAttribute('data-tab') || this.getAttribute('href').substring(1));
         });
     });
 }
 
-/**
- * Active un onglet spécifique
- * @param {string} tabId - ID de l'onglet à activer
- */
+// Active un onglet spécifique
 function activateTab(tabId) {
-    // Désactiver tous les onglets
     const tabBtns = document.querySelectorAll('.tab-btn, .tab');
     const tabContents = document.querySelectorAll('.tab-content');
     
     tabBtns.forEach(btn => btn.classList.remove('active'));
     tabContents.forEach(content => content.classList.remove('active'));
     
-    // Activer l'onglet demandé
     const activeBtn = document.querySelector(`[data-tab="${tabId}"], [href="#${tabId}"]`);
     const activeContent = document.getElementById(`${tabId}-tab`);
     
@@ -49,17 +40,12 @@ function activateTab(tabId) {
         activeContent.classList.add('active');
     }
     
-    // Déclencher un événement personnalisé pour informer les autres modules
     document.dispatchEvent(new CustomEvent('tabChanged', { 
         detail: { tabId: tabId }
     }));
 }
 
-/**
- * Gère la navigation entre les pages
- * @param {string} url - URL de destination
- * @param {boolean} newTab - Ouvrir dans un nouvel onglet
- */
+// Gère la navigation entre les pages
 function handlePageNavigation(url, newTab = false) {
     if (newTab) {
         window.open(url, '_blank');
@@ -68,13 +54,7 @@ function handlePageNavigation(url, newTab = false) {
     }
 }
 
-/**
- * Anime un élément (fade in/out, slide, etc.)
- * @param {HTMLElement} element - Élément à animer
- * @param {string} animation - Type d'animation
- * @param {number} duration - Durée en millisecondes
- * @returns {Promise} Promise qui se résout à la fin de l'animation
- */
+// Anime un élément (fade in/out, slide, etc.)
 function animateElement(element, animation, duration = 300) {
     return new Promise(resolve => {
         if (!element) {
@@ -82,7 +62,6 @@ function animateElement(element, animation, duration = 300) {
             return;
         }
         
-        // Appliquer l'animation
         switch(animation) {
             case 'fadeIn':
                 element.style.opacity = '0';
@@ -119,14 +98,11 @@ function animateElement(element, animation, duration = 300) {
                 break;
         }
         
-        // Résoudre la promesse après la fin de l'animation
         setTimeout(() => {
-            // Nettoyer après fadeOut ou slideUp
             if (animation === 'fadeOut' || animation === 'slideUp') {
                 element.style.display = 'none';
             }
             
-            // Nettoyer après slideDown
             if (animation === 'slideDown') {
                 element.style.height = '';
                 element.style.overflow = '';
@@ -137,11 +113,7 @@ function animateElement(element, animation, duration = 300) {
     });
 }
 
-/**
- * Toggle un élément (afficher/masquer)
- * @param {HTMLElement} element - Élément à toggle
- * @param {boolean} animate - Animer la transition
- */
+// Toggle un élément (afficher/masquer)
 function toggleElement(element, animate = true) {
     if (!element) return;
     
@@ -159,11 +131,10 @@ function toggleElement(element, animate = true) {
     }
 }
 
-// Exposer les fonctions publiques
 export {
     initTabs,
     activateTab,
     handlePageNavigation,
     animateElement,
     toggleElement
-};
+}

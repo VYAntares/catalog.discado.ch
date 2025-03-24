@@ -1,9 +1,11 @@
 // services/cryptoService.js
+// Service de cryptographie pour Discado
 const crypto = require('crypto');
 const keys = require('../config/keys');
 
+// Service cryptographique avec fonctions de chiffrement et hachage
 const cryptoService = {
-  // Chiffrer une donnée
+  // Chiffrement AES-256-CBC
   encrypt(text) {
     if (!text) return '';
     
@@ -13,12 +15,11 @@ const cryptoService = {
       encrypted += cipher.final('hex');
       return encrypted;
     } catch (error) {
-      console.error('Erreur de chiffrement:', error);
       throw new Error('Échec du chiffrement des données');
     }
   },
   
-  // Déchiffrer une donnée
+  // Déchiffrement AES-256-CBC
   decrypt(encrypted) {
     if (!encrypted) return '';
     
@@ -28,43 +29,39 @@ const cryptoService = {
       decrypted += decipher.final('utf8');
       return decrypted;
     } catch (error) {
-      console.error('Erreur de déchiffrement:', error);
-      // Ne pas exposer l'erreur détaillée à l'utilisateur
       throw new Error('Échec du déchiffrement des données');
     }
   },
   
-  // Hacher un mot de passe avec salt
+  // Hachage de mot de passe avec salt aléatoire
   hashPassword(password) {
     try {
       const salt = crypto.randomBytes(16).toString('hex');
       const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
       return `${salt}:${hash}`;
     } catch (error) {
-      console.error('Erreur de hachage du mot de passe:', error);
       throw new Error('Échec du hachage du mot de passe');
     }
   },
   
-  // Vérifier un mot de passe
+  // Vérification de mot de passe (compatible avec ancien système)
   verifyPassword(storedPassword, suppliedPassword) {
     try {
-      // Vérifier si c'est un mot de passe en texte clair (ancien système)
+      // Pour mot de passe en texte clair (ancien système)
       if (!storedPassword.includes(':')) {
         return storedPassword === suppliedPassword;
       }
       
-      // Vérifier un mot de passe haché
+      // Pour mot de passe haché
       const [salt, storedHash] = storedPassword.split(':');
       const suppliedHash = crypto.pbkdf2Sync(suppliedPassword, salt, 10000, 64, 'sha512').toString('hex');
       return storedHash === suppliedHash;
     } catch (error) {
-      console.error('Erreur de vérification du mot de passe:', error);
       return false;
     }
   },
   
-  // Générer un token aléatoire
+  // Génération de token aléatoire
   generateToken(length = 32) {
     return crypto.randomBytes(length).toString('hex');
   }

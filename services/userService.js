@@ -1,42 +1,35 @@
-// userService.js - Handle user and profile operations
+// userService.js
+// Service de gestion des utilisateurs et profils
 const dbModule = require('./db');
 const cryptoService = require('./cryptoService');
 
-
-// Service for managing users and profiles
 const userService = {
-    // Get a user by username
+    // Récupération d'un utilisateur par son username
     getUser(username) {
         return dbModule.getUserByUsername.get(username);
     },
     
-    // Get all users
+    // Récupération de tous les utilisateurs
     getAllUsers() {
         return dbModule.getAllUsers.all();
     },
     
-    // Create a new user
+    // Création d'un nouvel utilisateur avec mot de passe haché
     createUser(username, password, role) {
         try {
-            // Hacher le mot de passe avant de créer l'utilisateur
             const hashedPassword = cryptoService.hashPassword(password);
-            
-            // Utiliser le mot de passe haché pour la création
             return dbModule.createUser.run(username, hashedPassword, role);
         } catch (error) {
-            console.error('Error creating user:', error);
             throw error;
         }
     },
     
-    // Get user profile
+    // Récupération du profil utilisateur formaté
     getUserProfile(username) {
         try {
-            // Get profile from database
             const profile = dbModule.getUserProfile.get(username);
             
             if (profile) {
-                // Format profile to match expected structure
                 return {
                     clientId: username,
                     firstName: profile.first_name,
@@ -48,43 +41,34 @@ const userService = {
                     shopAddress: profile.shop_address,
                     shopCity: profile.shop_city,
                     shopZipCode: profile.shop_zip_code,
-                    referralSource: profile.referral_source || '', // Gestion de valeur null/undefined
+                    referralSource: profile.referral_source || '',
                     lastUpdated: profile.last_updated
                 };
             }
             
             return null;
         } catch (error) {
-            console.error('Error getting user profile:', error);
             return null;
         }
     },
     
-    // Méthode corrigée pour vérifier si le mot de passe est identique au nom d'utilisateur
-        isPasswordSameAsUsername(username) {
-            try {
-                // Récupérer l'utilisateur 
-                const user = this.getUser(username);
-                
-                if (!user) {
-                    return false;
-                }
-                
-                // Vérifier si le nom d'utilisateur (utilisé comme mot de passe) correspond au mot de passe haché
-                return cryptoService.verifyPassword(user.password, username);
-            } catch (error) {
-                console.error('Erreur lors de la vérification du mot de passe:', error);
-                return false;
-            }
-        },
+    // Vérification si le mot de passe est identique au nom d'utilisateur
+    isPasswordSameAsUsername(username) {
+        try {
+            const user = this.getUser(username);
+            if (!user) return false;
+            return cryptoService.verifyPassword(user.password, username);
+        } catch (error) {
+            return false;
+        }
+    },
     
-    // Sauvegarder le profil utilisateur
+    // Sauvegarde du profil utilisateur (création ou mise à jour)
     saveUserProfile(profileData, username) {
         try {
-            // Vérifier si le mot de passe est identique au nom d'utilisateur
             const isPasswordWeak = this.isPasswordSameAsUsername(username);
             
-            // Normaliser les données
+            // Normalisation des données
             const normalizedData = {
                 firstName: profileData.firstName || '',
                 lastName: profileData.lastName || '',
@@ -98,122 +82,19 @@ const userService = {
                 lastUpdated: profileData.lastUpdated || new Date().toISOString()
             };
             
-            // Vérifier si le profil existe déjà
             const existingProfile = dbModule.getUserProfile.get(username);
+            let passwordChanged = false;
             
+            // Mise à jour ou création du profil
             if (existingProfile) {
-                // Mise à jour du profil existant
-                try {
-                    // Vérifier si la colonne referral_source existe
-                    const hasReferralSource = dbModule.columnExists('user_profiles', 'referral_source');
-                    
-                    if (hasReferralSource) {
-                        // Utiliser la requête avec referral_source
-                        dbModule.updateUserProfile.run(
-                            normalizedData.firstName,
-                            normalizedData.lastName,
-                            normalizedData.email,
-                            normalizedData.phone,
-                            normalizedData.shopName,
-                            normalizedData.shopAddress,
-                            normalizedData.shopCity,
-                            normalizedData.shopZipCode,
-                            normalizedData.referralSource,
-                            normalizedData.lastUpdated,
-                            username
-                        );
-                    } else {
-                        // Utiliser la requête de secours sans referral_source
-                        dbModule.fallbackUpdateUserProfile.run(
-                            normalizedData.firstName,
-                            normalizedData.lastName,
-                            normalizedData.email,
-                            normalizedData.phone,
-                            normalizedData.shopName,
-                            normalizedData.shopAddress,
-                            normalizedData.shopCity,
-                            normalizedData.shopZipCode,
-                            normalizedData.lastUpdated,
-                            username
-                        );
-                    }
-                } catch (updateError) {
-                    console.error('Erreur lors de la mise à jour du profil:', updateError);
-                    
-                    // Tentative avec la requête de secours
-                    dbModule.fallbackUpdateUserProfile.run(
-                        normalizedData.firstName,
-                        normalizedData.lastName,
-                        normalizedData.email,
-                        normalizedData.phone,
-                        normalizedData.shopName,
-                        normalizedData.shopAddress,
-                        normalizedData.shopCity,
-                        normalizedData.shopZipCode,
-                        normalizedData.lastUpdated,
-                        username
-                    );
-                }
+                this._updateProfile(username, normalizedData);
             } else {
-                // Création d'un nouveau profil
-                try {
-                    // Vérifier si la colonne referral_source existe
-                    const hasReferralSource = dbModule.columnExists('user_profiles', 'referral_source');
-                    
-                    if (hasReferralSource) {
-                        // Utiliser la requête avec referral_source
-                        dbModule.createUserProfile.run(
-                            username,
-                            normalizedData.firstName,
-                            normalizedData.lastName,
-                            normalizedData.email,
-                            normalizedData.phone,
-                            normalizedData.shopName,
-                            normalizedData.shopAddress,
-                            normalizedData.shopCity,
-                            normalizedData.shopZipCode,
-                            normalizedData.referralSource,
-                            normalizedData.lastUpdated
-                        );
-                    } else {
-                        // Utiliser la requête de secours sans referral_source
-                        dbModule.fallbackCreateUserProfile.run(
-                            username,
-                            normalizedData.firstName,
-                            normalizedData.lastName,
-                            normalizedData.email,
-                            normalizedData.phone,
-                            normalizedData.shopName,
-                            normalizedData.shopAddress,
-                            normalizedData.shopCity,
-                            normalizedData.shopZipCode,
-                            normalizedData.lastUpdated
-                        );
-                    }
-                } catch (createError) {
-                    console.error('Erreur lors de la création du profil:', createError);
-                    
-                    // Tentative avec la requête de secours
-                    dbModule.fallbackCreateUserProfile.run(
-                        username,
-                        normalizedData.firstName,
-                        normalizedData.lastName,
-                        normalizedData.email,
-                        normalizedData.phone,
-                        normalizedData.shopName,
-                        normalizedData.shopAddress,
-                        normalizedData.shopCity,
-                        normalizedData.shopZipCode,
-                        normalizedData.lastUpdated
-                    );
-                }
+                this._createProfile(username, normalizedData);
             }
             
-            // Gérer le changement de mot de passe si demandé
-            let passwordChanged = false;
+            // Gestion du changement de mot de passe
             if (profileData.passwordChange && profileData.passwordChange.newPassword) {
                 try {
-                    // Vérifier que le mot de passe actuel est correct
                     const user = this.getUser(username);
                     if (!user || user.password !== profileData.passwordChange.currentPassword) {
                         return { 
@@ -224,25 +105,20 @@ const userService = {
                         };
                     }
                     
-                    // Mettre à jour le mot de passe
                     this.updateUserPassword(username, profileData.passwordChange.newPassword);
                     passwordChanged = true;
                 } catch (passwordError) {
-                    console.error('Erreur lors de la mise à jour du mot de passe:', passwordError);
-                    // Continuer malgré l'erreur de mot de passe
+                    // Continuer malgré l'erreur
                 }
             }
             
-            // Vérifier si le profil est complet après la sauvegarde
             const isComplete = this.isProfileComplete(username);
-            
-            // Récupérer le profil mis à jour
             const savedProfile = this.getUserProfile(username);
             
             return { 
                 success: true,
                 isProfileComplete: isComplete,
-                shouldRedirect: !isPasswordWeak, // Ne pas rediriger si le mot de passe est faible
+                shouldRedirect: !isPasswordWeak,
                 passwordSameAsUsername: isPasswordWeak && !passwordChanged,
                 profile: savedProfile,
                 message: isPasswordWeak && !passwordChanged ? 
@@ -250,12 +126,67 @@ const userService = {
                     'Profil sauvegardé avec succès'
             };
         } catch (error) {
-            console.error('Error saving user profile:', error);
             throw error;
         }
     },
     
-    // Get all client profiles (for admin)
+    // Mise à jour d'un profil existant
+    _updateProfile(username, data) {
+        try {
+            const hasReferralSource = dbModule.columnExists('user_profiles', 'referral_source');
+            
+            if (hasReferralSource) {
+                dbModule.updateUserProfile.run(
+                    data.firstName, data.lastName, data.email, data.phone,
+                    data.shopName, data.shopAddress, data.shopCity, data.shopZipCode,
+                    data.referralSource, data.lastUpdated, username
+                );
+            } else {
+                dbModule.fallbackUpdateUserProfile.run(
+                    data.firstName, data.lastName, data.email, data.phone,
+                    data.shopName, data.shopAddress, data.shopCity, data.shopZipCode,
+                    data.lastUpdated, username
+                );
+            }
+        } catch (error) {
+            // Tentative de secours sans referral_source
+            dbModule.fallbackUpdateUserProfile.run(
+                data.firstName, data.lastName, data.email, data.phone,
+                data.shopName, data.shopAddress, data.shopCity, data.shopZipCode,
+                data.lastUpdated, username
+            );
+        }
+    },
+    
+    // Création d'un nouveau profil
+    _createProfile(username, data) {
+        try {
+            const hasReferralSource = dbModule.columnExists('user_profiles', 'referral_source');
+            
+            if (hasReferralSource) {
+                dbModule.createUserProfile.run(
+                    username, data.firstName, data.lastName, data.email, 
+                    data.phone, data.shopName, data.shopAddress, data.shopCity, 
+                    data.shopZipCode, data.referralSource, data.lastUpdated
+                );
+            } else {
+                dbModule.fallbackCreateUserProfile.run(
+                    username, data.firstName, data.lastName, data.email, 
+                    data.phone, data.shopName, data.shopAddress, data.shopCity, 
+                    data.shopZipCode, data.lastUpdated
+                );
+            }
+        } catch (error) {
+            // Tentative de secours sans referral_source
+            dbModule.fallbackCreateUserProfile.run(
+                username, data.firstName, data.lastName, data.email, 
+                data.phone, data.shopName, data.shopAddress, data.shopCity, 
+                data.shopZipCode, data.lastUpdated
+            );
+        }
+    },
+    
+    // Récupération de tous les profils clients (pour admin)
     getAllClientProfiles() {
         try {
             const profiles = dbModule.getAllProfiles.all();
@@ -271,29 +202,25 @@ const userService = {
                 shopAddress: profile.shop_address,
                 shopCity: profile.shop_city,
                 shopZipCode: profile.shop_zip_code,
-                referralSource: profile.referral_source || '', // Gestion de valeur null/undefined
+                referralSource: profile.referral_source || '',
                 lastUpdated: profile.last_updated
             }));
         } catch (error) {
-            console.error('Error getting all client profiles:', error);
             return []; 
         }
     },
     
-    // Check if profile is complete
+    // Vérification si un profil est complet (tous champs obligatoires)
     isProfileComplete(username) {
         const profile = this.getUserProfile(username);
         
-        if (!profile) {
-            return false;
-        }
+        if (!profile) return false;
         
         const requiredFields = [
             'firstName', 'lastName', 'email', 'phone', 
             'shopName', 'shopAddress', 'shopCity', 'shopZipCode'
         ];
         
-        // Check if all required fields have valid values
         return requiredFields.every(field => 
             profile[field] && profile[field].trim() !== ''
         );
@@ -302,59 +229,54 @@ const userService = {
     // Mise à jour du mot de passe utilisateur
     updateUserPassword(username, newPassword) {
         try {
-            // 1. Vérifier si l'utilisateur existe
             const user = this.getUser(username);
+            if (!user) throw new Error('Utilisateur non trouvé');
             
-            if (!user) {
-                console.error(`Utilisateur ${username} non trouvé lors de la mise à jour du mot de passe`);
-                throw new Error('Utilisateur non trouvé');
-            }
-            
-            // 2. Vérifier s'il y a des doublons d'utilisateurs (problème potentiel)
+            // Nettoyage des doublons éventuels
             const db = dbModule.db;
             const duplicates = db.prepare('SELECT COUNT(*) as count FROM users WHERE username = ?').get(username);
             
             if (duplicates && duplicates.count > 1) {
-                console.warn(`ATTENTION: ${duplicates.count} entrées trouvées pour l'utilisateur ${username}`);
-                
-                // 2a. Nettoyage - supprimer les entrées dupliquées (optionnel mais recommandé)
                 db.prepare('DELETE FROM users WHERE username = ? AND rowid NOT IN (SELECT MIN(rowid) FROM users WHERE username = ?)').run(username, username);
-                console.log(`Nettoyage effectué: entrées dupliquées pour ${username} supprimées`);
             }
             
-            // 3. Hacher le mot de passe avant la mise à jour
+            // Hachage et mise à jour du mot de passe
             const hashedPassword = cryptoService.hashPassword(newPassword);
-            console.log(`Début de mise à jour du mot de passe pour ${username}`);
-            
-            // 4. Mise à jour du mot de passe haché avec journalisation détaillée
             const updateStmt = db.prepare('UPDATE users SET password = ? WHERE username = ?');
             const updateResult = updateStmt.run(hashedPassword, username);
-            
-            console.log(`Résultat de la mise à jour: ${updateResult.changes} ligne(s) modifiée(s)`);
             
             if (!updateResult || updateResult.changes === 0) {
                 throw new Error('Aucune ligne mise à jour dans la base de données');
             }
             
-            // 5. Vérification que le mot de passe a bien été mis à jour (sans vérifier l'égalité directe)
+            // Vérification et nettoyage du cache
             const updatedUser = this.getUser(username);
             if (!updatedUser) {
-                console.error('Échec de vérification après mise à jour');
                 throw new Error('L\'utilisateur n\'a pas été correctement mis à jour');
             }
             
-            // 6. Nettoyage du cache de session si applicable
+            // Nettoyage du cache de session si présent
             if (global.sessionCache && global.sessionCache[username]) {
                 delete global.sessionCache[username];
-                console.log(`Cache de session nettoyé pour ${username}`);
             }
             
-            console.log(`Mot de passe mis à jour avec succès pour ${username}`);
             return true;
         } catch (error) {
-            console.error(`Erreur critique lors de la mise à jour du mot de passe pour ${username}:`, error);
             throw error;
         }
+    },
+
+    // Validation de la force du mot de passe
+    validatePasswordStrength(password) {
+        const criteria = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        };
+        
+        return Object.values(criteria).every(valid => valid);
     }
 };
 

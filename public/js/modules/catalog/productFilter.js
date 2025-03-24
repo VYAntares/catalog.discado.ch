@@ -1,59 +1,34 @@
-/**
- * Module de filtrage de produits
- * Gère les filtres de catégorie dans le catalogue
- */
-
-/**
- * Initialise les filtres de catégorie
- * @param {Function} filterCallback - Fonction à appeler pour filtrer les produits
- */
+// Initialize product category filtering across different UI components
 export function initProductFilter(filterCallback) {
-    // Initialiser le filtre de catégorie (menu déroulant)
     setupCategoryMenuItems(filterCallback);
-    
-    // Initialiser le filtre de catégorie (select caché)
     setupCategorySelect(filterCallback);
 }
 
-/**
- * Configure les éléments de catégorie dans le menu déroulant
- * @param {Function} filterCallback - Fonction à appeler pour filtrer les produits
- */
+// Configure dropdown menu category selection
 function setupCategoryMenuItems(filterCallback) {
     const categoryItems = document.querySelectorAll('.category-item');
     
     categoryItems.forEach(item => {
         item.addEventListener('click', function() {
-            // Récupérer la catégorie sélectionnée
             const category = this.getAttribute('data-category');
             
-            // Mettre à jour l'interface
             updateCategoryUI(category, categoryItems);
             
-            // Appeler le callback pour filtrer les produits
             if (typeof filterCallback === 'function') {
                 filterCallback(category);
             }
             
-            // Fermer le menu après la sélection
+            // Close dropdown menu
             const dropdownMenu = document.getElementById('dropdownMenu');
             const menuOverlay = document.getElementById('menuOverlay');
             
-            if (dropdownMenu) {
-                dropdownMenu.classList.remove('open');
-            }
-            
-            if (menuOverlay) {
-                menuOverlay.classList.remove('active');
-            }
+            if (dropdownMenu) dropdownMenu.classList.remove('open');
+            if (menuOverlay) menuOverlay.classList.remove('active');
         });
     });
 }
 
-/**
- * Configure le select caché pour compatibilité avec le code existant
- * @param {Function} filterCallback - Fonction à appeler pour filtrer les produits
- */
+// Setup hidden select for cross-browser and legacy compatibility
 function setupCategorySelect(filterCallback) {
     const categoryFilter = document.getElementById('categoryFilter');
     
@@ -61,10 +36,8 @@ function setupCategorySelect(filterCallback) {
         categoryFilter.addEventListener('change', function() {
             const category = this.value;
             
-            // Mettre à jour l'interface
             updateCategoryUI(category);
             
-            // Appeler le callback pour filtrer les produits
             if (typeof filterCallback === 'function') {
                 filterCallback(category);
             }
@@ -72,45 +45,23 @@ function setupCategorySelect(filterCallback) {
     }
 }
 
-/**
- * Met à jour l'interface utilisateur pour refléter la catégorie sélectionnée
- * @param {string} category - Catégorie sélectionnée
- * @param {NodeList} categoryItems - Éléments de catégorie dans le menu
- */
+// Update UI to reflect selected category across different components
 function updateCategoryUI(category, categoryItems = null) {
-    // Mettre à jour le select caché
     const categoryFilter = document.getElementById('categoryFilter');
     if (categoryFilter) {
         categoryFilter.value = category;
     }
     
-    // Mettre à jour les éléments du menu si fournis
-    if (categoryItems) {
-        categoryItems.forEach(item => {
-            item.classList.remove('active');
-            if (item.getAttribute('data-category') === category) {
-                item.classList.add('active');
-            }
-        });
-    } else {
-        // Sinon, chercher les éléments
-        const items = document.querySelectorAll('.category-item');
-        items.forEach(item => {
-            item.classList.remove('active');
-            if (item.getAttribute('data-category') === category) {
-                item.classList.add('active');
-            }
-        });
-    }
+    // Update menu items
+    const items = categoryItems || document.querySelectorAll('.category-item');
+    items.forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-category') === category);
+    });
     
-    // Mettre à jour les boutons de catégorie dans la barre horizontale
     updateCategoryButtons(category);
 }
 
-/**
- * Récupère les catégories disponibles
- * @returns {Array} Liste des catégories
- */
+// List of available product categories
 export function getAvailableCategories() {
     return [
         { id: 'all', name: 'All Products' },
@@ -131,128 +82,82 @@ export function getAvailableCategories() {
     ];
 }
 
-
-/**
- * Récupère la catégorie actuellement sélectionnée
- * @returns {string} ID de la catégorie active
- */
+// Get the currently selected product category
 export function getCurrentCategory() {
-    // Vérifier le select caché d'abord
     const categoryFilter = document.getElementById('categoryFilter');
-    if (categoryFilter) {
-        return categoryFilter.value;
-    }
+    if (categoryFilter) return categoryFilter.value;
     
-    // Sinon, vérifier les éléments du menu
     const activeItem = document.querySelector('.category-item.active');
-    if (activeItem) {
-        return activeItem.getAttribute('data-category');
-    }
+    if (activeItem) return activeItem.getAttribute('data-category');
     
-    // Par défaut, retourner "all"
     return 'all';
 }
 
-/**
- * NOUVELLE FONCTIONNALITÉ: Barre de catégories horizontale
- */
-
-/**
- * Initialise la barre de catégories horizontale
- * @param {Function} filterCallback - Fonction optionnelle de filtrage à appeler (sera cherchée automatiquement si non fournie)
- */
+// Initialize horizontal category bar with dynamic filtering
 export function initHorizontalCategories(filterCallback) {
     const categoriesBar = document.getElementById('categoriesBar');
     if (!categoriesBar) return;
     
-    // Récupérer les catégories disponibles
     const categories = getAvailableCategories();
     
-    // Si le callback de filtrage n'est pas fourni, essayer de le récupérer depuis le module de catalogue
     if (!filterCallback) {
         try {
-            // Essayer d'importer dynamiquement le module de catalogue
             import('./productList.js')
                 .then(module => {
-                    if (module && typeof module.filterProducts === 'function') {
-                        setupCategoryButtons(categories, categoriesBar, module.filterProducts);
-                    } else {
-                        // Fallback: utiliser la fonction de filtrage simple
-                        setupCategoryButtons(categories, categoriesBar);
-                    }
+                    const filter = module.filterProducts || null;
+                    setupCategoryButtons(categories, categoriesBar, filter);
                 })
-                .catch(err => {
-                    console.error('Erreur lors de l\'importation du module de catalogue:', err);
-                    // Fallback: utiliser la fonction de filtrage simple
-                    setupCategoryButtons(categories, categoriesBar);
-                });
-        } catch (err) {
-            console.error('Erreur lors de la récupération de la fonction de filtrage:', err);
-            // Fallback: utiliser la fonction de filtrage simple
+                .catch(() => setupCategoryButtons(categories, categoriesBar));
+        } catch {
             setupCategoryButtons(categories, categoriesBar);
         }
     } else {
-        // Si le callback est fourni, l'utiliser directement
         setupCategoryButtons(categories, categoriesBar, filterCallback);
     }
 }
 
-/**
- * Configure les boutons de catégorie avec le gestionnaire d'événements approprié
- * @param {Array} categories - Les catégories à afficher
- * @param {HTMLElement} container - Le conteneur des boutons
- * @param {Function} filterCallback - Fonction à appeler pour filtrer les produits
- */
+// Create and configure category buttons for horizontal bar
 function setupCategoryButtons(categories, container, filterCallback) {
-    // Vider le conteneur pour éviter les doublons
     container.innerHTML = '';
     
-    // Créer les boutons de catégorie
     categories.forEach(category => {
         const button = document.createElement('button');
         button.className = 'category-button';
         button.setAttribute('data-category', category.id);
         button.textContent = category.name;
         
-        // Définir l'état actif pour "All Products" par défaut
+        // Default 'All Products' as active
         if (category.id === 'all') {
             button.classList.add('active');
         }
         
-        // Ajouter le gestionnaire de clic
         button.addEventListener('click', function() {
             const categoryId = category.id;
             
-            // Mettre à jour l'interface visuelle des boutons
+            // Update button states
             document.querySelectorAll('.category-button').forEach(btn => {
                 btn.classList.remove('active');
             });
             this.classList.add('active');
             
-            // Mettre à jour le select caché (pour compatibilité avec le code existant)
+            // Update hidden select
             const categoryFilter = document.getElementById('categoryFilter');
             if (categoryFilter) {
                 categoryFilter.value = categoryId;
             }
             
-            // Mettre à jour les éléments du menu si présents
+            // Update menu items
             const categoryItems = document.querySelectorAll('.category-item');
             categoryItems.forEach(item => {
-                item.classList.remove('active');
-                if (item.getAttribute('data-category') === categoryId) {
-                    item.classList.add('active');
-                }
+                item.classList.toggle('active', item.getAttribute('data-category') === categoryId);
             });
             
-            // Appeler la fonction de filtrage si disponible
+            // Apply filtering
             if (typeof filterCallback === 'function') {
                 filterCallback(categoryId);
-            } else {
-                // Fallback: déclencher l'événement change sur le select
-                if (categoryFilter) {
-                    const event = new Event('change');
-                    categoryFilter.dispatchEvent(event);
-                }
+            } else if (categoryFilter) {
+                const event = new Event('change');
+                categoryFilter.dispatchEvent(event);
             }
         });
         
@@ -260,16 +165,10 @@ function setupCategoryButtons(categories, container, filterCallback) {
     });
 }
 
-/**
- * Met à jour l'état visuel des boutons de catégorie
- * @param {string} categoryId - ID de la catégorie active
- */
+// Update category button visual state
 function updateCategoryButtons(categoryId) {
     const buttons = document.querySelectorAll('.category-button');
     buttons.forEach(button => {
-        button.classList.remove('active');
-        if (button.getAttribute('data-category') === categoryId) {
-            button.classList.add('active');
-        }
+        button.classList.toggle('active', button.getAttribute('data-category') === categoryId);
     });
 }

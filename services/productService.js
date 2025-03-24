@@ -1,20 +1,21 @@
-// productService.js - Handle product operations
+// productService.js
+// Service de gestion des produits
 const dbModule = require('./db');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
 
-// Service for managing products
+// Service de gestion des produits
 const productService = {
-    // Get all products
+    // Récupération de tous les produits (depuis DB ou CSV)
     async getProducts() {
         try {
-            // First check if products exist in database
+            // Vérifier si des produits existent en base de données
             const stmt = dbModule.db.prepare('SELECT COUNT(*) as count FROM products');
             const { count } = stmt.get();
             
             if (count > 0) {
-                // Products exist in database, fetch them
+                // Récupérer les produits de la base de données
                 const products = dbModule.db.prepare('SELECT * FROM products').all();
                 
                 return products.map(product => ({
@@ -25,23 +26,18 @@ const productService = {
                     imageUrl: product.image_url
                 }));
             } else {
-                // No products in database, use legacy CSV method and migrate to DB
+                // Utiliser l'ancien système CSV et migrer vers DB
                 const legacyProducts = await this._getLegacyProducts();
-                
-                // Migrate products to database in background
                 this._migrateProductsToDatabase(legacyProducts);
-                
                 return legacyProducts;
             }
         } catch (error) {
-            console.error('Error getting products:', error);
-            
-            // Fallback to legacy system
+            // Fallback vers le système legacy en cas d'erreur
             return this._getLegacyProducts();
         }
     },
     
-    // Add a product
+    // Ajout d'un produit en base de données
     addProduct(product) {
         try {
             const stmt = dbModule.db.prepare(`
@@ -61,12 +57,11 @@ const productService = {
                 id: result.lastInsertRowid
             };
         } catch (error) {
-            console.error('Error adding product:', error);
             throw error;
         }
     },
     
-    // Update a product
+    // Mise à jour d'un produit existant
     updateProduct(id, product) {
         try {
             const stmt = dbModule.db.prepare(`
@@ -85,18 +80,16 @@ const productService = {
             
             return { success: true };
         } catch (error) {
-            console.error('Error updating product:', error);
             throw error;
         }
     },
     
-    // Helper: Get products from legacy CSV files
+    // Récupération des produits depuis les fichiers CSV (système legacy)
     async _getLegacyProducts() {
         return new Promise((resolve, reject) => {
             const dataFolder = path.join(__dirname, '../data');
             fs.readdir(dataFolder, (err, files) => {
                 if (err) {
-                    console.error("Error reading data folder:", err);
                     return resolve([]);
                 }
                 
@@ -116,10 +109,10 @@ const productService = {
                             maxRows: 0 
                         }))
                         .on('data', (row) => {
-                            // Add category
+                            // Ajouter la catégorie
                             row.categorie = categoryName;
                             
-                            // Find image URL
+                            // Rechercher l'URL d'image
                             let imageUrl = null;
                             
                             Object.keys(row).forEach(key => {
@@ -131,7 +124,7 @@ const productService = {
                                 }
                             });
                             
-                            // Clean image URL
+                            // Nettoyer l'URL d'image
                             if (imageUrl) {
                                 imageUrl = imageUrl.replace('/public', '');
                                 
@@ -141,11 +134,11 @@ const productService = {
                                 
                                 row.imageUrl = imageUrl;
                             } else {
-                                // Default image
+                                // Image par défaut
                                 row.imageUrl = `/images/${categoryName}/${categoryName}-default.jpg`;
                             }
                             
-                            // Clean object
+                            // Nettoyer l'objet
                             const cleanedRow = {};
                             Object.keys(row).forEach(key => {
                                 if (isNaN(parseInt(key)) && key !== '' && row[key] !== '') {
@@ -162,7 +155,6 @@ const productService = {
                             }
                         })
                         .on('error', (error) => {
-                            console.error(`Error reading CSV file ${file}:`, error);
                             filesProcessed++;
                             if (filesProcessed === csvFiles.length) {
                                 resolve(products);
@@ -173,24 +165,25 @@ const productService = {
         });
     },
     
-    // Helper: Migrate products from CSV to database
+    // Migration des produits des fichiers CSV vers la base de données
     async _migrateProductsToDatabase(products) {
         try {
-            // First check if products already exist
+            // Vérifier si des produits existent déjà
             const stmt = dbModule.db.prepare('SELECT COUNT(*) as count FROM products');
             const { count } = stmt.get();
             
             if (count > 0) {
-                // Products already exist, skip migration
+                // Produits déjà existants, annuler la migration
                 return;
             }
             
-            // Start transaction for better performance
+            // Préparer l'insertion
             const insertProduct = dbModule.db.prepare(`
                 INSERT INTO products (name, price, category, image_url)
                 VALUES (?, ?, ?, ?)
             `);
             
+            // Transaction pour de meilleures performances
             const insertMany = dbModule.db.transaction((products) => {
                 for (const product of products) {
                     if (!product.Nom || !product.prix) continue;
@@ -204,12 +197,10 @@ const productService = {
                 }
             });
             
-            // Insert all products
+            // Insérer tous les produits
             insertMany(products);
-            
-            console.log(`Migrated ${products.length} products to database`);
         } catch (error) {
-            console.error('Error migrating products to database:', error);
+            // Gestion silencieuse des erreurs
         }
     }
 };

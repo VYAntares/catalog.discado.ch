@@ -1,36 +1,14 @@
-/**
- * Header module
- * Handles all header interactions and functionality
- */
-
 import { showModal, hideModal } from '../../utils/modal.js';
 import { initCartManager } from '../cart/cartManager.js';
 
-/**
- * Initialize the header functionality
- */
 export function initHeader() {
-    console.log('Header module initialized');
-    
-    // Toggle menu
     setupMobileMenu();
-    
-    // Initialize user menu
     setupUserMenu();
-    
-    // Initialize cart functionality
-    initCartManaxager();
-    
-    // Handle scroll behavior
+    initCartManager();
     setupScrollBehavior();
-    
-    // Initialize PDF catalog
     setupPdfCatalog();
 }
 
-/**
- * Setup mobile menu toggle functionality
- */
 function setupMobileMenu() {
     const menuToggle = document.getElementById('menuToggle');
     const dropdownMenu = document.getElementById('dropdownMenu');
@@ -47,22 +25,16 @@ function setupMobileMenu() {
     });
 }
 
-/**
- * Toggle the dropdown menu
- */
 function toggleDropdownMenu() {
     const dropdownMenu = document.getElementById('dropdownMenu');
     const menuOverlay = document.getElementById('menuOverlay');
     
     if (!dropdownMenu || !menuOverlay) return;
     
-    // Close user menu if open
     closeUserMenu();
     
-    // Toggle dropdown menu
     dropdownMenu.classList.toggle('open');
     
-    // Toggle overlay
     if (dropdownMenu.classList.contains('open')) {
         menuOverlay.classList.add('active');
     } else {
@@ -70,9 +42,6 @@ function toggleDropdownMenu() {
     }
 }
 
-/**
- * Setup user menu toggle functionality
- */
 function setupUserMenu() {
     const userMenuToggle = document.getElementById('userMenuToggle');
     const userMenu = document.getElementById('userMenu');
@@ -85,22 +54,16 @@ function setupUserMenu() {
     });
 }
 
-/**
- * Toggle the user menu
- */
 function toggleUserMenu() {
     const userMenu = document.getElementById('userMenu');
     const menuOverlay = document.getElementById('menuOverlay');
     
     if (!userMenu || !menuOverlay) return;
     
-    // Close dropdown menu if open
     closeDropdownMenu();
     
-    // Toggle user menu
     userMenu.classList.toggle('open');
     
-    // Toggle overlay
     if (userMenu.classList.contains('open')) {
         menuOverlay.classList.add('active');
     } else {
@@ -108,9 +71,6 @@ function toggleUserMenu() {
     }
 }
 
-/**
- * Close the user menu
- */
 function closeUserMenu() {
     const userMenu = document.getElementById('userMenu');
     
@@ -119,9 +79,6 @@ function closeUserMenu() {
     }
 }
 
-/**
- * Close the dropdown menu
- */
 function closeDropdownMenu() {
     const dropdownMenu = document.getElementById('dropdownMenu');
     
@@ -130,9 +87,6 @@ function closeDropdownMenu() {
     }
 }
 
-/**
- * Close all menus
- */
 function closeAllMenus() {
     closeDropdownMenu();
     closeUserMenu();
@@ -143,9 +97,6 @@ function closeAllMenus() {
     }
 }
 
-/**
- * Setup scroll behavior
- */
 function setupScrollBehavior() {
     let lastScrollTop = 0;
     
@@ -155,21 +106,17 @@ function setupScrollBehavior() {
         
         const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
-        // Make header smaller on scroll down
         if (currentScrollTop > 50) {
             header.classList.add('header-compact');
         } else {
             header.classList.remove('header-compact');
         }
         
-        // Hide header on scroll down, show on scroll up
         if (currentScrollTop > lastScrollTop && currentScrollTop > 120) {
-            // Scrolling down
             if (!header.style.transform || header.style.transform !== 'translateY(-100%)') {
                 header.style.transform = 'translateY(-100%)';
             }
         } else {
-            // Scrolling up
             header.style.transform = 'translateY(0)';
         }
         
@@ -177,9 +124,6 @@ function setupScrollBehavior() {
     });
 }
 
-/**
- * Setup PDF catalog
- */
 function setupPdfCatalog() {
     const pdfToggle = document.getElementById('pdfCatalogToggle');
     
@@ -190,3 +134,15 @@ function setupPdfCatalog() {
         });
     }
 }
+
+export {
+    setupMobileMenu,
+    toggleDropdownMenu,
+    setupUserMenu,
+    toggleUserMenu,
+    closeUserMenu,
+    closeDropdownMenu,
+    closeAllMenus,
+    setupScrollBehavior,
+    setupPdfCatalog
+};
