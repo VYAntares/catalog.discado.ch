@@ -1,4 +1,5 @@
 // productService.js
+// services/userService.js
 // Service de gestion des produits
 const dbModule = require('./db');
 const fs = require('fs');

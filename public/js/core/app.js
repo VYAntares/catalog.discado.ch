@@ -1,3 +1,4 @@
+//public/js/core/app.js
 import { checkAuthentication } from './api.js';
 import { showNotification } from '../utils/notification.js';
 

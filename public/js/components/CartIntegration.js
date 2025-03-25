@@ -1,5 +1,6 @@
 // Module d'intégration du panier
 // Connecte les fonctionnalités du panier à n'importe quelle page
+//public/js/components/CartIntegration.js
 
 // Chargement du HTML du modal panier
 function loadCartModal() {

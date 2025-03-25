@@ -1,3 +1,4 @@
+//public/js/modules/catalog/productSearch.js
 // Search products with flexible matching
 export function searchProducts(query, products) {
     if (!query || query.trim() === '') {

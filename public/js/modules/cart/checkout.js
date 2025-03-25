@@ -1,3 +1,5 @@
+//public/js/modules/cart/checkout.js
+
 import { saveOrder } from '../../core/api.js';
 import { getCart, clearCart, getCartTotal } from '../../core/storage.js';
 import { showNotification } from '../../utils/notification.js';

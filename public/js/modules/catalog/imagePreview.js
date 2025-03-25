@@ -1,3 +1,5 @@
+//public/js/modules/catalog/imagePreview.js
+
 export function initImagePreview() {
     createImagePreviewModal();
     setupImagePreviews();

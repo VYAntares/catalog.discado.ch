@@ -1,3 +1,5 @@
+// public/js/utils/storage.js
+
 import { AppConfig } from './config.js';
 
 const KEYS = AppConfig.STORAGE_KEYS;

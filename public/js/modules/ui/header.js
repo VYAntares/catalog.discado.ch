@@ -1,3 +1,5 @@
+// public/js/modules/ui/header.js
+
 import { showModal, hideModal } from '../../utils/modal.js';
 import { initCartManager } from '../cart/cartManager.js';
 

@@ -1,6 +1,7 @@
 /**
  * Application Configuration
  * Global configuration settings for the application
+ * public/js/core/config.js
  */
 
 export const AppConfig = {

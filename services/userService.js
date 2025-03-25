@@ -1,3 +1,4 @@
+// services/userService.js
 // userService.js
 // Service de gestion des utilisateurs et profils
 const dbModule = require('./db');

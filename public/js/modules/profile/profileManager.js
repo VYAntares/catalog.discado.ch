@@ -1,3 +1,5 @@
+// public/js/modules/profile/profileManager.js
+
 import { fetchUserProfile, saveUserProfile } from '../../core/api.js';
 import { showNotification } from '../../utils/notification.js';
 import { 

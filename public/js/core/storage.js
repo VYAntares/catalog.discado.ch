@@ -1,5 +1,7 @@
 // Service de stockage local
 // Gestion de localStorage/sessionStorage
+// public/js/core/storage.js
+
 import { AppConfig } from './config.js';
 
 // Clés de stockage

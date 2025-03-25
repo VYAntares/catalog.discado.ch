@@ -1,6 +1,6 @@
 /**
  * Module de gestion du mot de passe pour Discado
- * À placer dans: /js/modules/profile/passwordManager.js
+ * À placer dans: public/js/modules/profile/passwordManager.js
  */
 
 import { saveUserPassword } from '../../core/api.js';

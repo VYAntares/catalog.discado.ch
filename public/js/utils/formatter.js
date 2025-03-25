@@ -1,3 +1,5 @@
+// public/js/utils/formatter.js
+
 export function formatDate(dateString, options = {}) {
     if (!dateString) return 'N/A';
     

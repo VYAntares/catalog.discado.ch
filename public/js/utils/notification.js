@@ -1,3 +1,5 @@
+// public/js/utils/notification.js
+
 import { AppConfig } from '../core/config.js';
 
 const DEFAULT_DURATION = AppConfig.NOTIFICATION_DURATION || 4000;

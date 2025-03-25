@@ -1,3 +1,4 @@
+//public/js/core/api.js
 import { showNotification } from '../utils/notification.js';
 
 const API_CONFIG = {

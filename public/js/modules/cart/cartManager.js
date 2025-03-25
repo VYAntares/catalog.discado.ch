@@ -1,5 +1,6 @@
 /**
  * Module de gestion du panier
+ * public/js/modules/cart/cartManager.js
  */
 
 import { showNotification } from '../../utils/notification.js';

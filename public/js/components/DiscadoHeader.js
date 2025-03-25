@@ -1,5 +1,6 @@
 // Composant Header pour Discado
 // Version 2.0 - Responsive et Professionnel
+//public/js/components/DiscadoHeader.js
 
 // Initialisation du header
 function initDiscadoHeader() {

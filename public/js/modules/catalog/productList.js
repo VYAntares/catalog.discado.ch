@@ -1,3 +1,4 @@
+//public/js/modules/catalog/productList.js
 import { fetchProducts } from '../../core/api.js';
 import { addToCart } from '../../core/storage.js';
 import { showNotification } from '../../utils/notification.js';

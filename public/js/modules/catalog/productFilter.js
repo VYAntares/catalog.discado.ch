@@ -1,3 +1,5 @@
+//public/js/modules/catalog/productFilter.js
+
 // Initialize product category filtering across different UI components
 export function initProductFilter(filterCallback) {
     setupCategoryMenuItems(filterCallback);

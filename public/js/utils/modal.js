@@ -1,3 +1,5 @@
+// public/js/utils/modal.js
+
 const modalCloseCallbacks = new Map();
 
 export function initModals() {
