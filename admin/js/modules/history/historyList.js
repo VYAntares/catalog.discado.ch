@@ -265,6 +265,9 @@ function displayDayOrders(year, month, day) {
         const orderElement = createOrderElement(order);
         dayOrdersList.appendChild(orderElement);
     });
+
+    // Ajouter des gestionnaires d'événements pour les boutons de détails
+    setupOrderDetailsButtons();
 }
 
 //Crée un élément HTML pour une commande
@@ -311,7 +314,7 @@ function createOrderElement(order) {
             <div class="items-preview">${itemsPreview}${(order.deliveredItems || []).length > 3 ? '...' : ''}</div>
         </div>
         <div class="order-actions">
-            <button class="action-btn view-btn" onclick="viewOrderDetails('${order.orderId}', '${order.userId}')">
+            <button class="action-btn view-btn view-order-details-btn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
                 <i class="fas fa-eye"></i> Voir détails
             </button>
             <a href="${API.getInvoiceDownloadLink(order.orderId, order.userId)}" class="action-btn download-btn" target="_blank">
@@ -323,9 +326,16 @@ function createOrderElement(order) {
     return orderItem;
 }
 
-window.viewOrderDetails = function(orderId, userId) {
-    HistoryView.viewOrderDetails(orderId, userId);
-};
+// Configurer les gestionnaires d'événements pour les boutons de détails
+function setupOrderDetailsButtons() {
+    document.querySelectorAll('.view-order-details-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const userId = this.getAttribute('data-user-id');
+            HistoryView.viewOrderDetails(orderId, userId);
+        });
+    });
+}
 
 //Initialise les événements de recherche et s'assure que les modales sont correctement configurées
 function initSearchEvents() {

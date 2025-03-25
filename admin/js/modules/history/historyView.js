@@ -31,10 +31,19 @@ async function viewOrderDetails(orderId, userId) {
             } else {
                 const modalContent = document.createElement('div');
                 modalContent.className = 'modal-content';
-                modalContent.innerHTML = `
-                    <span class="close-order-modal" onclick="document.getElementById('orderModal').style.display='none'">&times;</span>
-                    <h2 class="order-details-title">Détails de la commande</h2>
-                `;
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'close-order-modal';
+                closeBtn.innerHTML = '&times;';
+                closeBtn.addEventListener('click', function() {
+                    document.getElementById('orderModal').style.display = 'none';
+                });
+                
+                const title = document.createElement('h2');
+                title.className = 'order-details-title';
+                title.textContent = 'Détails de la commande';
+                
+                modalContent.appendChild(closeBtn);
+                modalContent.appendChild(title);
                 modalContent.appendChild(newContent);
                 orderModal.appendChild(modalContent);
             }
@@ -59,11 +68,21 @@ async function viewOrderDetails(orderId, userId) {
                 <i class="fas fa-exclamation-triangle"></i>
                 <p>Erreur lors du chargement des détails de la commande.</p>
                 <p>Détails: ${error.message || "Erreur inconnue"}</p>
-                <button class="action-btn retry-btn" onclick="window.viewOrderDetails('${orderId}', '${userId}')">
+                <button class="action-btn retry-btn" data-order-id="${orderId}" data-user-id="${userId}">
                     <i class="fas fa-sync"></i> Réessayer
                 </button>
             </div>
         `;
+        
+        // Ajouter le gestionnaire d'événement au bouton Réessayer
+        const retryBtn = contentContainer.querySelector('.retry-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                const userId = this.getAttribute('data-user-id');
+                viewOrderDetails(orderId, userId);
+            });
+        }
         
         Notification.showNotification("Erreur lors du chargement des détails", "error");
     }
@@ -264,13 +283,21 @@ function displayOrderDetails(order, container) {
                target="_blank">
                 <i class="fas fa-file-pdf"></i> Télécharger la Facture
             </a>
-            <button class="close-detail-btn" onclick="document.getElementById('orderModal').style.display='none'">
+            <button class="close-detail-btn" id="closeOrderDetailBtn">
                 <i class="fas fa-times"></i> Fermer
             </button>
         </div>
     `;
     
     container.innerHTML = detailsHTML;
+    
+    // Ajouter le gestionnaire d'événement au bouton Fermer
+    const closeBtn = container.querySelector('.close-detail-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            document.getElementById('orderModal').style.display = 'none';
+        });
+    }
     
     const styleEl = document.createElement('style');
     styleEl.textContent = `
@@ -541,12 +568,35 @@ function generateInvoiceLink(orderId, userId) {
     return API.getInvoiceDownloadLink(orderId, userId);
 }
 
-window.viewOrderDetails = viewOrderDetails;
-window.showOrderDetailsFromClientView = showOrderDetailsFromClientView;
+// Définir le gestionnaire pour les événements de vue des détails
+function setupViewDetailHandlers() {
+    document.querySelectorAll('.view-order-detail-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const userId = this.getAttribute('data-user-id');
+            viewOrderDetails(orderId, userId);
+        });
+    });
+}
+
+// Fonction globale pour exposer viewOrderDetails à window
+function initGlobalHandlers() {
+    window.viewOrderDetails = function(orderId, userId) {
+        viewOrderDetails(orderId, userId);
+    };
+    
+    window.showOrderDetailsFromClientView = function(orderId, userId) {
+        showOrderDetailsFromClientView(orderId, userId);
+    };
+}
+
+// Initialiser les gestionnaires globaux
+initGlobalHandlers();
 
 export {
     viewOrderDetails,
     displayOrderDetails,
     generateInvoiceLink,
-    showOrderDetailsFromClientView
+    showOrderDetailsFromClientView,
+    setupViewDetailHandlers
 };

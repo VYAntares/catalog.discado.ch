@@ -12,9 +12,11 @@ import * as HistoryView from '../history/historyView.js';
 let clientModal;
 let clientDetailsContent;
 let clientDetailsTitle;
+let currentClientId;
 
 //Affiche les détails d'un client dans une modale
 async function viewClientDetails(clientId) {
+    currentClientId = clientId;
     clientModal = document.getElementById('clientModal');
     clientDetailsContent = document.getElementById('clientDetailsContent');
     clientDetailsTitle = document.getElementById('clientDetailsTitle');
@@ -412,7 +414,7 @@ function displayOrderHistory(container, orders, clientId) {
                 <td><span class="order-status">${statusText}</span></td>
                 <td class="order-count">${totalItems} article${totalItems > 1 ? 's' : ''}</td>
                 <td>
-                    <button class="action-btn details-btn" onclick="showOrderDetailsFromClientView('${order.orderId}', '${clientId}')">
+                    <button class="action-btn details-btn view-order-btn" data-order-id="${order.orderId}" data-user-id="${clientId}">
                         <i class="fas fa-eye"></i> Détails
                     </button>
                 </td>
@@ -428,9 +430,19 @@ function displayOrderHistory(container, orders, clientId) {
     
     container.innerHTML = html;
     
-    window.viewOrderDetails = function(orderId, userId) {
-        HistoryView.viewOrderDetails(orderId, userId);
-    };
+    // Ajouter les écouteurs d'événements pour les boutons de détails
+    setupOrderDetailButtonHandlers();
+}
+
+// Configurer les gestionnaires d'événements pour les boutons de détails de commande
+function setupOrderDetailButtonHandlers() {
+    document.querySelectorAll('.view-order-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const userId = this.getAttribute('data-user-id');
+            HistoryView.showOrderDetailsFromClientView(orderId, userId);
+        });
+    });
 }
 
 export {
