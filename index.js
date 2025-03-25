@@ -1,4 +1,4 @@
-require('dotenv').config();
+// require('dotenv').config();
 
 // ===== IMPORTATIONS =====
 // Modules externes
@@ -7,6 +7,36 @@ const session = require('express-session');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
+
+// securite dom protection XSS
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
+
+const sanitizeMiddleware = (req, res, next) => {
+  if (req.body) {
+    
+    const sanitizeObject = (obj) => {
+      if (!obj) return obj;
+      
+      Object.keys(obj).forEach(key => {
+        if (typeof obj[key] === 'string') {
+          obj[key] = DOMPurify.sanitize(obj[key]);
+        } else if (typeof obj[key] === 'object') {
+          sanitizeObject(obj[key]);
+        }
+      });
+      
+      return obj;
+    };
+    
+    req.body = sanitizeObject(req.body);
+  }
+  
+  next();
+};
 
 // Configuration et services
 const keys = require('./config/keys');
@@ -34,13 +64,17 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.json());
 
+app.use(sanitizeMiddleware);
+
+app.set('trust proxy', 1);
+
 // Configuration de la session
 app.use(session({
   secret: keys.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     maxAge: 1 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'strict'
