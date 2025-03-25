@@ -7,6 +7,7 @@ const session = require('express-session');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
+const helmet = require('helmet');
 
 // securite dom protection XSS
 const createDOMPurify = require('dompurify');
@@ -67,6 +68,19 @@ app.use(express.json());
 app.use(sanitizeMiddleware);
 
 app.set('trust proxy', 1);
+
+app.use(helmet());
+
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+    styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
+    fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "data:"],
+    imgSrc: ["'self'", "data:", "blob:"],
+    connectSrc: ["'self'"]
+  }
+}));
 
 // Configuration de la session
 app.use(session({
