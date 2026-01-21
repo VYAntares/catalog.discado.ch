@@ -460,108 +460,219 @@ const orderService = {
         }
     },
     
-    // Traitement d'une commande (livraison partielle ou complète)
-    processOrder(orderId, userId, deliveredItems) {
-        try {
-            const date = new Date().toISOString();
-            
-            return dbModule.transaction(() => {
-                const order = dbModule.getOrderById.get(orderId);
-                
-                if (!order) {
-                    throw new Error('Order not found');
-                }
-                
-                const allItems = dbModule.getOrderItems.all(orderId);
-                const remainingItems = [];
-                const existingPendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
-                
-                allItems.forEach(item => {
-                    const deliveredItem = deliveredItems.find(d => d.Nom === item.product_name);
-                    
-                    if (deliveredItem && deliveredItem.quantity > 0) {
-                        if (deliveredItem.quantity >= item.quantity) {
-                            // Livraison complète
-                            dbModule.updateOrderItemQuantity.run(
-                                deliveredItem.quantity,
-                                orderId,
-                                item.product_name,
-                                item.category
-                            );
-                            
-                            dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
-                        } else {
-                            // Livraison partielle
-                            const remainingQuantity = item.quantity - deliveredItem.quantity;
-                            
-                            dbModule.updateOrderItemQuantity.run(
-                                deliveredItem.quantity,
-                                orderId,
-                                item.product_name,
-                                item.category
-                            );
-                            
-                            dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
-                            
-                            dbModule.addOrderItem.run(
-                                orderId,
-                                item.product_name,
-                                item.product_price,
-                                remainingQuantity,
-                                item.category,
-                                'remaining'
-                            );
-                            
-                            remainingItems.push({
-                                Nom: item.product_name,
-                                prix: item.product_price.toString(),
-                                quantity: remainingQuantity,
-                                categorie: item.category
-                            });
-                            
-                            this._updatePendingDeliveryItem(
-                                userId, 
-                                item.product_name, 
-                                item.category, 
-                                remainingQuantity, 
-                                item.product_price, 
-                                existingPendingDeliveries
-                            );
-                        }
-                    } else {
-                        // Aucune livraison
-                        dbModule.updateOrderItemStatus.run('remaining', orderId, item.product_name);
-                        
-                        remainingItems.push({
-                            Nom: item.product_name,
-                            prix: item.product_price.toString(),
-                            quantity: item.quantity,
-                            categorie: item.category
-                        });
-                        
-                        this._updatePendingDeliveryItem(
-                            userId, 
-                            item.product_name, 
-                            item.category, 
-                            item.quantity, 
-                            item.product_price, 
-                            existingPendingDeliveries
-                        );
-                    }
-                });
-                
-                const newStatus = remainingItems.length > 0 ? 'partial' : 'completed';
-                dbModule.updateOrderStatus.run(newStatus, date, orderId);
-                
-                return {
-                    success: true,
-                    status: newStatus
-                };
-            });
-        } catch (error) {
-            throw error;
-        }
-    },
+	// Traitement d'une commande (livraison partielle ou complète)
+	processOrder(orderId, userId, deliveredItems) {
+		try {
+			const date = new Date().toISOString();
+			
+			return dbModule.transaction(() => {
+				const order = dbModule.getOrderById.get(orderId);
+				
+				if (!order) {
+					throw new Error('Order not found');
+				}
+				
+				const allItems = dbModule.getOrderItems.all(orderId);
+				const remainingItems = [];
+				const existingPendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
+				
+				allItems.forEach(item => {
+					const deliveredItem = deliveredItems.find(d => d.Nom === item.product_name);
+					
+					if (deliveredItem && deliveredItem.quantity > 0) {
+						if (deliveredItem.quantity >= item.quantity) {
+							// Livraison complète
+							dbModule.updateOrderItemQuantity.run(
+								deliveredItem.quantity,
+								orderId,
+								item.product_name,
+								item.category
+							);
+							
+							dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
+						} else {
+							// Livraison partielle
+							const remainingQuantity = item.quantity - deliveredItem.quantity;
+							
+							dbModule.updateOrderItemQuantity.run(
+								deliveredItem.quantity,
+								orderId,
+								item.product_name,
+								item.category
+							);
+							
+							dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
+							
+							dbModule.addOrderItem.run(
+								orderId,
+								item.product_name,
+								item.product_price,
+								remainingQuantity,
+								item.category,
+								'remaining'
+							);
+							
+							remainingItems.push({
+								Nom: item.product_name,
+								prix: item.product_price.toString(),
+								quantity: remainingQuantity,
+								categorie: item.category
+							});
+							
+							this._updatePendingDeliveryItem(
+								userId, 
+								item.product_name, 
+								item.category, 
+								remainingQuantity, 
+								item.product_price, 
+								existingPendingDeliveries
+							);
+						}
+					} else {
+						// Aucune livraison
+						dbModule.updateOrderItemStatus.run('remaining', orderId, item.product_name);
+						
+						remainingItems.push({
+							Nom: item.product_name,
+							prix: item.product_price.toString(),
+							quantity: item.quantity,
+							categorie: item.category
+						});
+						
+						this._updatePendingDeliveryItem(
+							userId, 
+							item.product_name, 
+							item.category, 
+							item.quantity, 
+							item.product_price, 
+							existingPendingDeliveries
+						);
+					}
+				});
+				
+				const newStatus = remainingItems.length > 0 ? 'partial' : 'completed';
+				dbModule.updateOrderStatus.run(newStatus, date, orderId);
+				
+				// ============================================
+				// 🆕 CRÉATION AUTOMATIQUE DE LA FACTURE
+				// ============================================
+				this._createInvoiceForOrder(orderId, userId, deliveredItems, date);
+				
+				return {
+					success: true,
+					status: newStatus
+				};
+			});
+		} catch (error) {
+			throw error;
+		}
+	},
+
+	// ============================================
+	// 🆕 NOUVELLE FONCTION : Création de facture
+	// ============================================
+	_createInvoiceForOrder(orderId, userId, deliveredItems, processDate) {
+		try {
+			// Récupérer le profil utilisateur
+			const userProfile = userService.getUserProfile(userId);
+			const clientFullName = userProfile 
+				? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userId
+				: userId;
+			
+			// Récupérer la date de commande
+			const order = dbModule.getOrderById.get(orderId);
+			const invoiceDate = order.date;
+			
+			// Calculer le subtotal HT
+			const subtotalHT = deliveredItems.reduce((sum, item) => {
+				return sum + (parseFloat(item.prix) * item.quantity);
+			}, 0);
+			
+			// Arrondir à 2 décimales
+			const subtotalHTRounded = Math.round(subtotalHT * 100) / 100;
+			
+			// Calculer la TVA (8.1%) et arrondir
+			const vatAmount = Math.round(subtotalHTRounded * 0.081 * 100) / 100;
+			
+			// Calculer le total TTC et arrondir
+			const totalTTC = Math.round((subtotalHTRounded + vatAmount) * 100) / 100;
+			
+			// Calculer la due_date (invoice_date + 1 mois)
+			const invoiceDateObj = new Date(invoiceDate);
+			const dueDate = new Date(invoiceDateObj);
+			dueDate.setMonth(dueDate.getMonth() + 1);
+			
+			// Générer le numéro de facture
+			const invoiceNumber = this._generateInvoiceNumber();
+			
+			// Insérer la facture
+			const insertInvoice = dbModule.db.prepare(`
+				INSERT INTO invoices (
+					invoice_number,
+					order_id,
+					user_id,
+					client_full_name,
+					invoice_date,
+					subtotal_ht,
+					vat_amount,
+					total_ttc,
+					payment_status,
+					amount_paid,
+					amount_due,
+					due_date,
+					paid_date
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`);
+			
+			insertInvoice.run(
+				invoiceNumber,           // invoice_number
+				orderId,                 // order_id
+				userId,                  // user_id
+				clientFullName,          // client_full_name
+				invoiceDate,             // invoice_date
+				subtotalHTRounded,       // subtotal_ht
+				vatAmount,               // vat_amount
+				totalTTC,                // total_ttc
+				'unpaid',                // payment_status
+				0,                       // amount_paid
+				totalTTC,                // amount_due
+				dueDate.toISOString(),   // due_date
+				null                     // paid_date
+			);
+			
+			console.log(`✅ Facture ${invoiceNumber} créée pour commande ${orderId}`);
+			
+		} catch (error) {
+			console.error(`❌ Erreur création facture pour ${orderId}:`, error);
+			// Ne pas faire échouer toute la transaction si la facture échoue
+		}
+	},
+
+	// ============================================
+	// 🆕 FONCTION : Génération du numéro de facture
+	// ============================================
+	_generateInvoiceNumber() {
+		try {
+			// Récupérer le dernier numéro de facture
+			const lastInvoice = dbModule.db.prepare(`
+				SELECT invoice_number FROM invoices 
+				ORDER BY id DESC LIMIT 1
+			`).get();
+			
+			if (lastInvoice && lastInvoice.invoice_number) {
+				// Extraire le numéro (ex: "INV-123" -> 123)
+				const lastNumber = parseInt(lastInvoice.invoice_number.split('-')[1]);
+				const nextNumber = lastNumber + 1;
+				return `INV-${nextNumber}`;
+			} else {
+				// Première facture
+				return 'INV-1';
+			}
+		} catch (error) {
+			console.error('Erreur génération numéro facture:', error);
+			return `INV-${Date.now()}`; // Fallback
+		}
+	},
     
     // Mise à jour des articles en attente de livraison
     _updatePendingDeliveryItem(userId, productName, category, quantity, price, existingPendingDeliveries) {

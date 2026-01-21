@@ -138,6 +138,36 @@ function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(username)
     )
     `);
+
+	// Création de la table invoices
+	db.exec(`
+	CREATE TABLE IF NOT EXISTS invoices (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		invoice_number TEXT UNIQUE NOT NULL,
+		order_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		client_full_name TEXT,
+		
+		invoice_date TIMESTAMP NOT NULL,
+		
+		subtotal_ht REAL NOT NULL,
+		vat_amount REAL NOT NULL,
+		total_ttc REAL NOT NULL,
+		
+		payment_status TEXT DEFAULT 'unpaid',
+		amount_paid REAL DEFAULT 0,
+		amount_due REAL NOT NULL,
+		
+		due_date TIMESTAMP,
+		paid_date TIMESTAMP,
+		
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		
+		FOREIGN KEY (order_id) REFERENCES orders(order_id),
+		FOREIGN KEY (user_id) REFERENCES users(username)
+	)
+	`);
 }
 
 // Initialisation de la base de données
