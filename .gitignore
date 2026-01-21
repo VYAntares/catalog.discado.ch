@@ -7,7 +7,6 @@ ecosystem.config.js
 /data/
 /database/
 /node_modules/
-/services/
 
 # Fichiers .htaccess et .htdigest
 **/.htaccess
