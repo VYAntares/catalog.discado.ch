@@ -9,6 +9,8 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
+const invoiceManagementService = require('./services/invoiceManagementService');
+
 
 // securite dom protection XSS
 const createDOMPurify = require('dompurify');
@@ -267,6 +269,14 @@ app.get('/admin/clients', requireLogin, requireAdmin, (req, res) => {
 
 app.get('/admin/order-history', requireLogin, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'order-history.html'));
+});
+
+app.get('/admin/compta', requireLogin, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'compta.html'));
+});
+
+app.get('/admin/client-invoices', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin/pages/client-invoices.html'));
 });
 
 // ===== ROUTES CLIENT PROTÉGÉES =====
@@ -715,6 +725,76 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
       message: 'Erreur lors de la suppression des articles: ' + error.message
     });
   }
+});
+
+// ===== API ROUTES - COMPTABILITÉ =====
+
+// Récupérer toutes les factures
+app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const invoices = invoiceManagementService.getAllInvoices();
+        res.json(invoices);
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting invoices' });
+    }
+});
+
+// Récupérer les statistiques
+app.get('/api/admin/invoices/statistics', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const stats = invoiceManagementService.getInvoiceStatistics();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting statistics' });
+    }
+});
+
+// Récupérer le résumé des clients
+app.get('/api/admin/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const clients = invoiceManagementService.getClientsSummary();
+        res.json(clients);
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting clients summary' });
+    }
+});
+
+// Récupérer les factures d'un client
+app.get('/api/admin/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
+    const { userId } = req.params;
+    try {
+        const invoices = invoiceManagementService.getClientInvoices(userId);
+        res.json(invoices);
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting client invoices' });
+    }
+});
+
+// Récupérer les détails d'une facture
+app.get('/api/admin/invoices/:invoiceId', requireLogin, requireAdmin, (req, res) => {
+    const { invoiceId } = req.params;
+    try {
+        const invoice = invoiceManagementService.getInvoiceDetails(invoiceId);
+        if (!invoice) {
+            return res.status(404).json({ error: 'Invoice not found' });
+        }
+        res.json(invoice);
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting invoice details' });
+    }
+});
+
+// Mettre à jour le statut de paiement
+app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
+    const { invoiceId } = req.params;
+    const paymentData = req.body;
+    
+    try {
+        const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Error updating payment status' });
+    }
 });
 
 // ===== DÉMARRAGE DU SERVEUR =====

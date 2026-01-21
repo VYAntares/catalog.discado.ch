@@ -91,6 +91,12 @@ function detectCurrentPage() {
             module.loadClients();
         });
     }
+    else if (path.includes('compta')) {
+        AdminApp.currentPage = 'compta';
+        document.querySelector('a[href="/admin/compta"]').classList.add('active');
+        // Pour l'instant, pas de module JS spécifique
+        // Vous pourrez ajouter plus tard :
+    }
     else {
         AdminApp.currentPage = 'orders';
         document.querySelector('a[href="/admin"]').classList.add('active');

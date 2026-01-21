@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Factures Client - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/compta-client-styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Back Button & Client Info -->
+        <div class="client-invoices-header">
+            <a href="/admin/compta" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Retour à la comptabilité
+            </a>
+            <h1 class="page-title">
+                <i class="fas fa-user"></i> Factures de <span id="clientName">...</span>
+            </h1>
+            <div class="client-info">
+                <span class="client-id-label">ID Client:</span>
+                <span id="clientId" class="client-id-value">...</span>
+            </div>
+        </div>
+
+        <!-- Sort Controls -->
+        <div class="sort-controls">
+            <button id="sortBtn" class="sort-btn" data-order="desc">
+                <i class="fas fa-sort-amount-down"></i>
+                <span id="sortText">Plus récente à plus ancienne</span>
+            </button>
+        </div>
+
+        <!-- Invoices List -->
+        <div class="client-invoices-container">
+            <div id="invoicesList" class="invoices-cards">
+                <div class="loading">Chargement des factures...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal pour modifier le paiement -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 class="payment-modal-title">Modifier le paiement</h2>
+            <div id="paymentModalContent">
+                <form id="paymentForm">
+                    <input type="hidden" id="paymentInvoiceId">
+                    
+                    <div class="form-row">
+                        <label>Facture n°: <span id="paymentInvoiceNumber"></span></label>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label>Montant total: <span id="paymentTotalAmount"></span> CHF</label>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="paymentAmountPaid">Montant payé (CHF)</label>
+                        <input type="number" id="paymentAmountPaid" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="paymentStatus">Statut de paiement</label>
+                        <select id="paymentStatus" required>
+                            <option value="unpaid">Non payé</option>
+                            <option value="partial">Partiellement payé</option>
+                            <option value="paid">Payé</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="paymentPaidDate">Date de paiement</label>
+                        <input type="date" id="paymentPaidDate">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="action-btn secondary-btn" id="cancelPayment">Annuler</button>
+                        <button type="submit" class="action-btn primary-btn">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur de notifications -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts JS -->
+    <script type="module" src="/admin/js/modules/compta/comptaClient.js"></script>
+</body>
+</html>

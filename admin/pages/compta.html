@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Comptabilité - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/compta.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="admin-tabs">
+        <div class="tabs-container">
+            <a href="/admin" class="tab">
+                <i class="fas fa-shopping-cart"></i> Gestion des commandes
+            </a>
+            <a href="/admin/order-history" class="tab">
+                <i class="fas fa-history"></i> Historique des commandes
+            </a>
+            <a href="/admin/clients" class="tab">
+                <i class="fas fa-users"></i> Client Database
+            </a>
+            <a href="/admin/compta" class="tab active">
+                <i class="fas fa-calculator"></i> Compta
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <h1 class="page-title">
+            <i class="fas fa-calculator"></i> Comptabilité
+        </h1>
+
+        <!-- Vue Tabs -->
+        <div class="compta-tabs">
+            <button class="compta-tab-btn active" data-tab="overview">
+                <i class="fas fa-chart-pie"></i> Vue d'ensemble
+            </button>
+            <button class="compta-tab-btn" data-tab="clients">
+                <i class="fas fa-users"></i> Par client
+            </button>
+        </div>
+
+        <!-- Tab: Vue d'ensemble -->
+        <div id="overview-tab" class="compta-tab-content active">
+            <div class="stats-grid" id="statsGrid">
+                <div class="loading">Chargement des statistiques...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Par client -->
+        <div id="clients-tab" class="compta-tab-content">
+            <div class="search-container">
+                <input type="text" id="clientSearchInput" class="search-input" 
+                    placeholder="Rechercher un client par nom ou ID...">
+                <button id="clientSearchBtn" class="search-btn">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+
+            <div class="clients-summary-list">
+                <table class="clients-summary-table">
+                    <thead>
+                        <tr>
+                            <th>ID Client</th>
+                            <th>Nom complet</th>
+                            <th>Nb. Factures</th>
+                            <th>Total TTC</th>
+                            <th>Payé</th>
+                            <th>Dû</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientsSummaryTableBody">
+                        <tr>
+                            <td colspan="7" class="loading">Chargement des clients...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Conteneur de notifications -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts JS -->
+    <script type="module">
+        import { formatCurrency } from '/admin/js/utils/formatter.js';
+        import { showNotification } from '/admin/js/utils/notification.js';
+
+        // Gestion des onglets
+        document.querySelectorAll('.compta-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+                
+                // Mettre à jour les boutons actifs
+                document.querySelectorAll('.compta-tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Afficher le bon contenu
+                document.querySelectorAll('.compta-tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${targetTab}-tab`).classList.add('active');
+                
+                // Charger les données si nécessaire
+                if (targetTab === 'clients') {
+                    loadClientsData();
+                } else if (targetTab === 'overview') {
+                    loadOverviewData();
+                }
+            });
+        });
+
+        // Charger les statistiques globales
+        async function loadOverviewData() {
+            try {
+                const response = await fetch('/api/invoices/stats');
+                const data = await response.json();
+                
+                const statsGrid = document.getElementById('statsGrid');
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Factures</div>
+                            <div class="stat-value">${data.total_invoices || 0}</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total TTC</div>
+                            <div class="stat-value">${formatCurrency(data.total_amount || 0)}</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Payé</div>
+                            <div class="stat-value">${formatCurrency(data.total_paid || 0)}</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Dû</div>
+                            <div class="stat-value">${formatCurrency(data.total_due || 0)}</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors du chargement des statistiques', 'error');
+            }
+        }
+
+        // Charger la liste des clients
+        let allClientsData = [];
+        
+        async function loadClientsData() {
+            try {
+                const response = await fetch('/api/invoices/clients-summary');
+                const data = await response.json();
+                allClientsData = data.clients || [];
+                displayClientsData(allClientsData);
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors du chargement des clients', 'error');
+                document.getElementById('clientsSummaryTableBody').innerHTML = 
+                    '<tr><td colspan="7" class="error">Impossible de charger les données</td></tr>';
+            }
+        }
+
+        function displayClientsData(clients) {
+            const tbody = document.getElementById('clientsSummaryTableBody');
+            
+            if (!clients || clients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">Aucun client trouvé</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = clients.map(client => `
+                <tr>
+                    <td><strong>${client.user_id}</strong></td>
+                    <td>${client.client_full_name || 'N/A'}</td>
+                    <td>${client.invoice_count}</td>
+                    <td>${formatCurrency(client.total_amount)}</td>
+                    <td class="text-success">${formatCurrency(client.total_paid)}</td>
+                    <td class="text-danger">${formatCurrency(client.total_due)}</td>
+                    <td>
+                        <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}" 
+                           class="action-btn primary-btn btn-sm">
+                            <i class="fas fa-eye"></i> Voir factures
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Recherche de clients
+        function searchClients() {
+            const searchTerm = document.getElementById('clientSearchInput').value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                displayClientsData(allClientsData);
+                return;
+            }
+
+            const filtered = allClientsData.filter(client => {
+                const name = (client.client_full_name || '').toLowerCase();
+                const id = (client.user_id || '').toLowerCase();
+                return name.includes(searchTerm) || id.includes(searchTerm);
+            });
+
+            displayClientsData(filtered);
+        }
+
+        document.getElementById('clientSearchBtn').addEventListener('click', searchClients);
+        document.getElementById('clientSearchInput').addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                searchClients();
+            }
+        });
+
+        // Charger les données au chargement de la page
+        loadOverviewData();
+    </script>
+</body>
+</html>
