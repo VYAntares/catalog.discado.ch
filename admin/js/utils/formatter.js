@@ -50,6 +50,15 @@ function formatPrice(price, options = {}) {
     }
 }
 
+// Formate un montant en devise CHF
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '0.00 CHF';
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numAmount)) return '0.00 CHF';
+    return numAmount.toFixed(2) + ' CHF';
+}
+
+
 // Formate un ID de commande
 function formatOrderId(orderId) {
     if (!orderId) return 'N/A';
@@ -136,5 +145,6 @@ export {
     formatNumber,
     truncateText,
     toTitleCase,
-    formatPhone
+    formatPhone,
+	formatCurrency
 };

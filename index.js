@@ -797,6 +797,47 @@ app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (
     }
 });
 
+// Routes pour la page des factures par client
+app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
+    const { userId } = req.params;
+    try {
+        const invoices = invoiceManagementService.getClientInvoices(userId);
+        res.json({ invoices });
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting client invoices' });
+    }
+});
+
+app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
+    const { invoiceId } = req.params;
+    const paymentData = req.body;
+    
+    try {
+        const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Error updating payment status' });
+    }
+});
+
+app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const stats = invoiceManagementService.getInvoiceStatistics();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting statistics' });
+    }
+});
+
+app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const clients = invoiceManagementService.getClientsSummary();
+        res.json({ clients });
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting clients summary' });
+    }
+});
+
 // ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);
