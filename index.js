@@ -90,7 +90,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: true,
-    maxAge: 1 * 60 * 60 * 1000,
+    maxAge: 3 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'strict'
   }
@@ -717,26 +717,7 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
   }
 });
 
-// ===== ROUTES DE GESTION DES ERREURS =====
-// Route catch-all
-app.get('*', (req, res) => {
-  if (!req.session.user) {
-    return res.redirect('/');
-  }
-  res.status(404).send('Page not found. <a href="/">Return to homepage</a>');
-});
-
-// Middleware de gestion des erreurs
-app.use((req, res, next) => {
-  res.status(404).send('Page not found. <a href="/">Return to homepage</a>');
-});
-
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).send('Server error occurred. Please try again later.');
-});
-
 // ===== DÉMARRAGE DU SERVEUR =====
-app.listen(PORT, '127.0.0.1', () => {
+app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);
 });

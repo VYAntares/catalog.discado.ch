@@ -346,7 +346,7 @@ function showProductImage(imageSrc, productName) {
     imageModal.style.display = 'flex';
 }
 
-// Génère le HTML pour afficher les articles groupés par catégorie
+// // Génère le HTML pour afficher les articles groupés par catégorie
 function generateItemsByCategory(items) {
     const groupedItems = {};
     items.forEach(item => {

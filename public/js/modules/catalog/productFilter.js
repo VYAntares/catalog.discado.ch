@@ -80,7 +80,9 @@ export function getAvailableCategories() {
         { id: 'caps', name: 'Caps' },
         { id: 'hats', name: 'Hats' },
         { id: 'pens', name: 'Pens' },
-        { id: 'softtoy', name: 'Soft Toys' }
+        { id: 'softtoy', name: 'Soft Toys' },
+        { id: 'farceattrape', name: 'Farce & Attrape' }
+
     ];
 }
 

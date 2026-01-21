@@ -37,7 +37,8 @@ export const AppConfig = {
         { id: 'softtoy', name: 'Soft-Toys' },
         { id: 'tshirt', name: 'T-Shirts' },
         { id: 'lighter', name: 'Lighters' },
-        { id: 'gadget', name: 'Gadgets' }
+        { id: 'gadget', name: 'Gadgets' },
+        { id: 'farceattrape', name: 'Farce & Attrape' }
     ]
 };
 

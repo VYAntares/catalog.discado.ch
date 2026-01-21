@@ -291,7 +291,7 @@ function createOrderSummaryHTML(order, totalAmount) {
                     <i class="fas fa-file-pdf"></i> Download Invoice
                 </button>` : 
                 `<span class="invoice-not-available">
-                    <i class="fas fa-info-circle"></i> Invoice will be available after delivery
+                    <i class="fas fa-info-circle"></i> Invoice will be available after processing
                 </span>`
             }
         </div>
