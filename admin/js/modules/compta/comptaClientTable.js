@@ -13,18 +13,19 @@ class ComptaClientTable {
     }
 
     init() {
-        const urlParams = new URLSearchParams(window.location.search);
-        this.clientId = urlParams.get('client_id');
+		const urlParams = new URLSearchParams(window.location.search);
+		this.clientId = urlParams.get('client_id');
+		this.year = urlParams.get('year') || new Date().getFullYear();
 
-        if (!this.clientId) {
-            showNotification('Aucun client spécifié', 'error');
-            window.location.href = '/admin/compta';
-            return;
-        }
+		if (!this.clientId) {
+			showNotification('Aucun client spécifié', 'error');
+			window.location.href = '/admin/compta';
+			return;
+		}
 
-        this.setupEventListeners();
-        this.loadClientInvoices();
-    }
+		this.setupEventListeners();
+		this.loadClientInvoices();
+	}
 
     setupEventListeners() {
         const sortBtn = document.getElementById('sortBtn');
@@ -35,7 +36,7 @@ class ComptaClientTable {
 
     async loadClientInvoices() {
         try {
-            const response = await fetch(`/api/invoices/client/${this.clientId}`);
+            const response = await fetch(`/api/invoices/client/${this.clientId}?year=${this.year}`);
             
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des factures');
@@ -222,74 +223,105 @@ class ComptaClientTable {
         });
     }
 
-    async saveEdit(invoiceId, field, newValue, cell, originalContent) {
-        const invoice = this.invoices.find(inv => inv.id == invoiceId);
-        if (!invoice) return;
+	async saveEdit(invoiceId, field, newValue, cell, originalContent) {
+		const invoice = this.invoices.find(inv => inv.id == invoiceId);
+		if (!invoice) return;
 
-        try {
-            let updateData = {};
+		try {
+			let updateData = {};
 
-            if (field === 'amount_paid') {
-                const amountPaid = parseFloat(newValue) || 0;
-                const amountDue = invoice.total_ttc - amountPaid;
-                
-                // Déterminer automatiquement le statut
-                let paymentStatus;
-                if (amountPaid >= invoice.total_ttc) {
-                    paymentStatus = 'paid';
-                } else if (amountPaid > 0) {
-                    paymentStatus = 'partial';
-                } else {
-                    paymentStatus = 'unpaid';
-                }
+			if (field === 'amount_paid') {
+				const amountPaid = parseFloat(newValue) || 0;
+				const amountDue = invoice.total_ttc - amountPaid;
+				
+				// Déterminer automatiquement le statut
+				let paymentStatus;
+				if (amountPaid >= invoice.total_ttc) {
+					paymentStatus = 'paid';
+				} else if (amountPaid > 0) {
+					paymentStatus = 'partial';
+				} else {
+					paymentStatus = 'unpaid';
+				}
 
-                updateData = {
-                    amount_paid: amountPaid,
-                    amount_due: amountDue,
-                    payment_status: paymentStatus,
-                    paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
-                };
-            } else if (field === 'paid_date') {
-                updateData = {
-                    amount_paid: invoice.amount_paid,
-                    amount_due: invoice.amount_due,
-                    payment_status: invoice.payment_status,
-                    paid_date: newValue || null
-                };
-            } else if (field === 'payment_status') {
-                updateData = {
-                    amount_paid: invoice.amount_paid,
-                    amount_due: invoice.amount_due,
-                    payment_status: newValue,
-                    paid_date: invoice.paid_date
-                };
-            }
+				updateData = {
+					amount_paid: amountPaid,
+					amount_due: amountDue,
+					payment_status: paymentStatus,
+					paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+				};
+			} else if (field === 'paid_date') {
+				updateData = {
+					amount_paid: invoice.amount_paid,
+					amount_due: invoice.amount_due,
+					payment_status: invoice.payment_status,
+					paid_date: newValue || null
+				};
+			} else if (field === 'payment_status') {
+				// Si on change manuellement le statut en "payé", mettre le montant à 100%
+				let amountPaid = invoice.amount_paid;
+				let amountDue = invoice.amount_due;
+				
+				if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+					amountPaid = invoice.total_ttc;
+					amountDue = 0;
+				} else if (newValue === 'unpaid') {
+					amountPaid = 0;
+					amountDue = invoice.total_ttc;
+				}
+				
+				updateData = {
+					amount_paid: amountPaid,
+					amount_due: amountDue,
+					payment_status: newValue,
+					paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+				};
+			}
 
-            const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updateData)
-            });
+			console.log('Update data:', updateData);
+			console.log('Invoice ID:', invoiceId);
 
-            if (!response.ok) {
-                throw new Error('Erreur lors de la mise à jour');
-            }
+			const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(updateData)
+			});
 
-            showNotification('Facture mise à jour avec succès', 'success');
-            
-            // Recharger les factures
-            await this.loadClientInvoices();
-            
-        } catch (error) {
-            console.error('Erreur:', error);
-            showNotification('Erreur lors de la mise à jour', 'error');
-            cell.innerHTML = originalContent;
-        }
+			console.log('Response status:', response.status);
+			console.log('Response headers:', response.headers.get('content-type'));
 
-        this.editingCells.delete(cell);
-    }
+			// Lire la réponse comme texte d'abord
+			const responseText = await response.text();
+			console.log('Response text:', responseText);
+
+			// Essayer de parser en JSON
+			let responseData;
+			try {
+				responseData = JSON.parse(responseText);
+			} catch (e) {
+				console.error('Cannot parse as JSON:', e);
+				throw new Error('Le serveur a retourné une réponse invalide');
+			}
+
+			if (!response.ok) {
+				throw new Error(responseData.error || responseData.message || 'Erreur lors de la mise à jour');
+			}
+
+			showNotification('Facture mise à jour avec succès', 'success');
+			
+			// Recharger les factures
+			await this.loadClientInvoices();
+			
+		} catch (error) {
+			console.error('Erreur complète:', error);
+			showNotification('Erreur: ' + error.message, 'error');
+			cell.innerHTML = originalContent;
+		}
+
+		this.editingCells.delete(cell);
+	}
 
     getStatusClass(status) {
         const statusMap = {

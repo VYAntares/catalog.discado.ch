@@ -4,9 +4,9 @@ const db = require('./db');
 /**
  * Récupère toutes les factures avec les informations clients
  */
-function getAllInvoices() {
+function getAllInvoices(year = null) {
     try {
-        const invoices = db.db.prepare(`
+        let query = `
             SELECT 
                 i.*,
                 up.first_name,
@@ -18,13 +18,24 @@ function getAllInvoices() {
             FROM invoices i
             LEFT JOIN user_profiles up ON i.user_id = up.username
             LEFT JOIN orders o ON i.order_id = o.order_id
+        `;
+        
+        const params = [];
+        if (year) {
+            query += ` WHERE strftime('%Y', i.invoice_date) = ?`;
+            params.push(year.toString());
+        }
+        
+        query += `
             ORDER BY 
                 CASE 
                     WHEN up.last_name IS NOT NULL THEN up.last_name
                     ELSE i.client_full_name
                 END ASC,
                 i.invoice_date DESC
-        `).all();
+        `;
+        
+        const invoices = db.db.prepare(query).all(...params);
         
         return invoices.map(invoice => ({
             ...invoice,
@@ -42,9 +53,9 @@ function getAllInvoices() {
 /**
  * Récupère les factures d'un client spécifique
  */
-function getClientInvoices(userId) {
+function getClientInvoices(userId, year = null) {
     try {
-        const invoices = db.db.prepare(`
+        let query = `
             SELECT 
                 i.*,
                 up.first_name,
@@ -57,8 +68,17 @@ function getClientInvoices(userId) {
             LEFT JOIN user_profiles up ON i.user_id = up.username
             LEFT JOIN orders o ON i.order_id = o.order_id
             WHERE i.user_id = ?
-            ORDER BY i.invoice_date DESC
-        `).all(userId);
+        `;
+        
+        const params = [userId];
+        if (year) {
+            query += ` AND strftime('%Y', i.invoice_date) = ?`;
+            params.push(year.toString());
+        }
+        
+        query += ` ORDER BY i.invoice_date DESC`;
+        
+        const invoices = db.db.prepare(query).all(...params);
         
         return invoices.map(invoice => ({
             ...invoice,
@@ -112,26 +132,11 @@ function getInvoiceDetails(invoiceId) {
  */
 function updatePaymentStatus(invoiceId, paymentData) {
     try {
-        const { amountPaid, paymentStatus, paidDate } = paymentData;
+        const { amount_paid, amount_due, payment_status, paid_date } = paymentData;
         
         const invoice = db.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
         if (!invoice) {
             return { success: false, message: 'Facture non trouvée' };
-        }
-        
-        const totalPaid = parseFloat(amountPaid);
-        const totalDue = parseFloat(invoice.total_ttc);
-        const newAmountDue = totalDue - totalPaid;
-        
-        let newStatus = paymentStatus;
-        if (!newStatus) {
-            if (totalPaid >= totalDue) {
-                newStatus = 'paid';
-            } else if (totalPaid > 0) {
-                newStatus = 'partial';
-            } else {
-                newStatus = 'unpaid';
-            }
         }
         
         const updateStmt = db.db.prepare(`
@@ -146,10 +151,10 @@ function updatePaymentStatus(invoiceId, paymentData) {
         `);
         
         updateStmt.run(
-            totalPaid,
-            newAmountDue,
-            newStatus,
-            paidDate || (newStatus === 'paid' ? new Date().toISOString() : null),
+            amount_paid,
+            amount_due,
+            payment_status,
+            paid_date || null,
             invoiceId
         );
         
@@ -167,9 +172,9 @@ function updatePaymentStatus(invoiceId, paymentData) {
 /**
  * Récupère les statistiques globales
  */
-function getInvoiceStatistics() {
+function getInvoiceStatistics(year = null) {
     try {
-        const stats = db.db.prepare(`
+        let query = `
             SELECT 
                 COUNT(*) as total_invoices,
                 SUM(CASE WHEN payment_status = 'paid' THEN 1 ELSE 0 END) as paid_count,
@@ -179,7 +184,15 @@ function getInvoiceStatistics() {
                 SUM(amount_paid) as total_paid,
                 SUM(amount_due) as total_due
             FROM invoices
-        `).get();
+        `;
+        
+        const params = [];
+        if (year) {
+            query += ` WHERE strftime('%Y', invoice_date) = ?`;
+            params.push(year.toString());
+        }
+        
+        const stats = db.db.prepare(query).get(...params);
         
         return stats || {
             total_invoices: 0,
@@ -199,9 +212,9 @@ function getInvoiceStatistics() {
 /**
  * Récupère la liste des clients avec leurs totaux de factures
  */
-function getClientsSummary() {
+function getClientsSummary(year = null) {
     try {
-        const clients = db.db.prepare(`
+        let query = `
             SELECT 
                 i.user_id,
                 up.first_name,
@@ -216,16 +229,28 @@ function getClientsSummary() {
                 SUM(CASE WHEN i.payment_status = 'partial' THEN 1 ELSE 0 END) as partial_count
             FROM invoices i
             LEFT JOIN user_profiles up ON i.user_id = up.username
+        `;
+        
+        const params = [];
+        if (year) {
+            query += ` WHERE strftime('%Y', i.invoice_date) = ?`;
+            params.push(year.toString());
+        }
+        
+        query += `
             GROUP BY i.user_id
             ORDER BY 
                 CASE 
                     WHEN up.last_name IS NOT NULL THEN up.last_name
                     ELSE i.user_id
                 END ASC
-        `).all();
+        `;
+        
+        const clients = db.db.prepare(query).all(...params);
         
         return clients.map(client => ({
             ...client,
+            client_full_name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.user_id,
             displayName: `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.user_id,
             shopName: client.shop_name || 'N/A'
         }));

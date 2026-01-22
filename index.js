@@ -275,7 +275,7 @@ app.get('/admin/compta', requireLogin, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'compta.html'));
 });
 
-app.get('/admin/client-invoices', (req, res) => {
+app.get('/admin/client-invoices', requireLogin, requireAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'admin/pages/client-invoices.html'));
 });
 
@@ -798,15 +798,6 @@ app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (
 });
 
 // Routes pour la page des factures par client
-app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
-    const { userId } = req.params;
-    try {
-        const invoices = invoiceManagementService.getClientInvoices(userId);
-        res.json({ invoices });
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting client invoices' });
-    }
-});
 
 app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
     const { invoiceId } = req.params;
@@ -821,8 +812,9 @@ app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, re
 });
 
 app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
+    const year = req.query.year ? parseInt(req.query.year) : null;
     try {
-        const stats = invoiceManagementService.getInvoiceStatistics();
+        const stats = invoiceManagementService.getInvoiceStatistics(year);
         res.json(stats);
     } catch (error) {
         res.status(500).json({ error: 'Error getting statistics' });
@@ -830,11 +822,23 @@ app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
 });
 
 app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
+    const year = req.query.year ? parseInt(req.query.year) : null;
     try {
-        const clients = invoiceManagementService.getClientsSummary();
+        const clients = invoiceManagementService.getClientsSummary(year);
         res.json({ clients });
     } catch (error) {
         res.status(500).json({ error: 'Error getting clients summary' });
+    }
+});
+
+app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
+    const { userId } = req.params;
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    try {
+        const invoices = invoiceManagementService.getClientInvoices(userId, year);
+        res.json({ invoices });
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting client invoices' });
     }
 });
 

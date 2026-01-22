@@ -46,9 +46,17 @@
 
     <!-- Main Content -->
     <main>
-        <h1 class="page-title">
-            <i class="fas fa-calculator"></i> Comptabilité
-        </h1>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <h1 class="page-title">
+                <i class="fas fa-calculator"></i> Comptabilité
+            </h1>
+            <div class="year-filter">
+                <label for="yearSelect"><strong>Année :</strong></label>
+                <select id="yearSelect" class="year-select">
+                    <!-- Options générées dynamiquement -->
+                </select>
+            </div>
+        </div>
 
         <!-- Vue Tabs -->
         <div class="compta-tabs">
@@ -108,6 +116,32 @@
         import { formatCurrency } from '/admin/js/utils/formatter.js';
         import { showNotification } from '/admin/js/utils/notification.js';
 
+        let allClientsData = [];
+        let selectedYear = new Date().getFullYear();
+
+        // Générer les options d'années
+        function populateYearSelect() {
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= 2025; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            yearSelect.value = selectedYear;
+        }
+
+        // Event listener pour changement d'année
+        document.getElementById('yearSelect').addEventListener('change', (e) => {
+            selectedYear = parseInt(e.target.value);
+            if (document.querySelector('.compta-tab-btn.active').dataset.tab === 'clients') {
+                loadClientsData();
+            } else {
+                loadOverviewData();
+            }
+        });
+
         // Gestion des onglets
         document.querySelectorAll('.compta-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -135,7 +169,7 @@
         // Charger les statistiques globales
         async function loadOverviewData() {
             try {
-                const response = await fetch('/api/invoices/stats');
+                const response = await fetch(`/api/invoices/stats?year=${selectedYear}`);
                 const data = await response.json();
                 
                 const statsGrid = document.getElementById('statsGrid');
@@ -184,11 +218,9 @@
         }
 
         // Charger la liste des clients
-        let allClientsData = [];
-        
         async function loadClientsData() {
             try {
-                const response = await fetch('/api/invoices/clients-summary');
+                const response = await fetch(`/api/invoices/clients-summary?year=${selectedYear}`);
                 const data = await response.json();
                 allClientsData = data.clients || [];
                 displayClientsData(allClientsData);
@@ -217,7 +249,7 @@
                     <td class="text-success">${formatCurrency(client.total_paid)}</td>
                     <td class="text-danger">${formatCurrency(client.total_due)}</td>
                     <td>
-                        <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}" 
+                        <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}&year=${selectedYear}" 
                            class="action-btn primary-btn btn-sm">
                             <i class="fas fa-eye"></i> Voir factures
                         </a>
@@ -251,8 +283,16 @@
             }
         });
 
-        // Charger les données au chargement de la page
-        loadOverviewData();
+        // Initialisation
+		populateYearSelect();
+
+		// Vérifier si on doit ouvrir l'onglet clients
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('tab') === 'clients') {
+			document.querySelector('[data-tab="clients"]').click();
+		}
+
+		loadOverviewData();
 		loadClientsData();
     </script>
 </body>
