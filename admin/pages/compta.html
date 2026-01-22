@@ -83,6 +83,12 @@
                 <button id="clientSearchBtn" class="search-btn">
                     <i class="fas fa-search"></i> Rechercher
                 </button>
+                
+                <!-- Bouton Export CSV -->
+                <button id="exportClientsCSVBtn" class="export-btn">
+                    <i class="fas fa-file-csv"></i>
+                    Exporter en CSV
+                </button>
             </div>
 
             <div class="clients-summary-list">
@@ -276,24 +282,112 @@
             displayClientsData(filtered);
         }
 
+        // Fonction pour exporter les clients en CSV
+        function exportClientsToCSV() {
+            if (!allClientsData || allClientsData.length === 0) {
+                showNotification('Aucun client à exporter', 'warning');
+                return;
+            }
+
+            const headers = [
+                'ID Client',
+                'Nom complet',
+                'Nombre de factures',
+                'Total TTC',
+                'Total payé',
+                'Total dû',
+                'Taux de paiement (%)'
+            ];
+
+            // Calculer les totaux généraux
+            const grandTotals = allClientsData.reduce((acc, client) => {
+                acc.invoice_count += client.invoice_count || 0;
+                acc.total_amount += parseFloat(client.total_amount) || 0;
+                acc.total_paid += parseFloat(client.total_paid) || 0;
+                acc.total_due += parseFloat(client.total_due) || 0;
+                return acc;
+            }, {
+                invoice_count: 0,
+                total_amount: 0,
+                total_paid: 0,
+                total_due: 0
+            });
+
+            // Créer les lignes de données
+            const rows = allClientsData.map(client => {
+                const paymentRate = client.total_amount > 0 
+                    ? ((client.total_paid / client.total_amount) * 100).toFixed(2)
+                    : '0.00';
+                
+                return [
+                    `"${(client.user_id || '').replace(/"/g, '""')}"`,
+                    `"${(client.client_full_name || '').replace(/"/g, '""')}"`,
+                    client.invoice_count || 0,
+                    (client.total_amount || 0).toFixed(2),
+                    (client.total_paid || 0).toFixed(2),
+                    (client.total_due || 0).toFixed(2),
+                    paymentRate
+                ].join(',');
+            });
+
+            // Ajouter une ligne vide
+            rows.push('');
+
+            // Ajouter la ligne de totaux
+            const grandPaymentRate = grandTotals.total_amount > 0 
+                ? ((grandTotals.total_paid / grandTotals.total_amount) * 100).toFixed(2)
+                : '0.00';
+
+            const totalsRow = [
+                `"TOTAL (${allClientsData.length} clients)"`,
+                '',
+                grandTotals.invoice_count,
+                grandTotals.total_amount.toFixed(2),
+                grandTotals.total_paid.toFixed(2),
+                grandTotals.total_due.toFixed(2),
+                grandPaymentRate
+            ].join(',');
+            
+            rows.push(totalsRow);
+
+            // Combiner en-têtes et lignes
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const fileName = `clients_factures_${selectedYear}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showNotification(`Export CSV réussi : ${fileName}`, 'success');
+        }
+
+        // Event listeners
         document.getElementById('clientSearchBtn').addEventListener('click', searchClients);
         document.getElementById('clientSearchInput').addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
                 searchClients();
             }
         });
+        document.getElementById('exportClientsCSVBtn').addEventListener('click', exportClientsToCSV);
 
         // Initialisation
-		populateYearSelect();
+        populateYearSelect();
 
-		// Vérifier si on doit ouvrir l'onglet clients
-		const urlParams = new URLSearchParams(window.location.search);
-		if (urlParams.get('tab') === 'clients') {
-			document.querySelector('[data-tab="clients"]').click();
-		}
+        // Vérifier si on doit ouvrir l'onglet clients
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'clients') {
+            document.querySelector('[data-tab="clients"]').click();
+        }
 
-		loadOverviewData();
-		loadClientsData();
+        loadOverviewData();
+        loadClientsData();
     </script>
 </body>
 </html>

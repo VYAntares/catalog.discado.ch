@@ -13,30 +13,38 @@ class ComptaClientTable {
     }
 
     init() {
-		const urlParams = new URLSearchParams(window.location.search);
-		this.clientId = urlParams.get('client_id');
-		this.year = urlParams.get('year') || new Date().getFullYear();
+        const urlParams = new URLSearchParams(window.location.search);
+        this.clientId = urlParams.get('client_id');
+        this.year = urlParams.get('year') || new Date().getFullYear();
 
-		if (!this.clientId) {
-			showNotification('Aucun client spécifié', 'error');
-			window.location.href = '/admin/compta';
-			return;
-		}
+        if (!this.clientId) {
+            showNotification('Aucun client spécifié', 'error');
+            window.location.href = '/admin/compta';
+            return;
+        }
 
-		this.setupEventListeners();
-		this.loadClientInvoices();
-	}
+        this.setupEventListeners();
+        this.loadClientInvoices();
+    }
 
     setupEventListeners() {
         const sortBtn = document.getElementById('sortBtn');
         if (sortBtn) {
             sortBtn.addEventListener('click', () => this.toggleSort());
         }
+        
+        // Bouton export CSV
+        const exportBtn = document.getElementById('exportCsvBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportToCSV());
+        }
     }
 
     async loadClientInvoices() {
         try {
-            const response = await fetch(`/api/invoices/client/${this.clientId}?year=${this.year}`);
+            const response = await fetch(`/api/invoices/client/${this.clientId}?year=${this.year}`, {
+                credentials: 'include'
+            });
             
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des factures');
@@ -100,7 +108,6 @@ class ComptaClientTable {
         const statusClass = this.getStatusClass(invoice.payment_status);
         const statusText = this.getStatusText(invoice.payment_status);
         
-        // Formater les dates pour l'input type="date"
         const paidDateValue = invoice.paid_date ? 
             new Date(invoice.paid_date).toISOString().split('T')[0] : '';
         const dueDateValue = invoice.due_date ? 
@@ -142,7 +149,6 @@ class ComptaClientTable {
     }
 
     attachEventListeners() {
-        // Double-clic pour éditer
         document.querySelectorAll('.editable-cell').forEach(cell => {
             cell.addEventListener('click', (e) => this.startEdit(e.currentTarget));
         });
@@ -157,14 +163,12 @@ class ComptaClientTable {
         const invoice = this.invoices.find(inv => inv.id == invoiceId);
         if (!invoice) return;
 
-        // Empêcher l'édition multiple
         if (this.editingCells.has(cell)) return;
 
         const currentValue = invoice[field];
         let input;
 
         if (type === 'select') {
-            // Dropdown pour le statut
             input = document.createElement('select');
             input.className = 'inline-edit-select';
             input.innerHTML = `
@@ -173,13 +177,11 @@ class ComptaClientTable {
                 <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
             `;
         } else if (type === 'date') {
-            // Input date
             input = document.createElement('input');
             input.type = 'date';
             input.className = 'inline-edit-input';
             input.value = currentValue ? new Date(currentValue).toISOString().split('T')[0] : '';
         } else if (type === 'number') {
-            // Input number pour montant
             input = document.createElement('input');
             input.type = 'number';
             input.step = '0.01';
@@ -187,10 +189,8 @@ class ComptaClientTable {
             input.value = currentValue || 0;
         }
 
-        // Sauvegarder le contenu original
         const originalContent = cell.innerHTML;
         
-        // Remplacer le contenu par l'input
         cell.innerHTML = '';
         cell.appendChild(input);
         input.focus();
@@ -201,7 +201,6 @@ class ComptaClientTable {
 
         this.editingCells.set(cell, originalContent);
 
-        // Gestionnaires d'événements
         const save = async () => {
             const newValue = input.value;
             await this.saveEdit(invoiceId, field, newValue, cell, originalContent);
@@ -212,116 +211,212 @@ class ComptaClientTable {
             this.editingCells.delete(cell);
         };
 
-        input.addEventListener('blur', save);
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                save();
-            } else if (e.key === 'Escape') {
-                cancel();
-            }
-        });
+        if (type === 'select') {
+            input.addEventListener('change', save);
+        } else {
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    save();
+                } else if (e.key === 'Escape') {
+                    cancel();
+                }
+            });
+        }
     }
 
-	async saveEdit(invoiceId, field, newValue, cell, originalContent) {
-		const invoice = this.invoices.find(inv => inv.id == invoiceId);
-		if (!invoice) return;
+    async saveEdit(invoiceId, field, newValue, cell, originalContent) {
+        const invoice = this.invoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
 
-		try {
-			let updateData = {};
+        try {
+            let updateData = {};
 
-			if (field === 'amount_paid') {
-				const amountPaid = parseFloat(newValue) || 0;
-				const amountDue = invoice.total_ttc - amountPaid;
-				
-				// Déterminer automatiquement le statut
-				let paymentStatus;
-				if (amountPaid >= invoice.total_ttc) {
-					paymentStatus = 'paid';
-				} else if (amountPaid > 0) {
-					paymentStatus = 'partial';
-				} else {
-					paymentStatus = 'unpaid';
-				}
+            if (field === 'amount_paid') {
+                const amountPaid = parseFloat(newValue) || 0;
+                const amountDue = invoice.total_ttc - amountPaid;
+                
+                let paymentStatus;
+                if (amountPaid >= invoice.total_ttc) {
+                    paymentStatus = 'paid';
+                } else if (amountPaid > 0) {
+                    paymentStatus = 'partial';
+                } else {
+                    paymentStatus = 'unpaid';
+                }
 
-				updateData = {
-					amount_paid: amountPaid,
-					amount_due: amountDue,
-					payment_status: paymentStatus,
-					paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
-				};
-			} else if (field === 'paid_date') {
-				updateData = {
-					amount_paid: invoice.amount_paid,
-					amount_due: invoice.amount_due,
-					payment_status: invoice.payment_status,
-					paid_date: newValue || null
-				};
-			} else if (field === 'payment_status') {
-				// Si on change manuellement le statut en "payé", mettre le montant à 100%
-				let amountPaid = invoice.amount_paid;
-				let amountDue = invoice.amount_due;
-				
-				if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
-					amountPaid = invoice.total_ttc;
-					amountDue = 0;
-				} else if (newValue === 'unpaid') {
-					amountPaid = 0;
-					amountDue = invoice.total_ttc;
-				}
-				
-				updateData = {
-					amount_paid: amountPaid,
-					amount_due: amountDue,
-					payment_status: newValue,
-					paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
-				};
-			}
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: paymentStatus,
+                    paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            } else if (field === 'paid_date') {
+                updateData = {
+                    amount_paid: invoice.amount_paid,
+                    amount_due: invoice.amount_due,
+                    payment_status: invoice.payment_status,
+                    paid_date: newValue || null
+                };
+            } else if (field === 'payment_status') {
+                let amountPaid = invoice.amount_paid;
+                let amountDue = invoice.amount_due;
+                
+                if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+                    amountPaid = invoice.total_ttc;
+                    amountDue = 0;
+                } else if (newValue === 'unpaid') {
+                    amountPaid = 0;
+                    amountDue = invoice.total_ttc;
+                }
+                
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: newValue,
+                    paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            }
 
-			console.log('Update data:', updateData);
-			console.log('Invoice ID:', invoiceId);
+            const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(updateData)
+            });
 
-			const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(updateData)
-			});
+            const responseText = await response.text();
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Cannot parse as JSON:', e);
+                throw new Error('Le serveur a retourné une réponse invalide');
+            }
 
-			console.log('Response status:', response.status);
-			console.log('Response headers:', response.headers.get('content-type'));
+            if (!response.ok) {
+                throw new Error(responseData.error || responseData.message || 'Erreur lors de la mise à jour');
+            }
 
-			// Lire la réponse comme texte d'abord
-			const responseText = await response.text();
-			console.log('Response text:', responseText);
+            showNotification('Facture mise à jour avec succès', 'success');
+            await this.loadClientInvoices();
+            
+        } catch (error) {
+            console.error('Erreur complète:', error);
+            showNotification('Erreur: ' + error.message, 'error');
+            cell.innerHTML = originalContent;
+        }
 
-			// Essayer de parser en JSON
-			let responseData;
-			try {
-				responseData = JSON.parse(responseText);
-			} catch (e) {
-				console.error('Cannot parse as JSON:', e);
-				throw new Error('Le serveur a retourné une réponse invalide');
-			}
+        this.editingCells.delete(cell);
+    }
 
-			if (!response.ok) {
-				throw new Error(responseData.error || responseData.message || 'Erreur lors de la mise à jour');
-			}
-
-			showNotification('Facture mise à jour avec succès', 'success');
-			
-			// Recharger les factures
-			await this.loadClientInvoices();
-			
-		} catch (error) {
-			console.error('Erreur complète:', error);
-			showNotification('Erreur: ' + error.message, 'error');
-			cell.innerHTML = originalContent;
+	exportToCSV() {
+		if (!this.invoices || this.invoices.length === 0) {
+			showNotification('Aucune facture à exporter', 'warning');
+			return;
 		}
 
-		this.editingCells.delete(cell);
+		const headers = [
+			'Numéro facture',
+			'Date facture',
+			'Client',
+			'Montant HT',
+			'TVA',
+			'Montant TTC',
+			'Date échéance',
+			'Montant encaissé',
+			'Solde dû',
+			'Date paiement',
+			'Statut'
+		];
+
+		const sortedInvoices = [...this.invoices].sort((a, b) => {
+			const dateA = new Date(a.invoice_date);
+			const dateB = new Date(b.invoice_date);
+			return this.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+		});
+
+		// Calculer les totaux
+		const totals = sortedInvoices.reduce((acc, invoice) => {
+			acc.count += 1;
+			acc.subtotal_ht += parseFloat(invoice.subtotal_ht) || 0;
+			acc.vat_amount += parseFloat(invoice.vat_amount) || 0;
+			acc.total_ttc += parseFloat(invoice.total_ttc) || 0;
+			acc.amount_paid += parseFloat(invoice.amount_paid) || 0;
+			acc.amount_due += parseFloat(invoice.amount_due) || 0;
+			return acc;
+		}, {
+			count: 0,
+			subtotal_ht: 0,
+			vat_amount: 0,
+			total_ttc: 0,
+			amount_paid: 0,
+			amount_due: 0
+		});
+
+		// Créer les lignes de données
+		const rows = sortedInvoices.map(invoice => {
+			return [
+				invoice.order_id || '',
+				this.formatDateShort(invoice.invoice_date),
+				`"${(invoice.client_full_name || '').replace(/"/g, '""')}"`,
+				this.formatNumberForCSV(invoice.subtotal_ht),
+				this.formatNumberForCSV(invoice.vat_amount),
+				this.formatNumberForCSV(invoice.total_ttc),
+				invoice.due_date ? this.formatDateShort(invoice.due_date) : '',
+				this.formatNumberForCSV(invoice.amount_paid),
+				this.formatNumberForCSV(invoice.amount_due),
+				invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
+				this.getStatusText(invoice.payment_status)
+			].join(',');
+		});
+
+		// Ajouter une ligne vide
+		rows.push('');
+
+		// Ajouter la ligne de totaux
+		const totalsRow = [
+			`"TOTAL (${totals.count} factures)"`,
+			'',
+			'',
+			this.formatNumberForCSV(totals.subtotal_ht),
+			this.formatNumberForCSV(totals.vat_amount),
+			this.formatNumberForCSV(totals.total_ttc),
+			'',
+			this.formatNumberForCSV(totals.amount_paid),
+			this.formatNumberForCSV(totals.amount_due),
+			'',
+			''
+		].join(',');
+		
+		rows.push(totalsRow);
+
+		// Combiner en-têtes et lignes
+		const csvContent = [headers.join(','), ...rows].join('\n');
+		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+		const link = document.createElement('a');
+		const url = URL.createObjectURL(blob);
+		
+		const clientName = this.invoices[0]?.client_full_name || this.clientId;
+		const fileName = `factures_${clientName}_${this.year}.csv`;
+		
+		link.setAttribute('href', url);
+		link.setAttribute('download', fileName);
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		showNotification(`Export CSV réussi : ${fileName}`, 'success');
 	}
+
+    formatNumberForCSV(number) {
+        if (number === null || number === undefined) return '0.00';
+        return parseFloat(number).toFixed(2);
+    }
 
     getStatusClass(status) {
         const statusMap = {

@@ -729,7 +729,64 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
 
 // ===== API ROUTES - COMPTABILITÉ =====
 
-// Récupérer toutes les factures
+// Routes spécifiques pour la page client-invoices (DOIVENT ÊTRE EN PREMIER)
+app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
+    const { invoiceId } = req.params;
+    const paymentData = req.body;
+    
+    console.log('PUT /api/invoices/:invoiceId/payment called');
+    console.log('Invoice ID:', invoiceId);
+    console.log('Payment Data:', paymentData);
+    
+    try {
+        const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.message });
+        }
+        
+        res.json(result);
+    } catch (error) {
+        console.error('Error updating payment status:', error);
+        res.status(500).json({ error: 'Error updating payment status: ' + error.message });
+    }
+});
+
+app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    try {
+        const stats = invoiceManagementService.getInvoiceStatistics(year);
+        res.json(stats);
+    } catch (error) {
+        console.error('Error getting statistics:', error);
+        res.status(500).json({ error: 'Error getting statistics' });
+    }
+});
+
+app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    try {
+        const clients = invoiceManagementService.getClientsSummary(year);
+        res.json({ clients });
+    } catch (error) {
+        console.error('Error getting clients summary:', error);
+        res.status(500).json({ error: 'Error getting clients summary' });
+    }
+});
+
+app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
+    const { userId } = req.params;
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    try {
+        const invoices = invoiceManagementService.getClientInvoices(userId, year);
+        res.json({ invoices });
+    } catch (error) {
+        console.error('Error getting client invoices:', error);
+        res.status(500).json({ error: 'Error getting client invoices' });
+    }
+});
+
+// Routes anciennes (pour compatibilité avec d'autres parties de l'application)
 app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
     try {
         const invoices = invoiceManagementService.getAllInvoices();
@@ -739,7 +796,6 @@ app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
     }
 });
 
-// Récupérer les statistiques
 app.get('/api/admin/invoices/statistics', requireLogin, requireAdmin, (req, res) => {
     try {
         const stats = invoiceManagementService.getInvoiceStatistics();
@@ -749,7 +805,6 @@ app.get('/api/admin/invoices/statistics', requireLogin, requireAdmin, (req, res)
     }
 });
 
-// Récupérer le résumé des clients
 app.get('/api/admin/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
     try {
         const clients = invoiceManagementService.getClientsSummary();
@@ -759,7 +814,6 @@ app.get('/api/admin/invoices/clients-summary', requireLogin, requireAdmin, (req,
     }
 });
 
-// Récupérer les factures d'un client
 app.get('/api/admin/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
     const { userId } = req.params;
     try {
@@ -770,7 +824,6 @@ app.get('/api/admin/invoices/client/:userId', requireLogin, requireAdmin, (req, 
     }
 });
 
-// Récupérer les détails d'une facture
 app.get('/api/admin/invoices/:invoiceId', requireLogin, requireAdmin, (req, res) => {
     const { invoiceId } = req.params;
     try {
@@ -784,7 +837,6 @@ app.get('/api/admin/invoices/:invoiceId', requireLogin, requireAdmin, (req, res)
     }
 });
 
-// Mettre à jour le statut de paiement
 app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
     const { invoiceId } = req.params;
     const paymentData = req.body;
@@ -794,51 +846,6 @@ app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (
         res.json(result);
     } catch (error) {
         res.status(500).json({ error: 'Error updating payment status' });
-    }
-});
-
-// Routes pour la page des factures par client
-
-app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
-    const { invoiceId } = req.params;
-    const paymentData = req.body;
-    
-    try {
-        const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: 'Error updating payment status' });
-    }
-});
-
-app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    try {
-        const stats = invoiceManagementService.getInvoiceStatistics(year);
-        res.json(stats);
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting statistics' });
-    }
-});
-
-app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    try {
-        const clients = invoiceManagementService.getClientsSummary(year);
-        res.json({ clients });
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting clients summary' });
-    }
-});
-
-app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
-    const { userId } = req.params;
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    try {
-        const invoices = invoiceManagementService.getClientInvoices(userId, year);
-        res.json({ invoices });
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting client invoices' });
     }
 });
 
