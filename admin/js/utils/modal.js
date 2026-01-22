@@ -95,6 +95,11 @@ function showModal(modal, options = {}) {
     }, 100);
 }
 
+// Ouvre une modale (alias de showModal)
+function openModal(modal, options = {}) {
+    return showModal(modal, options);
+}
+
 // Cache une modale
 function hideModal(modal, options = {}) {
     if (typeof modal === 'string') {
@@ -130,6 +135,11 @@ function hideModal(modal, options = {}) {
     }
     
     modal.dispatchEvent(new CustomEvent('modalClosed'));
+}
+
+// Ferme une modale (alias de hideModal)
+function closeModal(modal, options = {}) {
+    return hideModal(modal, options);
 }
 
 // Exécute le callback de fermeture d'une modale
@@ -232,7 +242,9 @@ function showConfirmModal(message, options = {}) {
 export {
     initModals,
     showModal,
+    openModal,      // Alias de showModal
     hideModal,
+    closeModal,     // Alias de hideModal
     showConfirmModal,
     setupModalCloseHandlers
 };

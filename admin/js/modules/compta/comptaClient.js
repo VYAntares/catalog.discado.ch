@@ -2,7 +2,7 @@
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
-import { openModal, closeModal } from '../../utils/modal.js';
+import { openModal, hideModal as closeModal } from '../../utils/modal.js';
 
 class ComptaClient {
     constructor() {
@@ -131,7 +131,7 @@ class ComptaClient {
                 <div class="invoice-card-header">
                     <div class="invoice-number">
                         <i class="fas fa-file-invoice"></i>
-                        Facture n° ${invoice.invoice_number}
+                        Facture n° ${invoice.order_id}
                     </div>
                     <div class="invoice-status ${statusClass}">
                         ${statusText}
@@ -140,10 +140,6 @@ class ComptaClient {
 
                 <div class="invoice-card-body">
                     <div class="invoice-info-grid">
-                        <div class="invoice-info-item">
-                            <label><i class="fas fa-hashtag"></i> Commande</label>
-                            <span>${invoice.order_id}</span>
-                        </div>
                         
                         <div class="invoice-info-item">
                             <label><i class="fas fa-calendar"></i> Date facture</label>
