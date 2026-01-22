@@ -727,6 +727,29 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
   }
 });
 
+// Route pour mettre à jour les articles d'une commande
+app.post('/api/admin/update-order-items', requireLogin, requireAdmin, async (req, res) => {
+    const { orderId, userId, modifications } = req.body;
+    
+    if (!orderId || !userId || !Array.isArray(modifications)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Paramètres invalides' 
+        });
+    }
+    
+    try {
+        const result = await orderService.updateOrderItems(orderId, userId, modifications);
+        res.json(result);
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Erreur lors de la mise à jour: ' + error.message 
+        });
+    }
+});
+
 // ===== API ROUTES - COMPTABILITÉ =====
 
 // Routes spécifiques pour la page client-invoices (DOIVENT ÊTRE EN PREMIER)

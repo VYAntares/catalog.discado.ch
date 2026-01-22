@@ -7,6 +7,7 @@ import * as API from '../../core/api.js';
 import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as Modal from '../../utils/modal.js';
+import * as OrderEdit from '../clients/clientOrderEdit.js';
 
 //Affiche les détails d'une commande
 async function viewOrderDetails(orderId, userId) {
@@ -74,7 +75,6 @@ async function viewOrderDetails(orderId, userId) {
             </div>
         `;
         
-        // Ajouter le gestionnaire d'événement au bouton Réessayer
         const retryBtn = contentContainer.querySelector('.retry-btn');
         if (retryBtn) {
             retryBtn.addEventListener('click', function() {
@@ -148,7 +148,7 @@ function displayOrderDetails(order, container) {
         
         sortedCategories.forEach(category => {
             detailsHTML += `
-                <tr>
+                <tr class="category-header">
                     <td colspan="4" class="category-section">
                         ${category.charAt(0).toUpperCase() + category.slice(1)}
                     </td>
@@ -159,7 +159,7 @@ function displayOrderDetails(order, container) {
                 const itemTotal = (parseFloat(item.prix) * item.quantity).toFixed(2);
                 
                 detailsHTML += `
-                    <tr>
+                    <tr data-product-name="${item.Nom}">
                         <td class="qty-column">${item.quantity}</td>
                         <td class="product-column">
                             <span class="product-name">${item.Nom}</span>
@@ -278,6 +278,9 @@ function displayOrderDetails(order, container) {
         </div>
 
         <div class="order-actions-footer">
+            <button class="edit-order-btn" id="editOrderBtn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
+                <i class="fas fa-edit"></i> Modifier la commande
+            </button>
             <a href="${API.getInvoiceDownloadLink(order.orderId, order.userId)}" 
                class="download-invoice-btn" 
                target="_blank">
@@ -290,6 +293,28 @@ function displayOrderDetails(order, container) {
     `;
     
     container.innerHTML = detailsHTML;
+    
+    // Marquer le conteneur avec l'ID de commande pour l'édition
+    container.setAttribute('data-order-id', order.orderId);
+    
+    // Ajouter le gestionnaire pour le bouton d'édition
+    const editBtn = container.querySelector('.edit-order-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const userId = this.getAttribute('data-user-id');
+            
+            // Activer l'édition
+            OrderEdit.enableOrderEditing(orderId, userId);
+            
+            // Changer le texte du bouton
+            this.innerHTML = '<i class="fas fa-check"></i> Mode édition activé';
+            this.disabled = true;
+            this.style.backgroundColor = '#28a745';
+            
+            Notification.showNotification('Mode édition activé - Cliquez sur les cellules pour modifier', 'info');
+        });
+    }
     
     // Ajouter le gestionnaire d'événement au bouton Fermer
     const closeBtn = container.querySelector('.close-detail-btn');
@@ -452,6 +477,32 @@ function displayOrderDetails(order, container) {
             margin-top: 30px;
             border-top: 1px solid #e1e8ed;
             padding-top: 20px;
+            gap: 10px;
+        }
+        
+        .edit-order-btn {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .edit-order-btn:hover {
+            background-color: #e68900;
+            transform: translateY(-2px);
+        }
+        
+        .edit-order-btn:disabled {
+            background-color: #28a745;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .download-invoice-btn {
@@ -493,6 +544,93 @@ function displayOrderDetails(order, container) {
             padding: 20px;
         }
         
+        /* Styles pour l'édition */
+        .order-detail-editable {
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+        
+        .order-detail-editable:hover {
+            background-color: #fff9e6 !important;
+            box-shadow: inset 0 0 0 2px #ffd700;
+        }
+        
+        .order-detail-editable::after {
+            content: '✎';
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .order-detail-editable:hover::after {
+            opacity: 1;
+        }
+        
+        .inline-order-edit-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 2px solid #2575fc;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        
+        .inline-order-edit-input:focus {
+            outline: none;
+            border-color: #1a5cb8;
+            box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.2);
+        }
+        
+        .save-order-changes-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .save-order-changes-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .save-order-changes-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .order-modified-indicator {
+            display: inline-block;
+            background-color: #ff9800;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         @media (max-width: 768px) {
             .order-detail-header {
                 flex-direction: column;
@@ -512,6 +650,10 @@ function displayOrderDetails(order, container) {
             
             .items-table th, .items-table td {
                 padding: 8px;
+            }
+            
+            .order-actions-footer {
+                flex-direction: column;
             }
         }
     `;

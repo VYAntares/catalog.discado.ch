@@ -990,3 +990,96 @@
     border-color: #4b96e6;
     box-shadow: 0 0 0 2px rgba(75, 150, 230, 0.25);
 }
+
+/* admin/css/clients.css - AJOUT pour l'édition des commandes */
+
+/* Cellules éditables dans l'historique des commandes */
+.order-detail-editable {
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+.order-detail-editable:hover {
+    background-color: #fff9e6 !important;
+    box-shadow: inset 0 0 0 2px #ffd700;
+}
+
+.order-detail-editable::after {
+    content: '✎';
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 12px;
+    color: #999;
+}
+
+.order-detail-editable:hover::after {
+    opacity: 1;
+}
+
+/* Input d'édition inline */
+.inline-order-edit-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 2px solid #2575fc;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.inline-order-edit-input:focus {
+    outline: none;
+    border-color: #1a5cb8;
+    box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.2);
+}
+
+/* Boutons de sauvegarde */
+.save-order-changes-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.save-order-changes-btn:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.save-order-changes-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Indicateur de modification */
+.order-modified-indicator {
+    display: inline-block;
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 10px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}

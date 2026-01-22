@@ -794,6 +794,123 @@ const orderService = {
         }
     },
 
+	/**
+	 * Met à jour les articles d'une commande et recalcule la facture
+	 */
+	updateOrderItems(orderId, userId, modifications) {
+		try {
+			return dbModule.transaction(() => {
+				// Vérifier que la commande existe
+				const order = dbModule.getOrderById.get(orderId);
+				if (!order) {
+					throw new Error('Commande non trouvée');
+				}
+				
+				let subtotalHT = 0;
+				
+				// Mettre à jour chaque article modifié
+				modifications.forEach(mod => {
+					const { productName, product_name, quantity, unit_price } = mod;
+					const finalProductName = product_name || productName;
+					
+					// Récupérer l'article actuel
+					const currentItem = dbModule.db.prepare(`
+						SELECT * FROM order_items 
+						WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+					`).get(orderId, finalProductName);
+					
+					if (!currentItem) {
+						console.warn(`Article ${finalProductName} non trouvé`);
+						return;
+					}
+					
+					// Déterminer les nouvelles valeurs
+					const newProductName = product_name || currentItem.product_name;
+					const newQuantity = quantity !== undefined ? parseInt(quantity) : currentItem.quantity;
+					const newPrice = unit_price !== undefined ? parseFloat(unit_price) : currentItem.product_price;
+					
+					// Mettre à jour l'article
+					if (product_name && product_name !== currentItem.product_name) {
+						// Si le nom change, mettre à jour
+						dbModule.db.prepare(`
+							UPDATE order_items 
+							SET product_name = ?, quantity = ?, product_price = ?
+							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+						`).run(newProductName, newQuantity, newPrice, orderId, finalProductName);
+					} else {
+						// Sinon, juste mettre à jour quantité et prix
+						dbModule.db.prepare(`
+							UPDATE order_items 
+							SET quantity = ?, product_price = ?
+							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+						`).run(newQuantity, newPrice, orderId, finalProductName);
+					}
+					
+					// Ajouter au subtotal
+					subtotalHT += newPrice * newQuantity;
+				});
+				
+				// Récupérer tous les articles livrés pour recalculer le total complet
+				const allDeliveredItems = dbModule.db.prepare(`
+					SELECT * FROM order_items 
+					WHERE order_id = ? AND status = 'delivered'
+				`).all(orderId);
+				
+				// Recalculer le subtotal complet
+				subtotalHT = allDeliveredItems.reduce((sum, item) => {
+					return sum + (item.product_price * item.quantity);
+				}, 0);
+				
+				// Arrondir le subtotal
+				const subtotalHTRounded = Math.round(subtotalHT * 100) / 100;
+				
+				// Calculer la TVA (8.1%) arrondie au 5 centimes
+				const vatAmountBrut = subtotalHTRounded * 0.081;
+				const vatAmount = Math.round(vatAmountBrut * 20) / 20;
+				
+				// Calculer le total TTC
+				const totalTTC = subtotalHTRounded + vatAmount;
+				
+				// Mettre à jour la facture
+				const updateInvoice = dbModule.db.prepare(`
+					UPDATE invoices 
+					SET subtotal_ht = ?,
+						vat_amount = ?,
+						total_ttc = ?,
+						amount_due = ?,
+						updated_at = CURRENT_TIMESTAMP
+					WHERE order_id = ?
+				`);
+				
+				updateInvoice.run(
+					subtotalHTRounded,
+					vatAmount,
+					totalTTC,
+					totalTTC, // Si non payé, amount_due = total_ttc
+					orderId
+				);
+				
+				console.log(`✅ Commande ${orderId} mise à jour`);
+				console.log(`   Nouveau subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
+				console.log(`   Nouvelle TVA: ${vatAmount.toFixed(2)} CHF`);
+				console.log(`   Nouveau total TTC: ${totalTTC.toFixed(2)} CHF`);
+				
+				return {
+					success: true,
+					message: 'Commande mise à jour avec succès',
+					totals: {
+						subtotalHT: subtotalHTRounded,
+						vatAmount: vatAmount,
+						totalTTC: totalTTC
+					}
+				};
+			});
+		} catch (error) {
+			console.error('Erreur updateOrderItems:', error);
+			throw error;
+		}
+	},
+
     // Création d'une commande à partir d'articles en attente de livraison
     createOrderFromPendingItems(userId, items) {
         try {
@@ -848,6 +965,7 @@ const orderService = {
             throw error;
         }
     }
+	
 };
 
 module.exports = orderService;
