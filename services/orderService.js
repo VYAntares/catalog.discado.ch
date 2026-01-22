@@ -651,26 +651,84 @@ const orderService = {
 	// ============================================
 	// 🆕 FONCTION : Génération du numéro de facture
 	// ============================================
-	_generateInvoiceNumber() {
+	_createInvoiceForOrder(orderId, userId, deliveredItems, processDate) {
 		try {
-			// Récupérer le dernier numéro de facture
-			const lastInvoice = dbModule.db.prepare(`
-				SELECT invoice_number FROM invoices 
-				ORDER BY id DESC LIMIT 1
-			`).get();
+			// Récupérer le profil utilisateur
+			const userProfile = userService.getUserProfile(userId);
+			const clientFullName = userProfile 
+				? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userId
+				: userId;
 			
-			if (lastInvoice && lastInvoice.invoice_number) {
-				// Extraire le numéro (ex: "INV-123" -> 123)
-				const lastNumber = parseInt(lastInvoice.invoice_number.split('-')[1]);
-				const nextNumber = lastNumber + 1;
-				return `INV-${nextNumber}`;
-			} else {
-				// Première facture
-				return 'INV-1';
-			}
+			// Récupérer la date de commande
+			const order = dbModule.getOrderById.get(orderId);
+			const invoiceDate = order.date;
+			
+			// Calculer le subtotal HT
+			const subtotalHT = deliveredItems.reduce((sum, item) => {
+				return sum + (parseFloat(item.prix) * item.quantity);
+			}, 0);
+			
+			// Arrondir à 2 décimales
+			const subtotalHTRounded = Math.round(subtotalHT * 100) / 100;
+			
+			// Calculer la TVA (8.1%) et arrondir au 5 centimes le plus proche
+			const vatAmountBrut = subtotalHTRounded * 0.081;
+			const vatAmount = Math.round(vatAmountBrut * 20) / 20;  // Arrondi au 0.05 CHF
+			
+			// Calculer le total TTC
+			const totalTTC = subtotalHTRounded + vatAmount;
+			
+			// Calculer la due_date (invoice_date + 1 mois)
+			const invoiceDateObj = new Date(invoiceDate);
+			const dueDate = new Date(invoiceDateObj);
+			dueDate.setMonth(dueDate.getMonth() + 1);
+			
+			// Générer le numéro de facture
+			const invoiceNumber = this._generateInvoiceNumber();
+			
+			// Insérer la facture
+			const insertInvoice = dbModule.db.prepare(`
+				INSERT INTO invoices (
+					invoice_number,
+					order_id,
+					user_id,
+					client_full_name,
+					invoice_date,
+					subtotal_ht,
+					vat_amount,
+					total_ttc,
+					payment_status,
+					amount_paid,
+					amount_due,
+					due_date,
+					paid_date
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`);
+			
+			insertInvoice.run(
+				invoiceNumber,           // invoice_number
+				orderId,                 // order_id
+				userId,                  // user_id
+				clientFullName,          // client_full_name
+				invoiceDate,             // invoice_date
+				subtotalHTRounded,       // subtotal_ht
+				vatAmount,               // vat_amount
+				totalTTC,                // total_ttc
+				'unpaid',                // payment_status
+				0,                       // amount_paid
+				totalTTC,                // amount_due
+				dueDate.toISOString(),   // due_date
+				null                     // paid_date
+			);
+			
+			console.log(`✅ Facture ${invoiceNumber} créée pour commande ${orderId}`);
+			console.log(`   Subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
+			console.log(`   TVA 8.1%: ${vatAmount.toFixed(2)} CHF (arrondi au 5 centimes)`);
+			console.log(`   Total TTC: ${totalTTC.toFixed(2)} CHF`);
+			
 		} catch (error) {
-			console.error('Erreur génération numéro facture:', error);
-			return `INV-${Date.now()}`; // Fallback
+			console.error(`❌ Erreur création facture pour ${orderId}:`, error);
+			// Ne pas faire échouer toute la transaction si la facture échoue
 		}
 	},
     
