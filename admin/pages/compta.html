@@ -78,18 +78,32 @@
         <!-- Tab: Par client -->
         <div id="clients-tab" class="compta-tab-content">
             <div class="search-container">
-                <input type="text" id="clientSearchInput" class="search-input" 
-                    placeholder="Rechercher un client par nom ou ID...">
-                <button id="clientSearchBtn" class="search-btn">
-                    <i class="fas fa-search"></i> Rechercher
-                </button>
-                
-                <!-- Bouton Export CSV -->
-                <button id="exportClientsCSVBtn" class="export-btn">
-                    <i class="fas fa-file-csv"></i>
-                    Exporter en CSV
-                </button>
-            </div>
+				<input type="text" id="clientSearchInput" class="search-input" 
+					placeholder="Rechercher un client par nom ou ID...">
+				<button id="clientSearchBtn" class="search-btn">
+					<i class="fas fa-search"></i> Rechercher
+				</button>
+				
+				<!-- NOUVEAU : Sélecteur de tri -->
+				<select id="sortSelect" class="search-input" style="max-width: 250px;">
+					<option value="total_desc">Montant total (décroissant)</option>
+					<option value="total_asc">Montant total (croissant)</option>
+					<option value="paid_desc">Montant payé (décroissant)</option>
+					<option value="paid_asc">Montant payé (croissant)</option>
+					<option value="due_desc">Montant dû (décroissant)</option>
+					<option value="due_asc">Montant dû (croissant)</option>
+					<option value="invoices_desc">Nb. factures (décroissant)</option>
+					<option value="invoices_asc">Nb. factures (croissant)</option>
+					<option value="name_asc">Nom (A-Z)</option>
+					<option value="name_desc">Nom (Z-A)</option>
+				</select>
+				
+				<!-- Bouton Export CSV -->
+				<button id="exportClientsCSVBtn" class="export-btn">
+					<i class="fas fa-file-csv"></i>
+					Exporter en CSV
+				</button>
+			</div>
 
             <div class="clients-summary-list">
                 <table class="clients-summary-table">
@@ -119,275 +133,326 @@
 
     <!-- Scripts JS -->
     <script type="module">
-        import { formatCurrency } from '/admin/js/utils/formatter.js';
-        import { showNotification } from '/admin/js/utils/notification.js';
+		import { formatCurrency } from '/admin/js/utils/formatter.js';
+		import { showNotification } from '/admin/js/utils/notification.js';
 
-        let allClientsData = [];
-        let selectedYear = new Date().getFullYear();
+		let allClientsData = [];
+		let selectedYear = new Date().getFullYear();
+		let currentSortOption = 'total_desc'; // Tri par défaut
 
-        // Générer les options d'années
-        function populateYearSelect() {
-            const yearSelect = document.getElementById('yearSelect');
-            const currentYear = new Date().getFullYear();
-            for (let year = currentYear; year >= 2025; year--) {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                yearSelect.appendChild(option);
-            }
-            yearSelect.value = selectedYear;
-        }
+		// Générer les options d'années
+		function populateYearSelect() {
+			const yearSelect = document.getElementById('yearSelect');
+			const currentYear = new Date().getFullYear();
+			for (let year = currentYear; year >= 2025; year--) {
+				const option = document.createElement('option');
+				option.value = year;
+				option.textContent = year;
+				yearSelect.appendChild(option);
+			}
+			yearSelect.value = selectedYear;
+		}
 
-        // Event listener pour changement d'année
-        document.getElementById('yearSelect').addEventListener('change', (e) => {
-            selectedYear = parseInt(e.target.value);
-            if (document.querySelector('.compta-tab-btn.active').dataset.tab === 'clients') {
-                loadClientsData();
-            } else {
-                loadOverviewData();
-            }
-        });
+		// Event listener pour changement d'année
+		document.getElementById('yearSelect').addEventListener('change', (e) => {
+			selectedYear = parseInt(e.target.value);
+			if (document.querySelector('.compta-tab-btn.active').dataset.tab === 'clients') {
+				loadClientsData();
+			} else {
+				loadOverviewData();
+			}
+		});
 
-        // Gestion des onglets
-        document.querySelectorAll('.compta-tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetTab = btn.dataset.tab;
-                
-                // Mettre à jour les boutons actifs
-                document.querySelectorAll('.compta-tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                // Afficher le bon contenu
-                document.querySelectorAll('.compta-tab-content').forEach(content => {
-                    content.classList.remove('active');
-                });
-                document.getElementById(`${targetTab}-tab`).classList.add('active');
-                
-                // Charger les données si nécessaire
-                if (targetTab === 'clients') {
-                    loadClientsData();
-                } else if (targetTab === 'overview') {
-                    loadOverviewData();
-                }
-            });
-        });
+		// Event listener pour le tri
+		document.getElementById('sortSelect').addEventListener('change', (e) => {
+			currentSortOption = e.target.value;
+			displayClientsData(allClientsData);
+		});
 
-        // Charger les statistiques globales
-        async function loadOverviewData() {
-            try {
-                const response = await fetch(`/api/invoices/stats?year=${selectedYear}`);
-                const data = await response.json();
-                
-                const statsGrid = document.getElementById('statsGrid');
-                statsGrid.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <i class="fas fa-file-invoice"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total Factures</div>
-                            <div class="stat-value">${data.total_invoices || 0}</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                            <i class="fas fa-coins"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total TTC</div>
-                            <div class="stat-value">${formatCurrency(data.total_amount || 0)}</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total Payé</div>
-                            <div class="stat-value">${formatCurrency(data.total_paid || 0)}</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total Dû</div>
-                            <div class="stat-value">${formatCurrency(data.total_due || 0)}</div>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('Erreur lors du chargement des statistiques', 'error');
-            }
-        }
+		// Gestion des onglets
+		document.querySelectorAll('.compta-tab-btn').forEach(btn => {
+			btn.addEventListener('click', () => {
+				const targetTab = btn.dataset.tab;
+				
+				// Mettre à jour les boutons actifs
+				document.querySelectorAll('.compta-tab-btn').forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				
+				// Afficher le bon contenu
+				document.querySelectorAll('.compta-tab-content').forEach(content => {
+					content.classList.remove('active');
+				});
+				document.getElementById(`${targetTab}-tab`).classList.add('active');
+				
+				// Charger les données si nécessaire
+				if (targetTab === 'clients') {
+					loadClientsData();
+				} else if (targetTab === 'overview') {
+					loadOverviewData();
+				}
+			});
+		});
 
-        // Charger la liste des clients
-        async function loadClientsData() {
-            try {
-                const response = await fetch(`/api/invoices/clients-summary?year=${selectedYear}`);
-                const data = await response.json();
-                allClientsData = data.clients || [];
-                displayClientsData(allClientsData);
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('Erreur lors du chargement des clients', 'error');
-                document.getElementById('clientsSummaryTableBody').innerHTML = 
-                    '<tr><td colspan="7" class="error">Impossible de charger les données</td></tr>';
-            }
-        }
+		// Charger les statistiques globales
+		async function loadOverviewData() {
+			try {
+				const response = await fetch(`/api/invoices/stats?year=${selectedYear}`);
+				const data = await response.json();
+				
+				const statsGrid = document.getElementById('statsGrid');
+				statsGrid.innerHTML = `
+					<div class="stat-card">
+						<div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+							<i class="fas fa-file-invoice"></i>
+						</div>
+						<div class="stat-content">
+							<div class="stat-label">Total Factures</div>
+							<div class="stat-value">${data.total_invoices || 0}</div>
+						</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+							<i class="fas fa-coins"></i>
+						</div>
+						<div class="stat-content">
+							<div class="stat-label">Total TTC</div>
+							<div class="stat-value">${formatCurrency(data.total_amount || 0)}</div>
+						</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+							<i class="fas fa-check-circle"></i>
+						</div>
+						<div class="stat-content">
+							<div class="stat-label">Total Payé</div>
+							<div class="stat-value">${formatCurrency(data.total_paid || 0)}</div>
+						</div>
+					</div>
+					<div class="stat-card">
+						<div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+							<i class="fas fa-exclamation-circle"></i>
+						</div>
+						<div class="stat-content">
+							<div class="stat-label">Total Dû</div>
+							<div class="stat-value">${formatCurrency(data.total_due || 0)}</div>
+						</div>
+					</div>
+				`;
+			} catch (error) {
+				console.error('Erreur:', error);
+				showNotification('Erreur lors du chargement des statistiques', 'error');
+			}
+		}
 
-        function displayClientsData(clients) {
-            const tbody = document.getElementById('clientsSummaryTableBody');
-            
-            if (!clients || clients.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="no-data">Aucun client trouvé</td></tr>';
-                return;
-            }
+		// Charger la liste des clients
+		async function loadClientsData() {
+			try {
+				const response = await fetch(`/api/invoices/clients-summary?year=${selectedYear}`);
+				const data = await response.json();
+				allClientsData = data.clients || [];
+				displayClientsData(allClientsData);
+			} catch (error) {
+				console.error('Erreur:', error);
+				showNotification('Erreur lors du chargement des clients', 'error');
+				document.getElementById('clientsSummaryTableBody').innerHTML = 
+					'<tr><td colspan="7" class="error">Impossible de charger les données</td></tr>';
+			}
+		}
 
-            tbody.innerHTML = clients.map(client => `
-                <tr>
-                    <td><strong>${client.user_id}</strong></td>
-                    <td>${client.client_full_name || 'N/A'}</td>
-                    <td>${client.invoice_count}</td>
-                    <td>${formatCurrency(client.total_amount)}</td>
-                    <td class="text-success">${formatCurrency(client.total_paid)}</td>
-                    <td class="text-danger">${formatCurrency(client.total_due)}</td>
-                    <td>
-                        <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}&year=${selectedYear}" 
-                           class="action-btn primary-btn btn-sm">
-                            <i class="fas fa-eye"></i> Voir factures
-                        </a>
-                    </td>
-                </tr>
-            `).join('');
-        }
+		// Fonction de tri
+		function sortClients(clients, sortOption) {
+			const sorted = [...clients];
+			
+			switch(sortOption) {
+				case 'total_desc':
+					return sorted.sort((a, b) => (b.total_amount || 0) - (a.total_amount || 0));
+				case 'total_asc':
+					return sorted.sort((a, b) => (a.total_amount || 0) - (b.total_amount || 0));
+				case 'paid_desc':
+					return sorted.sort((a, b) => (b.total_paid || 0) - (a.total_paid || 0));
+				case 'paid_asc':
+					return sorted.sort((a, b) => (a.total_paid || 0) - (b.total_paid || 0));
+				case 'due_desc':
+					return sorted.sort((a, b) => (b.total_due || 0) - (a.total_due || 0));
+				case 'due_asc':
+					return sorted.sort((a, b) => (a.total_due || 0) - (b.total_due || 0));
+				case 'invoices_desc':
+					return sorted.sort((a, b) => (b.invoice_count || 0) - (a.invoice_count || 0));
+				case 'invoices_asc':
+					return sorted.sort((a, b) => (a.invoice_count || 0) - (b.invoice_count || 0));
+				case 'name_asc':
+					return sorted.sort((a, b) => {
+						const nameA = (a.client_full_name || '').toLowerCase();
+						const nameB = (b.client_full_name || '').toLowerCase();
+						return nameA.localeCompare(nameB);
+					});
+				case 'name_desc':
+					return sorted.sort((a, b) => {
+						const nameA = (a.client_full_name || '').toLowerCase();
+						const nameB = (b.client_full_name || '').toLowerCase();
+						return nameB.localeCompare(nameA);
+					});
+				default:
+					return sorted;
+			}
+		}
 
-        // Recherche de clients
-        function searchClients() {
-            const searchTerm = document.getElementById('clientSearchInput').value.toLowerCase().trim();
-            
-            if (!searchTerm) {
-                displayClientsData(allClientsData);
-                return;
-            }
+		function displayClientsData(clients) {
+			const tbody = document.getElementById('clientsSummaryTableBody');
+			
+			if (!clients || clients.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="7" class="no-data">Aucun client trouvé</td></tr>';
+				return;
+			}
 
-            const filtered = allClientsData.filter(client => {
-                const name = (client.client_full_name || '').toLowerCase();
-                const id = (client.user_id || '').toLowerCase();
-                return name.includes(searchTerm) || id.includes(searchTerm);
-            });
+			// Appliquer le tri
+			const sortedClients = sortClients(clients, currentSortOption);
 
-            displayClientsData(filtered);
-        }
+			tbody.innerHTML = sortedClients.map(client => `
+				<tr>
+					<td><strong>${client.user_id}</strong></td>
+					<td>${client.client_full_name || 'N/A'}</td>
+					<td>${client.invoice_count}</td>
+					<td>${formatCurrency(client.total_amount)}</td>
+					<td class="text-success">${formatCurrency(client.total_paid)}</td>
+					<td class="text-danger">${formatCurrency(client.total_due)}</td>
+					<td>
+						<a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}&year=${selectedYear}" 
+						class="action-btn primary-btn btn-sm">
+							<i class="fas fa-eye"></i> Voir factures
+						</a>
+					</td>
+				</tr>
+			`).join('');
+		}
 
-        // Fonction pour exporter les clients en CSV
-        function exportClientsToCSV() {
-            if (!allClientsData || allClientsData.length === 0) {
-                showNotification('Aucun client à exporter', 'warning');
-                return;
-            }
+		// Recherche de clients
+		function searchClients() {
+			const searchTerm = document.getElementById('clientSearchInput').value.toLowerCase().trim();
+			
+			if (!searchTerm) {
+				displayClientsData(allClientsData);
+				return;
+			}
 
-            const headers = [
-                'ID Client',
-                'Nom complet',
-                'Nombre de factures',
-                'Total TTC',
-                'Total payé',
-                'Total dû',
-                'Taux de paiement (%)'
-            ];
+			const filtered = allClientsData.filter(client => {
+				const name = (client.client_full_name || '').toLowerCase();
+				const id = (client.user_id || '').toLowerCase();
+				return name.includes(searchTerm) || id.includes(searchTerm);
+			});
 
-            // Calculer les totaux généraux
-            const grandTotals = allClientsData.reduce((acc, client) => {
-                acc.invoice_count += client.invoice_count || 0;
-                acc.total_amount += parseFloat(client.total_amount) || 0;
-                acc.total_paid += parseFloat(client.total_paid) || 0;
-                acc.total_due += parseFloat(client.total_due) || 0;
-                return acc;
-            }, {
-                invoice_count: 0,
-                total_amount: 0,
-                total_paid: 0,
-                total_due: 0
-            });
+			displayClientsData(filtered);
+		}
 
-            // Créer les lignes de données
-            const rows = allClientsData.map(client => {
-                const paymentRate = client.total_amount > 0 
-                    ? ((client.total_paid / client.total_amount) * 100).toFixed(2)
-                    : '0.00';
-                
-                return [
-                    `"${(client.user_id || '').replace(/"/g, '""')}"`,
-                    `"${(client.client_full_name || '').replace(/"/g, '""')}"`,
-                    client.invoice_count || 0,
-                    (client.total_amount || 0).toFixed(2),
-                    (client.total_paid || 0).toFixed(2),
-                    (client.total_due || 0).toFixed(2),
-                    paymentRate
-                ].join(',');
-            });
+		// Fonction pour exporter les clients en CSV
+		function exportClientsToCSV() {
+			if (!allClientsData || allClientsData.length === 0) {
+				showNotification('Aucun client à exporter', 'warning');
+				return;
+			}
 
-            // Ajouter une ligne vide
-            rows.push('');
+			// Utiliser les données triées pour l'export
+			const sortedData = sortClients(allClientsData, currentSortOption);
 
-            // Ajouter la ligne de totaux
-            const grandPaymentRate = grandTotals.total_amount > 0 
-                ? ((grandTotals.total_paid / grandTotals.total_amount) * 100).toFixed(2)
-                : '0.00';
+			const headers = [
+				'ID Client',
+				'Nom complet',
+				'Nombre de factures',
+				'Total TTC',
+				'Total payé',
+				'Total dû',
+				'Taux de paiement (%)'
+			];
 
-            const totalsRow = [
-                `"TOTAL (${allClientsData.length} clients)"`,
-                '',
-                grandTotals.invoice_count,
-                grandTotals.total_amount.toFixed(2),
-                grandTotals.total_paid.toFixed(2),
-                grandTotals.total_due.toFixed(2),
-                grandPaymentRate
-            ].join(',');
-            
-            rows.push(totalsRow);
+			// Calculer les totaux généraux
+			const grandTotals = sortedData.reduce((acc, client) => {
+				acc.invoice_count += client.invoice_count || 0;
+				acc.total_amount += parseFloat(client.total_amount) || 0;
+				acc.total_paid += parseFloat(client.total_paid) || 0;
+				acc.total_due += parseFloat(client.total_due) || 0;
+				return acc;
+			}, {
+				invoice_count: 0,
+				total_amount: 0,
+				total_paid: 0,
+				total_due: 0
+			});
 
-            // Combiner en-têtes et lignes
-            const csvContent = [headers.join(','), ...rows].join('\n');
-            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            const fileName = `clients_factures_${selectedYear}.csv`;
-            
-            link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+			// Créer les lignes de données
+			const rows = sortedData.map(client => {
+				const paymentRate = client.total_amount > 0 
+					? ((client.total_paid / client.total_amount) * 100).toFixed(2)
+					: '0.00';
+				
+				return [
+					`"${(client.user_id || '').replace(/"/g, '""')}"`,
+					`"${(client.client_full_name || '').replace(/"/g, '""')}"`,
+					client.invoice_count || 0,
+					(client.total_amount || 0).toFixed(2),
+					(client.total_paid || 0).toFixed(2),
+					(client.total_due || 0).toFixed(2),
+					paymentRate
+				].join(',');
+			});
 
-            showNotification(`Export CSV réussi : ${fileName}`, 'success');
-        }
+			// Ajouter une ligne vide
+			rows.push('');
 
-        // Event listeners
-        document.getElementById('clientSearchBtn').addEventListener('click', searchClients);
-        document.getElementById('clientSearchInput').addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                searchClients();
-            }
-        });
-        document.getElementById('exportClientsCSVBtn').addEventListener('click', exportClientsToCSV);
+			// Ajouter la ligne de totaux
+			const grandPaymentRate = grandTotals.total_amount > 0 
+				? ((grandTotals.total_paid / grandTotals.total_amount) * 100).toFixed(2)
+				: '0.00';
 
-        // Initialisation
-        populateYearSelect();
+			const totalsRow = [
+				`"TOTAL (${sortedData.length} clients)"`,
+				'',
+				grandTotals.invoice_count,
+				grandTotals.total_amount.toFixed(2),
+				grandTotals.total_paid.toFixed(2),
+				grandTotals.total_due.toFixed(2),
+				grandPaymentRate
+			].join(',');
+			
+			rows.push(totalsRow);
 
-        // Vérifier si on doit ouvrir l'onglet clients
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('tab') === 'clients') {
-            document.querySelector('[data-tab="clients"]').click();
-        }
+			// Combiner en-têtes et lignes
+			const csvContent = [headers.join(','), ...rows].join('\n');
+			const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+			const link = document.createElement('a');
+			const url = URL.createObjectURL(blob);
+			
+			const fileName = `clients_factures_${selectedYear}.csv`;
+			
+			link.setAttribute('href', url);
+			link.setAttribute('download', fileName);
+			link.style.visibility = 'hidden';
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
 
-        loadOverviewData();
-        loadClientsData();
-    </script>
+			showNotification(`Export CSV réussi : ${fileName}`, 'success');
+		}
+
+		// Event listeners
+		document.getElementById('clientSearchBtn').addEventListener('click', searchClients);
+		document.getElementById('clientSearchInput').addEventListener('keyup', (e) => {
+			if (e.key === 'Enter') {
+				searchClients();
+			}
+		});
+		document.getElementById('exportClientsCSVBtn').addEventListener('click', exportClientsToCSV);
+
+		// Initialisation
+		populateYearSelect();
+
+		// Vérifier si on doit ouvrir l'onglet clients
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('tab') === 'clients') {
+			document.querySelector('[data-tab="clients"]').click();
+		}
+
+		loadOverviewData();
+		loadClientsData();
+	</script>
 </body>
 </html>

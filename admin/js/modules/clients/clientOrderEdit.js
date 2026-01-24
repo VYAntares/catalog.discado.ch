@@ -8,6 +8,7 @@ import * as Notification from '../../utils/notification.js';
 let currentOrderId = null;
 let currentUserId = null;
 let orderModifications = new Map();
+let deletedItems = new Set();
 let isEditing = false;
 
 /**
@@ -17,6 +18,7 @@ function enableOrderEditing(orderId, userId) {
     currentOrderId = orderId;
     currentUserId = userId;
     orderModifications.clear();
+    deletedItems.clear();
     
     // Rendre les cellules éditables
     const deliveredRows = document.querySelectorAll(`[data-order-id="${orderId}"] .items-table tbody tr:not(.category-header):not(.pending-item)`);
@@ -30,6 +32,7 @@ function enableOrderEditing(orderId, userId) {
             makeEditable(productCell, 'product_name', row);
             makeEditable(quantityCell, 'quantity', row);
             makeEditable(priceCell, 'unit_price', row);
+            addDeleteButton(row);
         }
     });
     
@@ -40,13 +43,64 @@ function enableOrderEditing(orderId, userId) {
 }
 
 /**
+ * Ajoute un bouton de suppression à une ligne
+ */
+function addDeleteButton(row) {
+    const totalCell = row.querySelector('td:nth-child(4)');
+    if (!totalCell || totalCell.querySelector('.delete-item-btn')) return;
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-item-btn';
+    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+    deleteBtn.title = 'Supprimer cet article';
+    deleteBtn.style.cssText = 'margin-left: 10px; background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s;';
+    
+    deleteBtn.onmouseover = function() {
+        this.style.background = '#c82333';
+    };
+    
+    deleteBtn.onmouseout = function() {
+        if (!this.disabled) {
+            this.style.background = '#dc3545';
+        }
+    };
+    
+    deleteBtn.onclick = function() {
+        const productName = row.querySelector('td:nth-child(2)').textContent.trim();
+        if (confirm(`Êtes-vous sûr de vouloir supprimer "${productName}" de cette commande ?`)) {
+            deletedItems.add(productName);
+            orderModifications.delete(productName);
+            
+            row.style.opacity = '0.5';
+            row.style.textDecoration = 'line-through';
+            row.style.backgroundColor = '#ffe6e6';
+            row.classList.add('item-deleted');
+            
+            deleteBtn.disabled = true;
+            deleteBtn.style.background = '#6c757d';
+            deleteBtn.style.cursor = 'not-allowed';
+            
+            // Désactiver les champs éditables
+            row.querySelectorAll('.order-detail-editable').forEach(cell => {
+                cell.classList.remove('order-detail-editable');
+                cell.style.pointerEvents = 'none';
+            });
+            
+            showModificationIndicator();
+        }
+    };
+    
+    totalCell.appendChild(deleteBtn);
+}
+
+/**
  * Rend une cellule éditable
  */
 function makeEditable(cell, fieldType, row) {
     cell.classList.add('order-detail-editable');
     
     cell.addEventListener('click', function() {
-        if (!isEditing) return;
+        if (!isEditing || row.classList.contains('item-deleted')) return;
         
         const currentValue = cell.textContent.trim().replace(' CHF', '');
         const originalValue = currentValue;
@@ -152,7 +206,7 @@ function updateRowTotal(row) {
  * Affiche l'indicateur de modification
  */
 function showModificationIndicator() {
-    const orderHeader = document.querySelector(`[data-order-id="${currentOrderId}"] .order-detail-header h3`);
+    const orderHeader = document.querySelector(`[data-order-id="${currentOrderId}"] .order-detail-header h3, [data-order-id="${currentOrderId}"] .order-number`);
     
     if (orderHeader && !document.querySelector('.order-modified-indicator')) {
         const indicator = document.createElement('span');
@@ -182,7 +236,7 @@ function addSaveButton(orderId) {
  * Sauvegarde les modifications de la commande
  */
 async function saveOrderChanges() {
-    if (orderModifications.size === 0) {
+    if (orderModifications.size === 0 && deletedItems.size === 0) {
         Notification.showNotification('Aucune modification à sauvegarder', 'info');
         return;
     }
@@ -199,6 +253,8 @@ async function saveOrderChanges() {
             ...changes
         }));
         
+        const deletions = Array.from(deletedItems);
+        
         const response = await fetch('/api/admin/update-order-items', {
             method: 'POST',
             headers: {
@@ -207,7 +263,8 @@ async function saveOrderChanges() {
             body: JSON.stringify({
                 orderId: currentOrderId,
                 userId: currentUserId,
-                modifications: modifications
+                modifications: modifications,
+                deletions: deletions
             })
         });
         
@@ -224,6 +281,7 @@ async function saveOrderChanges() {
             
             // Réinitialiser
             orderModifications.clear();
+            deletedItems.clear();
             
             // Recharger les détails de la commande
             setTimeout(() => {

@@ -569,87 +569,7 @@ const orderService = {
 	},
 
 	// ============================================
-	// 🆕 NOUVELLE FONCTION : Création de facture
-	// ============================================
-	_createInvoiceForOrder(orderId, userId, deliveredItems, processDate) {
-		try {
-			// Récupérer le profil utilisateur
-			const userProfile = userService.getUserProfile(userId);
-			const clientFullName = userProfile 
-				? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userId
-				: userId;
-			
-			// Récupérer la date de commande
-			const order = dbModule.getOrderById.get(orderId);
-			const invoiceDate = order.date;
-			
-			// Calculer le subtotal HT
-			const subtotalHT = deliveredItems.reduce((sum, item) => {
-				return sum + (parseFloat(item.prix) * item.quantity);
-			}, 0);
-			
-			// Arrondir à 2 décimales
-			const subtotalHTRounded = Math.round(subtotalHT * 100) / 100;
-			
-			// Calculer la TVA (8.1%) et arrondir
-			const vatAmount = Math.round(subtotalHTRounded * 0.081 * 100) / 100;
-			
-			// Calculer le total TTC et arrondir
-			const totalTTC = Math.round((subtotalHTRounded + vatAmount) * 100) / 100;
-			
-			// Calculer la due_date (invoice_date + 1 mois)
-			const invoiceDateObj = new Date(invoiceDate);
-			const dueDate = new Date(invoiceDateObj);
-			dueDate.setMonth(dueDate.getMonth() + 1);
-			
-			// Générer le numéro de facture
-			const invoiceNumber = this._generateInvoiceNumber();
-			
-			// Insérer la facture
-			const insertInvoice = dbModule.db.prepare(`
-				INSERT INTO invoices (
-					invoice_number,
-					order_id,
-					user_id,
-					client_full_name,
-					invoice_date,
-					subtotal_ht,
-					vat_amount,
-					total_ttc,
-					payment_status,
-					amount_paid,
-					amount_due,
-					due_date,
-					paid_date
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			`);
-			
-			insertInvoice.run(
-				invoiceNumber,           // invoice_number
-				orderId,                 // order_id
-				userId,                  // user_id
-				clientFullName,          // client_full_name
-				invoiceDate,             // invoice_date
-				subtotalHTRounded,       // subtotal_ht
-				vatAmount,               // vat_amount
-				totalTTC,                // total_ttc
-				'unpaid',                // payment_status
-				0,                       // amount_paid
-				totalTTC,                // amount_due
-				dueDate.toISOString(),   // due_date
-				null                     // paid_date
-			);
-			
-			console.log(`✅ Facture ${invoiceNumber} créée pour commande ${orderId}`);
-			
-		} catch (error) {
-			console.error(`❌ Erreur création facture pour ${orderId}:`, error);
-			// Ne pas faire échouer toute la transaction si la facture échoue
-		}
-	},
-
-	// ============================================
-	// 🆕 FONCTION : Génération du numéro de facture
+	// FONCTION : Création de facture pour une commande
 	// ============================================
 	_createInvoiceForOrder(orderId, userId, deliveredItems, processDate) {
 		try {
@@ -731,6 +651,47 @@ const orderService = {
 			// Ne pas faire échouer toute la transaction si la facture échoue
 		}
 	},
+
+	// ============================================
+	// FONCTION : Génération du numéro de facture
+	// ============================================
+	_generateInvoiceNumber() {
+		try {
+			// Récupérer le dernier numéro de facture
+			const lastInvoice = dbModule.db.prepare(`
+				SELECT invoice_number 
+				FROM invoices 
+				ORDER BY id DESC 
+				LIMIT 1
+			`).get();
+			
+			let nextNumber = 1;
+			
+			if (lastInvoice && lastInvoice.invoice_number) {
+				// Extraire le numéro (format: INV-YYYY-XXXX)
+				const match = lastInvoice.invoice_number.match(/INV-(\d{4})-(\d+)/);
+				if (match) {
+					const year = parseInt(match[1]);
+					const num = parseInt(match[2]);
+					const currentYear = new Date().getFullYear();
+					
+					// Si c'est la même année, incrémenter, sinon recommencer à 1
+					if (year === currentYear) {
+						nextNumber = num + 1;
+					}
+				}
+			}
+			
+			const currentYear = new Date().getFullYear();
+			const invoiceNumber = `INV-${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+			
+			return invoiceNumber;
+		} catch (error) {
+			console.error('Erreur génération numéro facture:', error);
+			// Fallback: utiliser timestamp
+			return `INV-${new Date().getFullYear()}-${Date.now()}`;
+		}
+	},
     
     // Mise à jour des articles en attente de livraison
     _updatePendingDeliveryItem(userId, productName, category, quantity, price, existingPendingDeliveries) {
@@ -797,7 +758,7 @@ const orderService = {
 	/**
 	 * Met à jour les articles d'une commande et recalcule la facture
 	 */
-	updateOrderItems(orderId, userId, modifications) {
+	updateOrderItems(orderId, userId, modifications, deletions = []) {
 		try {
 			return dbModule.transaction(() => {
 				// Vérifier que la commande existe
@@ -806,9 +767,19 @@ const orderService = {
 					throw new Error('Commande non trouvée');
 				}
 				
-				let subtotalHT = 0;
+				// 1. TRAITER LES SUPPRESSIONS D'ABORD
+				if (deletions && deletions.length > 0) {
+					deletions.forEach(productName => {
+						dbModule.db.prepare(`
+							DELETE FROM order_items 
+							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+						`).run(orderId, productName);
+						
+						console.log(`   ❌ Article supprimé: ${productName}`);
+					});
+				}
 				
-				// Mettre à jour chaque article modifié
+				// 2. TRAITER LES MODIFICATIONS
 				modifications.forEach(mod => {
 					const { productName, product_name, quantity, unit_price } = mod;
 					const finalProductName = product_name || productName;
@@ -845,11 +816,9 @@ const orderService = {
 							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
 						`).run(newQuantity, newPrice, orderId, finalProductName);
 					}
-					
-					// Ajouter au subtotal
-					subtotalHT += newPrice * newQuantity;
 				});
 				
+				// 3. RECALCULER LA FACTURE
 				// Récupérer tous les articles livrés pour recalculer le total complet
 				const allDeliveredItems = dbModule.db.prepare(`
 					SELECT * FROM order_items 
@@ -857,7 +826,7 @@ const orderService = {
 				`).all(orderId);
 				
 				// Recalculer le subtotal complet
-				subtotalHT = allDeliveredItems.reduce((sum, item) => {
+				const subtotalHT = allDeliveredItems.reduce((sum, item) => {
 					return sum + (item.product_price * item.quantity);
 				}, 0);
 				
@@ -891,6 +860,12 @@ const orderService = {
 				);
 				
 				console.log(`✅ Commande ${orderId} mise à jour`);
+				if (deletions && deletions.length > 0) {
+					console.log(`   🗑️  ${deletions.length} article(s) supprimé(s)`);
+				}
+				if (modifications && modifications.length > 0) {
+					console.log(`   ✏️  ${modifications.length} article(s) modifié(s)`);
+				}
 				console.log(`   Nouveau subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
 				console.log(`   Nouvelle TVA: ${vatAmount.toFixed(2)} CHF`);
 				console.log(`   Nouveau total TTC: ${totalTTC.toFixed(2)} CHF`);

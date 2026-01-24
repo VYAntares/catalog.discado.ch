@@ -729,17 +729,38 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
 
 // Route pour mettre à jour les articles d'une commande
 app.post('/api/admin/update-order-items', requireLogin, requireAdmin, async (req, res) => {
-    const { orderId, userId, modifications } = req.body;
+    const { orderId, userId, modifications, deletions } = req.body;
     
-    if (!orderId || !userId || !Array.isArray(modifications)) {
+    if (!orderId || !userId) {
         return res.status(400).json({ 
             success: false, 
-            message: 'Paramètres invalides' 
+            message: 'Paramètres invalides: orderId et userId sont requis' 
+        });
+    }
+    
+    // Valider que modifications est un tableau (peut être vide ou undefined)
+    if (modifications && !Array.isArray(modifications)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Le paramètre modifications doit être un tableau' 
+        });
+    }
+    
+    // Valider que deletions est un tableau (peut être vide ou undefined)
+    if (deletions && !Array.isArray(deletions)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Le paramètre deletions doit être un tableau' 
         });
     }
     
     try {
-        const result = await orderService.updateOrderItems(orderId, userId, modifications);
+        const result = await orderService.updateOrderItems(
+            orderId, 
+            userId, 
+            modifications || [], 
+            deletions || []
+        );
         res.json(result);
     } catch (error) {
         console.error('Erreur lors de la mise à jour:', error);
