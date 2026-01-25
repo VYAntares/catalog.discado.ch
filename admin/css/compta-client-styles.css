@@ -298,3 +298,28 @@
 .export-btn i {
     font-size: 16px;
 }
+
+.download-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.2s;
+}
+
+.download-btn:hover {
+    background-color: #218838;
+}
+
+.download-btn i {
+    font-size: 16px;
+}
+
+.text-center {
+    text-align: center !important;
+}

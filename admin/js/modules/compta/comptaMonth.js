@@ -1,11 +1,13 @@
-// comptaClientTable.js - Gestion des factures par client (version tableau Excel)
+// admin/js/modules/compta/comptaMonth.js - Gestion des factures par mois
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
 
-class ComptaClientTable {
+class ComptaMonth {
     constructor() {
-        this.clientId = null;
+        this.year = null;
+        this.month = null;
+        this.type = null;
         this.invoices = [];
         this.sortOrder = 'desc';
         this.editingCells = new Map();
@@ -14,17 +16,33 @@ class ComptaClientTable {
 
     init() {
         const urlParams = new URLSearchParams(window.location.search);
-        this.clientId = urlParams.get('client_id');
-        this.year = urlParams.get('year') || new Date().getFullYear();
+        this.year = parseInt(urlParams.get('year')) || new Date().getFullYear();
+        this.month = parseInt(urlParams.get('month'));
+        this.type = urlParams.get('type') || 'total_amount';
 
-        if (!this.clientId) {
-            showNotification('Aucun client spécifié', 'error');
+        if (!this.month || this.month < 1 || this.month > 12) {
+            showNotification('Mois invalide', 'error');
             window.location.href = '/admin/compta';
             return;
         }
 
+        this.setupUI();
         this.setupEventListeners();
-        this.loadClientInvoices();
+        this.loadMonthInvoices();
+    }
+
+    setupUI() {
+        const monthNames = [
+            'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        ];
+        
+        document.getElementById('monthName').textContent = monthNames[this.month - 1] + ' ' + this.year;
+        document.getElementById('yearDisplay').textContent = this.year;
+        
+        // Configurer le bouton retour
+        const backBtn = document.getElementById('backBtn');
+        backBtn.href = `/admin/compta-details?year=${this.year}&type=${this.type}`;
     }
 
     setupEventListeners() {
@@ -40,9 +58,9 @@ class ComptaClientTable {
         }
     }
 
-    async loadClientInvoices() {
+    async loadMonthInvoices() {
         try {
-            const response = await fetch(`/api/invoices/client/${this.clientId}?year=${this.year}`, {
+            const response = await fetch(`/api/invoices/month-details?year=${this.year}&month=${this.month}`, {
                 credentials: 'include'
             });
             
@@ -52,12 +70,6 @@ class ComptaClientTable {
 
             const data = await response.json();
             this.invoices = data.invoices || [];
-
-            if (this.invoices.length > 0) {
-                document.getElementById('clientName').textContent = 
-                    this.invoices[0].client_full_name || 'Client inconnu';
-            }
-            document.getElementById('clientId').textContent = this.clientId;
 
             this.displayInvoices();
         } catch (error) {
@@ -113,7 +125,7 @@ class ComptaClientTable {
         const dueDateValue = invoice.due_date ? 
             new Date(invoice.due_date).toISOString().split('T')[0] : '';
         
-        return `
+		return `
 			<tr data-invoice-id="${invoice.id}">
 				<td class="invoice-number"><strong>${invoice.order_id}</strong></td>
 				<td>${this.formatDateShort(invoice.invoice_date)}</td>
@@ -136,7 +148,7 @@ class ComptaClientTable {
 				</td>
 				<!-- NOUVELLE COLONNE -->
 				<td class="text-center">
-					<a href="/api/admin/download-invoice/${invoice.order_id}/${this.clientId}" 
+					<a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}" 
 					class="action-btn download-btn" 
 					target="_blank"
 					title="Télécharger la facture">
@@ -312,7 +324,7 @@ class ComptaClientTable {
             }
 
             showNotification('Facture mise à jour avec succès', 'success');
-            await this.loadClientInvoices();
+            await this.loadMonthInvoices();
             
         } catch (error) {
             console.error('Erreur complète:', error);
@@ -323,105 +335,110 @@ class ComptaClientTable {
         this.editingCells.delete(cell);
     }
 
-	exportToCSV() {
-		if (!this.invoices || this.invoices.length === 0) {
-			showNotification('Aucune facture à exporter', 'warning');
-			return;
-		}
+    exportToCSV() {
+        if (!this.invoices || this.invoices.length === 0) {
+            showNotification('Aucune facture à exporter', 'warning');
+            return;
+        }
 
-		const headers = [
-			'Numéro facture',
-			'Date facture',
-			'Client',
-			'Montant HT',
-			'TVA',
-			'Montant TTC',
-			'Date échéance',
-			'Montant encaissé',
-			'Solde dû',
-			'Date paiement',
-			'Statut'
-		];
+        const monthNames = [
+            'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        ];
 
-		const sortedInvoices = [...this.invoices].sort((a, b) => {
-			const dateA = new Date(a.invoice_date);
-			const dateB = new Date(b.invoice_date);
-			return this.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-		});
+        const headers = [
+            'Numéro facture',
+            'Date facture',
+            'Client',
+            'Montant HT',
+            'TVA',
+            'Montant TTC',
+            'Date échéance',
+            'Montant encaissé',
+            'Solde dû',
+            'Date paiement',
+            'Statut'
+        ];
 
-		// Calculer les totaux
-		const totals = sortedInvoices.reduce((acc, invoice) => {
-			acc.count += 1;
-			acc.subtotal_ht += parseFloat(invoice.subtotal_ht) || 0;
-			acc.vat_amount += parseFloat(invoice.vat_amount) || 0;
-			acc.total_ttc += parseFloat(invoice.total_ttc) || 0;
-			acc.amount_paid += parseFloat(invoice.amount_paid) || 0;
-			acc.amount_due += parseFloat(invoice.amount_due) || 0;
-			return acc;
-		}, {
-			count: 0,
-			subtotal_ht: 0,
-			vat_amount: 0,
-			total_ttc: 0,
-			amount_paid: 0,
-			amount_due: 0
-		});
+        const sortedInvoices = [...this.invoices].sort((a, b) => {
+            const dateA = new Date(a.invoice_date);
+            const dateB = new Date(b.invoice_date);
+            return this.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
 
-		// Créer les lignes de données
-		const rows = sortedInvoices.map(invoice => {
-			return [
-				invoice.order_id || '',
-				this.formatDateShort(invoice.invoice_date),
-				`"${(invoice.client_full_name || '').replace(/"/g, '""')}"`,
-				this.formatNumberForCSV(invoice.subtotal_ht),
-				this.formatNumberForCSV(invoice.vat_amount),
-				this.formatNumberForCSV(invoice.total_ttc),
-				invoice.due_date ? this.formatDateShort(invoice.due_date) : '',
-				this.formatNumberForCSV(invoice.amount_paid),
-				this.formatNumberForCSV(invoice.amount_due),
-				invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
-				this.getStatusText(invoice.payment_status)
-			].join(',');
-		});
+        // Calculer les totaux
+        const totals = sortedInvoices.reduce((acc, invoice) => {
+            acc.count += 1;
+            acc.subtotal_ht += parseFloat(invoice.subtotal_ht) || 0;
+            acc.vat_amount += parseFloat(invoice.vat_amount) || 0;
+            acc.total_ttc += parseFloat(invoice.total_ttc) || 0;
+            acc.amount_paid += parseFloat(invoice.amount_paid) || 0;
+            acc.amount_due += parseFloat(invoice.amount_due) || 0;
+            return acc;
+        }, {
+            count: 0,
+            subtotal_ht: 0,
+            vat_amount: 0,
+            total_ttc: 0,
+            amount_paid: 0,
+            amount_due: 0
+        });
 
-		// Ajouter une ligne vide
-		rows.push('');
+        // Créer les lignes de données
+        const rows = sortedInvoices.map(invoice => {
+            return [
+                invoice.order_id || '',
+                this.formatDateShort(invoice.invoice_date),
+                `"${(invoice.client_full_name || '').replace(/"/g, '""')}"`,
+                this.formatNumberForCSV(invoice.subtotal_ht),
+                this.formatNumberForCSV(invoice.vat_amount),
+                this.formatNumberForCSV(invoice.total_ttc),
+                invoice.due_date ? this.formatDateShort(invoice.due_date) : '',
+                this.formatNumberForCSV(invoice.amount_paid),
+                this.formatNumberForCSV(invoice.amount_due),
+                invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
+                this.getStatusText(invoice.payment_status)
+            ].join(',');
+        });
 
-		// Ajouter la ligne de totaux
-		const totalsRow = [
-			`"TOTAL (${totals.count} factures)"`,
-			'',
-			'',
-			this.formatNumberForCSV(totals.subtotal_ht),
-			this.formatNumberForCSV(totals.vat_amount),
-			this.formatNumberForCSV(totals.total_ttc),
-			'',
-			this.formatNumberForCSV(totals.amount_paid),
-			this.formatNumberForCSV(totals.amount_due),
-			'',
-			''
-		].join(',');
-		
-		rows.push(totalsRow);
+        // Ajouter une ligne vide
+        rows.push('');
 
-		// Combiner en-têtes et lignes
-		const csvContent = [headers.join(','), ...rows].join('\n');
-		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-		const link = document.createElement('a');
-		const url = URL.createObjectURL(blob);
-		
-		const clientName = this.invoices[0]?.client_full_name || this.clientId;
-		const fileName = `factures_${clientName}_${this.year}.csv`;
-		
-		link.setAttribute('href', url);
-		link.setAttribute('download', fileName);
-		link.style.visibility = 'hidden';
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
+        // Ajouter la ligne de totaux
+        const totalsRow = [
+            `"TOTAL (${totals.count} factures)"`,
+            '',
+            '',
+            this.formatNumberForCSV(totals.subtotal_ht),
+            this.formatNumberForCSV(totals.vat_amount),
+            this.formatNumberForCSV(totals.total_ttc),
+            '',
+            this.formatNumberForCSV(totals.amount_paid),
+            this.formatNumberForCSV(totals.amount_due),
+            '',
+            ''
+        ].join(',');
+        
+        rows.push(totalsRow);
 
-		showNotification(`Export CSV réussi : ${fileName}`, 'success');
-	}
+        // Combiner en-têtes et lignes
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const monthName = monthNames[this.month - 1];
+        const fileName = `factures_${monthName}_${this.year}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+    }
 
     formatNumberForCSV(number) {
         if (number === null || number === undefined) return '0.00';
@@ -448,5 +465,5 @@ class ComptaClientTable {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new ComptaClientTable();
+    new ComptaMonth();
 });

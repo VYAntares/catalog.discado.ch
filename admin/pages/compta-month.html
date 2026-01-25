@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factures Client - Discado</title>
+    <title>Factures du Mois - Discado</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/admin/css/main.css">
     <link rel="stylesheet" href="/admin/css/compta-client-styles.css">
@@ -28,33 +28,33 @@
 
     <!-- Main Content -->
     <main>
-        <!-- Back Button & Client Info -->
+        <!-- Back Button & Month Info -->
         <div class="client-invoices-header">
-            <a href="/admin/compta?tab=clients" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Retour à la comptabilité
+            <a href="#" id="backBtn" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Retour aux détails
             </a>
             <h1 class="page-title">
-                <i class="fas fa-user"></i> Factures de <span id="clientName">...</span>
+                <i class="fas fa-calendar-alt"></i> Factures de <span id="monthName">...</span>
             </h1>
             <div class="client-info">
-                <span class="client-id-label">ID Client:</span>
-                <span id="clientId" class="client-id-value">...</span>
+                <span class="client-id-label">Année:</span>
+                <span id="yearDisplay" class="client-id-value">...</span>
             </div>
         </div>
 
         <!-- Sort Controls -->
-		<div class="sort-controls">
-			<button id="sortBtn" class="sort-btn" data-order="desc">
-				<i class="fas fa-sort-amount-down"></i>
-				<span id="sortText">Plus récente à plus ancienne</span>
-			</button>
-			
-			<!-- NOUVEAU BOUTON EXPORT CSV -->
-			<button id="exportCsvBtn" class="export-btn">
-				<i class="fas fa-file-csv"></i>
-				Exporter en CSV
-			</button>
-		</div>
+        <div class="sort-controls">
+            <button id="sortBtn" class="sort-btn" data-order="desc">
+                <i class="fas fa-sort-amount-down"></i>
+                <span id="sortText">Plus récente à plus ancienne</span>
+            </button>
+            
+            <!-- Bouton Export CSV -->
+            <button id="exportCsvBtn" class="export-btn">
+                <i class="fas fa-file-csv"></i>
+                Exporter en CSV
+            </button>
+        </div>
 
         <!-- Invoices Table (Excel style) -->
         <div class="client-invoices-container">
@@ -70,7 +70,7 @@
                             <th>Montant TTC</th>
                             <th>Date échéance</th>
                             <th>Montant encaissé</th>
-                            <th>Sold</th>
+                            <th>Solde dû</th>
                             <th>Date paiement</th>
                             <th>Statut</th>
 							<th>Actions</th>
@@ -90,6 +90,6 @@
     <div id="notification-container"></div>
 
     <!-- Scripts JS -->
-    <script type="module" src="/admin/js/modules/compta/comptaClientTable.js"></script>
+    <script type="module" src="/admin/js/modules/compta/comptaMonth.js"></script>
 </body>
 </html>

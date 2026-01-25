@@ -330,6 +330,50 @@ function getMonthlyBreakdown(year = null, type = 'total_amount') {
     }
 }
 
+/**
+ * Obtenir les factures détaillées d'un mois spécifique
+ * @param {number} year - Année
+ * @param {number} month - Mois (1-12)
+ * @returns {Array} Liste des factures du mois
+ */
+function getMonthInvoices(year, month) {
+    try {
+        const query = `
+            SELECT 
+                i.*,
+                up.first_name,
+                up.last_name,
+                up.shop_name,
+                up.email,
+                up.phone,
+                o.date as order_date
+            FROM invoices i
+            LEFT JOIN user_profiles up ON i.user_id = up.username
+            LEFT JOIN orders o ON i.order_id = o.order_id
+            WHERE strftime('%Y', i.invoice_date) = ?
+            AND strftime('%m', i.invoice_date) = ?
+            ORDER BY i.invoice_date DESC
+        `;
+        
+        const yearStr = year.toString();
+        const monthStr = month.toString().padStart(2, '0');
+        
+        const invoices = db.db.prepare(query).all(yearStr, monthStr);
+        
+        return invoices.map(invoice => ({
+            ...invoice,
+            client_full_name: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
+            displayName: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
+            shopName: invoice.shop_name || 'N/A',
+            email: invoice.email || 'N/A',
+            phone: invoice.phone || 'N/A'
+        }));
+    } catch (error) {
+        console.error('Error getting month invoices:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     getAllInvoices,
     getClientInvoices,
@@ -337,5 +381,6 @@ module.exports = {
     updatePaymentStatus,
     getInvoiceStatistics,
     getClientsSummary,
-    getMonthlyBreakdown  // ← NOUVELLE FONCTION AJOUTÉE
+    getMonthlyBreakdown,
+	getMonthInvoices  // ← NOUVELLE FONCTION AJOUTÉE
 };

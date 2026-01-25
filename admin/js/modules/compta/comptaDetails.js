@@ -206,10 +206,9 @@ class ComptaDetails {
     }
 
     showMonthDetails(month) {
-        // Rediriger vers une page de détails du mois ou afficher un modal
-        // Pour l'instant, on redirige vers la page client avec un filtre de mois
-        window.location.href = `/admin/compta?tab=clients&year=${this.year}&month=${month}`;
-    }
+		// Rediriger vers la nouvelle page de détails du mois
+		window.location.href = `/admin/compta-month?year=${this.year}&month=${month}&type=${this.type}`;
+	}
 
     exportToCSV() {
         if (!this.monthlyData || this.monthlyData.length === 0) {

@@ -914,6 +914,29 @@ app.get('/admin/compta-details', requireLogin, requireAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'admin/pages/compta-details.html'));
 });
 
+// Route pour la page compta-month
+app.get('/admin/compta-month', requireLogin, requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin/pages/compta-month.html'));
+});
+
+// Route API pour récupérer les factures d'un mois
+app.get('/api/invoices/month-details', requireLogin, requireAdmin, (req, res) => {
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    const month = req.query.month ? parseInt(req.query.month) : null;
+    
+    if (!year || !month) {
+        return res.status(400).json({ error: 'Year and month are required' });
+    }
+    
+    try {
+        const invoices = invoiceManagementService.getMonthInvoices(year, month);
+        res.json({ invoices });
+    } catch (error) {
+        console.error('Error getting month invoices:', error);
+        res.status(500).json({ error: 'Error getting month invoices' });
+    }
+});
+
 // ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);
