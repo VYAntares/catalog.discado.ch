@@ -229,9 +229,9 @@ class StockManager {
 		const price = Number(product.price) || 0;
 		const category = product.category ?? product.categorie ?? 'autre';
 		const imageUrl = product.image_url ?? product.imageUrl ?? '';
-		const stock = Number(product.stock) || 0; // <-- FORÇAGE NUMÉRIQUE
-
+		const stock = product.stock !== undefined && product.stock !== null ? Number(product.stock) : 0;
 		const stockStatus = this.getStockStatus(stock);
+		console.log(`Produit: ${name}, Stock reçu:`, product.stock, 'Stock affiché:', stock);
 
 		return `
 			<div class="product-card" data-product-id="${product.id}">
