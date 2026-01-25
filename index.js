@@ -941,6 +941,230 @@ app.get('/api/invoices/month-details', requireLogin, requireAdmin, (req, res) =>
     }
 });
 
+// ===================================
+// STOCK MANAGEMENT API ROUTES
+// ===================================
+
+// GET all products with stock info
+app.get('/api/products', async (req, res) => {
+    try {
+        const products = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM products ORDER BY category, name', [], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        // Convert stock & price to Number
+        const sanitizedProducts = products.map(p => ({
+            ...p,
+            stock: Number(p.stock) || 0,
+            price: Number(p.price) || 0
+        }));
+
+        res.json(sanitizedProducts);
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+    }
+});
+
+// GET single product by ID
+app.get('/api/products/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const product = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        if (!product) {
+            return res.status(404).json({ error: 'Produit non trouvé' });
+        }
+
+        res.json({
+            ...product,
+            stock: Number(product.stock) || 0,
+            price: Number(product.price) || 0
+        });
+    } catch (error) {
+        console.error('Error fetching product:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération du produit' });
+    }
+});
+
+// UPDATE product stock
+app.put('/api/products/:id/stock', async (req, res) => {
+    try {
+        const { id } = req.params;
+        let { stock } = req.body;
+
+        // Convertir en nombre
+        stock = Number(stock);
+        if (isNaN(stock) || stock < 0) {
+            return res.status(400).json({ error: 'Valeur de stock invalide' });
+        }
+
+        // Vérifier si le produit existe
+        const product = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        if (!product) {
+            return res.status(404).json({ error: 'Produit non trouvé' });
+        }
+
+        // Mettre à jour le stock
+        await new Promise((resolve, reject) => {
+            db.run('UPDATE products SET stock = ? WHERE id = ?', [stock, id], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        // Récupérer le produit mis à jour
+        const updatedProduct = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        res.json({
+            message: 'Stock mis à jour avec succès',
+            product: {
+                ...updatedProduct,
+                stock: Number(updatedProduct.stock) || 0,
+                price: Number(updatedProduct.price) || 0
+            }
+        });
+    } catch (error) {
+        console.error('Error updating stock:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' });
+    }
+});
+
+// BULK UPDATE stock
+app.put('/api/products/bulk/stock', async (req, res) => {
+    try {
+        const { updates } = req.body; // Array of {id, stock}
+
+        if (!Array.isArray(updates)) {
+            return res.status(400).json({ error: 'Format de données invalide' });
+        }
+
+        // Démarrer transaction
+        await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
+
+        try {
+            for (const update of updates) {
+                const stock = Number(update.stock);
+                if (isNaN(stock) || stock < 0) throw new Error('Valeur de stock invalide');
+
+                await new Promise((resolve, reject) => {
+                    db.run('UPDATE products SET stock = ? WHERE id = ?', [stock, update.id], err => err ? reject(err) : resolve());
+                });
+            }
+
+            await new Promise((resolve, reject) => db.run('COMMIT', err => err ? reject(err) : resolve()));
+
+            res.json({ message: 'Stock mis à jour avec succès', count: updates.length });
+        } catch (err) {
+            await new Promise((resolve, reject) => db.run('ROLLBACK', err2 => err2 ? reject(err2) : resolve()));
+            throw err;
+        }
+    } catch (error) {
+        console.error('Error bulk updating stock:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' });
+    }
+});
+
+// GET stock statistics
+app.get('/api/products/stats/stock', async (req, res) => {
+    try {
+        const stats = await new Promise((resolve, reject) => {
+            db.get(`
+                SELECT 
+                    COUNT(*) as total_products,
+                    SUM(CASE WHEN stock > 10 THEN 1 ELSE 0 END) as in_stock,
+                    SUM(CASE WHEN stock > 0 AND stock <= 10 THEN 1 ELSE 0 END) as low_stock,
+                    SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) as out_of_stock,
+                    SUM(price * stock) as total_value
+                FROM products
+            `, [], (err, row) => err ? reject(err) : resolve(row));
+        });
+
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching stock stats:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
+    }
+});
+
+// GET products by category
+app.get('/api/products/category/:category', async (req, res) => {
+    try {
+        const { category } = req.params;
+
+        const products = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM products WHERE category = ? ORDER BY name', [category], (err, rows) => err ? reject(err) : resolve(rows));
+        });
+
+        res.json(products.map(p => ({
+            ...p,
+            stock: Number(p.stock) || 0,
+            price: Number(p.price) || 0
+        })));
+    } catch (error) {
+        console.error('Error fetching products by category:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+    }
+});
+
+// GET low stock products
+app.get('/api/products/low-stock/:threshold?', async (req, res) => {
+    try {
+        const threshold = parseInt(req.params.threshold) || 10;
+
+        const products = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM products WHERE stock > 0 AND stock <= ? ORDER BY stock ASC', [threshold], (err, rows) => err ? reject(err) : resolve(rows));
+        });
+
+        res.json(products.map(p => ({
+            ...p,
+            stock: Number(p.stock) || 0,
+            price: Number(p.price) || 0
+        })));
+    } catch (error) {
+        console.error('Error fetching low stock products:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+    }
+});
+
+// GET out-of-stock products
+app.get('/api/products/out-of-stock', async (req, res) => {
+    try {
+        const products = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM products WHERE stock = 0 ORDER BY name', [], (err, rows) => err ? reject(err) : resolve(rows));
+        });
+
+        res.json(products.map(p => ({
+            ...p,
+            stock: Number(p.stock) || 0,
+            price: Number(p.price) || 0
+        })));
+    } catch (error) {
+        console.error('Error fetching out-of-stock products:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+    }
+});
+
 // ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);

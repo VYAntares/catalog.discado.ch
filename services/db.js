@@ -95,7 +95,7 @@ function initDatabase() {
         price REAL NOT NULL,
         category TEXT NOT NULL,
         image_url TEXT,
-        stock INTEGER DEFAULT 0,
+        stock INTEGER DEFAULT 10000,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     `);

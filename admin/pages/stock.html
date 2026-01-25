@@ -6,6 +6,7 @@
     <title>Gestion du Stock - Discado</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/stock.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 </head>
 <body>
@@ -48,18 +49,109 @@
 
     <!-- Main Content -->
     <main>
-        <h1 class="page-title">
-            <i class="fas fa-boxes"></i> Gestion du Stock
-        </h1>
+        <div class="stock-container">
+            <h1 class="page-title">
+                <i class="fas fa-boxes"></i> Gestion du Stock
+            </h1>
 
-        <div style="text-align: center; padding: 50px;">
-            <i class="fas fa-boxes" style="font-size: 4em; color: #667eea; margin-bottom: 20px;"></i>
-            <h2>Page en construction</h2>
-            <p style="color: #666;">La gestion du stock sera bientôt disponible.</p>
+            <!-- Stock Statistics -->
+            <div class="stock-stats">
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-products">0</h3>
+                        <p>Total Produits</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="in-stock-count">0</h3>
+                        <p>En Stock</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="low-stock-count">0</h3>
+                        <p>Stock Faible</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #ffe6e6; color: #f56565;">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="out-stock-count">0</h3>
+                        <p>Rupture de Stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="stock-filters">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="search-input">
+                            <i class="fas fa-search"></i> Rechercher un produit
+                        </label>
+                        <input type="text" 
+                               id="search-input" 
+                               placeholder="Nom du produit...">
+                    </div>
+                    <div class="filter-item">
+                        <label for="stock-filter">
+                            <i class="fas fa-filter"></i> Filtrer par stock
+                        </label>
+                        <select id="stock-filter">
+                            <option value="all">Tous les produits</option>
+                            <option value="in-stock">En stock (>10)</option>
+                            <option value="low-stock">Stock faible (1-10)</option>
+                            <option value="out-of-stock">Rupture de stock (0)</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="sort-select">
+                            <i class="fas fa-sort"></i> Trier par
+                        </label>
+                        <select id="sort-select">
+                            <option value="name-asc">Nom (A-Z)</option>
+                            <option value="name-desc">Nom (Z-A)</option>
+                            <option value="stock-asc">Stock (croissant)</option>
+                            <option value="stock-desc">Stock (décroissant)</option>
+                            <option value="price-asc">Prix (croissant)</option>
+                            <option value="price-desc">Prix (décroissant)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="category-tabs">
+                <!-- Tabs will be generated dynamically -->
+            </div>
+
+            <!-- Products Grid -->
+            <div class="products-grid" id="products-container">
+                <!-- Products will be loaded here -->
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement des produits...</p>
+                </div>
+            </div>
         </div>
     </main>
 
     <!-- Conteneur de notifications -->
     <div id="notification-container"></div>
+
+    <!-- Scripts -->
+    <script src="/admin/js/modules/stock/stockManager.js"></script>
 </body>
 </html>
