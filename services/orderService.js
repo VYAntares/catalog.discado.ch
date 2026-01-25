@@ -488,6 +488,9 @@ const orderService = {
 					const deliveredItem = deliveredItems.find(d => d.Nom === item.product_name);
 					
 					if (deliveredItem && deliveredItem.quantity > 0) {
+						// 🆕 Décrémenter le stock
+						this._decrementStock(item.product_name, deliveredItem.quantity);
+						
 						if (deliveredItem.quantity >= item.quantity) {
 							// Livraison complète
 							dbModule.updateOrderItemQuantity.run(
@@ -537,6 +540,9 @@ const orderService = {
 							);
 						}
 					} else {
+						// 🆕 Article non livré → stock à 0
+						this._setStockToZero(item.product_name);
+						
 						// Aucune livraison
 						dbModule.updateOrderItemStatus.run('remaining', orderId, item.product_name);
 						
@@ -1025,7 +1031,47 @@ const orderService = {
         } catch (error) {
             throw error;
         }
-    }
+    },
+
+	// Décrémente le stock d'un produit
+	_decrementStock(productName, quantity) {
+		try {
+			const updateStock = dbModule.db.prepare(`
+				UPDATE products 
+				SET stock = stock - ? 
+				WHERE name = ?
+			`);
+			
+			const result = updateStock.run(quantity, productName);
+			
+			if (result.changes > 0) {
+				// Récupérer le nouveau stock pour logging
+				const product = dbModule.db.prepare('SELECT stock FROM products WHERE name = ?').get(productName);
+				console.log(`📦 Stock mis à jour: ${productName} → ${product.stock} (${quantity} livrés)`);
+			}
+		} catch (error) {
+			console.error(`⚠️ Erreur décrément stock pour ${productName}:`, error);
+		}
+	},
+
+	// Met le stock d'un produit à 0 (article indisponible)
+	_setStockToZero(productName) {
+		try {
+			const updateStock = dbModule.db.prepare(`
+				UPDATE products 
+				SET stock = 0 
+				WHERE name = ? AND stock > 0
+			`);
+			
+			const result = updateStock.run(productName);
+			
+			if (result.changes > 0) {
+				console.log(`❌ Stock mis à 0: ${productName} (article indisponible)`);
+			}
+		} catch (error) {
+			console.error(`⚠️ Erreur mise à 0 stock pour ${productName}:`, error);
+		}
+	}
 	
 };
 
