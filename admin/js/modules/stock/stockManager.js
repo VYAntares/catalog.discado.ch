@@ -6,6 +6,7 @@ class StockManager {
         this.currentCategory = 'all';
         this.searchTerm = '';
         this.stockFilter = 'all';
+        this.supplierFilter = 'all'; // NOUVEAU: filtre fournisseur
         this.init();
     }
 
@@ -13,6 +14,7 @@ class StockManager {
         await this.loadProducts();
         this.setupEventListeners();
         this.renderCategoryTabs();
+        this.renderSupplierFilter(); // NOUVEAU: Remplir le filtre fournisseur
         this.displayProducts();
         this.updateStats();
         this.setupAddProductButton();
@@ -53,6 +55,15 @@ class StockManager {
             });
         }
 
+        // NOUVEAU: Supplier filter
+        const supplierFilter = document.getElementById('supplier-filter');
+        if (supplierFilter) {
+            supplierFilter.addEventListener('change', (e) => {
+                this.supplierFilter = e.target.value;
+                this.filterProducts();
+            });
+        }
+
         // Sort select
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
@@ -60,6 +71,30 @@ class StockManager {
                 this.sortProducts(e.target.value);
             });
         }
+    }
+
+    // NOUVEAU: Remplir le filtre fournisseur
+    renderSupplierFilter() {
+        const supplierFilter = document.getElementById('supplier-filter');
+        if (!supplierFilter) return;
+        
+        const suppliers = this.getUniqueSuppliers();
+        
+        supplierFilter.innerHTML = `
+            <option value="all">Tous les fournisseurs</option>
+            ${suppliers.map(supplier => `
+                <option value="${supplier}">${supplier}</option>
+            `).join('')}
+        `;
+    }
+
+    // NOUVEAU: Obtenir la liste unique des fournisseurs
+    getUniqueSuppliers() {
+        const suppliers = this.products
+            .map(p => p.supplier || 'Non défini')
+            .filter(s => s && s.trim() !== '');
+        
+        return [...new Set(suppliers)].sort();
     }
 
     setupAddProductButton() {
@@ -178,7 +213,11 @@ class StockManager {
 				stockMatch = product.stock === 0;
 			}
 
-			return categoryMatch && searchMatch && stockMatch;
+			// NOUVEAU: Filtre par fournisseur
+			const supplierMatch = this.supplierFilter === 'all' || 
+				(product.supplier || 'Non défini') === this.supplierFilter;
+
+			return categoryMatch && searchMatch && stockMatch && supplierMatch;
 		});
 
 		this.displayProducts();
@@ -630,6 +669,7 @@ class StockManager {
 
             // Rafraîchir l'affichage
             await this.loadProducts();
+            this.renderSupplierFilter(); // Rafraîchir la liste des fournisseurs
             this.filterProducts();
 
             this.showNotification('Produit mis à jour avec succès', 'success');
@@ -671,6 +711,7 @@ class StockManager {
             if (modal) modal.remove();
 
             // Rafraîchir l'affichage
+            this.renderSupplierFilter(); // Rafraîchir la liste des fournisseurs
             this.filterProducts();
 
             this.showNotification('Produit supprimé avec succès', 'success');
@@ -734,83 +775,6 @@ class StockManager {
 		}
 	}
 
-    // ===== MODAL D'ÉDITION =====
-    openEditProductModal(productId) {
-        const product = this.products.find(p => p.id == productId);
-        if (!product) return;
-
-        const modalHTML = `
-            <div class="modal-overlay" id="edit-product-modal">
-                <div class="modal-content" style="max-width: 600px;">
-                    <div class="modal-header">
-                        <h3><i class="fas fa-edit"></i> Modifier le produit</h3>
-                        <button class="modal-close" onclick="document.getElementById('edit-product-modal').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="edit-product-form">
-                            <input type="hidden" id="edit-product-id" value="${product.id}">
-                            
-                            <div class="form-group">
-                                <label for="edit-name">Nom du produit *</label>
-                                <input type="text" id="edit-name" value="${product.name}" required>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="edit-price">Prix (CHF) *</label>
-                                    <input type="number" id="edit-price" step="0.01" value="${product.price}" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="edit-stock">Stock *</label>
-                                    <input type="number" id="edit-stock" value="${product.stock}" required>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="edit-category">Catégorie *</label>
-                                    <select id="edit-category" required>
-                                        ${this.getCategoryOptions(product.category)}
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="edit-supplier">Fournisseur</label>
-                                    <input type="text" id="edit-supplier" value="${product.supplier || ''}" placeholder="Nom du fournisseur">
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit-image-url">Chemin de l'image</label>
-                                <input type="text" id="edit-image-url" value="${product.image_url || ''}" placeholder="/images/category/product.jpg">
-                                <small>Exemple: /images/tshirt/tshirt-001.jpg</small>
-                            </div>
-
-                            <div class="modal-actions">
-                                <button type="button" class="modal-btn secondary" onclick="document.getElementById('edit-product-modal').remove()">
-                                    Annuler
-                                </button>
-                                <button type="submit" class="modal-btn primary">
-                                    <i class="fas fa-save"></i> Enregistrer
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-        document.getElementById('edit-product-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.saveProductEdit();
-        });
-    }
-
     // ===== MODAL D'AJOUT =====
     openAddProductModal() {
         const modalHTML = `
@@ -845,7 +809,7 @@ class StockManager {
                                 <div class="form-group">
                                     <label for="add-category">Catégorie *</label>
                                     <select id="add-category" required>
-                                        ${this.getCategoryOptions()}
+                                        ${this.getCategoryOptionsForAdd()}
                                     </select>
                                 </div>
 
@@ -883,7 +847,7 @@ class StockManager {
         });
     }
 
-    getCategoryOptions(selectedCategory = '') {
+    getCategoryOptionsForAdd() {
         const categories = [
             { value: 'tshirt', label: 'T-Shirts' },
             { value: 'caps', label: 'Casquettes' },
@@ -904,37 +868,8 @@ class StockManager {
         ];
 
         return categories.map(cat => 
-            `<option value="${cat.value}" ${selectedCategory === cat.value ? 'selected' : ''}>${cat.label}</option>`
+            `<option value="${cat.value}">${cat.label}</option>`
         ).join('');
-    }
-
-    async saveProductEdit() {
-        const productId = document.getElementById('edit-product-id').value;
-        const productData = {
-            name: document.getElementById('edit-name').value,
-            price: parseFloat(document.getElementById('edit-price').value),
-            stock: parseInt(document.getElementById('edit-stock').value),
-            category: document.getElementById('edit-category').value,
-            supplier: document.getElementById('edit-supplier').value || 'Non défini',
-            image_url: document.getElementById('edit-image-url').value
-        };
-
-        try {
-            const response = await fetch(`/api/products/${productId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(productData)
-            });
-
-            if (!response.ok) throw new Error('Erreur lors de la modification');
-
-            this.showNotification('Produit modifié avec succès', 'success');
-            document.getElementById('edit-product-modal').remove();
-            await this.loadProducts();
-            this.filterProducts();
-        } catch (error) {
-            this.showNotification('Erreur: ' + error.message, 'error');
-        }
     }
 
     async saveNewProduct() {
@@ -960,6 +895,7 @@ class StockManager {
             document.getElementById('add-product-modal').remove();
             await this.loadProducts();
             this.renderCategoryTabs();
+            this.renderSupplierFilter(); // Rafraîchir la liste des fournisseurs
             this.filterProducts();
         } catch (error) {
             this.showNotification('Erreur: ' + error.message, 'error');

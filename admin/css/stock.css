@@ -618,11 +618,6 @@
     gap: 8px;
 }
 
-.
- {
-    flex: 1;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .modal-content {
@@ -642,4 +637,174 @@
         width: 100%;
         justify-content: center;
     }
+}
+
+/* Custom Dropdown Styles */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-trigger {
+    width: 100%;
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 15px;
+    color: #2d3748;
+    transition: all 0.3s ease;
+}
+
+.dropdown-trigger:hover {
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
+.dropdown-trigger i.fa-chevron-down {
+    transition: transform 0.3s ease;
+    color: #667eea;
+}
+
+.custom-dropdown.open .dropdown-trigger i.fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 1000;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.custom-dropdown.open .dropdown-menu {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.dropdown-item:hover {
+    background: #f7fafc;
+    color: #667eea;
+}
+
+.dropdown-item i {
+    width: 20px;
+    color: #667eea;
+}
+
+.dropdown-item.has-submenu {
+    justify-content: space-between;
+}
+
+.submenu-arrow {
+    margin-left: auto;
+    font-size: 12px;
+    color: #a0aec0;
+}
+
+/* Submenu Styles */
+.dropdown-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    width: 100%;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1001;
+}
+
+.dropdown-item.has-submenu:hover .dropdown-submenu {
+    display: block;
+    animation: slideRight 0.3s ease;
+}
+
+@keyframes slideRight {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.submenu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.submenu-item:hover {
+    background: #f7fafc;
+    color: #667eea;
+}
+
+.submenu-item i {
+    font-size: 12px;
+    color: #667eea;
+}
+
+/* Scrollbar pour les longs menus */
+.dropdown-menu::-webkit-scrollbar,
+.dropdown-submenu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track,
+.dropdown-submenu::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb,
+.dropdown-submenu::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover,
+.dropdown-submenu::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
 }

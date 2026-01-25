@@ -29,7 +29,7 @@
     <!-- Tabs Navigation -->
     <div class="admin-tabs">
         <div class="tabs-container">
-            <a href="/admin" class="tab">
+            <a href="/admin/orders" class="tab">
                 <i class="fas fa-shopping-cart"></i> Gestion des commandes
             </a>
             <a href="/admin/order-history" class="tab">
@@ -114,6 +114,15 @@
                             <option value="in-stock">En stock (>250)</option>
                             <option value="low-stock">Stock faible (1-250)</option>
                             <option value="out-of-stock">Rupture de stock (0)</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="supplier-filter">
+                            <i class="fas fa-truck"></i> Filtrer par fournisseur
+                        </label>
+                        <select id="supplier-filter">
+                            <option value="all">Tous les fournisseurs</option>
+                            <!-- Options générées dynamiquement -->
                         </select>
                     </div>
                     <div class="filter-item">
