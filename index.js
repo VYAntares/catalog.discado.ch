@@ -10,6 +10,8 @@ const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const invoiceManagementService = require('./services/invoiceManagementService');
+const permissionService = require('./services/permissionService');
+
 
 // securite dom protection XSS
 const createDOMPurify = require('dompurify');
@@ -72,6 +74,7 @@ app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+    scriptSrcAttr: ["'unsafe-inline'"],  // ← AJOUTÉ CETTE LIGNE
     styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "data:"],
     imgSrc: ["'self'", "data:", "blob:"],
@@ -126,6 +129,86 @@ function requireAdmin(req, res, next) {
   if (req.session.user && req.session.user.role === 'admin') return next();
   res.status(403).send('Access denied');
 }
+
+function requirePermission(permission) {
+  return (req, res, next) => {
+    if (!req.session.user) {
+      return res.redirect('/');
+    }
+
+    const username = req.session.user.username;
+    
+    // Vérifier la permission en base de données
+    const hasPermission = permissionService.hasPermission(username, permission);
+
+    if (!hasPermission) {
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Accès refusé</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                .container {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                    text-align: center;
+                    max-width: 500px;
+                }
+                h1 {
+                    color: #f56565;
+                    margin-bottom: 20px;
+                }
+                p {
+                    color: #4a5568;
+                    margin-bottom: 30px;
+                    line-height: 1.6;
+                }
+                a {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 12px 30px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    transition: transform 0.2s;
+                }
+                a:hover {
+                    transform: translateY(-2px);
+                }
+                .icon {
+                    font-size: 64px;
+                    margin-bottom: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="icon">🔒</div>
+                <h1>Accès refusé</h1>
+                <p>Vous n'avez pas l'autorisation d'accéder à cette section.</p>
+                <p>Contactez <strong>Endrit</strong> si vous pensez que c'est une erreur.</p>
+                <a href="/admin/orders">← Retour au tableau de bord</a>
+            </div>
+        </body>
+        </html>
+      `);
+    }
+
+    next();
+  };
+}
+
 
 function requireCompleteProfile(req, res, next) {
   if (!req.session.user) {
@@ -204,7 +287,7 @@ app.post('/login', (req, res) => {
     };
     
     if (user.role === 'admin') {
-      return res.redirect('/admin');
+      return res.redirect('/admin/orders');
     } else {
       if (userService.isProfileComplete(username)) {
         return res.redirect('/pages/catalog.html');
@@ -236,39 +319,39 @@ app.get('/logout', (req, res) => {
 });
 
 // ===== ROUTES ADMINISTRATEUR PROTÉGÉES =====
-app.get('/admin', requireLogin, requireAdmin, (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
-});
+// app.get('/admin', requireLogin, requireAdmin, (req, res) => {
+//   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
+// });
 
-app.get('/admin/orders', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/orders', requireLogin, requireAdmin, requirePermission("orders"), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'orders.html'));
 });
 
-app.get('/admin/clients', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/clients', requireLogin, requireAdmin, requirePermission("clients"), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'clients.html'));
 });
 
-app.get('/admin/order-history', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/order-history', requireLogin, requireAdmin, requirePermission("order_history"), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'order-history.html'));
 });
 
-app.get('/admin/compta', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/compta', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'compta.html'));
 });
 
-app.get('/admin/client-invoices', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/client-invoices', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin/pages/client-invoices.html'));
 });
 
-app.get('/admin/stock', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/stock', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'stock.html'));
 });
 
-app.get('/admin/compta-details', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/compta-details', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin/pages/compta-details.html'));
 });
 
-app.get('/admin/compta-month', requireLogin, requireAdmin, (req, res) => {
+app.get('/admin/compta-month', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin/pages/compta-month.html'));
 });
 
@@ -560,7 +643,7 @@ app.get('/api/products/out-of-stock', requireLogin, requireAdmin, async (req, re
 });
 
 // UPDATE product stock
-app.put('/api/products/:id/stock', requireLogin, requireAdmin, async (req, res) => {
+app.put('/api/products/:id/stock', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
   try {
     const { id } = req.params;
     let { stock } = req.body;
@@ -613,6 +696,110 @@ app.put('/api/products/:id/stock', requireLogin, requireAdmin, async (req, res) 
     res.status(500).json({ 
       success: false,
       error: 'Erreur lors de la mise à jour du stock',
+      details: error.message 
+    });
+  }
+});
+
+// Routes API à ajouter dans index.js pour la mise à jour des produits
+
+// UPDATE product (toutes les informations)
+app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, category, supplier, image_url, stock } = req.body;
+
+    console.log(`📝 Mise à jour produit ${id}:`, { name, price, category, supplier, image_url, stock });
+
+    // Validation
+    if (!name || !price || !category) {
+      return res.status(400).json({ error: 'Nom, prix et catégorie sont requis' });
+    }
+
+    const priceNum = Number(price);
+    const stockNum = Number(stock);
+
+    if (isNaN(priceNum) || priceNum < 0) {
+      return res.status(400).json({ error: 'Prix invalide' });
+    }
+
+    if (isNaN(stockNum) || stockNum < 0) {
+      return res.status(400).json({ error: 'Stock invalide' });
+    }
+
+    // Vérifier si le produit existe
+    const product = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+
+    if (!product) {
+      return res.status(404).json({ error: 'Produit non trouvé' });
+    }
+
+    // Mettre à jour le produit
+    const updateStmt = dbModule.db.prepare(`
+      UPDATE products 
+      SET name = ?, price = ?, category = ?, supplier = ?, image_url = ?, stock = ?
+      WHERE id = ?
+    `);
+
+    updateStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum, id);
+
+    // Récupérer le produit mis à jour
+    const updatedProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+
+    console.log('✅ Produit mis à jour:', updatedProduct);
+
+    res.json({
+      success: true,
+      message: 'Produit mis à jour avec succès',
+      product: {
+        id: updatedProduct.id,
+        name: updatedProduct.name,
+        price: Number(updatedProduct.price) || 0,
+        category: updatedProduct.category,
+        supplier: updatedProduct.supplier,
+        image_url: updatedProduct.image_url,
+        stock: Number(updatedProduct.stock) || 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error updating product:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erreur lors de la mise à jour du produit',
+      details: error.message 
+    });
+  }
+});
+
+// DELETE product
+app.delete('/api/products/:id', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`🗑️ Suppression produit ${id}`);
+
+    // Vérifier si le produit existe
+    const product = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+
+    if (!product) {
+      return res.status(404).json({ error: 'Produit non trouvé' });
+    }
+
+    // Supprimer le produit
+    const deleteStmt = dbModule.db.prepare('DELETE FROM products WHERE id = ?');
+    deleteStmt.run(id);
+
+    console.log('✅ Produit supprimé');
+
+    res.json({
+      success: true,
+      message: 'Produit supprimé avec succès'
+    });
+  } catch (error) {
+    console.error('❌ Error deleting product:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erreur lors de la suppression du produit',
       details: error.message 
     });
   }
@@ -970,7 +1157,7 @@ app.post('/api/admin/update-order-items', requireLogin, requireAdmin, async (req
 });
 
 // ===== API ROUTES - COMPTABILITÉ =====
-app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
+app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const { invoiceId } = req.params;
   const paymentData = req.body;
   
@@ -992,7 +1179,7 @@ app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, re
   }
 });
 
-app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/invoices/stats', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   const year = req.query.year ? parseInt(req.query.year) : null;
   try {
     const stats = invoiceManagementService.getInvoiceStatistics(year);
@@ -1003,7 +1190,7 @@ app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
-app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const year = req.query.year ? parseInt(req.query.year) : null;
   try {
     const clients = invoiceManagementService.getClientsSummary(year);
@@ -1014,7 +1201,7 @@ app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) 
   }
 });
 
-app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const { userId } = req.params;
   const year = req.query.year ? parseInt(req.query.year) : null;
   try {
@@ -1026,7 +1213,7 @@ app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) =
   }
 });
 
-app.get('/api/invoices/monthly-breakdown', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/invoices/monthly-breakdown', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const year = req.query.year ? parseInt(req.query.year) : null;
   const type = req.query.type || 'total_amount';
   
@@ -1039,7 +1226,7 @@ app.get('/api/invoices/monthly-breakdown', requireLogin, requireAdmin, (req, res
   }
 });
 
-app.get('/api/invoices/month-details', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/invoices/month-details', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const year = req.query.year ? parseInt(req.query.year) : null;
   const month = req.query.month ? parseInt(req.query.month) : null;
   
@@ -1056,68 +1243,68 @@ app.get('/api/invoices/month-details', requireLogin, requireAdmin, (req, res) =>
   }
 });
 
-// Routes anciennes (pour compatibilité)
-app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
-  try {
-    const invoices = invoiceManagementService.getAllInvoices();
-    res.json(invoices);
-  } catch (error) {
-    res.status(500).json({ error: 'Error getting invoices' });
-  }
-});
+// // Routes anciennes (pour compatibilité)
+// app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
+//   try {
+//     const invoices = invoiceManagementService.getAllInvoices();
+//     res.json(invoices);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Error getting invoices' });
+//   }
+// });
 
-app.get('/api/admin/invoices/statistics', requireLogin, requireAdmin, (req, res) => {
-  try {
-    const stats = invoiceManagementService.getInvoiceStatistics();
-    res.json(stats);
-  } catch (error) {
-    res.status(500).json({ error: 'Error getting statistics' });
-  }
-});
+// app.get('/api/admin/invoices/statistics', requireLogin, requireAdmin, (req, res) => {
+//   try {
+//     const stats = invoiceManagementService.getInvoiceStatistics();
+//     res.json(stats);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Error getting statistics' });
+//   }
+// });
 
-app.get('/api/admin/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
-  try {
-    const clients = invoiceManagementService.getClientsSummary();
-    res.json(clients);
-  } catch (error) {
-    res.status(500).json({ error: 'Error getting clients summary' });
-  }
-});
+// app.get('/api/admin/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
+//   try {
+//     const clients = invoiceManagementService.getClientsSummary();
+//     res.json(clients);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Error getting clients summary' });
+//   }
+// });
 
-app.get('/api/admin/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
-  const { userId } = req.params;
-  try {
-    const invoices = invoiceManagementService.getClientInvoices(userId);
-    res.json(invoices);
-  } catch (error) {
-    res.status(500).json({ error: 'Error getting client invoices' });
-  }
-});
+// app.get('/api/admin/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
+//   const { userId } = req.params;
+//   try {
+//     const invoices = invoiceManagementService.getClientInvoices(userId);
+//     res.json(invoices);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Error getting client invoices' });
+//   }
+// });
 
-app.get('/api/admin/invoices/:invoiceId', requireLogin, requireAdmin, (req, res) => {
-  const { invoiceId } = req.params;
-  try {
-    const invoice = invoiceManagementService.getInvoiceDetails(invoiceId);
-    if (!invoice) {
-      return res.status(404).json({ error: 'Invoice not found' });
-    }
-    res.json(invoice);
-  } catch (error) {
-    res.status(500).json({ error: 'Error getting invoice details' });
-  }
-});
+// app.get('/api/admin/invoices/:invoiceId', requireLogin, requireAdmin, (req, res) => {
+//   const { invoiceId } = req.params;
+//   try {
+//     const invoice = invoiceManagementService.getInvoiceDetails(invoiceId);
+//     if (!invoice) {
+//       return res.status(404).json({ error: 'Invoice not found' });
+//     }
+//     res.json(invoice);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Error getting invoice details' });
+//   }
+// });
 
-app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
-  const { invoiceId } = req.params;
-  const paymentData = req.body;
+// app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
+//   const { invoiceId } = req.params;
+//   const paymentData = req.body;
   
-  try {
-    const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Error updating payment status' });
-  }
-});
+//   try {
+//     const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
+//     res.json(result);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Error updating payment status' });
+//   }
+// });
 
 // ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, () => {

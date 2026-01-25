@@ -87,18 +87,19 @@ function initDatabase() {
         }
     }
 
-    // Création de la table products
-    db.exec(`
-    CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        price REAL NOT NULL,
-        category TEXT NOT NULL,
-        image_url TEXT,
-        stock INTEGER DEFAULT 10000,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    `);
+	// Création de la table products
+	db.exec(`
+	CREATE TABLE IF NOT EXISTS products (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		price REAL NOT NULL,
+		category TEXT NOT NULL,
+		supplier TEXT,
+		image_url TEXT,
+		stock INTEGER DEFAULT 0,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)
+	`);
 
     // Création de la table orders
     db.exec(`
@@ -167,6 +168,18 @@ function initDatabase() {
 		
 		FOREIGN KEY (order_id) REFERENCES orders(order_id),
 		FOREIGN KEY (user_id) REFERENCES users(username)
+	)
+	`);
+
+	db.exec(`
+	CREATE TABLE IF NOT EXISTS user_permissions (
+		username TEXT PRIMARY KEY,
+		stock INTEGER DEFAULT 0,
+		compta INTEGER DEFAULT 0,
+		orders INTEGER DEFAULT 1,
+		clients INTEGER DEFAULT 0,
+		order_history INTEGER DEFAULT 1,
+		FOREIGN KEY (username) REFERENCES users(username)
 	)
 	`);
 }

@@ -42,16 +42,18 @@ const productService = {
     addProduct(product) {
         try {
             const stmt = dbModule.db.prepare(`
-                INSERT INTO products (name, price, category, image_url)
-                VALUES (?, ?, ?, ?)
-            `);
-            
-            const result = stmt.run(
-                product.Nom,
-                parseFloat(product.prix),
-                product.categorie,
-                product.imageUrl
-            );
+				INSERT INTO products (name, price, category, supplier, image_url, stock)
+				VALUES (?, ?, ?, ?, ?, ?)
+			`);
+
+			const result = stmt.run(
+				product.Nom,
+				parseFloat(product.prix),
+				product.categorie,
+				product.supplier || 'Non défini',
+				product.imageUrl,
+				product.stock || 10000
+			);
             
             return {
                 success: true,
@@ -66,18 +68,19 @@ const productService = {
     updateProduct(id, product) {
         try {
             const stmt = dbModule.db.prepare(`
-                UPDATE products 
-                SET name = ?, price = ?, category = ?, image_url = ?
-                WHERE id = ?
-            `);
-            
-            stmt.run(
-                product.Nom,
-                parseFloat(product.prix),
-                product.categorie,
-                product.imageUrl,
-                id
-            );
+    UPDATE products 
+    SET name = ?, price = ?, category = ?, supplier = ?, image_url = ?
+    WHERE id = ?
+			`);
+
+			stmt.run(
+				product.Nom,
+				parseFloat(product.prix),
+				product.categorie,
+				product.supplier || 'Non défini',
+				product.imageUrl,
+				id
+			);
             
             return { success: true };
         } catch (error) {
@@ -178,25 +181,27 @@ const productService = {
                 return;
             }
             
-            // Préparer l'insertion
-            const insertProduct = dbModule.db.prepare(`
-                INSERT INTO products (name, price, category, image_url)
-                VALUES (?, ?, ?, ?)
-            `);
-            
-            // Transaction pour de meilleures performances
-            const insertMany = dbModule.db.transaction((products) => {
-                for (const product of products) {
-                    if (!product.Nom || !product.prix) continue;
-                    
-                    insertProduct.run(
-                        product.Nom,
-                        parseFloat(product.prix),
-                        product.categorie || 'default',
-                        product.imageUrl || ''
-                    );
-                }
-            });
+            // Préparer l'insertion AVEC supplier
+			const insertProduct = dbModule.db.prepare(`
+				INSERT INTO products (name, price, category, supplier, image_url, stock)
+				VALUES (?, ?, ?, ?, ?, ?)
+			`);
+
+			// Transaction pour de meilleures performances
+			const insertMany = dbModule.db.transaction((products) => {
+				for (const product of products) {
+					if (!product.Nom || !product.prix) continue;
+					
+					insertProduct.run(
+						product.Nom,
+						parseFloat(product.prix),
+						product.categorie || 'default',
+						product.supplier || 'Non défini',  // ← AJOUTÉ
+						product.imageUrl || '',
+						10000  // ← Stock par défaut
+					);
+				}
+			});
             
             // Insérer tous les produits
             insertMany(products);
@@ -208,15 +213,14 @@ const productService = {
 	// Récupération des produits pour la gestion du stock (format brut SQLite)
 	async getProductsStock() {
 		try {
-			// Récupérer directement depuis SQLite sans transformation
 			const products = dbModule.db.prepare('SELECT * FROM products ORDER BY category, name').all();
 			
-			// Retourner avec stock converti en Number
 			return products.map(product => ({
 				id: product.id,
 				name: product.name,
 				price: Number(product.price) || 0,
 				category: product.category,
+				supplier: product.supplier || 'Non défini',  // ← AJOUTÉ
 				image_url: product.image_url,
 				stock: Number(product.stock) || 0,
 				created_at: product.created_at
