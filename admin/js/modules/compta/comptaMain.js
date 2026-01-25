@@ -6,8 +6,12 @@ import { showNotification } from '../../utils/notification.js';
 class ComptaMain {
     constructor() {
         this.allClientsData = [];
+        this.unpaidInvoices = [];
+        this.unpaidSortOrder = 'desc';
+		this.unpaidSortType = 'date';
         this.selectedYear = new Date().getFullYear();
         this.currentSortOption = 'total_desc';
+        this.editingCells = new Map();
         this.init();
     }
 
@@ -38,6 +42,8 @@ class ComptaMain {
             const activeTab = document.querySelector('.compta-tab-btn.active').dataset.tab;
             if (activeTab === 'clients') {
                 this.loadClientsData();
+            } else if (activeTab === 'unpaid') {
+                this.loadUnpaidInvoices();
             } else {
                 this.loadOverviewData();
             }
@@ -60,14 +66,34 @@ class ComptaMain {
             if (e.key === 'Enter') this.searchClients();
         });
 
-        // Export CSV
+        // Export CSV clients
         document.getElementById('exportClientsCSVBtn').addEventListener('click', () => this.exportClientsToCSV());
+
+        // Tri factures impayées
+        const unpaidSortBtn = document.getElementById('unpaidSortBtn');
+        if (unpaidSortBtn) {
+            unpaidSortBtn.addEventListener('click', () => this.toggleUnpaidSort());
+        }
+
+		const unpaidSortClientBtn = document.getElementById('unpaidSortClientBtn');
+		if (unpaidSortClientBtn) {
+			unpaidSortClientBtn.addEventListener('click', () => this.toggleUnpaidClientSort());
+		}
+
+        // Export CSV factures impayées
+        const exportUnpaidBtn = document.getElementById('exportUnpaidCSVBtn');
+        if (exportUnpaidBtn) {
+            exportUnpaidBtn.addEventListener('click', () => this.exportUnpaidToCSV());
+        }
     }
 
     checkUrlParams() {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('tab') === 'clients') {
+        const tab = urlParams.get('tab');
+        if (tab === 'clients') {
             document.querySelector('[data-tab="clients"]').click();
+        } else if (tab === 'unpaid') {
+            document.querySelector('[data-tab="unpaid"]').click();
         }
     }
 
@@ -87,6 +113,8 @@ class ComptaMain {
             this.loadClientsData();
         } else if (targetTab === 'overview') {
             this.loadOverviewData();
+        } else if (targetTab === 'unpaid') {
+            this.loadUnpaidInvoices();
         }
     }
 
@@ -169,6 +197,413 @@ class ComptaMain {
             document.getElementById('clientsSummaryTableBody').innerHTML = 
                 '<tr><td colspan="7" class="error">Impossible de charger les données</td></tr>';
         }
+    }
+
+    async loadUnpaidInvoices() {
+        try {
+            const response = await fetch(`/api/invoices/unpaid?year=${this.selectedYear}`, {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Erreur lors du chargement des factures impayées');
+            }
+
+            const data = await response.json();
+            this.unpaidInvoices = data.invoices || [];
+
+            this.displayUnpaidInvoices();
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors du chargement des factures impayées', 'error');
+            document.getElementById('unpaidInvoicesTableBody').innerHTML = 
+                '<tr><td colspan="12" class="error-message">Impossible de charger les factures</td></tr>';
+        }
+    }
+
+    toggleUnpaidSort() {
+        this.unpaidSortOrder = this.unpaidSortOrder === 'desc' ? 'asc' : 'desc';
+        
+        const sortBtn = document.getElementById('unpaidSortBtn');
+        const sortText = document.getElementById('unpaidSortText');
+        const icon = sortBtn.querySelector('i');
+
+        if (this.unpaidSortOrder === 'desc') {
+            icon.className = 'fas fa-sort-amount-down';
+            sortText.textContent = 'Plus récente à plus ancienne';
+        } else {
+            icon.className = 'fas fa-sort-amount-up';
+            sortText.textContent = 'Plus ancienne à plus récente';
+        }
+
+        this.displayUnpaidInvoices();
+    }
+
+	toggleUnpaidClientSort() {
+		this.unpaidSortType = this.unpaidSortType === 'date' ? 'client' : 'date';
+		
+		const sortBtn = document.getElementById('unpaidSortClientBtn');
+		const sortText = document.getElementById('unpaidSortClientText');
+		const icon = sortBtn.querySelector('i');
+
+		if (this.unpaidSortType === 'client') {
+			icon.className = 'fas fa-sort-alpha-down';
+			sortText.textContent = 'Trié par client (A-Z)';
+			this.unpaidSortOrder = 'asc'; // Reset à alphabétique croissant
+		} else {
+			icon.className = 'fas fa-calendar-alt';
+			sortText.textContent = 'Trié par date';
+		}
+
+		this.displayUnpaidInvoices();
+	}
+
+    displayUnpaidInvoices() {
+		const tbody = document.getElementById('unpaidInvoicesTableBody');
+		
+		if (!this.unpaidInvoices || this.unpaidInvoices.length === 0) {
+			tbody.innerHTML = '<tr><td colspan="12" class="no-data">Aucune facture impayée trouvée</td></tr>';
+			return;
+		}
+
+		// REMPLACER TOUTE LA LOGIQUE DE TRI PAR CECI :
+		const sortedInvoices = [...this.unpaidInvoices].sort((a, b) => {
+			if (this.unpaidSortType === 'client') {
+				// Tri alphabétique par nom de client
+				const nameA = (a.client_full_name || '').toLowerCase();
+				const nameB = (b.client_full_name || '').toLowerCase();
+				return nameA.localeCompare(nameB);
+			} else {
+				// Tri par date
+				const dateA = new Date(a.invoice_date);
+				const dateB = new Date(b.invoice_date);
+				return this.unpaidSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+			}
+		});
+
+		tbody.innerHTML = sortedInvoices.map(invoice => this.createUnpaidInvoiceRow(invoice)).join('');
+		this.attachUnpaidEventListeners();
+	}
+
+    createUnpaidInvoiceRow(invoice) {
+        const statusClass = 'status-unpaid';
+        const statusText = 'Non payé';
+        
+        const paidDateValue = invoice.paid_date ? 
+            new Date(invoice.paid_date).toISOString().split('T')[0] : '';
+        const dueDateValue = invoice.due_date ? 
+            new Date(invoice.due_date).toISOString().split('T')[0] : '';
+        
+        return `
+            <tr data-invoice-id="${invoice.id}">
+                <td class="invoice-number"><strong>${invoice.order_id}</strong></td>
+                <td>${this.formatDateShort(invoice.invoice_date)}</td>
+                <td>${invoice.client_full_name || 'N/A'}</td>
+                <td class="text-right">${formatCurrency(invoice.subtotal_ht)}</td>
+                <td class="text-right">${formatCurrency(invoice.vat_amount)}</td>
+                <td class="text-right"><strong>${formatCurrency(invoice.total_ttc)}</strong></td>
+                <td>${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
+                <td class="editable-cell text-right" data-field="amount_paid" data-type="number">
+                    ${formatCurrency(invoice.amount_paid)}
+                </td>
+                <td class="text-right text-danger">
+                    ${formatCurrency(invoice.amount_due)}
+                </td>
+                <td class="editable-cell" data-field="paid_date" data-type="date">
+                    ${paidDateValue ? this.formatDateShort(invoice.paid_date) : 'Non payée'}
+                </td>
+                <td class="editable-cell status-cell" data-field="payment_status" data-type="select">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </td>
+                <td class="text-center">
+                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}" 
+                    class="action-btn download-btn" 
+                    target="_blank"
+                    title="Télécharger la facture">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                </td>
+            </tr>
+        `;
+    }
+
+    formatDateShort(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    attachUnpaidEventListeners() {
+        document.querySelectorAll('.editable-cell').forEach(cell => {
+            cell.addEventListener('click', (e) => this.startEdit(e.currentTarget));
+        });
+    }
+
+    startEdit(cell) {
+        const row = cell.closest('tr');
+        const invoiceId = row.dataset.invoiceId;
+        const field = cell.dataset.field;
+        const type = cell.dataset.type;
+        
+        const invoice = this.unpaidInvoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        if (this.editingCells.has(cell)) return;
+
+        const currentValue = invoice[field];
+        let input;
+
+        if (type === 'select') {
+            input = document.createElement('select');
+            input.className = 'inline-edit-select';
+            input.innerHTML = `
+                <option value="unpaid" ${invoice.payment_status === 'unpaid' ? 'selected' : ''}>Non payé</option>
+                <option value="partial" ${invoice.payment_status === 'partial' ? 'selected' : ''}>Partiel</option>
+                <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
+            `;
+        } else if (type === 'date') {
+            input = document.createElement('input');
+            input.type = 'date';
+            input.className = 'inline-edit-input';
+            input.value = currentValue ? new Date(currentValue).toISOString().split('T')[0] : '';
+        } else if (type === 'number') {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.01';
+            input.className = 'inline-edit-input';
+            input.value = currentValue || 0;
+        }
+
+        const originalContent = cell.innerHTML;
+        
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+
+        if (type === 'number') {
+            input.select();
+        }
+
+        this.editingCells.set(cell, originalContent);
+
+        const save = async () => {
+            const newValue = input.value;
+            await this.saveEdit(invoiceId, field, newValue, cell, originalContent);
+        };
+
+        const cancel = () => {
+            cell.innerHTML = originalContent;
+            this.editingCells.delete(cell);
+        };
+
+        if (type === 'select') {
+            input.addEventListener('change', save);
+        } else {
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    save();
+                } else if (e.key === 'Escape') {
+                    cancel();
+                }
+            });
+        }
+    }
+
+    async saveEdit(invoiceId, field, newValue, cell, originalContent) {
+        const invoice = this.unpaidInvoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        try {
+            let updateData = {};
+
+            if (field === 'amount_paid') {
+                const amountPaid = parseFloat(newValue) || 0;
+                const amountDue = invoice.total_ttc - amountPaid;
+                
+                let paymentStatus;
+                if (amountPaid >= invoice.total_ttc) {
+                    paymentStatus = 'paid';
+                } else if (amountPaid > 0) {
+                    paymentStatus = 'partial';
+                } else {
+                    paymentStatus = 'unpaid';
+                }
+
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: paymentStatus,
+                    paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            } else if (field === 'paid_date') {
+                updateData = {
+                    amount_paid: invoice.amount_paid,
+                    amount_due: invoice.amount_due,
+                    payment_status: invoice.payment_status,
+                    paid_date: newValue || null
+                };
+            } else if (field === 'payment_status') {
+                let amountPaid = invoice.amount_paid;
+                let amountDue = invoice.amount_due;
+                
+                if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+                    amountPaid = invoice.total_ttc;
+                    amountDue = 0;
+                } else if (newValue === 'unpaid') {
+                    amountPaid = 0;
+                    amountDue = invoice.total_ttc;
+                }
+                
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: newValue,
+                    paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            }
+
+            const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(updateData)
+            });
+
+            const responseText = await response.text();
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Cannot parse as JSON:', e);
+                throw new Error('Le serveur a retourné une réponse invalide');
+            }
+
+            if (!response.ok) {
+                throw new Error(responseData.error || responseData.message || 'Erreur lors de la mise à jour');
+            }
+
+            showNotification('Facture mise à jour avec succès', 'success');
+            await this.loadUnpaidInvoices();
+            
+        } catch (error) {
+            console.error('Erreur complète:', error);
+            showNotification('Erreur: ' + error.message, 'error');
+            cell.innerHTML = originalContent;
+        }
+
+        this.editingCells.delete(cell);
+    }
+
+    exportUnpaidToCSV() {
+        if (!this.unpaidInvoices || this.unpaidInvoices.length === 0) {
+            showNotification('Aucune facture impayée à exporter', 'warning');
+            return;
+        }
+
+        const headers = [
+            'Numéro facture',
+            'Date facture',
+            'Client',
+            'Montant HT',
+            'TVA',
+            'Montant TTC',
+            'Date échéance',
+            'Montant encaissé',
+            'Solde dû',
+            'Date paiement',
+            'Statut'
+        ];
+
+        const sortedInvoices = [...this.unpaidInvoices].sort((a, b) => {
+            const dateA = new Date(a.invoice_date);
+            const dateB = new Date(b.invoice_date);
+            return this.unpaidSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+
+        // Calculer les totaux
+        const totals = sortedInvoices.reduce((acc, invoice) => {
+            acc.count += 1;
+            acc.subtotal_ht += parseFloat(invoice.subtotal_ht) || 0;
+            acc.vat_amount += parseFloat(invoice.vat_amount) || 0;
+            acc.total_ttc += parseFloat(invoice.total_ttc) || 0;
+            acc.amount_paid += parseFloat(invoice.amount_paid) || 0;
+            acc.amount_due += parseFloat(invoice.amount_due) || 0;
+            return acc;
+        }, {
+            count: 0,
+            subtotal_ht: 0,
+            vat_amount: 0,
+            total_ttc: 0,
+            amount_paid: 0,
+            amount_due: 0
+        });
+
+        // Créer les lignes de données
+        const rows = sortedInvoices.map(invoice => {
+            return [
+                invoice.order_id || '',
+                this.formatDateShort(invoice.invoice_date),
+                `"${(invoice.client_full_name || '').replace(/"/g, '""')}"`,
+                this.formatNumberForCSV(invoice.subtotal_ht),
+                this.formatNumberForCSV(invoice.vat_amount),
+                this.formatNumberForCSV(invoice.total_ttc),
+                invoice.due_date ? this.formatDateShort(invoice.due_date) : '',
+                this.formatNumberForCSV(invoice.amount_paid),
+                this.formatNumberForCSV(invoice.amount_due),
+                invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
+                'Non payé'
+            ].join(',');
+        });
+
+        // Ajouter une ligne vide
+        rows.push('');
+
+        // Ajouter la ligne de totaux
+        const totalsRow = [
+            `"TOTAL (${totals.count} factures impayées)"`,
+            '',
+            '',
+            this.formatNumberForCSV(totals.subtotal_ht),
+            this.formatNumberForCSV(totals.vat_amount),
+            this.formatNumberForCSV(totals.total_ttc),
+            '',
+            this.formatNumberForCSV(totals.amount_paid),
+            this.formatNumberForCSV(totals.amount_due),
+            '',
+            ''
+        ].join(',');
+        
+        rows.push(totalsRow);
+
+        // Combiner en-têtes et lignes
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const fileName = `factures_impayees_${this.selectedYear}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+    }
+
+    formatNumberForCSV(number) {
+        if (number === null || number === undefined) return '0.00';
+        return parseFloat(number).toFixed(2);
     }
 
     sortClients(clients, sortOption) {

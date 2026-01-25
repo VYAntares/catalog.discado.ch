@@ -374,6 +374,52 @@ function getMonthInvoices(year, month) {
     }
 }
 
+/**
+ * Récupère uniquement les factures NON PAYÉES (payment_status = 'unpaid')
+ * @param {number|null} year - Année à filtrer (null = toutes)
+ * @returns {Array} Liste des factures impayées
+ */
+function getUnpaidInvoices(year = null) {
+    try {
+        let query = `
+            SELECT 
+                i.*,
+                up.first_name,
+                up.last_name,
+                up.shop_name,
+                up.email,
+                up.phone,
+                o.date as order_date
+            FROM invoices i
+            LEFT JOIN user_profiles up ON i.user_id = up.username
+            LEFT JOIN orders o ON i.order_id = o.order_id
+            WHERE i.payment_status = 'unpaid'
+        `;
+        
+        const params = [];
+        if (year) {
+            query += ` AND strftime('%Y', i.invoice_date) = ?`;
+            params.push(year.toString());
+        }
+        
+        query += ` ORDER BY i.invoice_date DESC`;
+        
+        const invoices = db.db.prepare(query).all(...params);
+        
+        return invoices.map(invoice => ({
+            ...invoice,
+            client_full_name: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
+            displayName: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
+            shopName: invoice.shop_name || 'N/A',
+            email: invoice.email || 'N/A',
+            phone: invoice.phone || 'N/A'
+        }));
+    } catch (error) {
+        console.error('Error getting unpaid invoices:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     getAllInvoices,
     getClientInvoices,
@@ -382,5 +428,6 @@ module.exports = {
     getInvoiceStatistics,
     getClientsSummary,
     getMonthlyBreakdown,
-	getMonthInvoices  // ← NOUVELLE FONCTION AJOUTÉE
+	getMonthInvoices,  // ← NOUVELLE FONCTION AJOUTÉE
+	getUnpaidInvoices
 };

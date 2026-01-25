@@ -69,6 +69,9 @@
             <button class="compta-tab-btn" data-tab="clients">
                 <i class="fas fa-users"></i> Par client
             </button>
+            <button class="compta-tab-btn" data-tab="unpaid">
+                <i class="fas fa-exclamation-triangle"></i> Factures impayées
+            </button>
         </div>
 
         <!-- Tab: Vue d'ensemble -->
@@ -125,6 +128,56 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Tab: Factures impayées -->
+        <div id="unpaid-tab" class="compta-tab-content">
+            <div class="search-container">
+                <div class="sort-controls">
+                    <button id="unpaidSortBtn" class="sort-btn" data-order="desc">
+                        <i class="fas fa-sort-amount-down"></i>
+                        <span id="unpaidSortText">Plus récente à plus ancienne</span>
+                    </button>
+
+					<button id="unpaidSortClientBtn" class="sort-btn">
+						<i class="fas fa-calendar-alt"></i>
+						<span id="unpaidSortClientText">Trié par date</span>
+					</button>
+                    
+                    <button id="exportUnpaidCSVBtn" class="export-btn">
+                        <i class="fas fa-file-csv"></i>
+                        Exporter en CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="unpaid-invoices-container">
+                <div class="invoices-table-wrapper">
+                    <table class="invoices-table" id="unpaidInvoicesTable">
+                        <thead>
+                            <tr>
+                                <th>Num facture</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Montant HT</th>
+                                <th>TVA</th>
+                                <th>Montant TTC</th>
+                                <th>Date échéance</th>
+                                <th>Montant encaissé</th>
+                                <th>Solde dû</th>
+                                <th>Date paiement</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unpaidInvoicesTableBody">
+                            <tr>
+                                <td colspan="12" class="loading">Chargement des factures impayées...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>

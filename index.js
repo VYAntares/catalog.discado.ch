@@ -1302,6 +1302,18 @@ app.get('/api/invoices/month-details', requireLogin, requireAdmin, requirePermis
   }
 });
 
+app.get('/api/invoices/unpaid', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  
+  try {
+    const invoices = invoiceManagementService.getUnpaidInvoices(year);
+    res.json({ invoices });
+  } catch (error) {
+    console.error('Error getting unpaid invoices:', error);
+    res.status(500).json({ error: 'Error getting unpaid invoices' });
+  }
+});
+
 // // Routes anciennes (pour compatibilité)
 // app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
 //   try {

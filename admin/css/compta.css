@@ -1,10 +1,10 @@
-/* Styles pour la page Comptabilité */
+/* admin/css/compta.css - Styles pour la page comptabilité */
 
-/* Tabs de navigation compta */
+/* ===== TABS DE NAVIGATION ===== */
 .compta-tabs {
     display: flex;
     gap: 10px;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
     background-color: white;
     padding: 15px;
     border-radius: 8px;
@@ -13,15 +13,15 @@
 
 .compta-tab-btn {
     flex: 1;
-    padding: 12px 20px;
-    background-color: #f8f9fa;
+    padding: 12px 24px;
+    background: transparent;
     border: none;
-    border-radius: 6px;
+    border-bottom: 3px solid transparent;
     cursor: pointer;
     font-size: 15px;
     font-weight: 500;
-    color: #666;
-    transition: all 0.2s ease;
+    color: #64748b;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -29,13 +29,14 @@
 }
 
 .compta-tab-btn:hover {
-    background-color: #e9ecef;
-    color: #333;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
 }
 
 .compta-tab-btn.active {
-    background-color: #2575fc;
-    color: white;
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
 }
 
 .compta-tab-content {
@@ -46,7 +47,7 @@
     display: block;
 }
 
-/* Grille de statistiques */
+/* ===== STATS GRID (VUE D'ENSEMBLE) ===== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -55,295 +56,66 @@
 }
 
 .stat-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 25px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #2575fc;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.stat-card.warning {
-    border-left-color: #ff9800;
-}
-
-.stat-card.success {
-    border-left-color: #28a745;
-}
-
-.stat-card.danger {
-    border-left-color: #dc3545;
-}
-
-.stat-card-title {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 10px;
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
+    transition: all 0.3s ease;
 }
 
-.stat-card-value {
-    font-size: 32px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 5px;
+.stat-card.clickable {
+    cursor: pointer;
 }
 
-.stat-card-subtitle {
-    font-size: 13px;
-    color: #999;
+.stat-card.clickable:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-/* Tables de factures */
-.invoices-table,
-.clients-summary-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background-color: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
 }
 
-.invoices-table th,
-.clients-summary-table th {
-    background-color: #f8f9fa;
-    padding: 15px;
-    text-align: left;
-    border-bottom: 2px solid #e1e8ed;
-    font-weight: 600;
-    color: #555;
+.stat-content {
+    flex: 1;
 }
 
-.invoices-table td,
-.clients-summary-table td {
-    padding: 15px;
-    border-bottom: 1px solid #e1e8ed;
-    vertical-align: middle;
-}
-
-.invoices-table tr:last-child td,
-.clients-summary-table tr:last-child td {
-    border-bottom: none;
-}
-
-.invoices-table tbody tr:hover,
-.clients-summary-table tbody tr:hover {
-    background-color: #f5f8fa;
-}
-
-/* Badges de statut */
-.status-badge {
-    display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.status-paid {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.status-unpaid {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.status-partial {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-/* Boutons d'action dans les tables */
-.table-action-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-    margin-right: 5px;
-}
-
-.view-invoice-btn {
-    background-color: #2575fc;
-}
-
-.view-invoice-btn:hover {
-    background-color: #1a5cb8;
-}
-
-.payment-btn {
-    background-color: #28a745;
-}
-
-.payment-btn:hover {
-    background-color: #218838;
-}
-
-.view-client-invoices-btn {
-    background-color: #6c757d;
-}
-
-.view-client-invoices-btn:hover {
-    background-color: #5a6268;
-}
-
-/* Formulaire de paiement */
-.payment-modal-title {
-    color: #2575fc;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e1e8ed;
-}
-
-#paymentForm .form-row {
-    margin-bottom: 15px;
-}
-
-#paymentForm label {
-    display: block;
-    font-weight: 500;
-    color: #555;
-    margin-bottom: 5px;
-}
-
-#paymentForm input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+.stat-label {
     font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
 }
 
-#paymentForm input:focus {
-    border-color: #2575fc;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.1);
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
 }
 
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #e1e8ed;
-}
-
-/* Montants */
-.amount-value {
-    font-weight: 600;
-    font-family: 'Courier New', monospace;
-}
-
-.amount-positive {
-    color: #28a745;
-}
-
-.amount-negative {
-    color: #dc3545;
-}
-
-/* Détails de facture dans la modal */
-.invoice-detail-section {
-    margin-bottom: 25px;
-}
-
-.invoice-detail-section h3 {
-    color: #2575fc;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e1e8ed;
-}
-
-.invoice-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-}
-
-.invoice-detail-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.invoice-detail-label {
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 5px;
-}
-
-.invoice-detail-value {
-    font-size: 15px;
-    font-weight: 500;
-    color: #333;
-}
-
-/* Responsive */
-@media (max-width: 992px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .invoice-detail-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .compta-tabs {
-        flex-direction: column;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .invoices-table,
-    .clients-summary-table {
-        font-size: 14px;
-    }
-    
-    .invoices-table th,
-    .invoices-table td,
-    .clients-summary-table th,
-    .clients-summary-table td {
-        padding: 10px 8px;
-    }
-    
-    .table-action-btn {
-        padding: 4px 8px;
-        font-size: 12px;
-    }
-}
-
-/* Scroll horizontal pour les petits écrans */
-.invoices-list,
-.clients-summary-list {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Search Container avec export */
+/* ===== SEARCH CONTAINER ===== */
 .search-container {
     display: flex;
-    gap: 15px;
+    gap: 12px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
     align-items: center;
 }
 
 .search-input {
     flex: 1;
-    padding: 12px 20px;
-    border: 2px solid #e0e0e0;
+    min-width: 200px;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
     border-radius: 8px;
     font-size: 14px;
     transition: all 0.3s ease;
@@ -356,19 +128,17 @@
 }
 
 .search-btn {
+    padding: 12px 20px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    padding: 12px 24px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);
     white-space: nowrap;
 }
 
@@ -378,33 +148,342 @@
 }
 
 .export-btn {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
     border: none;
-    padding: 12px 24px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(240, 147, 251, 0.2);
     white-space: nowrap;
 }
 
 .export-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(240, 147, 251, 0.3);
+    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
 }
 
-.export-btn:active,
-.search-btn:active {
-    transform: translateY(0);
+/* ===== SORT CONTROLS ===== */
+.sort-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-.export-btn i,
-.search-btn i {
+.sort-btn {
+    padding: 12px 20px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* ===== CONTAINERS AVEC SCROLL HORIZONTAL ===== */
+.clients-summary-list,
+.unpaid-invoices-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* IMPORTANT : Container avec scroll horizontal */
+.invoices-table-wrapper,
+.clients-summary-list {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Style pour les barres de défilement */
+.invoices-table-wrapper::-webkit-scrollbar,
+.clients-summary-list::-webkit-scrollbar {
+    height: 10px;
+}
+
+.invoices-table-wrapper::-webkit-scrollbar-track,
+.clients-summary-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 5px;
+}
+
+.invoices-table-wrapper::-webkit-scrollbar-thumb,
+.clients-summary-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 5px;
+}
+
+.invoices-table-wrapper::-webkit-scrollbar-thumb:hover,
+.clients-summary-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ===== TABLES STYLES ===== */
+.clients-summary-table,
+.invoices-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1200px; /* Force le scroll si écran trop petit */
+}
+
+.clients-summary-table thead,
+.invoices-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.clients-summary-table th,
+.invoices-table th {
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.clients-summary-table td,
+.invoices-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.clients-summary-table tbody tr,
+.invoices-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.clients-summary-table tbody tr:hover,
+.invoices-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* ===== CELLULES SPÉCIFIQUES ===== */
+.invoice-number {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-success {
+    color: #10b981 !important;
+    font-weight: 600;
+}
+
+.text-danger {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+/* ===== CELLULES ÉDITABLES ===== */
+.editable-cell {
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+.editable-cell:hover {
+    background-color: #fef3c7 !important;
+}
+
+.editable-cell:hover::after {
+    content: '✎';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #f59e0b;
     font-size: 16px;
+}
+
+/* ===== INPUTS INLINE ===== */
+.inline-edit-input,
+.inline-edit-select {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.inline-edit-input:focus,
+.inline-edit-select:focus {
+    outline: none;
+    border-color: #764ba2;
+}
+
+/* ===== STATUS BADGES ===== */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-paid {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-partial {
+    background: #fed7aa;
+    color: #92400e;
+}
+
+.status-unpaid {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.download-btn {
+    background: #3b82f6;
+    color: white;
+    padding: 8px 12px;
+}
+
+.download-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* ===== MESSAGES D'ÉTAT ===== */
+.loading,
+.no-data,
+.error-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+    font-size: 15px;
+}
+
+.error-message {
+    color: #ef4444;
+}
+
+/* ===== YEAR FILTER ===== */
+.year-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.year-select {
+    padding: 10px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.year-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .compta-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-direction: row;
+    }
+    
+    .compta-tab-btn {
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+    
+    .search-container {
+        flex-direction: column;
+    }
+    
+    .search-input {
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .clients-summary-table,
+    .invoices-table {
+        font-size: 13px;
+        min-width: 1000px; /* Assure le scroll sur mobile */
+    }
+    
+    .clients-summary-table th,
+    .clients-summary-table td,
+    .invoices-table th,
+    .invoices-table td {
+        padding: 10px 8px;
+    }
 }
