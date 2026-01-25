@@ -462,6 +462,10 @@ const orderService = {
     
 	// Traitement d'une commande (livraison partielle ou complète)
 	processOrder(orderId, userId, deliveredItems) {
+		console.log('🔍 ===== DÉBUT PROCESSORDER =====');
+		console.log(`Commande: ${orderId}, User: ${userId}`);
+		console.log('Articles livrés:', JSON.stringify(deliveredItems, null, 2));
+		
 		try {
 			const date = new Date().toISOString();
 			
@@ -472,9 +476,13 @@ const orderService = {
 					throw new Error('Order not found');
 				}
 				
+				console.log('📦 Commande trouvée:', order);
+				
 				const allItems = dbModule.getOrderItems.all(orderId);
 				const remainingItems = [];
 				const existingPendingDeliveries = dbModule.getUserPendingDeliveries.all(userId);
+				
+				console.log(`📋 ${allItems.length} articles dans la commande`);
 				
 				allItems.forEach(item => {
 					const deliveredItem = deliveredItems.find(d => d.Nom === item.product_name);
@@ -553,10 +561,22 @@ const orderService = {
 				const newStatus = remainingItems.length > 0 ? 'partial' : 'completed';
 				dbModule.updateOrderStatus.run(newStatus, date, orderId);
 				
+				console.log(`✅ Commande ${orderId} mise à jour avec statut: ${newStatus}`);
+				
 				// ============================================
 				// 🆕 CRÉATION AUTOMATIQUE DE LA FACTURE
 				// ============================================
-				this._createInvoiceForOrder(orderId, userId, deliveredItems, date);
+				console.log('📄 Tentative de création de facture...');
+				try {
+					const invoiceId = this._createInvoiceForOrder(orderId, userId, deliveredItems, date);
+					if (invoiceId) {
+						console.log(`✅ Facture créée avec succès (ID: ${invoiceId})`);
+					}
+				} catch (invoiceError) {
+					console.error('⚠️ Erreur création facture (commande traitée quand même):', invoiceError);
+				}
+				
+				console.log('🔍 ===== FIN PROCESSORDER =====');
 				
 				return {
 					success: true,
@@ -564,14 +584,94 @@ const orderService = {
 				};
 			});
 		} catch (error) {
+			console.error('❌ ERREUR PROCESSORDER:', error);
+			console.error('Stack:', error.stack);
 			throw error;
 		}
 	},
 
 	// ============================================
-	// FONCTION : Création de facture pour une commande
+	// 🆕 FONCTION : Génération du numéro de facture (CORRIGÉE)
+	// ============================================
+	_generateInvoiceNumber() {
+		try {
+			// Récupérer la dernière facture avec ORDER BY id DESC
+			const lastInvoice = dbModule.db.prepare(`
+				SELECT invoice_number 
+				FROM invoices 
+				ORDER BY id DESC 
+				LIMIT 1
+			`).get();
+			
+			if (!lastInvoice) {
+				console.log('🆕 Première facture, numéro: INV-1');
+				return 'INV-1';
+			}
+			
+			console.log(`📋 Dernière facture trouvée: ${lastInvoice.invoice_number}`);
+			
+			// Extraire le numéro
+			let nextNumber = 1;
+			
+			// Format INV-X (nouveau format simplifié)
+			if (lastInvoice.invoice_number.startsWith('INV-')) {
+				const match = lastInvoice.invoice_number.match(/INV-(\d+)/);
+				if (match) {
+					nextNumber = parseInt(match[1]) + 1;
+				}
+			} 
+			// Ancien format YYMMDD-XXXX, chercher le dernier INV-X
+			else if (lastInvoice.invoice_number.match(/^\d{6}-\d{4}$/)) {
+				const lastInvFormat = dbModule.db.prepare(`
+					SELECT invoice_number 
+					FROM invoices 
+					WHERE invoice_number LIKE 'INV-%'
+					ORDER BY id DESC 
+					LIMIT 1
+				`).get();
+				
+				if (lastInvFormat) {
+					const match = lastInvFormat.invoice_number.match(/INV-(\d+)/);
+					nextNumber = match ? parseInt(match[1]) + 1 : 1;
+				}
+			}
+			// Format MANUAL-YYYY-XXXX
+			else if (lastInvoice.invoice_number.startsWith('MANUAL-')) {
+				// Chercher le dernier INV-X
+				const lastInvFormat = dbModule.db.prepare(`
+					SELECT invoice_number 
+					FROM invoices 
+					WHERE invoice_number LIKE 'INV-%'
+					ORDER BY id DESC 
+					LIMIT 1
+				`).get();
+				
+				if (lastInvFormat) {
+					const match = lastInvFormat.invoice_number.match(/INV-(\d+)/);
+					nextNumber = match ? parseInt(match[1]) + 1 : 1;
+				}
+			}
+			
+			const newInvoiceNumber = `INV-${nextNumber}`;
+			console.log(`🆕 Nouveau numéro généré: ${newInvoiceNumber}`);
+			
+			return newInvoiceNumber;
+			
+		} catch (error) {
+			console.error('❌ Erreur génération numéro facture:', error);
+			console.error('Stack:', error.stack);
+			// En cas d'erreur, générer un numéro basé sur le timestamp
+			const timestamp = Date.now().toString().slice(-6);
+			return `INV-${timestamp}`;
+		}
+	},
+
+	// ============================================
+	// 🆕 CRÉATION DE FACTURE (VERSION FINALE CORRIGÉE)
 	// ============================================
 	_createInvoiceForOrder(orderId, userId, deliveredItems, processDate) {
+		console.log(`🔍 Début création facture pour commande ${orderId}`);
+		
 		try {
 			// Récupérer le profil utilisateur
 			const userProfile = userService.getUserProfile(userId);
@@ -579,13 +679,22 @@ const orderService = {
 				? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userId
 				: userId;
 			
+			console.log(`👤 Client: ${clientFullName}`);
+			
 			// Récupérer la date de commande
 			const order = dbModule.getOrderById.get(orderId);
+			if (!order) {
+				throw new Error(`Commande ${orderId} non trouvée`);
+			}
+			
 			const invoiceDate = order.date;
+			console.log(`📅 Date facture: ${invoiceDate}`);
 			
 			// Calculer le subtotal HT
 			const subtotalHT = deliveredItems.reduce((sum, item) => {
-				return sum + (parseFloat(item.prix) * item.quantity);
+				const itemTotal = parseFloat(item.prix) * item.quantity;
+				console.log(`   ${item.Nom}: ${item.quantity} x ${item.prix} = ${itemTotal.toFixed(2)}`);
+				return sum + itemTotal;
 			}, 0);
 			
 			// Arrondir à 2 décimales
@@ -593,20 +702,31 @@ const orderService = {
 			
 			// Calculer la TVA (8.1%) et arrondir au 5 centimes le plus proche
 			const vatAmountBrut = subtotalHTRounded * 0.081;
-			const vatAmount = Math.round(vatAmountBrut * 20) / 20;  // Arrondi au 0.05 CHF
+			const vatAmount = Math.round(vatAmountBrut * 20) / 20;
 			
 			// Calculer le total TTC
-			const totalTTC = subtotalHTRounded + vatAmount;
+			const totalTTC = Math.round((subtotalHTRounded + vatAmount) * 100) / 100;
+			
+			console.log(`💰 Montants calculés:`);
+			console.log(`   - Subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
+			console.log(`   - TVA 8.1%: ${vatAmount.toFixed(2)} CHF`);
+			console.log(`   - Total TTC: ${totalTTC.toFixed(2)} CHF`);
 			
 			// Calculer la due_date (invoice_date + 1 mois)
 			const invoiceDateObj = new Date(invoiceDate);
 			const dueDate = new Date(invoiceDateObj);
 			dueDate.setMonth(dueDate.getMonth() + 1);
 			
+			console.log(`📆 Date échéance: ${dueDate.toISOString()}`);
+			
 			// Générer le numéro de facture
 			const invoiceNumber = this._generateInvoiceNumber();
+			console.log(`📄 Numéro facture généré: ${invoiceNumber}`);
 			
-			// Insérer la facture
+			// 🆕 IMPORTANT : AJOUTER created_at et updated_at !
+			const now = new Date().toISOString();
+			
+			// Préparer et exécuter l'insertion
 			const insertInvoice = dbModule.db.prepare(`
 				INSERT INTO invoices (
 					invoice_number,
@@ -621,11 +741,15 @@ const orderService = {
 					amount_paid,
 					amount_due,
 					due_date,
-					paid_date
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					paid_date,
+					created_at,
+					updated_at
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`);
 			
-			insertInvoice.run(
+			console.log('💾 Insertion dans la base de données...');
+			
+			const result = insertInvoice.run(
 				invoiceNumber,           // invoice_number
 				orderId,                 // order_id
 				userId,                  // user_id
@@ -638,58 +762,26 @@ const orderService = {
 				0,                       // amount_paid
 				totalTTC,                // amount_due
 				dueDate.toISOString(),   // due_date
-				null                     // paid_date
+				null,                    // paid_date
+				now,                     // created_at ✅
+				now                      // updated_at ✅
 			);
 			
-			console.log(`✅ Facture ${invoiceNumber} créée pour commande ${orderId}`);
-			console.log(`   Subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
-			console.log(`   TVA 8.1%: ${vatAmount.toFixed(2)} CHF (arrondi au 5 centimes)`);
-			console.log(`   Total TTC: ${totalTTC.toFixed(2)} CHF`);
+			console.log(`✅ Facture ${invoiceNumber} créée avec succès (ID: ${result.lastInsertRowid})`);
+			console.log(`   Commande: ${orderId}`);
+			console.log(`   Client: ${clientFullName}`);
+			
+			return result.lastInsertRowid;
 			
 		} catch (error) {
-			console.error(`❌ Erreur création facture pour ${orderId}:`, error);
-			// Ne pas faire échouer toute la transaction si la facture échoue
-		}
-	},
-
-	// ============================================
-	// FONCTION : Génération du numéro de facture
-	// ============================================
-	_generateInvoiceNumber() {
-		try {
-			// Récupérer le dernier numéro de facture
-			const lastInvoice = dbModule.db.prepare(`
-				SELECT invoice_number 
-				FROM invoices 
-				ORDER BY id DESC 
-				LIMIT 1
-			`).get();
-			
-			let nextNumber = 1;
-			
-			if (lastInvoice && lastInvoice.invoice_number) {
-				// Extraire le numéro (format: INV-YYYY-XXXX)
-				const match = lastInvoice.invoice_number.match(/INV-(\d{4})-(\d+)/);
-				if (match) {
-					const year = parseInt(match[1]);
-					const num = parseInt(match[2]);
-					const currentYear = new Date().getFullYear();
-					
-					// Si c'est la même année, incrémenter, sinon recommencer à 1
-					if (year === currentYear) {
-						nextNumber = num + 1;
-					}
-				}
+			console.error(`❌ ERREUR création facture pour ${orderId}:`, error.message);
+			console.error('Stack trace:', error.stack);
+			if (error.code) {
+				console.error('SQL Error Code:', error.code);
 			}
 			
-			const currentYear = new Date().getFullYear();
-			const invoiceNumber = `INV-${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
-			
-			return invoiceNumber;
-		} catch (error) {
-			console.error('Erreur génération numéro facture:', error);
-			// Fallback: utiliser timestamp
-			return `INV-${new Date().getFullYear()}-${Date.now()}`;
+			// Relancer l'erreur pour que processOrder la catch
+			throw error;
 		}
 	},
     
@@ -758,7 +850,7 @@ const orderService = {
 	/**
 	 * Met à jour les articles d'une commande et recalcule la facture
 	 */
-	updateOrderItems(orderId, userId, modifications, deletions = []) {
+	updateOrderItems(orderId, userId, modifications, deletions) {
 		try {
 			return dbModule.transaction(() => {
 				// Vérifier que la commande existe
@@ -767,7 +859,7 @@ const orderService = {
 					throw new Error('Commande non trouvée');
 				}
 				
-				// 1. TRAITER LES SUPPRESSIONS D'ABORD
+				// 🆕 GÉRER LES SUPPRESSIONS D'ABORD
 				if (deletions && deletions.length > 0) {
 					deletions.forEach(productName => {
 						dbModule.db.prepare(`
@@ -775,58 +867,58 @@ const orderService = {
 							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
 						`).run(orderId, productName);
 						
-						console.log(`   ❌ Article supprimé: ${productName}`);
+						console.log(`✅ Article "${productName}" supprimé de la commande ${orderId}`);
 					});
 				}
 				
-				// 2. TRAITER LES MODIFICATIONS
-				modifications.forEach(mod => {
-					const { productName, product_name, quantity, unit_price } = mod;
-					const finalProductName = product_name || productName;
-					
-					// Récupérer l'article actuel
-					const currentItem = dbModule.db.prepare(`
-						SELECT * FROM order_items 
-						WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-					`).get(orderId, finalProductName);
-					
-					if (!currentItem) {
-						console.warn(`Article ${finalProductName} non trouvé`);
-						return;
-					}
-					
-					// Déterminer les nouvelles valeurs
-					const newProductName = product_name || currentItem.product_name;
-					const newQuantity = quantity !== undefined ? parseInt(quantity) : currentItem.quantity;
-					const newPrice = unit_price !== undefined ? parseFloat(unit_price) : currentItem.product_price;
-					
-					// Mettre à jour l'article
-					if (product_name && product_name !== currentItem.product_name) {
-						// Si le nom change, mettre à jour
-						dbModule.db.prepare(`
-							UPDATE order_items 
-							SET product_name = ?, quantity = ?, product_price = ?
-							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-						`).run(newProductName, newQuantity, newPrice, orderId, finalProductName);
-					} else {
-						// Sinon, juste mettre à jour quantité et prix
-						dbModule.db.prepare(`
-							UPDATE order_items 
-							SET quantity = ?, product_price = ?
-							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-						`).run(newQuantity, newPrice, orderId, finalProductName);
-					}
-				});
+				let subtotalHT = 0;
 				
-				// 3. RECALCULER LA FACTURE
-				// Récupérer tous les articles livrés pour recalculer le total complet
+				// Mettre à jour chaque article modifié
+				if (modifications && modifications.length > 0) {
+					modifications.forEach(mod => {
+						const { productName, product_name, quantity, unit_price } = mod;
+						const finalProductName = product_name || productName;
+						
+						// Récupérer l'article actuel
+						const currentItem = dbModule.db.prepare(`
+							SELECT * FROM order_items 
+							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+						`).get(orderId, finalProductName);
+						
+						if (!currentItem) {
+							console.warn(`Article ${finalProductName} non trouvé`);
+							return;
+						}
+						
+						// Déterminer les nouvelles valeurs
+						const newProductName = product_name || currentItem.product_name;
+						const newQuantity = quantity !== undefined ? parseInt(quantity) : currentItem.quantity;
+						const newPrice = unit_price !== undefined ? parseFloat(unit_price) : currentItem.product_price;
+						
+						// Mettre à jour l'article
+						if (product_name && product_name !== currentItem.product_name) {
+							dbModule.db.prepare(`
+								UPDATE order_items 
+								SET product_name = ?, quantity = ?, product_price = ?
+								WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+							`).run(newProductName, newQuantity, newPrice, orderId, finalProductName);
+						} else {
+							dbModule.db.prepare(`
+								UPDATE order_items 
+								SET quantity = ?, product_price = ?
+								WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+							`).run(newQuantity, newPrice, orderId, finalProductName);
+						}
+					});
+				}
+				
+				// Recalculer le subtotal complet APRÈS suppressions et modifications
 				const allDeliveredItems = dbModule.db.prepare(`
 					SELECT * FROM order_items 
 					WHERE order_id = ? AND status = 'delivered'
 				`).all(orderId);
 				
-				// Recalculer le subtotal complet
-				const subtotalHT = allDeliveredItems.reduce((sum, item) => {
+				subtotalHT = allDeliveredItems.reduce((sum, item) => {
 					return sum + (item.product_price * item.quantity);
 				}, 0);
 				
@@ -855,17 +947,11 @@ const orderService = {
 					subtotalHTRounded,
 					vatAmount,
 					totalTTC,
-					totalTTC, // Si non payé, amount_due = total_ttc
+					totalTTC,
 					orderId
 				);
 				
 				console.log(`✅ Commande ${orderId} mise à jour`);
-				if (deletions && deletions.length > 0) {
-					console.log(`   🗑️  ${deletions.length} article(s) supprimé(s)`);
-				}
-				if (modifications && modifications.length > 0) {
-					console.log(`   ✏️  ${modifications.length} article(s) modifié(s)`);
-				}
 				console.log(`   Nouveau subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
 				console.log(`   Nouvelle TVA: ${vatAmount.toFixed(2)} CHF`);
 				console.log(`   Nouveau total TTC: ${totalTTC.toFixed(2)} CHF`);

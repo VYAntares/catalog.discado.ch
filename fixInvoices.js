@@ -10,12 +10,14 @@ const DB_PATH = path.join(__dirname, 'database/discado.db');
 console.log('🔧 Connexion à la base de données...');
 const db = new Database(DB_PATH);
 
+// 🆕 Compteur global pour générer les numéros de facture
+let invoiceCounter = null;
+
 /**
- * Génère un numéro de facture unique
+ * Initialise le compteur de factures
  */
-function generateInvoiceNumber() {
+function initInvoiceCounter() {
     try {
-        // Récupérer le dernier numéro de facture
         const lastInvoice = db.prepare(`
             SELECT invoice_number 
             FROM invoices 
@@ -23,30 +25,45 @@ function generateInvoiceNumber() {
             LIMIT 1
         `).get();
         
-        let nextNumber = 1;
-        
         if (lastInvoice && lastInvoice.invoice_number) {
-            // Extraire le numéro (format: INV-YYYY-XXXX)
             const match = lastInvoice.invoice_number.match(/INV-(\d{4})-(\d+)/);
             if (match) {
                 const year = parseInt(match[1]);
                 const num = parseInt(match[2]);
                 const currentYear = new Date().getFullYear();
                 
-                // Si c'est la même année, incrémenter, sinon recommencer à 1
                 if (year === currentYear) {
-                    nextNumber = num + 1;
+                    invoiceCounter = num;
+                } else {
+                    invoiceCounter = 0;
                 }
+            } else {
+                invoiceCounter = 0;
             }
+        } else {
+            invoiceCounter = 0;
         }
         
+        console.log(`🔢 Compteur initialisé à: ${invoiceCounter}`);
+    } catch (error) {
+        console.error('❌ Erreur initialisation compteur:', error);
+        invoiceCounter = 0;
+    }
+}
+
+/**
+ * Génère un numéro de facture unique et incrémente le compteur
+ */
+function generateInvoiceNumber() {
+    try {
+        invoiceCounter++;
         const currentYear = new Date().getFullYear();
-        const invoiceNumber = `INV-${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+        const invoiceNumber = `INVVV-${currentYear}-${invoiceCounter.toString().padStart(4, '0')}`;
         
+        console.log(`   📝 Numéro généré: ${invoiceNumber}`);
         return invoiceNumber;
     } catch (error) {
         console.error('❌ Erreur génération numéro facture:', error);
-        // Fallback: utiliser timestamp
         return `INV-${new Date().getFullYear()}-${Date.now()}`;
     }
 }
@@ -80,7 +97,7 @@ function createInvoiceForOrder(orderId, userId, deliveredItems, order) {
         
         // Calculer la TVA (8.1%) et arrondir au 5 centimes le plus proche
         const vatAmountBrut = subtotalHTRounded * 0.081;
-        const vatAmount = Math.round(vatAmountBrut * 20) / 20;  // Arrondi au 0.05 CHF
+        const vatAmount = Math.round(vatAmountBrut * 20) / 20;
         
         // Calculer le total TTC
         const totalTTC = subtotalHTRounded + vatAmount;
@@ -115,24 +132,24 @@ function createInvoiceForOrder(orderId, userId, deliveredItems, order) {
         `);
         
         insertInvoice.run(
-            invoiceNumber,                  // invoice_number
-            orderId,                        // order_id
-            userId,                         // user_id
-            clientFullName,                 // client_full_name
-            invoiceDate,                    // invoice_date
-            subtotalHTRounded,              // subtotal_ht
-            vatAmount,                      // vat_amount
-            totalTTC,                       // total_ttc
-            'unpaid',                       // payment_status
-            0,                              // amount_paid
-            totalTTC,                       // amount_due
-            dueDate.toISOString(),          // due_date
-            null,                           // paid_date
-            order.last_processed || order.date,  // created_at (utiliser last_processed)
-            order.last_processed || order.date   // updated_at
+            invoiceNumber,
+            orderId,
+            userId,
+            clientFullName,
+            invoiceDate,
+            subtotalHTRounded,
+            vatAmount,
+            totalTTC,
+            'unpaid',
+            0,
+            totalTTC,
+            dueDate.toISOString(),
+            null,
+            order.last_processed || order.date,
+            order.last_processed || order.date
         );
         
-        console.log(`   ✅ Facture ${invoiceNumber} créée`);
+        console.log(`   ✅ Facture créée`);
         console.log(`      Client: ${clientFullName}`);
         console.log(`      Subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
         console.log(`      TVA 8.1%: ${vatAmount.toFixed(2)} CHF`);
@@ -158,6 +175,9 @@ function createInvoiceForOrder(orderId, userId, deliveredItems, order) {
  */
 function backfillInvoices() {
     console.log('\n📋 Recherche des commandes traitées sans facture...\n');
+    
+    // 🆕 Initialiser le compteur AVANT de commencer
+    initInvoiceCounter();
     
     // Récupérer toutes les commandes traitées (partial ou completed)
     const processedOrders = db.prepare(`
@@ -233,6 +253,7 @@ function backfillInvoices() {
         
         if (created > 0) {
             console.log('✨ Backfill terminé avec succès!');
+            console.log(`📌 Dernier numéro de facture utilisé: INV-${new Date().getFullYear()}-${invoiceCounter.toString().padStart(4, '0')}`);
         } else {
             console.log('ℹ️  Aucune facture à créer.');
         }
