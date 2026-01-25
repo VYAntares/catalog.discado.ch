@@ -203,7 +203,29 @@ const productService = {
         } catch (error) {
             // Gestion silencieuse des erreurs
         }
-    }
+    },
+
+	// Récupération des produits pour la gestion du stock (format brut SQLite)
+	async getProductsStock() {
+		try {
+			// Récupérer directement depuis SQLite sans transformation
+			const products = dbModule.db.prepare('SELECT * FROM products ORDER BY category, name').all();
+			
+			// Retourner avec stock converti en Number
+			return products.map(product => ({
+				id: product.id,
+				name: product.name,
+				price: Number(product.price) || 0,
+				category: product.category,
+				image_url: product.image_url,
+				stock: Number(product.stock) || 0,
+				created_at: product.created_at
+			}));
+		} catch (error) {
+			console.error('❌ Erreur getProductsStock:', error);
+			throw error;
+		}
+	},
 };
 
 module.exports = productService;

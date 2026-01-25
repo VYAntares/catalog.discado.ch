@@ -19,7 +19,7 @@ class StockManager {
 
     async loadProducts() {
         try {
-            const response = await fetch('/api/products');
+            const response = await fetch('/api/products/stock');
             if (!response.ok) throw new Error('Erreur de chargement des produits');
             this.products = await response.json();
 			console.log('Produits chargés:', this.products); // Pour debug
@@ -164,9 +164,9 @@ class StockManager {
 			// Stock filter
 			let stockMatch = true;
 			if (this.stockFilter === 'in-stock') {
-				stockMatch = product.stock > 10;
+				stockMatch = product.stock > 250;
 			} else if (this.stockFilter === 'low-stock') {
-				stockMatch = product.stock > 0 && product.stock <= 10;
+				stockMatch = product.stock > 0 && product.stock <= 250;
 			} else if (this.stockFilter === 'out-of-stock') {
 				stockMatch = product.stock === 0;
 			}
@@ -229,9 +229,9 @@ class StockManager {
 		const price = Number(product.price) || 0;
 		const category = product.category ?? product.categorie ?? 'autre';
 		const imageUrl = product.image_url ?? product.imageUrl ?? '';
-		const stock = product.stock !== undefined && product.stock !== null ? Number(product.stock) : 0;
+		const stock = Number(product.stock) || 0;
+
 		const stockStatus = this.getStockStatus(stock);
-		console.log(`Produit: ${name}, Stock reçu:`, product.stock, 'Stock affiché:', stock);
 
 		return `
 			<div class="product-card" data-product-id="${product.id}">
@@ -268,9 +268,13 @@ class StockManager {
 						<div class="stock-input-group">
 							<input type="number"
 								id="stock-input-${product.id}"
-								value="${stock}"
+								value=""
 								min="0"
-								class="stock-input">
+								class="stock-input"
+								inputmode="numeric"
+								pattern="[0-9]*"
+								placeholder="Quantité"
+								onfocus="this.select()">
 
 							<button class="stock-btn primary update-stock-btn"
 									data-product-id="${product.id}">
@@ -286,7 +290,7 @@ class StockManager {
     getStockStatus(stock) {
         if (stock === 0) {
             return { class: 'out-of-stock', text: 'Rupture' };
-        } else if (stock <= 10) {
+        } else if (stock <= 250) {
             return { class: 'low-stock', text: 'Stock faible' };
         } else {
             return { class: 'in-stock', text: 'En stock' };
@@ -312,49 +316,69 @@ class StockManager {
         });
     }
 
-    async updateStock(productId) {
-        const input = document.getElementById(`stock-input-${productId}`);
-        const newStock = parseInt(input.value);
+	async updateStock(productId) {
+		const input = document.getElementById(`stock-input-${productId}`);
+		const newStock = parseInt(input.value);
 
-        if (isNaN(newStock) || newStock < 0) {
-            this.showNotification('Veuillez entrer un nombre valide', 'error');
-            return;
-        }
+		if (isNaN(newStock) || newStock < 0) {
+			this.showNotification('Veuillez entrer un nombre valide', 'error');
+			return;
+		}
 
-        try {
-            const response = await fetch(`/api/products/${productId}/stock`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ stock: newStock })
-            });
+		try {
+			console.log(`📤 Envoi PUT /api/products/${productId}/stock avec stock:`, newStock);
+			
+			const response = await fetch(`/api/products/${productId}/stock`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ stock: newStock })
+			});
 
-            if (!response.ok) throw new Error('Erreur de mise à jour');
+			console.log('📥 Réponse reçue, status:', response.status);
+			
+			if (!response.ok) {
+				const errorText = await response.text();
+				console.error('❌ Erreur du serveur:', errorText);
+				
+				// Essayer de parser en JSON
+				try {
+					const errorData = JSON.parse(errorText);
+					throw new Error(errorData.error || errorData.message || 'Erreur de mise à jour');
+				} catch (parseError) {
+					throw new Error(errorText || 'Erreur de mise à jour');
+				}
+			}
 
-            // Update local data
-            const productIndex = this.products.findIndex(p => p.id == productId);
-            if (productIndex !== -1) {
-                this.products[productIndex].stock = newStock;
-            }
+			const result = await response.json();
+			console.log('✅ Résultat:', result);
 
-            // Update display
-            document.getElementById(`stock-value-${productId}`).textContent = newStock;
-            this.showNotification('Stock mis à jour avec succès', 'success');
-            
-            // Refresh to update badge
-            this.filterProducts();
+			// Update local data
+			const productIndex = this.products.findIndex(p => p.id == productId);
+			if (productIndex !== -1) {
+				this.products[productIndex].stock = newStock;
+			}
 
-        } catch (error) {
-            console.error('Erreur:', error);
-            this.showNotification('Erreur lors de la mise à jour du stock', 'error');
-        }
-    }
+			// Update display
+			document.getElementById(`stock-value-${productId}`).textContent = newStock;
+			this.showNotification('Stock mis à jour avec succès', 'success');
+			
+			// Refresh to update badge
+			this.filterProducts();
+
+		} catch (error) {
+			console.error('❌ Erreur complète:', error);
+			console.error('❌ Message:', error.message);
+			console.error('❌ Stack:', error.stack);
+			this.showNotification('Erreur: ' + error.message, 'error');
+		}
+	}
 
 	updateStats() {
 		const totalProducts = this.products.length;
-		const inStock = this.products.filter(p => Number(p.stock) > 10).length;
-		const lowStock = this.products.filter(p => Number(p.stock) > 0 && Number(p.stock) <= 10).length;
+		const inStock = this.products.filter(p => Number(p.stock) > 250).length;
+		const lowStock = this.products.filter(p => Number(p.stock) > 0 && Number(p.stock) <= 250).length;
 		const outOfStock = this.products.filter(p => Number(p.stock) === 0).length;
 		const totalValue = this.products.reduce((sum, p) => sum + ((Number(p.price) || 0) * (Number(p.stock) || 0)), 0);
 

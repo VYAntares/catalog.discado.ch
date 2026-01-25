@@ -11,7 +11,6 @@ const fs = require('fs');
 const helmet = require('helmet');
 const invoiceManagementService = require('./services/invoiceManagementService');
 
-
 // securite dom protection XSS
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
@@ -21,7 +20,6 @@ const DOMPurify = createDOMPurify(window);
 
 const sanitizeMiddleware = (req, res, next) => {
   if (req.body) {
-    
     const sanitizeObject = (obj) => {
       if (!obj) return obj;
       
@@ -64,15 +62,10 @@ if (!process.env.ENCRYPTION_KEY || !process.env.ENCRYPTION_IV) {
 }
 
 // ===== MIDDLEWARES PRINCIPAUX =====
-
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.json());
-
 app.use(sanitizeMiddleware);
-
 app.set('trust proxy', 1);
-
 app.use(helmet());
 
 app.use(helmet.contentSecurityPolicy({
@@ -100,10 +93,8 @@ app.use(session({
 }));
 
 // ===== SYSTÈME DE SÉCURITÉ =====
-// Gestion des tentatives de connexion
 const loginAttempts = {};
 
-// Fonction pour vérifier et gérer les tentatives de connexion
 function checkLoginThrottling(identifier) {
   const now = Date.now();
   const attemptsInfo = loginAttempts[identifier];
@@ -126,19 +117,16 @@ function checkLoginThrottling(identifier) {
 }
 
 // ===== MIDDLEWARES D'AUTORISATION =====
-// Middleware pour vérifier la connexion
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect('/');
   next();
 }
 
-// Middleware pour l'accès administrateur
 function requireAdmin(req, res, next) {
   if (req.session.user && req.session.user.role === 'admin') return next();
   res.status(403).send('Access denied');
 }
 
-// Middleware pour vérifier que le profil est complet
 function requireCompleteProfile(req, res, next) {
   if (!req.session.user) {
     return res.redirect('/');
@@ -156,7 +144,6 @@ function requireCompleteProfile(req, res, next) {
 }
 
 // ===== ROUTES PUBLIQUES =====
-// Pages d'accueil et de connexion
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -166,14 +153,12 @@ app.get('/pages/login.html', (req, res) => {
 });
 
 // ===== RESSOURCES STATIQUES =====
-// Ressources publiques sans authentification
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/fonts', express.static(path.join(__dirname, 'public/fonts')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/components', express.static(path.join(__dirname, 'public/components')));
 
-// Configuration des modules ES6 pour les fichiers admin JS
 app.use('/admin/js', (req, res, next) => {
   if (req.path.endsWith('.js')) {
     res.set('Content-Type', 'application/javascript; charset=UTF-8');
@@ -181,11 +166,9 @@ app.use('/admin/js', (req, res, next) => {
   next();
 });
 
-// Ressources admin
 app.use('/admin/css', express.static(path.join(__dirname, 'admin/css')));
 app.use('/admin/js', express.static(path.join(__dirname, 'admin/js')));
 
-// Protection des pages
 app.use('/pages/', (req, res, next) => {
   const requestPath = req.path;
   
@@ -201,10 +184,8 @@ app.use('/pages/', (req, res, next) => {
 });
 
 // ===== ROUTES D'AUTHENTIFICATION =====
-// Route de login
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  
   const identifier = `${req.ip}:${username}`;
   
   const throttleCheck = checkLoginThrottling(identifier);
@@ -247,7 +228,6 @@ app.post('/login', (req, res) => {
   }
 });
 
-// Route de déconnexion
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) return res.send('Error during logout');
@@ -277,11 +257,19 @@ app.get('/admin/compta', requireLogin, requireAdmin, (req, res) => {
 });
 
 app.get('/admin/client-invoices', requireLogin, requireAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin/pages/client-invoices.html'));
+  res.sendFile(path.join(__dirname, 'admin/pages/client-invoices.html'));
 });
 
 app.get('/admin/stock', requireLogin, requireAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin', 'pages', 'stock.html'));
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'stock.html'));
+});
+
+app.get('/admin/compta-details', requireLogin, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin/pages/compta-details.html'));
+});
+
+app.get('/admin/compta-month', requireLogin, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin/pages/compta-month.html'));
 });
 
 // ===== ROUTES CLIENT PROTÉGÉES =====
@@ -306,7 +294,6 @@ app.get('/pages/orders.html', requireLogin, (req, res) => {
 });
 
 // ===== API ROUTES - GÉNÉRALES =====
-// Vérification de l'authentification
 app.get('/api/check-auth', (req, res) => {
   if (req.session.user) {
     res.json({ 
@@ -320,20 +307,17 @@ app.get('/api/check-auth', (req, res) => {
 });
 
 // ===== API ROUTES - PROFIL UTILISATEUR =====
-// Récupération du profil utilisateur
 app.get('/api/user-profile', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const profile = userService.getUserProfile(userId);
   res.json(profile || {});
 });
 
-// Sauvegarde du profil utilisateur
 app.post('/api/save-profile', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const profileData = req.body;
   
   try {
-    // Vérifier si une demande de changement de mot de passe est incluse
     if (profileData.passwordChange) {
       const { currentPassword, newPassword } = profileData.passwordChange;
       
@@ -381,7 +365,6 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
       }
     }
     
-    // Validation des données du profil
     if (!profileData.firstName || !profileData.lastName || !profileData.email) {
       return res.status(400).json({
         success: false,
@@ -416,7 +399,6 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
   }
 });
 
-// Changement de mot de passe
 app.post('/api/change-password', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const { currentPassword, newPassword } = req.body;
@@ -448,12 +430,201 @@ app.post('/api/change-password', requireLogin, (req, res) => {
 });
 
 // ===== API ROUTES - PRODUITS ET COMMANDES =====
-// Récupération des produits (ROUTE UNIQUE ET CORRIGÉE)
+// 🔥 ROUTES SPÉCIFIQUES EN PREMIER (ORDRE CRITIQUE!)
+
+// Récupération des produits pour la gestion du stock
+app.get('/api/products/stock', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    console.log('🔍 Requête /api/products/stock reçue');
+    const products = await productService.getProductsStock();
+    console.log(`📤 Envoi de ${products.length} produits`);
+    res.json(products);
+  } catch (error) {
+    console.error('❌ Error fetching stock products:', error);
+    res.status(500).json({ error: 'Error getting stock products' });
+  }
+});
+
+// GET stock statistics
+app.get('/api/products/stats/stock', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const stats = await new Promise((resolve, reject) => {
+      dbModule.db.get(`
+        SELECT 
+          COUNT(*) as total_products,
+          SUM(CASE WHEN stock > 10 THEN 1 ELSE 0 END) as in_stock,
+          SUM(CASE WHEN stock > 0 AND stock <= 10 THEN 1 ELSE 0 END) as low_stock,
+          SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) as out_of_stock,
+          SUM(price * stock) as total_value
+        FROM products
+      `, [], (err, row) => err ? reject(err) : resolve(row));
+    });
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching stock stats:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
+  }
+});
+
+// BULK UPDATE stock
+app.put('/api/products/bulk/stock', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const { updates } = req.body;
+
+    if (!Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Format de données invalide' });
+    }
+
+    await new Promise((resolve, reject) => dbModule.db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
+
+    try {
+      for (const update of updates) {
+        const stock = Number(update.stock);
+        if (isNaN(stock) || stock < 0) throw new Error('Valeur de stock invalide');
+
+        await new Promise((resolve, reject) => {
+          dbModule.db.run('UPDATE products SET stock = ? WHERE id = ?', [stock, update.id], err => err ? reject(err) : resolve());
+        });
+      }
+
+      await new Promise((resolve, reject) => dbModule.db.run('COMMIT', err => err ? reject(err) : resolve()));
+
+      res.json({ message: 'Stock mis à jour avec succès', count: updates.length });
+    } catch (err) {
+      await new Promise((resolve, reject) => dbModule.db.run('ROLLBACK', err2 => err2 ? reject(err2) : resolve()));
+      throw err;
+    }
+  } catch (error) {
+    console.error('Error bulk updating stock:', error);
+    res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' });
+  }
+});
+
+// GET products by category
+app.get('/api/products/category/:category', requireLogin, async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    const products = await new Promise((resolve, reject) => {
+      dbModule.db.all('SELECT * FROM products WHERE category = ? ORDER BY name', [category], (err, rows) => err ? reject(err) : resolve(rows));
+    });
+
+    res.json(products.map(p => ({
+      ...p,
+      stock: Number(p.stock) || 0,
+      price: Number(p.price) || 0
+    })));
+  } catch (error) {
+    console.error('Error fetching products by category:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+  }
+});
+
+// GET low stock products
+app.get('/api/products/low-stock/:threshold?', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const threshold = parseInt(req.params.threshold) || 250;
+
+    const products = await new Promise((resolve, reject) => {
+      dbModule.db.all('SELECT * FROM products WHERE stock > 0 AND stock <= ? ORDER BY stock ASC', [threshold], (err, rows) => err ? reject(err) : resolve(rows));
+    });
+
+    res.json(products.map(p => ({
+      ...p,
+      stock: Number(p.stock) || 0,
+      price: Number(p.price) || 0
+    })));
+  } catch (error) {
+    console.error('Error fetching low stock products:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+  }
+});
+
+// GET out-of-stock products
+app.get('/api/products/out-of-stock', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const products = await new Promise((resolve, reject) => {
+      dbModule.db.all('SELECT * FROM products WHERE stock = 0 ORDER BY name', [], (err, rows) => err ? reject(err) : resolve(rows));
+    });
+
+    res.json(products.map(p => ({
+      ...p,
+      stock: Number(p.stock) || 0,
+      price: Number(p.price) || 0
+    })));
+  } catch (error) {
+    console.error('Error fetching out-of-stock products:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+  }
+});
+
+// UPDATE product stock
+app.put('/api/products/:id/stock', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { stock } = req.body;
+
+    console.log(`📦 Mise à jour stock produit ${id}: ${stock}`);
+
+    stock = Number(stock);
+    if (isNaN(stock) || stock < 0) {
+      console.error('❌ Valeur de stock invalide:', stock);
+      return res.status(400).json({ error: 'Valeur de stock invalide' });
+    }
+
+    // ✅ Utiliser directement better-sqlite3 de façon synchrone
+    try {
+      // Vérifier si le produit existe
+      const product = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+
+      if (!product) {
+        console.error('❌ Produit non trouvé:', id);
+        return res.status(404).json({ error: 'Produit non trouvé' });
+      }
+
+      console.log(`✅ Produit trouvé: ${product.name}, stock actuel: ${product.stock}`);
+
+      // Mettre à jour le stock
+      const updateStmt = dbModule.db.prepare('UPDATE products SET stock = ? WHERE id = ?');
+      updateStmt.run(stock, id);
+
+      console.log(`✅ Stock mis à jour: ${product.stock} → ${stock}`);
+
+      // Récupérer le produit mis à jour
+      const updatedProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+
+      res.json({
+        success: true,
+        message: 'Stock mis à jour avec succès',
+        product: {
+          id: updatedProduct.id,
+          name: updatedProduct.name,
+          stock: Number(updatedProduct.stock) || 0,
+          price: Number(updatedProduct.price) || 0
+        }
+      });
+    } catch (dbError) {
+      console.error('❌ Erreur DB:', dbError);
+      throw dbError;
+    }
+  } catch (error) {
+    console.error('❌ Error updating stock:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erreur lors de la mise à jour du stock',
+      details: error.message 
+    });
+  }
+});
+
+// 🔥 ROUTES GÉNÉRIQUES À LA FIN
+
+// Récupération des produits (format ancien pour catalog client)
 app.get('/api/products', requireLogin, async (req, res) => {
   try {
     const products = await productService.getProducts();
     
-    // Sanitize pour garantir stock et price en Number
     const sanitizedProducts = products.map(p => ({
       ...p,
       stock: Number(p.stock) || 0,
@@ -469,198 +640,29 @@ app.get('/api/products', requireLogin, async (req, res) => {
 
 // GET single product by ID
 app.get('/api/products/:id', requireLogin, async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const product = await new Promise((resolve, reject) => {
-            dbModule.db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
+    const product = await new Promise((resolve, reject) => {
+      dbModule.db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
 
-        if (!product) {
-            return res.status(404).json({ error: 'Produit non trouvé' });
-        }
-
-        res.json({
-            ...product,
-            stock: Number(product.stock) || 0,
-            price: Number(product.price) || 0
-        });
-    } catch (error) {
-        console.error('Error fetching product:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération du produit' });
+    if (!product) {
+      return res.status(404).json({ error: 'Produit non trouvé' });
     }
-});
 
-// UPDATE product stock
-app.put('/api/products/:id/stock', requireLogin, requireAdmin, async (req, res) => {
-    try {
-        const { id } = req.params;
-        let { stock } = req.body;
-
-        // Convertir en nombre
-        stock = Number(stock);
-        if (isNaN(stock) || stock < 0) {
-            return res.status(400).json({ error: 'Valeur de stock invalide' });
-        }
-
-        // Vérifier si le produit existe
-        const product = await new Promise((resolve, reject) => {
-            dbModule.db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
-
-        if (!product) {
-            return res.status(404).json({ error: 'Produit non trouvé' });
-        }
-
-        // Mettre à jour le stock
-        await new Promise((resolve, reject) => {
-            dbModule.db.run('UPDATE products SET stock = ? WHERE id = ?', [stock, id], (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
-
-        // Récupérer le produit mis à jour
-        const updatedProduct = await new Promise((resolve, reject) => {
-            dbModule.db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
-
-        res.json({
-            message: 'Stock mis à jour avec succès',
-            product: {
-                ...updatedProduct,
-                stock: Number(updatedProduct.stock) || 0,
-                price: Number(updatedProduct.price) || 0
-            }
-        });
-    } catch (error) {
-        console.error('Error updating stock:', error);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' });
-    }
-});
-
-// BULK UPDATE stock
-app.put('/api/products/bulk/stock', requireLogin, requireAdmin, async (req, res) => {
-    try {
-        const { updates } = req.body;
-
-        if (!Array.isArray(updates)) {
-            return res.status(400).json({ error: 'Format de données invalide' });
-        }
-
-        // Démarrer transaction
-        await new Promise((resolve, reject) => dbModule.db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
-
-        try {
-            for (const update of updates) {
-                const stock = Number(update.stock);
-                if (isNaN(stock) || stock < 0) throw new Error('Valeur de stock invalide');
-
-                await new Promise((resolve, reject) => {
-                    dbModule.db.run('UPDATE products SET stock = ? WHERE id = ?', [stock, update.id], err => err ? reject(err) : resolve());
-                });
-            }
-
-            await new Promise((resolve, reject) => dbModule.db.run('COMMIT', err => err ? reject(err) : resolve()));
-
-            res.json({ message: 'Stock mis à jour avec succès', count: updates.length });
-        } catch (err) {
-            await new Promise((resolve, reject) => dbModule.db.run('ROLLBACK', err2 => err2 ? reject(err2) : resolve()));
-            throw err;
-        }
-    } catch (error) {
-        console.error('Error bulk updating stock:', error);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' });
-    }
-});
-
-// GET stock statistics
-app.get('/api/products/stats/stock', requireLogin, requireAdmin, async (req, res) => {
-    try {
-        const stats = await new Promise((resolve, reject) => {
-            dbModule.db.get(`
-                SELECT 
-                    COUNT(*) as total_products,
-                    SUM(CASE WHEN stock > 10 THEN 1 ELSE 0 END) as in_stock,
-                    SUM(CASE WHEN stock > 0 AND stock <= 10 THEN 1 ELSE 0 END) as low_stock,
-                    SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) as out_of_stock,
-                    SUM(price * stock) as total_value
-                FROM products
-            `, [], (err, row) => err ? reject(err) : resolve(row));
-        });
-
-        res.json(stats);
-    } catch (error) {
-        console.error('Error fetching stock stats:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
-    }
-});
-
-// GET products by category
-app.get('/api/products/category/:category', requireLogin, async (req, res) => {
-    try {
-        const { category } = req.params;
-
-        const products = await new Promise((resolve, reject) => {
-            dbModule.db.all('SELECT * FROM products WHERE category = ? ORDER BY name', [category], (err, rows) => err ? reject(err) : resolve(rows));
-        });
-
-        res.json(products.map(p => ({
-            ...p,
-            stock: Number(p.stock) || 0,
-            price: Number(p.price) || 0
-        })));
-    } catch (error) {
-        console.error('Error fetching products by category:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
-    }
-});
-
-// GET low stock products
-app.get('/api/products/low-stock/:threshold?', requireLogin, requireAdmin, async (req, res) => {
-    try {
-        const threshold = parseInt(req.params.threshold) || 10;
-
-        const products = await new Promise((resolve, reject) => {
-            dbModule.db.all('SELECT * FROM products WHERE stock > 0 AND stock <= ? ORDER BY stock ASC', [threshold], (err, rows) => err ? reject(err) : resolve(rows));
-        });
-
-        res.json(products.map(p => ({
-            ...p,
-            stock: Number(p.stock) || 0,
-            price: Number(p.price) || 0
-        })));
-    } catch (error) {
-        console.error('Error fetching low stock products:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
-    }
-});
-
-// GET out-of-stock products
-app.get('/api/products/out-of-stock', requireLogin, requireAdmin, async (req, res) => {
-    try {
-        const products = await new Promise((resolve, reject) => {
-            dbModule.db.all('SELECT * FROM products WHERE stock = 0 ORDER BY name', [], (err, rows) => err ? reject(err) : resolve(rows));
-        });
-
-        res.json(products.map(p => ({
-            ...p,
-            stock: Number(p.stock) || 0,
-            price: Number(p.price) || 0
-        })));
-    } catch (error) {
-        console.error('Error fetching out-of-stock products:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
-    }
+    res.json({
+      ...product,
+      stock: Number(product.stock) || 0,
+      price: Number(product.price) || 0
+    });
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération du produit' });
+  }
 });
 
 // Sauvegarde d'une commande
@@ -730,7 +732,6 @@ app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
 });
 
 // ===== API ROUTES - ADMINISTRATEUR =====
-// Commandes en attente
 app.get('/api/admin/pending-orders', requireLogin, requireAdmin, (req, res) => {
   try {
     const pendingOrders = orderService.getPendingOrders();
@@ -740,7 +741,6 @@ app.get('/api/admin/pending-orders', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
-// Commandes traitées
 app.get('/api/admin/treated-orders', requireLogin, requireAdmin, (req, res) => {
   try {
     const treatedOrders = orderService.getTreatedOrders();
@@ -750,7 +750,6 @@ app.get('/api/admin/treated-orders', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
-// Profils clients
 app.get('/api/admin/client-profiles', requireLogin, requireAdmin, (req, res) => {
   try {
     const profiles = userService.getAllClientProfiles();
@@ -760,7 +759,6 @@ app.get('/api/admin/client-profiles', requireLogin, requireAdmin, (req, res) => 
   }
 });
 
-// Profil client spécifique
 app.get('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, res) => {
   const userId = req.params.userId;
   
@@ -777,7 +775,6 @@ app.get('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, r
   }
 });
 
-// Traitement de commande
 app.post('/api/admin/process-order', requireLogin, requireAdmin, (req, res) => {
   const { userId, orderId, deliveredItems } = req.body;
   
@@ -793,7 +790,6 @@ app.post('/api/admin/process-order', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
-// Détails de commande
 app.get('/api/admin/order-details/:orderId/:userId', requireLogin, requireAdmin, (req, res) => {
   const { orderId, userId } = req.params;
   
@@ -805,7 +801,6 @@ app.get('/api/admin/order-details/:orderId/:userId', requireLogin, requireAdmin,
   }
 });
 
-// Commandes d'un client
 app.get('/api/admin/client-orders/:clientId', requireLogin, requireAdmin, (req, res) => {
   const clientId = req.params.clientId;
   
@@ -817,7 +812,6 @@ app.get('/api/admin/client-orders/:clientId', requireLogin, requireAdmin, (req, 
   }
 });
 
-// Téléchargement de facture (admin)
 app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdmin, async (req, res) => {
   const { orderId, userId } = req.params;
   
@@ -856,7 +850,6 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
   }
 });
 
-// Création d'un compte client
 app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   const { username, password, profileData } = req.body;
   
@@ -896,7 +889,6 @@ app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
-// Création de commande à partir d'articles en attente
 app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, async (req, res) => {
   const { userId, items } = req.body;
   
@@ -915,7 +907,6 @@ app.post('/api/admin/create-order-from-pending', requireLogin, requireAdmin, asy
   }
 });
 
-// Suppression d'articles en attente
 app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, res) => {
   const { userId, items } = req.body;
   
@@ -937,212 +928,195 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
   }
 });
 
-// Route pour mettre à jour les articles d'une commande
 app.post('/api/admin/update-order-items', requireLogin, requireAdmin, async (req, res) => {
-    const { orderId, userId, modifications, deletions } = req.body;
-    
-    if (!orderId || !userId) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Paramètres invalides: orderId et userId sont requis' 
-        });
-    }
-    
-    // Valider que modifications est un tableau (peut être vide ou undefined)
-    if (modifications && !Array.isArray(modifications)) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Le paramètre modifications doit être un tableau' 
-        });
-    }
-    
-    // Valider que deletions est un tableau (peut être vide ou undefined)
-    if (deletions && !Array.isArray(deletions)) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Le paramètre deletions doit être un tableau' 
-        });
-    }
-    
-    try {
-        const result = await orderService.updateOrderItems(
-            orderId, 
-            userId, 
-            modifications || [], 
-            deletions || []
-        );
-        res.json(result);
-    } catch (error) {
-        console.error('Erreur lors de la mise à jour:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Erreur lors de la mise à jour: ' + error.message 
-        });
-    }
+  const { orderId, userId, modifications, deletions } = req.body;
+  
+  if (!orderId || !userId) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Paramètres invalides: orderId et userId sont requis' 
+    });
+  }
+  
+  if (modifications && !Array.isArray(modifications)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Le paramètre modifications doit être un tableau' 
+    });
+  }
+  
+  if (deletions && !Array.isArray(deletions)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Le paramètre deletions doit être un tableau' 
+    });
+  }
+  
+  try {
+    const result = await orderService.updateOrderItems(
+      orderId, 
+      userId, 
+      modifications || [], 
+      deletions || []
+    );
+    res.json(result);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de la mise à jour: ' + error.message 
+    });
+  }
 });
 
 // ===== API ROUTES - COMPTABILITÉ =====
-
-// Routes spécifiques pour la page client-invoices (DOIVENT ÊTRE EN PREMIER)
 app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
-    const { invoiceId } = req.params;
-    const paymentData = req.body;
+  const { invoiceId } = req.params;
+  const paymentData = req.body;
+  
+  console.log('PUT /api/invoices/:invoiceId/payment called');
+  console.log('Invoice ID:', invoiceId);
+  console.log('Payment Data:', paymentData);
+  
+  try {
+    const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
     
-    console.log('PUT /api/invoices/:invoiceId/payment called');
-    console.log('Invoice ID:', invoiceId);
-    console.log('Payment Data:', paymentData);
-    
-    try {
-        const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
-        
-        if (!result.success) {
-            return res.status(400).json({ error: result.message });
-        }
-        
-        res.json(result);
-    } catch (error) {
-        console.error('Error updating payment status:', error);
-        res.status(500).json({ error: 'Error updating payment status: ' + error.message });
+    if (!result.success) {
+      return res.status(400).json({ error: result.message });
     }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    res.status(500).json({ error: 'Error updating payment status: ' + error.message });
+  }
 });
 
 app.get('/api/invoices/stats', requireLogin, requireAdmin, (req, res) => {
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    try {
-        const stats = invoiceManagementService.getInvoiceStatistics(year);
-        res.json(stats);
-    } catch (error) {
-        console.error('Error getting statistics:', error);
-        res.status(500).json({ error: 'Error getting statistics' });
-    }
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  try {
+    const stats = invoiceManagementService.getInvoiceStatistics(year);
+    res.json(stats);
+  } catch (error) {
+    console.error('Error getting statistics:', error);
+    res.status(500).json({ error: 'Error getting statistics' });
+  }
 });
 
 app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    try {
-        const clients = invoiceManagementService.getClientsSummary(year);
-        res.json({ clients });
-    } catch (error) {
-        console.error('Error getting clients summary:', error);
-        res.status(500).json({ error: 'Error getting clients summary' });
-    }
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  try {
+    const clients = invoiceManagementService.getClientsSummary(year);
+    res.json({ clients });
+  } catch (error) {
+    console.error('Error getting clients summary:', error);
+    res.status(500).json({ error: 'Error getting clients summary' });
+  }
 });
 
 app.get('/api/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
-    const { userId } = req.params;
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    try {
-        const invoices = invoiceManagementService.getClientInvoices(userId, year);
-        res.json({ invoices });
-    } catch (error) {
-        console.error('Error getting client invoices:', error);
-        res.status(500).json({ error: 'Error getting client invoices' });
-    }
+  const { userId } = req.params;
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  try {
+    const invoices = invoiceManagementService.getClientInvoices(userId, year);
+    res.json({ invoices });
+  } catch (error) {
+    console.error('Error getting client invoices:', error);
+    res.status(500).json({ error: 'Error getting client invoices' });
+  }
 });
 
-// Routes anciennes (pour compatibilité avec d'autres parties de l'application)
+app.get('/api/invoices/monthly-breakdown', requireLogin, requireAdmin, (req, res) => {
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  const type = req.query.type || 'total_amount';
+  
+  try {
+    const breakdown = invoiceManagementService.getMonthlyBreakdown(year, type);
+    res.json(breakdown);
+  } catch (error) {
+    console.error('Error getting monthly breakdown:', error);
+    res.status(500).json({ error: 'Error getting monthly breakdown' });
+  }
+});
+
+app.get('/api/invoices/month-details', requireLogin, requireAdmin, (req, res) => {
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  const month = req.query.month ? parseInt(req.query.month) : null;
+  
+  if (!year || !month) {
+    return res.status(400).json({ error: 'Year and month are required' });
+  }
+  
+  try {
+    const invoices = invoiceManagementService.getMonthInvoices(year, month);
+    res.json({ invoices });
+  } catch (error) {
+    console.error('Error getting month invoices:', error);
+    res.status(500).json({ error: 'Error getting month invoices' });
+  }
+});
+
+// Routes anciennes (pour compatibilité)
 app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {
-    try {
-        const invoices = invoiceManagementService.getAllInvoices();
-        res.json(invoices);
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting invoices' });
-    }
+  try {
+    const invoices = invoiceManagementService.getAllInvoices();
+    res.json(invoices);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting invoices' });
+  }
 });
 
 app.get('/api/admin/invoices/statistics', requireLogin, requireAdmin, (req, res) => {
-    try {
-        const stats = invoiceManagementService.getInvoiceStatistics();
-        res.json(stats);
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting statistics' });
-    }
+  try {
+    const stats = invoiceManagementService.getInvoiceStatistics();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting statistics' });
+  }
 });
 
 app.get('/api/admin/invoices/clients-summary', requireLogin, requireAdmin, (req, res) => {
-    try {
-        const clients = invoiceManagementService.getClientsSummary();
-        res.json(clients);
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting clients summary' });
-    }
+  try {
+    const clients = invoiceManagementService.getClientsSummary();
+    res.json(clients);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting clients summary' });
+  }
 });
 
 app.get('/api/admin/invoices/client/:userId', requireLogin, requireAdmin, (req, res) => {
-    const { userId } = req.params;
-    try {
-        const invoices = invoiceManagementService.getClientInvoices(userId);
-        res.json(invoices);
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting client invoices' });
-    }
+  const { userId } = req.params;
+  try {
+    const invoices = invoiceManagementService.getClientInvoices(userId);
+    res.json(invoices);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting client invoices' });
+  }
 });
 
 app.get('/api/admin/invoices/:invoiceId', requireLogin, requireAdmin, (req, res) => {
-    const { invoiceId } = req.params;
-    try {
-        const invoice = invoiceManagementService.getInvoiceDetails(invoiceId);
-        if (!invoice) {
-            return res.status(404).json({ error: 'Invoice not found' });
-        }
-        res.json(invoice);
-    } catch (error) {
-        res.status(500).json({ error: 'Error getting invoice details' });
+  const { invoiceId } = req.params;
+  try {
+    const invoice = invoiceManagementService.getInvoiceDetails(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
     }
+    res.json(invoice);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting invoice details' });
+  }
 });
 
 app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (req, res) => {
-    const { invoiceId } = req.params;
-    const paymentData = req.body;
-    
-    try {
-        const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ error: 'Error updating payment status' });
-    }
-});
-
-// Route pour obtenir les détails mensuels
-app.get('/api/invoices/monthly-breakdown', requireLogin, requireAdmin, (req, res) => {
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    const type = req.query.type || 'total_amount';
-    
-    try {
-        const breakdown = invoiceManagementService.getMonthlyBreakdown(year, type);
-        res.json(breakdown);
-    } catch (error) {
-        console.error('Error getting monthly breakdown:', error);
-        res.status(500).json({ error: 'Error getting monthly breakdown' });
-    }
-});
-
-// Route pour servir la page compta-details
-app.get('/admin/compta-details', requireLogin, requireAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin/pages/compta-details.html'));
-});
-
-// Route pour la page compta-month
-app.get('/admin/compta-month', requireLogin, requireAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin/pages/compta-month.html'));
-});
-
-// Route API pour récupérer les factures d'un mois
-app.get('/api/invoices/month-details', requireLogin, requireAdmin, (req, res) => {
-    const year = req.query.year ? parseInt(req.query.year) : null;
-    const month = req.query.month ? parseInt(req.query.month) : null;
-    
-    if (!year || !month) {
-        return res.status(400).json({ error: 'Year and month are required' });
-    }
-    
-    try {
-        const invoices = invoiceManagementService.getMonthInvoices(year, month);
-        res.json({ invoices });
-    } catch (error) {
-        console.error('Error getting month invoices:', error);
-        res.status(500).json({ error: 'Error getting month invoices' });
-    }
+  const { invoiceId } = req.params;
+  const paymentData = req.body;
+  
+  try {
+    const result = invoiceManagementService.updatePaymentStatus(invoiceId, paymentData);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating payment status' });
+  }
 });
 
 // ===== DÉMARRAGE DU SERVEUR =====

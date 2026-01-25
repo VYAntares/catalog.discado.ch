@@ -540,7 +540,7 @@ const orderService = {
 							);
 						}
 					} else {
-						// 🆕 Article non livré → stock à 0
+						// 🆕 Article non livré → stock à 0 SUPPRIMER CA SI ON NE VEUT PLUS LA LOGIQUE
 						this._setStockToZero(item.product_name);
 						
 						// Aucune livraison
@@ -855,6 +855,7 @@ const orderService = {
 
 	/**
 	 * Met à jour les articles d'une commande et recalcule la facture
+	 * + Gestion du stock lors des modifications
 	 */
 	updateOrderItems(orderId, userId, modifications, deletions) {
 		try {
@@ -868,6 +869,19 @@ const orderService = {
 				// 🆕 GÉRER LES SUPPRESSIONS D'ABORD
 				if (deletions && deletions.length > 0) {
 					deletions.forEach(productName => {
+						// 🆕 Récupérer la quantité avant suppression pour remettre dans le stock
+						const deletedItem = dbModule.db.prepare(`
+							SELECT quantity FROM order_items 
+							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+						`).get(orderId, productName);
+						
+						if (deletedItem && deletedItem.quantity > 0) {
+							// Remettre la quantité dans le stock
+							this._incrementStock(productName, deletedItem.quantity);
+							console.log(`♻️ Stock restauré: ${productName} +${deletedItem.quantity}`);
+						}
+						
+						// Supprimer l'article de la commande
 						dbModule.db.prepare(`
 							DELETE FROM order_items 
 							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
@@ -879,7 +893,7 @@ const orderService = {
 				
 				let subtotalHT = 0;
 				
-				// Mettre à jour chaque article modifié
+				// 🆕 Mettre à jour chaque article modifié + gérer le stock
 				if (modifications && modifications.length > 0) {
 					modifications.forEach(mod => {
 						const { productName, product_name, quantity, unit_price } = mod;
@@ -898,10 +912,26 @@ const orderService = {
 						
 						// Déterminer les nouvelles valeurs
 						const newProductName = product_name || currentItem.product_name;
-						const newQuantity = quantity !== undefined ? parseInt(quantity) : currentItem.quantity;
+						const oldQuantity = currentItem.quantity;
+						const newQuantity = quantity !== undefined ? parseInt(quantity) : oldQuantity;
 						const newPrice = unit_price !== undefined ? parseFloat(unit_price) : currentItem.product_price;
 						
-						// Mettre à jour l'article
+						// 🆕 GESTION DU STOCK EN FONCTION DE LA DIFFÉRENCE
+						if (newQuantity !== oldQuantity) {
+							const quantityDiff = newQuantity - oldQuantity;
+							
+							if (quantityDiff > 0) {
+								// AUGMENTATION : soustraire du stock
+								this._decrementStock(finalProductName, quantityDiff);
+								console.log(`📉 Stock diminué: ${finalProductName} -${quantityDiff} (${oldQuantity} → ${newQuantity})`);
+							} else if (quantityDiff < 0) {
+								// DIMINUTION : ajouter au stock
+								this._incrementStock(finalProductName, Math.abs(quantityDiff));
+								console.log(`📈 Stock augmenté: ${finalProductName} +${Math.abs(quantityDiff)} (${oldQuantity} → ${newQuantity})`);
+							}
+						}
+						
+						// Mettre à jour l'article dans la commande
 						if (product_name && product_name !== currentItem.product_name) {
 							dbModule.db.prepare(`
 								UPDATE order_items 
@@ -1054,7 +1084,7 @@ const orderService = {
 		}
 	},
 
-	// Met le stock d'un produit à 0 (article indisponible)
+	// Met le stock d'un produit à 0 (article indisponible) METTRE EN COMMENTAIRE LE TRY SI ON A PLUS BESOIN
 	_setStockToZero(productName) {
 		try {
 			const updateStock = dbModule.db.prepare(`
@@ -1070,6 +1100,27 @@ const orderService = {
 			}
 		} catch (error) {
 			console.error(`⚠️ Erreur mise à 0 stock pour ${productName}:`, error);
+		}
+	},
+
+	// Incrémente le stock d'un produit (lors d'annulation/diminution)
+	_incrementStock(productName, quantity) {
+		try {
+			const updateStock = dbModule.db.prepare(`
+				UPDATE products 
+				SET stock = stock + ? 
+				WHERE name = ?
+			`);
+			
+			const result = updateStock.run(quantity, productName);
+			
+			if (result.changes > 0) {
+				// Récupérer le nouveau stock pour logging
+				const product = dbModule.db.prepare('SELECT stock FROM products WHERE name = ?').get(productName);
+				console.log(`📦 Stock restauré: ${productName} → ${product.stock} (+${quantity} remis)`);
+			}
+		} catch (error) {
+			console.error(`⚠️ Erreur incrément stock pour ${productName}:`, error);
 		}
 	}
 	
