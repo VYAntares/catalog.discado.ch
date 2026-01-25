@@ -2,13 +2,13 @@
 const permissionService = require('./services/permissionService');
 
 // Modifier le username et les permissions ici
-const USERNAME = 'endrit';
+const USERNAME = 'luca';
 const PERMISSIONS = {
-  stock: true,
-  compta: true,
+  stock: false,
+  compta: false,
   orders: true,
-  clients: true,
-  order_history: true
+  clients: false,
+  order_history: false
 };
 
 permissionService.setUserPermissions(USERNAME, PERMISSIONS);

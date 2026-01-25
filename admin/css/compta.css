@@ -237,7 +237,7 @@
 .invoices-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1200px; /* Force le scroll si écran trop petit */
+    min-width: 100%; /* S'adapte à la largeur disponible */
 }
 
 .clients-summary-table thead,
@@ -249,22 +249,37 @@
     z-index: 10;
 }
 
-.clients-summary-table th,
-.invoices-table th {
-    padding: 16px 12px;
+.clients-summary-table th {
+    padding: 14px 10px;
     text-align: left;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     white-space: nowrap;
 }
 
-.clients-summary-table td,
-.invoices-table td {
-    padding: 14px 12px;
+.clients-summary-table td {
+    padding: 12px 10px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* Style spécifique pour invoices-table (vue client) */
+.invoices-table th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: nowrap;
+}
+
+.invoices-table td {
+    padding: 10px 8px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    transition: background-color 0.2s;
     white-space: nowrap;
 }
 
@@ -276,6 +291,10 @@
 .clients-summary-table tbody tr:hover,
 .invoices-table tbody tr:hover {
     background-color: #f8fafc;
+}
+
+.invoices-table tbody tr:hover td {
+    background-color: #f5f7fa;
 }
 
 /* ===== CELLULES SPÉCIFIQUES ===== */
@@ -441,6 +460,61 @@
 .year-select:focus {
     outline: none;
     border-color: #667eea;
+}
+
+/* ===== OPTIMISATION COLONNES FACTURES IMPAYÉES ===== */
+/* Utiliser le même style que la vue client-invoices */
+.invoices-table {
+    table-layout: auto;
+    font-size: 13px;
+}
+
+.invoices-table th,
+.invoices-table td {
+    padding: 10px 8px;
+    border: 1px solid #e0e0e0;
+    white-space: nowrap;
+}
+
+.invoices-table th {
+    padding: 12px 8px;
+    font-size: 12px;
+}
+
+.invoices-table tbody tr:hover td {
+    background-color: #f5f7fa;
+}
+
+/* Alignements spécifiques */
+.invoices-table td:nth-child(4),
+.invoices-table td:nth-child(5),
+.invoices-table td:nth-child(6),
+.invoices-table td:nth-child(8),
+.invoices-table td:nth-child(9),
+.invoices-table th:nth-child(4),
+.invoices-table th:nth-child(5),
+.invoices-table th:nth-child(6),
+.invoices-table th:nth-child(8),
+.invoices-table th:nth-child(9) {
+    text-align: right;
+}
+
+/* Colonne actions centrée */
+.invoices-table th:nth-child(12),
+.invoices-table td:nth-child(12) {
+    text-align: center;
+}
+
+/* Colonne statut centrée */
+.invoices-table th:nth-child(11),
+.invoices-table td:nth-child(11) {
+    text-align: center;
+}
+
+/* Bouton téléchargement */
+.invoices-table .download-btn {
+    padding: 6px 12px;
+    font-size: 14px;
 }
 
 /* ===== RESPONSIVE ===== */

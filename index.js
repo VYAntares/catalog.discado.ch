@@ -196,8 +196,10 @@ function requirePermission(permission) {
             <div class="container">
                 <div class="icon">🔒</div>
                 <h1>Accès refusé</h1>
-                <p>Vous n'avez pas l'autorisation d'accéder à cette section.</p>
-                <p>Contactez <strong>Endrit</strong> si vous pensez que c'est une erreur.</p>
+                <p>Tu n'as pas l'autorisation d'accéder à cette section. Car tu es gay.</p>
+                <p>Contacte <strong>Endrit</strong> si tu penses que c'est une erreur.</p>
+				<p>Mais tu sais déjà que ça ne l'est pas, car tu sais que tu es..</p>
+				<p><strong>gay.</strong></p>
                 <a href="/admin/orders">← Retour au tableau de bord</a>
             </div>
         </body>

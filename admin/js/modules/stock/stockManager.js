@@ -11,14 +11,14 @@ class StockManager {
     }
 
     async init() {
-        await this.loadProducts();
-        this.setupEventListeners();
-        this.renderCategoryTabs();
-        this.renderSupplierFilter(); // NOUVEAU: Remplir le filtre fournisseur
-        this.displayProducts();
-        this.updateStats();
-        this.setupAddProductButton();
-    }
+		await this.loadProducts();
+		this.setupEventListeners();
+		this.renderCategoryTabs();
+		this.renderSupplierFilter();
+		this.updateStats();
+		this.setupAddProductButton();
+		this.sortProducts('name-asc'); // Trie et affiche les produits
+	}
 
     async loadProducts() {
         try {
@@ -213,40 +213,47 @@ class StockManager {
 				stockMatch = product.stock === 0;
 			}
 
-			// NOUVEAU: Filtre par fournisseur
 			const supplierMatch = this.supplierFilter === 'all' || 
 				(product.supplier || 'Non défini') === this.supplierFilter;
 
 			return categoryMatch && searchMatch && stockMatch && supplierMatch;
 		});
 
+		// ✅ AJOUTER : Réappliquer le tri par défaut après filtrage
+		this.filteredProducts.sort((a, b) => this.naturalSort(a.name, b.name));
+
 		this.displayProducts();
 		this.updateStats();
 	}
 
-    sortProducts(sortBy) {
-        switch(sortBy) {
-            case 'name-asc':
-                this.filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-            case 'name-desc':
-                this.filteredProducts.sort((a, b) => b.name.localeCompare(a.name));
-                break;
-            case 'stock-asc':
-                this.filteredProducts.sort((a, b) => a.stock - b.stock);
-                break;
-            case 'stock-desc':
-                this.filteredProducts.sort((a, b) => b.stock - a.stock);
-                break;
-            case 'price-asc':
-                this.filteredProducts.sort((a, b) => a.price - b.price);
-                break;
-            case 'price-desc':
-                this.filteredProducts.sort((a, b) => b.price - a.price);
-                break;
-        }
-        this.displayProducts();
-    }
+    // Fonction de tri naturel (gère correctement les numéros dans les noms)
+	naturalSort(a, b) {
+		return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+	}
+
+	sortProducts(sortBy) {
+		switch(sortBy) {
+			case 'name-asc':
+				this.filteredProducts.sort((a, b) => this.naturalSort(a.name, b.name));
+				break;
+			case 'name-desc':
+				this.filteredProducts.sort((a, b) => this.naturalSort(b.name, a.name));
+				break;
+			case 'stock-asc':
+				this.filteredProducts.sort((a, b) => a.stock - b.stock);
+				break;
+			case 'stock-desc':
+				this.filteredProducts.sort((a, b) => b.stock - a.stock);
+				break;
+			case 'price-asc':
+				this.filteredProducts.sort((a, b) => a.price - b.price);
+				break;
+			case 'price-desc':
+				this.filteredProducts.sort((a, b) => b.price - a.price);
+				break;
+		}
+		this.displayProducts();
+	}
 
     displayProducts() {
         const container = document.getElementById('products-container');
