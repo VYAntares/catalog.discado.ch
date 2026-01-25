@@ -37,7 +37,7 @@ async function processOrder(orderId, userId) {
 }
 
 // Affiche la modale de traitement de commande
-function showProcessOrderModal(order, clientProfile) {
+async function showProcessOrderModal(order, clientProfile) {
     currentOrder = order;
     currentClientProfile = clientProfile;
     
@@ -47,6 +47,26 @@ function showProcessOrderModal(order, clientProfile) {
     
     if (!orderModal || !orderDetailsContent) {
         return;
+    }
+    
+    // ✅ RÉCUPÉRER LES PRODUITS DEPUIS LA BASE DE DONNÉES
+    let enrichedItems = [...order.items];
+    try {
+        const response = await fetch('/api/products/stock');
+        if (response.ok) {
+            const products = await response.json();
+            
+            // Enrichir chaque item avec l'image_url du produit correspondant
+            enrichedItems = order.items.map(item => {
+                const product = products.find(p => p.name === item.Nom || p.Nom === item.Nom);
+                return {
+                    ...item,
+                    image_url: product?.image_url || product?.imageUrl || null
+                };
+            });
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des produits:', error);
     }
     
     const orderDate = Formatter.formatDate(order.date, {
@@ -114,7 +134,7 @@ function showProcessOrderModal(order, clientProfile) {
                         </tr>
                     </thead>
                     <tbody>
-                    ${generateItemsByCategory(order.items)}
+                    ${generateItemsByCategory(enrichedItems)}
                     </tbody>
                 </table>
             </div>
@@ -358,7 +378,6 @@ function generateItemsByCategory(items) {
     });
 
     let html = '';
-    
     const sortedCategories = Object.keys(groupedItems).sort();
     
     sortedCategories.forEach(category => {
@@ -371,35 +390,8 @@ function generateItemsByCategory(items) {
         groupedItems[category].forEach(item => {
             const shortName = item.Nom.split(' - ')[0];
             
-            const productName = item.Nom || "Product without name";
-            const productPrice = item.prix || "0.00";
-            
-            const productParts = shortName.split(' ');
-            const productType = productParts[0].toLowerCase();
-            
-            let productNumber = '';
-            if (productParts.length > 1) {
-              const match = productParts[1].match(/(\d+[A-Za-z]*)/);
-              if (match) {
-                productNumber = match[0];
-              }
-            }
-            
-            let productImage = '/images/products/';
-            
-            if (productType === 'keyring') {
-                productImage += `keyring/PC${productNumber}.jpg`;
-            } 
-            else if (productType === 'magnet') {
-				productImage = `/images/products/magnet/M${productNumber}.jpg`;
-			}
-            else if (productType === 'caps') {
-                productImage += `caps/C${productNumber}.jpg`;
-            } 
-            else {
-                const capitalizedType = productType.charAt(0).toUpperCase() + productType.slice(1);
-                productImage += `${productType}/${capitalizedType}${productNumber}.jpg`;
-            }
+            // ✅ UTILISER L'IMAGE_URL DE LA BASE DE DONNÉES
+            const productImage = item.image_url || '/images/products/placeholder.jpg';
             
             html += `
                 <tr data-item-name="${item.Nom}">
@@ -407,7 +399,7 @@ function generateItemsByCategory(items) {
                         <img src="${productImage}"
                             alt="${shortName}"
                             class="product-thumbnail"
-                            onerror="this.src='/public/images/products/placeholder.jpg';this.onerror='';"
+                            onerror="this.src='/images/products/placeholder.jpg';this.onerror='';"
                             onclick="showProductImage('${productImage}', '${shortName}')"
                             title="${item.Nom}"
                         >

@@ -805,6 +805,65 @@ app.delete('/api/products/:id', requireLogin, requireAdmin, requirePermission('s
   }
 });
 
+// ADD product (CREATE)
+app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
+  try {
+    const { name, price, category, supplier, image_url, stock } = req.body;
+
+    console.log(`➕ Ajout nouveau produit:`, { name, price, category, supplier, image_url, stock });
+
+    // Validation
+    if (!name || !price || !category) {
+      return res.status(400).json({ error: 'Nom, prix et catégorie sont requis' });
+    }
+
+    const priceNum = Number(price);
+    const stockNum = Number(stock);
+
+    if (isNaN(priceNum) || priceNum < 0) {
+      return res.status(400).json({ error: 'Prix invalide' });
+    }
+
+    if (isNaN(stockNum) || stockNum < 0) {
+      return res.status(400).json({ error: 'Stock invalide' });
+    }
+
+    // Insérer le nouveau produit
+    const insertStmt = dbModule.db.prepare(`
+      INSERT INTO products (name, price, category, supplier, image_url, stock)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const result = insertStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum);
+
+    // Récupérer le produit créé
+    const newProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
+
+    console.log('✅ Produit créé:', newProduct);
+
+    res.status(201).json({
+      success: true,
+      message: 'Produit ajouté avec succès',
+      product: {
+        id: newProduct.id,
+        name: newProduct.name,
+        price: Number(newProduct.price) || 0,
+        category: newProduct.category,
+        supplier: newProduct.supplier,
+        image_url: newProduct.image_url,
+        stock: Number(newProduct.stock) || 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error adding product:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erreur lors de l\'ajout du produit',
+      details: error.message 
+    });
+  }
+});
+
 // 🔥 ROUTES GÉNÉRIQUES À LA FIN
 
 // Récupération des produits (format ancien pour catalog client)
