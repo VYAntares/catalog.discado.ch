@@ -279,6 +279,10 @@ app.get('/admin/client-invoices', requireLogin, requireAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'admin/pages/client-invoices.html'));
 });
 
+app.get('/admin/stock', requireLogin, requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin', 'pages', 'stock.html'));
+});
+
 // ===== ROUTES CLIENT PROTÉGÉES =====
 app.get('/pages/catalog.html', requireLogin, requireCompleteProfile, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'catalog.html'));

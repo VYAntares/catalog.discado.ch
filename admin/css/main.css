@@ -31,7 +31,7 @@ header {
 }
 
 .logo-container img {
-    height: 40px;
+    height: 30px;
     width: auto;
     transition: transform 0.2s ease;
 }
@@ -75,17 +75,28 @@ header {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* Tabs navigation */
+/* ===== TABS NAVIGATION (sticky avec scroll horizontal) ===== */
 .admin-tabs {
     background-color: #2575fc;
-    padding: 0 20px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    /* Plus de position sticky - la barre reste en place */
 }
 
 .tabs-container {
     display: flex;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0 20px;
     max-width: 1400px;
     margin: 0 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.tabs-container::-webkit-scrollbar {
+    display: none;
 }
 
 .tab {
@@ -95,9 +106,14 @@ header {
     font-weight: 600;
     position: relative;
     opacity: 0.8;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
     font-size: 16px;
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .tab:hover {
@@ -119,6 +135,10 @@ header {
     height: 4px;
     background-color: white;
     border-radius: 4px 4px 0 0;
+}
+
+.tab i {
+    font-size: 1.1em;
 }
 
 /* Main content */
@@ -377,17 +397,55 @@ main {
     margin-bottom: 20px;
 }
 
-/* Responsive globals */
+/* ===== RESPONSIVE MOBILE ===== */
 @media (max-width: 768px) {
+    /* Header mobile */
+    .logo-container img {
+        height: 25px;
+    }
+
+    .header-container {
+        gap: 10px;
+        padding: 0 15px;
+    }
+
+    .logout-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        min-width: auto;
+    }
+
+    .admin-user {
+        gap: 8px;
+    }
+
     .tabs-container {
-        justify-content: space-between;
+        padding: 0 10px;
     }
 
     .tab {
-        padding: 15px;
+        padding: 15px 20px;
         font-size: 14px;
+        gap: 6px;
+        transition: none;
     }
-    
+
+    .tab i {
+        font-size: 1em;
+    }
+
+    /* Désactiver hover sur mobile */
+    .tab:hover {
+        opacity: 0.8;
+        background-color: transparent;
+    }
+
+    .tab.active:hover {
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Main content mobile */
     .modal-content {
         width: 95%;
         padding: 20px;
@@ -396,53 +454,47 @@ main {
 
     .search-container {
         flex-direction: column;
+        padding: 15px;
     }
 
     .search-input {
         max-width: none;
     }
-    
+
     .page-title {
         font-size: 22px;
     }
-    
+
     .notification {
         width: 90%;
         max-width: 320px;
     }
 }
 
-/* Réduire la taille du logo, surtout sur mobile */
-.logo-container img {
-    height: 30px; /* Taille réduite par défaut */
-    width: auto;
-}
-
-/* Ajustements pour mobile */
-@media (max-width: 768px) {
-    .logo-container img {
-        height: 25px; /* Encore plus petit sur mobile */
-    }
-
-    .header-container {
-        gap: 10px; /* Espace entre le logo et le bouton */
-    }
-
-    /* Optimisation du bouton de déconnexion sur mobile */
-    .logout-btn {
-        padding: 6px 10px;
-        font-size: 12px;
-        min-width: auto;
-    }
-}
-
-/* Pour les très petits écrans comme iPhone SE */
-@media (max-width: 375px) {
+/* Très petits écrans (iPhone SE, etc.) */
+@media (max-width: 480px) {
     .logo-container img {
         height: 20px;
     }
 
     .admin-user {
+        font-size: 12px;
+    }
+
+    .tab {
+        padding: 12px 15px;
+        font-size: 13px;
+    }
+
+    .logout-btn {
+        padding: 5px 8px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 375px) {
+    .tab {
+        padding: 10px 12px;
         font-size: 12px;
     }
 }

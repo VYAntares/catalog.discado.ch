@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestion du Stock - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="admin-tabs">
+        <div class="tabs-container">
+            <a href="/admin" class="tab">
+                <i class="fas fa-shopping-cart"></i> Gestion des commandes
+            </a>
+            <a href="/admin/order-history" class="tab">
+                <i class="fas fa-history"></i> Historique des commandes
+            </a>
+            <a href="/admin/clients" class="tab">
+                <i class="fas fa-users"></i> Client Database
+            </a>
+            <a href="/admin/compta" class="tab">
+                <i class="fas fa-calculator"></i> Compta
+            </a>
+            <a href="/admin/stock" class="tab active">
+                <i class="fas fa-boxes"></i> Stock
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <h1 class="page-title">
+            <i class="fas fa-boxes"></i> Gestion du Stock
+        </h1>
+
+        <div style="text-align: center; padding: 50px;">
+            <i class="fas fa-boxes" style="font-size: 4em; color: #667eea; margin-bottom: 20px;"></i>
+            <h2>Page en construction</h2>
+            <p style="color: #666;">La gestion du stock sera bientôt disponible.</p>
+        </div>
+    </main>
+
+    <!-- Conteneur de notifications -->
+    <div id="notification-container"></div>
+</body>
+</html>
