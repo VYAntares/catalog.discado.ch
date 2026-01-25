@@ -893,6 +893,27 @@ app.post('/api/admin/invoices/:invoiceId/payment', requireLogin, requireAdmin, (
     }
 });
 
+// Ajouter ces routes dans index.js après les routes de comptabilité existantes
+
+// Route pour obtenir les détails mensuels
+app.get('/api/invoices/monthly-breakdown', requireLogin, requireAdmin, (req, res) => {
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    const type = req.query.type || 'total_amount';
+    
+    try {
+        const breakdown = invoiceManagementService.getMonthlyBreakdown(year, type);
+        res.json(breakdown);
+    } catch (error) {
+        console.error('Error getting monthly breakdown:', error);
+        res.status(500).json({ error: 'Error getting monthly breakdown' });
+    }
+});
+
+// Route pour servir la page compta-details
+app.get('/admin/compta-details', requireLogin, requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin/pages/compta-details.html'));
+});
+
 // ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);

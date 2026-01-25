@@ -260,11 +260,82 @@ function getClientsSummary(year = null) {
     }
 }
 
+/**
+ * Obtenir le détail des ventes par mois pour une année donnée
+ * @param {number|null} year - Année à filtrer (null = toutes)
+ * @param {string} type - Type de données ('total_amount', 'total_paid', 'total_due', 'total_invoices')
+ * @returns {Object} Données mensuelles et résumé
+ */
+function getMonthlyBreakdown(year = null, type = 'total_amount') {
+    try {
+        // Récupérer toutes les factures (filtrées par année si spécifié)
+        const invoices = getAllInvoices(year);
+        
+        // Initialiser les données pour les 12 mois
+        const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+            month: i + 1,
+            invoice_count: 0,
+            total_ht: 0,
+            total_vat: 0,
+            total_ttc: 0,
+            total_paid: 0,
+            total_due: 0
+        }));
+
+        // Agréger les données par mois
+        invoices.forEach(invoice => {
+            const month = new Date(invoice.invoice_date).getMonth(); // 0-11
+            
+            monthlyData[month].invoice_count++;
+            monthlyData[month].total_ht += parseFloat(invoice.subtotal_ht) || 0;
+            monthlyData[month].total_vat += parseFloat(invoice.vat_amount) || 0;
+            monthlyData[month].total_ttc += parseFloat(invoice.total_ttc) || 0;
+            monthlyData[month].total_paid += parseFloat(invoice.amount_paid) || 0;
+            monthlyData[month].total_due += parseFloat(invoice.amount_due) || 0;
+        });
+
+        // Ne garder que les mois qui ont des données
+        const activeMonths = monthlyData.filter(month => month.invoice_count > 0);
+
+        // Calculer le résumé selon le type demandé
+        const summary = {
+            total: 0,
+            invoice_count: invoices.length
+        };
+
+        switch(type) {
+            case 'total_amount':
+                summary.total = activeMonths.reduce((sum, m) => sum + m.total_ttc, 0);
+                break;
+            case 'total_paid':
+                summary.total = activeMonths.reduce((sum, m) => sum + m.total_paid, 0);
+                break;
+            case 'total_due':
+                summary.total = activeMonths.reduce((sum, m) => sum + m.total_due, 0);
+                break;
+            case 'total_invoices':
+                summary.total = summary.invoice_count;
+                break;
+        }
+
+        return {
+            months: activeMonths,
+            summary: summary,
+            year: year,
+            type: type
+        };
+    } catch (error) {
+        console.error('Error getting monthly breakdown:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     getAllInvoices,
     getClientInvoices,
     getInvoiceDetails,
     updatePaymentStatus,
     getInvoiceStatistics,
-    getClientsSummary
+    getClientsSummary,
+    getMonthlyBreakdown  // ← NOUVELLE FONCTION AJOUTÉE
 };

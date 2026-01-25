@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Détails Comptables - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/compta.css">
+    <link rel="stylesheet" href="/admin/css/compta-details.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="admin-tabs">
+        <div class="tabs-container">
+            <a href="/admin" class="tab">
+                <i class="fas fa-shopping-cart"></i> Gestion des commandes
+            </a>
+            <a href="/admin/order-history" class="tab">
+                <i class="fas fa-history"></i> Historique des commandes
+            </a>
+            <a href="/admin/clients" class="tab">
+                <i class="fas fa-users"></i> Client Database
+            </a>
+            <a href="/admin/compta" class="tab active">
+                <i class="fas fa-calculator"></i> Compta
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Back Button & Title -->
+        <div class="details-header">
+            <a href="/admin/compta" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Retour à la comptabilité
+            </a>
+            <h1 class="page-title">
+                <i class="fas fa-chart-line"></i> 
+                <span id="pageTitle">Détails des ventes</span>
+                <span id="yearDisplay" class="year-badge"></span>
+            </h1>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="summary-card">
+            <div class="summary-item">
+                <div class="summary-label">Type de données</div>
+                <div class="summary-value" id="summaryType">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total annuel</div>
+                <div class="summary-value" id="summaryTotal">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Nombre de factures</div>
+                <div class="summary-value" id="summaryCount">-</div>
+            </div>
+        </div>
+
+        <!-- Monthly Breakdown -->
+        <div class="monthly-container">
+            <h2 class="section-title">
+                <i class="fas fa-calendar-alt"></i> Détails par mois
+            </h2>
+            
+            <div class="monthly-grid" id="monthlyGrid">
+                <div class="loading">Chargement des données mensuelles...</div>
+            </div>
+        </div>
+
+        <!-- Export Button -->
+        <div class="export-container">
+            <button id="exportMonthlyCSVBtn" class="export-btn">
+                <i class="fas fa-file-csv"></i>
+                Exporter en CSV
+            </button>
+        </div>
+    </main>
+
+    <!-- Conteneur de notifications -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts JS -->
+    <script type="module" src="/admin/js/modules/compta/comptaDetails.js"></script>
+</body>
+</html>
