@@ -104,6 +104,7 @@ function makeEditable(cell, fieldType, row) {
         
         const currentValue = cell.textContent.trim().replace(' CHF', '');
         const originalValue = currentValue;
+        const originalProductName = row.querySelector('td:nth-child(2)').textContent.trim();
         
         let input;
         if (fieldType === 'quantity') {
@@ -136,8 +137,8 @@ function makeEditable(cell, fieldType, row) {
             
             if (newValue && newValue !== originalValue) {
                 // Enregistrer la modification
-                const productName = row.querySelector('td:nth-child(2)').textContent.trim();
-                
+                const productName = originalProductName;
+                           
                 if (!orderModifications.has(productName)) {
                     orderModifications.set(productName, {});
                 }
@@ -248,12 +249,36 @@ async function saveOrderChanges() {
     }
     
     try {
-        const modifications = Array.from(orderModifications.entries()).map(([productName, changes]) => ({
-            productName,
-            ...changes
-        }));
+        // ✅ CORRECTION : Construire les modifications correctement
+        const modifications = [];
+        
+        for (const [originalProductName, changes] of orderModifications.entries()) {
+            const modif = {
+                productName: originalProductName  // ← Nom ORIGINAL pour identifier la ligne
+            };
+            
+            // Ajouter les changements
+            if (changes.product_name !== undefined) {
+                modif.product_name = changes.product_name;  // ← Nouveau nom
+            }
+            if (changes.quantity !== undefined) {
+                modif.quantity = parseInt(changes.quantity);
+            }
+            if (changes.unit_price !== undefined) {
+                modif.unit_price = parseFloat(changes.unit_price);
+            }
+            
+            modifications.push(modif);
+        }
         
         const deletions = Array.from(deletedItems);
+        
+        console.log('📤 Envoi au serveur:', {
+            orderId: currentOrderId,
+            userId: currentUserId,
+            modifications,
+            deletions
+        });
         
         const response = await fetch('/api/admin/update-order-items', {
             method: 'POST',
@@ -269,6 +294,8 @@ async function saveOrderChanges() {
         });
         
         const result = await response.json();
+        
+        console.log('📥 Réponse serveur:', result);
         
         if (result.success) {
             Notification.showNotification('Modifications sauvegardées avec succès', 'success');
@@ -291,7 +318,7 @@ async function saveOrderChanges() {
             throw new Error(result.message || 'Erreur lors de la sauvegarde');
         }
     } catch (error) {
-        console.error('Erreur:', error);
+        console.error('❌ Erreur:', error);
         Notification.showNotification('Erreur lors de la sauvegarde: ' + error.message, 'error');
     } finally {
         if (saveBtn) {

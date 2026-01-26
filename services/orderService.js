@@ -853,160 +853,137 @@ const orderService = {
         }
     },
 
-	/**
-	 * Met à jour les articles d'une commande et recalcule la facture
-	 * + Gestion du stock lors des modifications
-	 */
-	updateOrderItems(orderId, userId, modifications, deletions) {
-		try {
-			return dbModule.transaction(() => {
-				// Vérifier que la commande existe
-				const order = dbModule.getOrderById.get(orderId);
-				if (!order) {
-					throw new Error('Commande non trouvée');
-				}
-				
-				// 🆕 GÉRER LES SUPPRESSIONS D'ABORD
-				if (deletions && deletions.length > 0) {
-					deletions.forEach(productName => {
-						// 🆕 Récupérer la quantité avant suppression pour remettre dans le stock
-						const deletedItem = dbModule.db.prepare(`
-							SELECT quantity FROM order_items 
-							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-						`).get(orderId, productName);
-						
-						if (deletedItem && deletedItem.quantity > 0) {
-							// Remettre la quantité dans le stock
-							this._incrementStock(productName, deletedItem.quantity);
-							console.log(`♻️ Stock restauré: ${productName} +${deletedItem.quantity}`);
-						}
-						
-						// Supprimer l'article de la commande
-						dbModule.db.prepare(`
-							DELETE FROM order_items 
-							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-						`).run(orderId, productName);
-						
-						console.log(`✅ Article "${productName}" supprimé de la commande ${orderId}`);
-					});
-				}
-				
-				let subtotalHT = 0;
-				
-				// 🆕 Mettre à jour chaque article modifié + gérer le stock
-				if (modifications && modifications.length > 0) {
-					modifications.forEach(mod => {
-						const { productName, product_name, quantity, unit_price } = mod;
-						const finalProductName = product_name || productName;
-						
-						// Récupérer l'article actuel
-						const currentItem = dbModule.db.prepare(`
-							SELECT * FROM order_items 
-							WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-						`).get(orderId, finalProductName);
-						
-						if (!currentItem) {
-							console.warn(`Article ${finalProductName} non trouvé`);
-							return;
-						}
-						
-						// Déterminer les nouvelles valeurs
-						const newProductName = product_name || currentItem.product_name;
-						const oldQuantity = currentItem.quantity;
-						const newQuantity = quantity !== undefined ? parseInt(quantity) : oldQuantity;
-						const newPrice = unit_price !== undefined ? parseFloat(unit_price) : currentItem.product_price;
-						
-						// 🆕 GESTION DU STOCK EN FONCTION DE LA DIFFÉRENCE
-						if (newQuantity !== oldQuantity) {
-							const quantityDiff = newQuantity - oldQuantity;
-							
-							if (quantityDiff > 0) {
-								// AUGMENTATION : soustraire du stock
-								this._decrementStock(finalProductName, quantityDiff);
-								console.log(`📉 Stock diminué: ${finalProductName} -${quantityDiff} (${oldQuantity} → ${newQuantity})`);
-							} else if (quantityDiff < 0) {
-								// DIMINUTION : ajouter au stock
-								this._incrementStock(finalProductName, Math.abs(quantityDiff));
-								console.log(`📈 Stock augmenté: ${finalProductName} +${Math.abs(quantityDiff)} (${oldQuantity} → ${newQuantity})`);
-							}
-						}
-						
-						// Mettre à jour l'article dans la commande
-						if (product_name && product_name !== currentItem.product_name) {
-							dbModule.db.prepare(`
-								UPDATE order_items 
-								SET product_name = ?, quantity = ?, product_price = ?
-								WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-							`).run(newProductName, newQuantity, newPrice, orderId, finalProductName);
-						} else {
-							dbModule.db.prepare(`
-								UPDATE order_items 
-								SET quantity = ?, product_price = ?
-								WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-							`).run(newQuantity, newPrice, orderId, finalProductName);
-						}
-					});
-				}
-				
-				// Recalculer le subtotal complet APRÈS suppressions et modifications
-				const allDeliveredItems = dbModule.db.prepare(`
-					SELECT * FROM order_items 
-					WHERE order_id = ? AND status = 'delivered'
-				`).all(orderId);
-				
-				subtotalHT = allDeliveredItems.reduce((sum, item) => {
-					return sum + (item.product_price * item.quantity);
-				}, 0);
-				
-				// Arrondir le subtotal
-				const subtotalHTRounded = Math.round(subtotalHT * 100) / 100;
-				
-				// Calculer la TVA (8.1%) arrondie au 5 centimes
-				const vatAmountBrut = subtotalHTRounded * 0.081;
-				const vatAmount = Math.round(vatAmountBrut * 20) / 20;
-				
-				// Calculer le total TTC
-				const totalTTC = subtotalHTRounded + vatAmount;
-				
-				// Mettre à jour la facture
-				const updateInvoice = dbModule.db.prepare(`
-					UPDATE invoices 
-					SET subtotal_ht = ?,
-						vat_amount = ?,
-						total_ttc = ?,
-						amount_due = ?,
-						updated_at = CURRENT_TIMESTAMP
-					WHERE order_id = ?
-				`);
-				
-				updateInvoice.run(
-					subtotalHTRounded,
-					vatAmount,
-					totalTTC,
-					totalTTC,
-					orderId
-				);
-				
-				console.log(`✅ Commande ${orderId} mise à jour`);
-				console.log(`   Nouveau subtotal HT: ${subtotalHTRounded.toFixed(2)} CHF`);
-				console.log(`   Nouvelle TVA: ${vatAmount.toFixed(2)} CHF`);
-				console.log(`   Nouveau total TTC: ${totalTTC.toFixed(2)} CHF`);
-				
-				return {
-					success: true,
-					message: 'Commande mise à jour avec succès',
-					totals: {
-						subtotalHT: subtotalHTRounded,
-						vatAmount: vatAmount,
-						totalTTC: totalTTC
-					}
-				};
-			});
-		} catch (error) {
-			console.error('Erreur updateOrderItems:', error);
-			throw error;
-		}
-	},
+    /**
+     * Met à jour les articles d'une commande et recalcule la facture
+     * + Gestion du stock lors des modifications
+     */
+    updateOrderItems(orderId, userId, modifications, deletions) {
+        try {
+            return dbModule.transaction(() => {
+                // Vérifier que la commande existe
+                const order = dbModule.getOrderById.get(orderId);
+                if (!order) {
+                    throw new Error('Commande non trouvée');
+                }
+                
+                // Gérer les suppressions d'abord
+                if (deletions && deletions.length > 0) {
+                    deletions.forEach(productName => {
+                        // Récupérer la quantité avant suppression
+                        const deletedItem = dbModule.db.prepare(`
+                            SELECT quantity FROM order_items 
+                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+                        `).get(orderId, productName);
+                        
+                        if (deletedItem && deletedItem.quantity > 0) {
+                            // Remettre la quantité dans le stock
+                            this._incrementStock(productName, deletedItem.quantity);
+                        }
+                        
+                        // Supprimer l'article de la commande
+                        dbModule.db.prepare(`
+                            DELETE FROM order_items 
+                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+                        `).run(orderId, productName);
+                    });
+                }
+                
+                // Traiter les modifications
+                if (modifications && modifications.length > 0) {
+                    modifications.forEach(mod => {
+                        const originalProductName = mod.productName;
+                        const newProductName = mod.product_name;
+                        const newQuantity = mod.quantity;
+                        const newPrice = mod.unit_price;
+                        
+                        // Récupérer l'article actuel avec le nom original
+                        const currentItem = dbModule.db.prepare(`
+                            SELECT * FROM order_items 
+                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+                        `).get(orderId, originalProductName);
+                        
+                        if (!currentItem) {
+                            return;
+                        }
+                        
+                        // Déterminer les nouvelles valeurs
+                        const finalProductName = newProductName || currentItem.product_name;
+                        const finalQuantity = newQuantity !== undefined ? newQuantity : currentItem.quantity;
+                        const finalPrice = newPrice !== undefined ? newPrice : currentItem.product_price;
+                        
+                        // Gestion du stock si quantité change
+                        if (finalQuantity !== currentItem.quantity) {
+                            const quantityDiff = finalQuantity - currentItem.quantity;
+                            
+                            if (quantityDiff > 0) {
+                                // Augmentation : soustraire du stock
+                                this._decrementStock(originalProductName, quantityDiff);
+                            } else if (quantityDiff < 0) {
+                                // Diminution : ajouter au stock
+                                this._incrementStock(originalProductName, Math.abs(quantityDiff));
+                            }
+                        }
+                        
+                        // Mise à jour avec le nom original dans le WHERE
+                        const updateStmt = dbModule.db.prepare(`
+                            UPDATE order_items 
+                            SET product_name = ?, quantity = ?, product_price = ?
+                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
+                        `);
+                        
+                        updateStmt.run(
+                            finalProductName,
+                            finalQuantity,
+                            finalPrice,
+                            orderId,
+                            originalProductName
+                        );
+                    });
+                }
+                
+                // Recalculer le subtotal complet
+                const allDeliveredItems = dbModule.db.prepare(`
+                    SELECT * FROM order_items 
+                    WHERE order_id = ? AND status = 'delivered'
+                `).all(orderId);
+                
+                const subtotalHT = allDeliveredItems.reduce((sum, item) => {
+                    return sum + (item.product_price * item.quantity);
+                }, 0);
+                
+                const subtotalHTRounded = Math.round(subtotalHT * 100) / 100;
+                const vatAmountBrut = subtotalHTRounded * 0.081;
+                const vatAmount = Math.round(vatAmountBrut * 20) / 20;
+                const totalTTC = subtotalHTRounded + vatAmount;
+                
+                // Mettre à jour la facture
+                const updateInvoice = dbModule.db.prepare(`
+                    UPDATE invoices 
+                    SET subtotal_ht = ?,
+                        vat_amount = ?,
+                        total_ttc = ?,
+                        amount_due = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE order_id = ?
+                `);
+                
+                updateInvoice.run(subtotalHTRounded, vatAmount, totalTTC, totalTTC, orderId);
+                
+                return {
+                    success: true,
+                    message: 'Commande mise à jour avec succès',
+                    totals: {
+                        subtotalHT: subtotalHTRounded,
+                        vatAmount: vatAmount,
+                        totalTTC: totalTTC
+                    }
+                };
+            });
+        } catch (error) {
+            console.error('❌ ERREUR updateOrderItems:', error);
+            throw error;
+        }
+    },
 
     // Création d'une commande à partir d'articles en attente de livraison
     createOrderFromPendingItems(userId, items) {
