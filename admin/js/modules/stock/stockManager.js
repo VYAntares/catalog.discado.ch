@@ -1,24 +1,28 @@
 // Stock Management Module
 class StockManager {
     constructor() {
-        this.products = [];
-        this.filteredProducts = [];
-        this.currentCategory = 'all';
-        this.searchTerm = '';
-        this.stockFilter = 'all';
-        this.supplierFilter = 'all'; // NOUVEAU: filtre fournisseur
-        this.init();
-    }
+		this.products = [];
+		this.filteredProducts = [];
+		this.suppliers = []; // NOUVEAU: Liste des fournisseurs
+		this.currentCategory = 'all';
+		this.searchTerm = '';
+		this.stockFilter = 'all';
+		this.supplierFilter = 'all';
+		this.init();
+	}
+
 
     async init() {
+		await this.loadSuppliers(); // NOUVEAU: Charger les fournisseurs en premier
 		await this.loadProducts();
 		this.setupEventListeners();
 		this.renderCategoryTabs();
 		this.renderSupplierFilter();
 		this.updateStats();
 		this.setupAddProductButton();
-		this.sortProducts('name-asc'); // Trie et affiche les produits
+		this.sortProducts('name-asc');
 	}
+
 
     async loadProducts() {
         try {
@@ -35,6 +39,18 @@ class StockManager {
             this.showNotification('Erreur de chargement des produits', 'error');
         }
     }
+
+	async loadSuppliers() {
+		try {
+			const response = await fetch('/api/suppliers');
+			if (!response.ok) throw new Error('Erreur de chargement des fournisseurs');
+			this.suppliers = await response.json();
+			console.log('Fournisseurs chargés:', this.suppliers);
+		} catch (error) {
+			console.error('Erreur chargement fournisseurs:', error);
+			this.suppliers = [];
+		}
+	}
 
     setupEventListeners() {
         // Search input
@@ -389,209 +405,197 @@ class StockManager {
     }
 
     openEditProductModal(productId) {
-        const product = this.products.find(p => p.id == productId);
-        
-        if (!product) {
-            this.showNotification('Produit non trouvé', 'error');
-            return;
-        }
+		const product = this.products.find(p => p.id == productId);
+		
+		if (!product) {
+			this.showNotification('Produit non trouvé', 'error');
+			return;
+		}
 
-        // Supprimer tout modal existant
-        const existingModal = document.getElementById('edit-product-modal');
-        if (existingModal) {
-            existingModal.remove();
-        }
+		// Supprimer tout modal existant
+		const existingModal = document.getElementById('edit-product-modal');
+		if (existingModal) {
+			existingModal.remove();
+		}
 
-        const modalHTML = `
-            <div class="modal-overlay" id="edit-product-modal">
-                <div class="modal-content modal-large">
-                    <div class="modal-header">
-                        <h3><i class="fas fa-edit"></i> Modifier le produit</h3>
-                        <button type="button" class="modal-close" id="modal-close-btn">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="edit-product-form" class="edit-product-form">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="edit-name">
-                                        <i class="fas fa-tag"></i> Nom du produit *
-                                    </label>
-                                    <input type="text" 
-                                           id="edit-name" 
-                                           name="name" 
-                                           value="${this.escapeHtml(product.name || '')}"
-                                           required>
-                                </div>
+		const modalHTML = `
+			<div class="modal-overlay" id="edit-product-modal">
+				<div class="modal-content modal-large">
+					<div class="modal-header">
+						<h3><i class="fas fa-edit"></i> Modifier le produit</h3>
+						<button type="button" class="modal-close" id="modal-close-btn">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+					<div class="modal-body">
+						<form id="edit-product-form" class="edit-product-form">
+							<div class="form-grid">
+								<div class="form-group">
+									<label for="edit-name">
+										<i class="fas fa-tag"></i> Nom du produit *
+									</label>
+									<input type="text" 
+										id="edit-name" 
+										name="name" 
+										value="${this.escapeHtml(product.name || '')}"
+										required>
+								</div>
 
-                                <div class="form-group">
-                                    <label for="edit-price">
-                                        <i class="fas fa-coins"></i> Prix (CHF) *
-                                    </label>
-                                    <input type="number" 
-                                           id="edit-price" 
-                                           name="price" 
-                                           value="${product.price || 0}"
-                                           step="0.01"
-                                           min="0"
-                                           required>
-                                </div>
+								<div class="form-group">
+									<label for="edit-price">
+										<i class="fas fa-coins"></i> Prix de vente (CHF) *
+									</label>
+									<input type="number" 
+										id="edit-price" 
+										name="price" 
+										value="${product.price || 0}"
+										step="0.01"
+										min="0"
+										required>
+								</div>
 
-                                <div class="form-group">
-                                    <label for="edit-category">
-                                        <i class="fas fa-folder"></i> Catégorie *
-                                    </label>
-                                    <select id="edit-category" name="category" required>
-                                        ${this.getCategoryOptions(product.category)}
-                                    </select>
-                                </div>
+								<div class="form-group">
+									<label for="edit-origin-price">
+										<i class="fas fa-dollar-sign"></i> Prix d'achat (CHF)
+									</label>
+									<input type="number" 
+										id="edit-origin-price" 
+										name="origin_price" 
+										value="${product.origin_price || 0}"
+										step="0.01"
+										min="0">
+								</div>
 
-                                <div class="form-group">
-                                    <label for="edit-supplier">
-                                        <i class="fas fa-truck"></i> Fournisseur
-                                    </label>
-                                    <input type="text" 
-                                           id="edit-supplier" 
-                                           name="supplier" 
-                                           value="${this.escapeHtml(product.supplier || '')}"
-                                           placeholder="Nom du fournisseur">
-                                </div>
+								<div class="form-group">
+									<label for="edit-category">
+										<i class="fas fa-folder"></i> Catégorie *
+									</label>
+									<select id="edit-category" name="category" required>
+										${this.getCategoryOptions(product.category)}
+									</select>
+								</div>
 
-                                <div class="form-group">
-                                    <label for="edit-stock">
-                                        <i class="fas fa-boxes"></i> Stock *
-                                    </label>
-                                    <input type="number" 
-                                           id="edit-stock" 
-                                           name="stock" 
-                                           value="${product.stock || 0}"
-                                           min="0"
-                                           required>
-                                </div>
+								<div class="form-group">
+									<label for="edit-supplier">
+										<i class="fas fa-truck"></i> Fournisseur
+									</label>
+									<select id="edit-supplier" name="supplier">
+										<option value="">Non défini</option>
+										${this.getSupplierOptions(product.supplier)}
+									</select>
+								</div>
 
-                                <div class="form-group full-width">
-                                    <label for="edit-image-url">
-                                        <i class="fas fa-image"></i> URL de l'image
-                                    </label>
-                                    <input type="text" 
-                                           id="edit-image-url" 
-                                           name="image_url" 
-                                           value="${this.escapeHtml(product.image_url || '')}"
-                                           placeholder="/images/category/product.jpg">
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" 
-                                class="modal-btn modal-btn-secondary" 
-                                id="modal-cancel-btn">
-                            <i class="fas fa-times"></i> Annuler
-                        </button>
-                        <button type="button" 
-                                class="modal-btn modal-btn-danger" 
-                                id="modal-delete-btn">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </button>
-                        <button type="button" 
-                                class="modal-btn modal-btn-primary" 
-                                id="modal-save-btn">
-                            <i class="fas fa-save"></i> Enregistrer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
+								<div class="form-group">
+									<label for="edit-stock">
+										<i class="fas fa-boxes"></i> Stock *
+									</label>
+									<input type="number" 
+										id="edit-stock" 
+										name="stock" 
+										value="${product.stock || 0}"
+										min="0"
+										required>
+								</div>
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+								<div class="form-group full-width">
+									<label for="edit-image-url">
+										<i class="fas fa-image"></i> URL de l'image
+									</label>
+									<input type="text" 
+										id="edit-image-url" 
+										name="image_url" 
+										value="${this.escapeHtml(product.image_url || '')}"
+										placeholder="/images/category/product.jpg">
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" 
+								class="modal-btn modal-btn-secondary" 
+								id="modal-cancel-btn">
+							<i class="fas fa-times"></i> Annuler
+						</button>
+						<button type="button" 
+								class="modal-btn modal-btn-danger" 
+								id="modal-delete-btn">
+							<i class="fas fa-trash"></i> Supprimer
+						</button>
+						<button type="button" 
+								class="modal-btn modal-btn-primary" 
+								id="modal-save-btn">
+							<i class="fas fa-save"></i> Enregistrer
+						</button>
+					</div>
+				</div>
+			</div>
+		`;
 
-        // IMMÉDIATEMENT après l'insertion, attacher les événements
-        const modal = document.getElementById('edit-product-modal');
-        const closeBtn = document.getElementById('modal-close-btn');
-        const cancelBtn = document.getElementById('modal-cancel-btn');
-        const deleteBtn = document.getElementById('modal-delete-btn');
-        const saveBtn = document.getElementById('modal-save-btn');
+		document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-        console.log('🔍 Modal trouvé:', modal);
-        console.log('🔍 Boutons trouvés:', { closeBtn, cancelBtn, deleteBtn, saveBtn });
+		// Attacher les événements
+		const modal = document.getElementById('edit-product-modal');
+		const closeBtn = document.getElementById('modal-close-btn');
+		const cancelBtn = document.getElementById('modal-cancel-btn');
+		const deleteBtn = document.getElementById('modal-delete-btn');
+		const saveBtn = document.getElementById('modal-save-btn');
 
-        if (!modal) {
-            console.error('❌ Modal non trouvé dans le DOM!');
-            return;
-        }
+		if (!modal) {
+			console.error('❌ Modal non trouvé dans le DOM!');
+			return;
+		}
 
-        // Fonction pour fermer le modal
-        const closeModal = () => {
-            console.log('✅ Fermeture du modal...');
-            modal.remove();
-            console.log('✅ Modal supprimé');
-        };
+		const closeModal = () => {
+			modal.remove();
+		};
 
-        // Event: Close button (X)
-        if (closeBtn) {
-            closeBtn.onclick = (e) => {
-                console.log('🖱️ Click sur X détecté');
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-            };
-        } else {
-            console.error('❌ Close button non trouvé!');
-        }
+		if (closeBtn) {
+			closeBtn.onclick = (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				closeModal();
+			};
+		}
 
-        // Event: Cancel button
-        if (cancelBtn) {
-            cancelBtn.onclick = (e) => {
-                console.log('🖱️ Click sur Annuler détecté');
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-            };
-        } else {
-            console.error('❌ Cancel button non trouvé!');
-        }
+		if (cancelBtn) {
+			cancelBtn.onclick = (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				closeModal();
+			};
+		}
 
-        // Event: Delete button
-        if (deleteBtn) {
-            deleteBtn.onclick = (e) => {
-                console.log('🖱️ Click sur Supprimer détecté');
-                e.preventDefault();
-                e.stopPropagation();
-                this.deleteProduct(productId);
-            };
-        }
+		if (deleteBtn) {
+			deleteBtn.onclick = (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.deleteProduct(productId);
+			};
+		}
 
-        // Event: Save button
-        if (saveBtn) {
-            saveBtn.onclick = (e) => {
-                console.log('🖱️ Click sur Enregistrer détecté');
-                e.preventDefault();
-                e.stopPropagation();
-                this.saveProductChanges(productId);
-            };
-        }
+		if (saveBtn) {
+			saveBtn.onclick = (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.saveProductChanges(productId);
+			};
+		}
 
-        // Event: Close on overlay click
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                console.log('🖱️ Click sur overlay détecté');
-                closeModal();
-            }
-        };
+		modal.onclick = (e) => {
+			if (e.target === modal) {
+				closeModal();
+			}
+		};
 
-        // Event: Close on Escape key
-        const escapeHandler = (e) => {
-            if (e.key === 'Escape') {
-                console.log('⌨️ Touche Escape détectée');
-                closeModal();
-                document.removeEventListener('keydown', escapeHandler);
-            }
-        };
-        document.addEventListener('keydown', escapeHandler);
-        
-        console.log('✅ Tous les événements attachés');
-    }
+		const escapeHandler = (e) => {
+			if (e.key === 'Escape') {
+				closeModal();
+				document.removeEventListener('keydown', escapeHandler);
+			}
+		};
+		document.addEventListener('keydown', escapeHandler);
+	}
+
 
     // Méthode helper pour échapper le HTML
     escapeHtml(text) {
@@ -616,76 +620,88 @@ class StockManager {
         `).join('');
     }
 
-    async saveProductChanges(productId) {
-        const form = document.getElementById('edit-product-form');
-        const formData = new FormData(form);
-        
-        const productData = {
-            name: formData.get('name'),
-            price: parseFloat(formData.get('price')),
-            category: formData.get('category'),
-            supplier: formData.get('supplier'),
-            stock: parseInt(formData.get('stock')),
-            image_url: formData.get('image_url')
-        };
+	getSupplierOptions(currentSupplier) {
+		return this.suppliers.map(supplier => `
+			<option value="${this.escapeHtml(supplier.name)}" 
+					${supplier.name === currentSupplier ? 'selected' : ''}>
+				${this.escapeHtml(supplier.name)}
+			</option>
+		`).join('');
+	}
 
-        // Validation
-        if (!productData.name || !productData.price || !productData.category) {
-            this.showNotification('Veuillez remplir tous les champs obligatoires', 'error');
-            return;
-        }
 
-        if (productData.price < 0 || productData.stock < 0) {
-            this.showNotification('Le prix et le stock ne peuvent pas être négatifs', 'error');
-            return;
-        }
+	async saveProductChanges(productId) {
+		const form = document.getElementById('edit-product-form');
+		const formData = new FormData(form);
+		
+		const productData = {
+			name: formData.get('name'),
+			price: parseFloat(formData.get('price')),
+			origin_price: parseFloat(formData.get('origin_price')) || 0, // NOUVEAU
+			category: formData.get('category'),
+			supplier: formData.get('supplier') || 'Non défini',
+			stock: parseInt(formData.get('stock')),
+			image_url: formData.get('image_url')
+		};
 
-        try {
-            console.log(`📤 Envoi PUT /api/products/${productId}`, productData);
+		// Validation
+		if (!productData.name || !productData.price || !productData.category) {
+			this.showNotification('Veuillez remplir tous les champs obligatoires', 'error');
+			return;
+		}
 
-            const response = await fetch(`/api/products/${productId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(productData)
-            });
+		if (productData.price < 0 || productData.stock < 0 || productData.origin_price < 0) {
+			this.showNotification('Les prix et le stock ne peuvent pas être négatifs', 'error');
+			return;
+		}
 
-            console.log('📥 Réponse reçue, status:', response.status);
+		try {
+			console.log(`📤 Envoi PUT /api/products/${productId}`, productData);
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Erreur du serveur:', errorText);
-                throw new Error(errorText || 'Erreur de mise à jour');
-            }
+			const response = await fetch(`/api/products/${productId}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(productData)
+			});
 
-            const result = await response.json();
-            console.log('✅ Résultat:', result);
+			console.log('📥 Réponse reçue, status:', response.status);
 
-            // Mettre à jour les données locales
-            const productIndex = this.products.findIndex(p => p.id == productId);
-            if (productIndex !== -1) {
-                this.products[productIndex] = {
-                    ...this.products[productIndex],
-                    ...result.product
-                };
-            }
+			if (!response.ok) {
+				const errorText = await response.text();
+				console.error('❌ Erreur du serveur:', errorText);
+				throw new Error(errorText || 'Erreur de mise à jour');
+			}
 
-            // Fermer le modal
-            document.getElementById('edit-product-modal').remove();
+			const result = await response.json();
+			console.log('✅ Résultat:', result);
 
-            // Rafraîchir l'affichage
-            await this.loadProducts();
-            this.renderSupplierFilter(); // Rafraîchir la liste des fournisseurs
-            this.filterProducts();
+			// Mettre à jour les données locales
+			const productIndex = this.products.findIndex(p => p.id == productId);
+			if (productIndex !== -1) {
+				this.products[productIndex] = {
+					...this.products[productIndex],
+					...result.product
+				};
+			}
 
-            this.showNotification('Produit mis à jour avec succès', 'success');
+			// Fermer le modal
+			document.getElementById('edit-product-modal').remove();
 
-        } catch (error) {
-            console.error('❌ Erreur complète:', error);
-            this.showNotification('Erreur: ' + error.message, 'error');
-        }
-    }
+			// Rafraîchir l'affichage
+			await this.loadProducts();
+			this.renderSupplierFilter();
+			this.filterProducts();
+
+			this.showNotification('Produit mis à jour avec succès', 'success');
+
+		} catch (error) {
+			console.error('❌ Erreur complète:', error);
+			this.showNotification('Erreur: ' + error.message, 'error');
+		}
+	}
+
 
     async deleteProduct(productId) {
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')) {

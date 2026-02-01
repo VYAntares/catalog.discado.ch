@@ -2,6 +2,7 @@
 
 import { formatCurrency } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
+import { ComptaChart } from './comptaChart.js';
 
 class ComptaMain {
     constructor() {
@@ -12,6 +13,7 @@ class ComptaMain {
         this.selectedYear = new Date().getFullYear();
         this.currentSortOption = 'total_desc';
         this.editingCells = new Map();
+		this.chart = null;
         this.init();
     }
 
@@ -20,6 +22,7 @@ class ComptaMain {
         this.setupEventListeners();
         this.checkUrlParams();
         this.loadOverviewData();
+		this.loadAndRenderChart();
         this.loadClientsData();
     }
 
@@ -46,6 +49,7 @@ class ComptaMain {
                 this.loadUnpaidInvoices();
             } else {
                 this.loadOverviewData();
+				this.loadAndRenderChart();
             }
         });
 
@@ -112,8 +116,9 @@ class ComptaMain {
         if (targetTab === 'clients') {
             this.loadClientsData();
         } else if (targetTab === 'overview') {
-            this.loadOverviewData();
-        } else if (targetTab === 'unpaid') {
+			this.loadOverviewData();
+			this.loadAndRenderChart();
+		} else if (targetTab === 'unpaid') {
             this.loadUnpaidInvoices();
         }
     }
@@ -184,6 +189,24 @@ class ComptaMain {
         // Redirection vers la nouvelle page de détails
         window.location.href = `/admin/compta-details?year=${this.selectedYear}&type=${statType}`;
     }
+
+	async loadAndRenderChart() {
+		try {
+			this.chart = new ComptaChart(this.selectedYear);
+			const success = await this.chart.loadData();
+			
+			if (success) {
+				this.chart.render('chartWrapper');
+			} else {
+				document.getElementById('chartWrapper').innerHTML = 
+					'<div class="error-message">Impossible de charger le graphique</div>';
+			}
+		} catch (error) {
+			console.error('Erreur lors du chargement du graphique:', error);
+			document.getElementById('chartWrapper').innerHTML = 
+				'<div class="error-message">Erreur lors du chargement du graphique</div>';
+		}
+	}
 
     async loadClientsData() {
         try {

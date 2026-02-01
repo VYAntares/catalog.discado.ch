@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/admin/css/main.css">
     <link rel="stylesheet" href="/admin/css/compta.css">
+    <link rel="stylesheet" href="/admin/css/compta-chart.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 </head>
 <body>
@@ -78,6 +79,33 @@
         <div id="overview-tab" class="compta-tab-content active">
             <div class="stats-grid" id="statsGrid">
                 <div class="loading">Chargement des statistiques...</div>
+            </div>
+
+            <!-- Graphique mensuel -->
+            <div class="chart-container" id="chartContainer">
+                <div class="chart-header">
+                    <h2 class="chart-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Évolution mensuelle
+                    </h2>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color total"></div>
+                            <span>Total TTC</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color paid"></div>
+                            <span>Montant payé</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color due"></div>
+                            <span>Montant dû</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-wrapper" id="chartWrapper">
+                    <div class="loading">Chargement du graphique...</div>
+                </div>
             </div>
         </div>
 

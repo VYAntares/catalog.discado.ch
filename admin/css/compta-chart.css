@@ -1,0 +1,291 @@
+/* admin/css/compta-chart.css - Styles pour le graphique comptable */
+
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.chart-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+}
+
+.legend-color.total {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.legend-color.paid {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+}
+
+.legend-color.due {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+}
+
+/* Wrapper principal du graphique */
+.chart-wrapper {
+    position: relative;
+    height: 420px;
+    margin-top: 20px;
+}
+
+/* Axe Y (labels à gauche) */
+.y-axis {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 40px;
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-right: 10px;
+}
+
+.y-axis-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+    text-align: right;
+}
+
+/* Lignes de grille horizontales */
+.grid-lines {
+    position: absolute;
+    left: 80px;
+    right: 0;
+    top: 0;
+    bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.grid-line {
+    width: 100%;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+/* Canvas contenant les barres */
+.chart-canvas {
+    position: absolute;
+    left: 80px;
+    right: 0;
+    top: 0;
+    bottom: 40px;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    border-left: 2px solid #cbd5e1;
+    border-bottom: 2px solid #cbd5e1;
+    z-index: 2;
+}
+
+/* Groupe de barres par mois */
+.month-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+    position: relative;
+}
+
+/* Container des 3 barres */
+.bars-container {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Barre individuelle */
+.bar {
+    width: 18px;
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.bar:hover {
+    opacity: 0.85;
+    transform: translateY(-2px);
+}
+
+.bar.total {
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.bar.paid {
+    background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+}
+
+.bar.due {
+    background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+}
+
+/* Tooltip au survol */
+.bar-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 100;
+}
+
+.bar:hover .bar-tooltip {
+    opacity: 1;
+}
+
+.bar-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Label du mois */
+.month-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+    text-align: center;
+    padding-top: 10px;
+    position: absolute;
+    bottom: -35px;
+}
+
+/* Message si pas de données */
+.no-data-chart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #94a3b8;
+}
+
+.no-data-chart i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.no-data-chart p {
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .chart-wrapper {
+        height: 380px;
+    }
+    
+    .bar {
+        width: 16px;
+    }
+    
+    .bars-container {
+        gap: 5px;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        padding: 20px;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .chart-wrapper {
+        height: 350px;
+    }
+    
+    .y-axis {
+        width: 60px;
+    }
+    
+    .chart-canvas {
+        left: 60px;
+    }
+    
+    .grid-lines {
+        left: 60px;
+    }
+    
+    .bar {
+        width: 14px;
+    }
+    
+    .bars-container {
+        gap: 4px;
+    }
+    
+    .month-label {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bar {
+        width: 12px;
+    }
+    
+    .bars-container {
+        gap: 3px;
+    }
+}

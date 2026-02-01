@@ -196,10 +196,8 @@ function requirePermission(permission) {
             <div class="container">
                 <div class="icon">🔒</div>
                 <h1>Accès refusé</h1>
-                <p>Tu n'as pas l'autorisation d'accéder à cette section. Car tu es gay.</p>
-                <p>Contacte <strong>Endrit</strong> si tu penses que c'est une erreur.</p>
-				<p>Mais tu sais déjà que ça ne l'est pas, car tu sais que tu es..</p>
-				<p><strong>gay.</strong></p>
+                <p>Vous n'avez pas les autorisations nécessaires pour accéder à cette section.</p>
+                <p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter votre administrateur système.</p>
                 <a href="/admin/orders">← Retour au tableau de bord</a>
             </div>
         </body>
@@ -705,13 +703,13 @@ app.put('/api/products/:id/stock', requireLogin, requireAdmin, requirePermission
 
 // Routes API à ajouter dans index.js pour la mise à jour des produits
 
-// UPDATE product (toutes les informations)
+// REMPLACER la route app.put('/api/products/:id') existante par celle-ci :
 app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category, supplier, image_url, stock } = req.body;
+    const { name, price, origin_price, category, supplier, image_url, stock } = req.body;
 
-    console.log(`📝 Mise à jour produit ${id}:`, { name, price, category, supplier, image_url, stock });
+    console.log(`📝 Mise à jour produit ${id}:`, { name, price, origin_price, category, supplier, image_url, stock });
 
     // Validation
     if (!name || !price || !category) {
@@ -720,6 +718,7 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
 
     const priceNum = Number(price);
     const stockNum = Number(stock);
+    const originPriceNum = Number(origin_price) || 0; // NOUVEAU
 
     if (isNaN(priceNum) || priceNum < 0) {
       return res.status(400).json({ error: 'Prix invalide' });
@@ -727,6 +726,10 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
 
     if (isNaN(stockNum) || stockNum < 0) {
       return res.status(400).json({ error: 'Stock invalide' });
+    }
+
+    if (isNaN(originPriceNum) || originPriceNum < 0) {
+      return res.status(400).json({ error: 'Prix d\'origine invalide' });
     }
 
     // Vérifier si le produit existe
@@ -739,11 +742,11 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
     // Mettre à jour le produit
     const updateStmt = dbModule.db.prepare(`
       UPDATE products 
-      SET name = ?, price = ?, category = ?, supplier = ?, image_url = ?, stock = ?
+      SET name = ?, price = ?, origin_price = ?, category = ?, supplier = ?, image_url = ?, stock = ?
       WHERE id = ?
     `);
 
-    updateStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum, id);
+    updateStmt.run(name, priceNum, originPriceNum, category, supplier || null, image_url || null, stockNum, id);
 
     // Récupérer le produit mis à jour
     const updatedProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);
@@ -757,6 +760,7 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
         id: updatedProduct.id,
         name: updatedProduct.name,
         price: Number(updatedProduct.price) || 0,
+        origin_price: Number(updatedProduct.origin_price) || 0, // NOUVEAU
         category: updatedProduct.category,
         supplier: updatedProduct.supplier,
         image_url: updatedProduct.image_url,
@@ -1215,6 +1219,151 @@ app.post('/api/admin/update-order-items', requireLogin, requireAdmin, async (req
       message: 'Erreur lors de la mise à jour: ' + error.message 
     });
   }
+});
+
+// ===== AJOUTER CETTE ROUTE API APRÈS LES ROUTES /api/products =====
+// (Placer cette route avec les autres routes API, par exemple après app.get('/api/products/stock'))
+
+// GET all suppliers
+app.get('/api/suppliers', requireLogin, requireAdmin, async (req, res) => {
+    try {
+        const suppliers = dbModule.suppliers.getAll.all();
+        
+        // Parser les JSON strings pour les emails, wechats, phones
+        const parsedSuppliers = suppliers.map(supplier => ({
+            id: supplier.id,
+            name: supplier.name,
+            emails: supplier.emails ? JSON.parse(supplier.emails) : [],
+            wechats: supplier.wechats ? JSON.parse(supplier.wechats) : [],
+            phones: supplier.phones ? JSON.parse(supplier.phones) : [],
+            notes: supplier.notes || '',
+            created_at: supplier.created_at,
+            updated_at: supplier.updated_at
+        }));
+        
+        res.json(parsedSuppliers);
+    } catch (error) {
+        console.error('Error fetching suppliers:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des fournisseurs' });
+    }
+});
+
+// GET single supplier
+app.get('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const supplier = dbModule.suppliers.getById.get(id);
+        
+        if (!supplier) {
+            return res.status(404).json({ error: 'Fournisseur non trouvé' });
+        }
+        
+        res.json({
+            id: supplier.id,
+            name: supplier.name,
+            emails: supplier.emails ? JSON.parse(supplier.emails) : [],
+            wechats: supplier.wechats ? JSON.parse(supplier.wechats) : [],
+            phones: supplier.phones ? JSON.parse(supplier.phones) : [],
+            notes: supplier.notes || '',
+            created_at: supplier.created_at,
+            updated_at: supplier.updated_at
+        });
+    } catch (error) {
+        console.error('Error fetching supplier:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération du fournisseur' });
+    }
+});
+
+// CREATE supplier
+app.post('/api/suppliers', requireLogin, requireAdmin, async (req, res) => {
+    try {
+        const { name, emails, wechats, phones, notes } = req.body;
+        
+        if (!name) {
+            return res.status(400).json({ error: 'Le nom du fournisseur est requis' });
+        }
+        
+        // Vérifier si le nom existe déjà
+        const existing = dbModule.suppliers.getByName.get(name);
+        if (existing) {
+            return res.status(409).json({ error: 'Un fournisseur avec ce nom existe déjà' });
+        }
+        
+        const result = dbModule.suppliers.create.run(
+            name,
+            JSON.stringify(emails || []),
+            JSON.stringify(wechats || []),
+            JSON.stringify(phones || []),
+            notes || ''
+        );
+        
+        res.status(201).json({
+            success: true,
+            message: 'Fournisseur créé avec succès',
+            id: result.lastInsertRowid
+        });
+    } catch (error) {
+        console.error('Error creating supplier:', error);
+        res.status(500).json({ error: 'Erreur lors de la création du fournisseur' });
+    }
+});
+
+// UPDATE supplier
+app.put('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, emails, wechats, phones, notes } = req.body;
+        
+        if (!name) {
+            return res.status(400).json({ error: 'Le nom du fournisseur est requis' });
+        }
+        
+        // Vérifier si le fournisseur existe
+        const supplier = dbModule.suppliers.getById.get(id);
+        if (!supplier) {
+            return res.status(404).json({ error: 'Fournisseur non trouvé' });
+        }
+        
+        dbModule.suppliers.update.run(
+            name,
+            JSON.stringify(emails || []),
+            JSON.stringify(wechats || []),
+            JSON.stringify(phones || []),
+            notes || '',
+            id
+        );
+        
+        res.json({
+            success: true,
+            message: 'Fournisseur mis à jour avec succès'
+        });
+    } catch (error) {
+        console.error('Error updating supplier:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du fournisseur' });
+    }
+});
+
+// DELETE supplier
+app.delete('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Vérifier si le fournisseur existe
+        const supplier = dbModule.suppliers.getById.get(id);
+        if (!supplier) {
+            return res.status(404).json({ error: 'Fournisseur non trouvé' });
+        }
+        
+        dbModule.suppliers.delete.run(id);
+        
+        res.json({
+            success: true,
+            message: 'Fournisseur supprimé avec succès'
+        });
+    } catch (error) {
+        console.error('Error deleting supplier:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression du fournisseur' });
+    }
 });
 
 // ===== API ROUTES - COMPTABILITÉ =====

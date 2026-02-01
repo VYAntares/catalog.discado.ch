@@ -1,5 +1,4 @@
 // db.js - Module de gestion de base de données
-// services/db.js
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
@@ -17,11 +16,10 @@ const db = new Database(dbPath);
 // Activation des clés étrangères
 db.pragma('foreign_keys = ON');
 
-
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -87,19 +85,47 @@ function initDatabase() {
         }
     }
 
-	// Création de la table products
-	db.exec(`
-	CREATE TABLE IF NOT EXISTS products (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		price REAL NOT NULL,
-		category TEXT NOT NULL,
-		supplier TEXT,
-		image_url TEXT,
-		stock INTEGER DEFAULT 0,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	)
-	`);
+    // Création de la table products
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
+        category TEXT NOT NULL,
+        supplier TEXT,
+        image_url TEXT,
+        stock INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    `);
+
+    // Ajout de la colonne origin_price à products si elle n'existe pas
+    if (!columnExists('products', 'origin_price')) {
+        try {
+            db.exec(`
+                ALTER TABLE products 
+                ADD COLUMN origin_price REAL DEFAULT 0
+            `);
+            console.log('✅ Colonne origin_price ajoutée à la table products');
+        } catch (error) {
+            console.error('⚠️ Erreur lors de l\'ajout de origin_price:', error.message);
+        }
+    }
+
+    // Création de la table suppliers
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS suppliers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        emails TEXT,
+        wechats TEXT,
+        phones TEXT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    `);
+    console.log('✅ Table suppliers créée ou déjà existante');
 
     // Création de la table orders
     db.exec(`
@@ -141,47 +167,47 @@ function initDatabase() {
     )
     `);
 
-	// Création de la table invoices
-	db.exec(`
-	CREATE TABLE IF NOT EXISTS invoices (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		invoice_number TEXT UNIQUE NOT NULL,
-		order_id TEXT NOT NULL,
-		user_id TEXT NOT NULL,
-		client_full_name TEXT,
-		
-		invoice_date TIMESTAMP NOT NULL,
-		
-		subtotal_ht REAL NOT NULL,
-		vat_amount REAL NOT NULL,
-		total_ttc REAL NOT NULL,
-		
-		payment_status TEXT DEFAULT 'unpaid',
-		amount_paid REAL DEFAULT 0,
-		amount_due REAL NOT NULL,
-		
-		due_date TIMESTAMP,
-		paid_date TIMESTAMP,
-		
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		
-		FOREIGN KEY (order_id) REFERENCES orders(order_id),
-		FOREIGN KEY (user_id) REFERENCES users(username)
-	)
-	`);
+    // Création de la table invoices
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_number TEXT UNIQUE NOT NULL,
+        order_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        client_full_name TEXT,
+        
+        invoice_date TIMESTAMP NOT NULL,
+        
+        subtotal_ht REAL NOT NULL,
+        vat_amount REAL NOT NULL,
+        total_ttc REAL NOT NULL,
+        
+        payment_status TEXT DEFAULT 'unpaid',
+        amount_paid REAL DEFAULT 0,
+        amount_due REAL NOT NULL,
+        
+        due_date TIMESTAMP,
+        paid_date TIMESTAMP,
+        
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        
+        FOREIGN KEY (order_id) REFERENCES orders(order_id),
+        FOREIGN KEY (user_id) REFERENCES users(username)
+    )
+    `);
 
-	db.exec(`
-	CREATE TABLE IF NOT EXISTS user_permissions (
-		username TEXT PRIMARY KEY,
-		stock INTEGER DEFAULT 0,
-		compta INTEGER DEFAULT 0,
-		orders INTEGER DEFAULT 1,
-		clients INTEGER DEFAULT 0,
-		order_history INTEGER DEFAULT 1,
-		FOREIGN KEY (username) REFERENCES users(username)
-	)
-	`);
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_permissions (
+        username TEXT PRIMARY KEY,
+        stock INTEGER DEFAULT 0,
+        compta INTEGER DEFAULT 0,
+        orders INTEGER DEFAULT 1,
+        clients INTEGER DEFAULT 0,
+        order_history INTEGER DEFAULT 1,
+        FOREIGN KEY (username) REFERENCES users(username)
+    )
+    `);
 }
 
 // Initialisation de la base de données
@@ -222,7 +248,6 @@ module.exports = {
                 shop_name = ?, shop_address = ?, shop_city = ?, shop_zip_code = ?, referral_source = ?, last_updated = ?
             WHERE username = ?
         `),
-        // Requêtes de compatibilité sans referral_source
         fallbackCreate: db.prepare(`
             INSERT INTO user_profiles 
             (username, first_name, last_name, email, phone, shop_name, shop_address, shop_city, shop_zip_code, last_updated) 
@@ -235,6 +260,40 @@ module.exports = {
             WHERE username = ?
         `),
         getAll: db.prepare('SELECT * FROM user_profiles')
+    },
+    
+    // Requêtes liées aux fournisseurs
+    suppliers: {
+        getAll: db.prepare('SELECT * FROM suppliers ORDER BY name ASC'),
+        getById: db.prepare('SELECT * FROM suppliers WHERE id = ?'),
+        getByName: db.prepare('SELECT * FROM suppliers WHERE name = ?'),
+        create: db.prepare(`
+            INSERT INTO suppliers (name, emails, wechats, phones, notes) 
+            VALUES (?, ?, ?, ?, ?)
+        `),
+        update: db.prepare(`
+            UPDATE suppliers 
+            SET name = ?, emails = ?, wechats = ?, phones = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `),
+        delete: db.prepare('DELETE FROM suppliers WHERE id = ?')
+    },
+
+    // Requêtes liées aux produits
+    products: {
+        getAll: db.prepare('SELECT * FROM products'),
+        getById: db.prepare('SELECT * FROM products WHERE id = ?'),
+        create: db.prepare(`
+            INSERT INTO products (name, price, category, supplier, image_url, stock, origin_price) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `),
+        update: db.prepare(`
+            UPDATE products 
+            SET name = ?, price = ?, category = ?, supplier = ?, image_url = ?, stock = ?, origin_price = ?
+            WHERE id = ?
+        `),
+        updateStock: db.prepare('UPDATE products SET stock = ? WHERE id = ?'),
+        delete: db.prepare('DELETE FROM products WHERE id = ?')
     },
     
     // Requêtes liées aux commandes
@@ -280,7 +339,7 @@ module.exports = {
         `)
     },
     
-    // Maintien des anciennes références pour la compatibilité avec le code existant
+    // Maintien des anciennes références pour la compatibilité
     getUserByUsername: db.prepare('SELECT * FROM users WHERE username = ?'),
     createUser: db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)'),
     getAllUsers: db.prepare('SELECT * FROM users'),
@@ -326,16 +385,8 @@ module.exports = {
         SET quantity = ? 
         WHERE order_id = ? AND product_name = ? AND category = ?
     `),
-    updateOrderDate: db.prepare(`
-        UPDATE orders 
-        SET date = ? 
-        WHERE order_id = ?
-    `),
-    updateOrderDateAndReference: db.prepare(`
-        UPDATE orders 
-        SET date = ?, reference = ? 
-        WHERE order_id = ?
-    `),
+    updateOrderDate: db.prepare('UPDATE orders SET date = ? WHERE order_id = ?'),
+    updateOrderDateAndReference: db.prepare('UPDATE orders SET date = ?, reference = ? WHERE order_id = ?'),
     addPendingDelivery: db.prepare(`
         INSERT INTO pending_deliveries (user_id, product_name, product_price, quantity, category) 
         VALUES (?, ?, ?, ?, ?)
