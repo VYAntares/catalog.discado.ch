@@ -10,6 +10,7 @@
 │   │   ├── history.css
 │   │   ├── main.css
 │   │   ├── orders.css
+│   │   ├── stats.css
 │   │   └── stock.css
 │   ├── js
 │   │   ├── core
@@ -34,6 +35,8 @@
 │   │   │   ├── orders
 │   │   │   │   ├── orderList.js
 │   │   │   │   └── orderProcess.js
+│   │   │   ├── stats
+│   │   │   │   └── statsManager.js
 │   │   │   └── stock
 │   │   │       ├── stockManager.js
 │   │   │       └── stockUtils.js
@@ -52,6 +55,7 @@
 │       ├── order-history.html
 │       ├── orders.html
 │       ├── qrcode.html
+│       ├── stats.html
 │       └── stock.html
 ├── config
 │   └── keys.js
@@ -155,4 +159,4 @@
 ├── set-permissions.js
 └── tree_project
 
-30 directories, 125 files
+31 directories, 128 files
