@@ -9,7 +9,8 @@ const TAB_PERMISSIONS = {
   '/admin/order-history': 'order_history',
   '/admin/clients': 'clients',
   '/admin/compta': 'compta',
-  '/admin/stock': 'stock'
+  '/admin/stock': 'stock',
+  '/admin/stats': 'stats'
 };
 
 // Map des sous-pages vers leur page parente

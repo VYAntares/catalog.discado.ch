@@ -8,7 +8,8 @@ const PERMISSIONS = {
   compta: true,
   orders: true,
   clients: true,
-  order_history: true
+  order_history: true,
+  stats: true,
 };
 
 permissionService.setUserPermissions(USERNAME, PERMISSIONS);

@@ -394,6 +394,10 @@ app.get('/admin/stock', requireLogin, requireAdmin, requirePermission('stock'), 
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'stock.html'));
 });
 
+app.get('/admin/stats', requireLogin, requireAdmin, requirePermission('stats'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'stats.html'));
+});
+
 app.get('/admin/compta-details', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin/pages/compta-details.html'));
 });
