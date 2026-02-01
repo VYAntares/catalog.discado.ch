@@ -12,6 +12,13 @@ const TAB_PERMISSIONS = {
   '/admin/stock': 'stock'
 };
 
+// Map des sous-pages vers leur page parente
+const SUBPAGE_TO_PARENT = {
+  '/admin/client-invoices': '/admin/compta',
+  '/admin/compta-details': '/admin/compta',
+  '/admin/compta-month': '/admin/compta'
+};
+
 /**
  * Masque les onglets auxquels l'utilisateur n'a pas accès
  */
@@ -99,8 +106,11 @@ async function checkCurrentPageAccess() {
     const accessiblePaths = data.pages.map(page => page.path);
     
     // Vérifier si la page actuelle est accessible
-    const hasAccess = accessiblePaths.some(path => currentPath.includes(path));
-    
+    // Soit directement, soit via sa page parente (pour les sous-pages)
+    const parentPath = SUBPAGE_TO_PARENT[currentPath];
+    const hasAccess = accessiblePaths.includes(currentPath) ||
+                      (parentPath && accessiblePaths.includes(parentPath));
+
     if (!hasAccess && data.pages.length > 0) {
       console.log(`⚠️ Pas d'accès à ${currentPath}, redirection...`);
       window.location.href = data.pages[0].path;

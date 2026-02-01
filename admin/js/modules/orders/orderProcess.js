@@ -61,7 +61,8 @@ async function showProcessOrderModal(order, clientProfile) {
                 const product = products.find(p => p.name === item.Nom || p.Nom === item.Nom);
                 return {
                     ...item,
-                    image_url: product?.image_url || product?.imageUrl || null
+                    image_url: product?.image_url || product?.imageUrl || null,
+                    stock: product?.stock ?? product?.Stock ?? 0
                 };
             });
         }
@@ -393,8 +394,10 @@ function generateItemsByCategory(items) {
             // ✅ UTILISER L'IMAGE_URL DE LA BASE DE DONNÉES
             const productImage = item.image_url || '/images/products/placeholder.jpg';
             
+            const isOutOfStock = item.stock === 0;
+
             html += `
-                <tr data-item-name="${item.Nom}">
+                <tr data-item-name="${item.Nom}" class="${isOutOfStock ? 'item-unavailable' : ''}"${isOutOfStock ? ' data-unavailable="true"' : ''}>
                     <td class="product-image-cell">
                         <img src="${productImage}"
                             alt="${shortName}"
@@ -424,6 +427,7 @@ function generateItemsByCategory(items) {
                             inputmode="numeric"
                             onfocus="if(this.value === '0') this.value = ''"
                             onblur="if(this.value === '') this.value = '0'"
+                            ${isOutOfStock ? 'disabled' : ''}
                         >
                     </td>
                     <td>
