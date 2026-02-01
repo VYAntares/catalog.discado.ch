@@ -190,22 +190,22 @@ class StockManager {
 
     formatCategoryName(category) {
         const names = {
-            'tshirt': 'T-Shirts',
-            'caps': 'Casquettes',
-            'bags': 'Sacs',
-            'keyring': 'Porte-clés',
-            'pens': 'Stylos',
-            'lifestyle': 'Lifestyle',
-            'gadget': 'Gadgets',
-            'patches': 'Patches',
-            'cloths': 'Textiles',
-            'lighter': 'Briquets',
-            'magnet': 'Aimants',
-            'bells': 'Clochettes',
-            'plates': 'Plaques',
-            'softtoy': 'Peluches',
-            'hats': 'Chapeaux',
-            'farceattrape': 'Farces & Attrapes'
+            'tshirt': 'tshirt',
+            'caps': 'caps',
+            'bags': 'bags',
+            'keyring': 'keyring',
+            'pens': 'pens',
+            'lifestyle': 'lifestyle',
+            'gadget': 'gadget',
+            'patches': 'patches',
+            'cloths': 'cloths',
+            'lighter': 'lighter',
+            'magnet': 'magnet',
+            'bells': 'bells',
+            'plates': 'plates',
+            'softtoy': 'softtoy',
+            'hats': 'hats',
+            'farceattrape': 'farceattrape'
         };
         return names[category] || category;
     }
@@ -307,6 +307,8 @@ class StockManager {
 				<div class="product-image-container">
 					${imageUrl
 						? `<img src="${imageUrl}" alt="${name}" class="product-image"
+							style="cursor: pointer;"
+							onclick="window.stockManagerInstance.openImageViewer('${imageUrl}', '${this.escapeHtml(name)}')"
 							onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
 						<i class="fas fa-image no-image" style="display:none;"></i>`
 						: `<i class="fas fa-image no-image"></i>`
@@ -412,7 +414,6 @@ class StockManager {
 			return;
 		}
 
-		// Supprimer tout modal existant
 		const existingModal = document.getElementById('edit-product-modal');
 		if (existingModal) {
 			existingModal.remove();
@@ -498,14 +499,54 @@ class StockManager {
 								</div>
 
 								<div class="form-group full-width">
-									<label for="edit-image-url">
-										<i class="fas fa-image"></i> URL de l'image
+									<label>
+										<i class="fas fa-image"></i> Image du produit
 									</label>
-									<input type="text" 
-										id="edit-image-url" 
-										name="image_url" 
-										value="${this.escapeHtml(product.image_url || '')}"
-										placeholder="/images/category/product.jpg">
+									
+									<!-- Prévisualisation de l'image actuelle -->
+									<div class="image-preview-container" style="margin-bottom: 15px;">
+										${product.image_url ? `
+											<img src="${product.image_url}" 
+												alt="Image actuelle" 
+												id="current-product-image"
+												style="max-width: 200px; max-height: 200px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer;"
+												onclick="window.stockManagerInstance.openImageViewer('${product.image_url}', '${this.escapeHtml(product.name)}')">
+											<div style="margin-top: 5px;">
+												<small style="color: #666;">Cliquez sur l'image pour l'agrandir</small>
+											</div>
+										` : `
+											<div style="padding: 20px; background: #f5f5f5; border-radius: 8px; text-align: center;">
+												<i class="fas fa-image" style="font-size: 48px; color: #ccc;"></i>
+												<p style="color: #999; margin-top: 10px;">Aucune image</p>
+											</div>
+										`}
+									</div>
+									
+									<!-- Upload de nouvelle image -->
+									<div class="image-upload-section">
+										<input type="file" 
+											id="product-image-upload" 
+											accept="image/jpeg,image/png,image/gif,image/webp"
+											style="display: none;">
+										
+										<button type="button" 
+												class="stock-btn secondary" 
+												onclick="document.getElementById('product-image-upload').click()"
+												style="width: 100%; margin-bottom: 10px;">
+											<i class="fas fa-upload"></i> Télécharger une nouvelle image
+										</button>
+										
+										<div id="upload-preview" style="display: none; margin-top: 10px;">
+											<img id="upload-preview-img" 
+												style="max-width: 200px; max-height: 200px; border: 2px solid #667eea; border-radius: 8px;">
+											<div style="margin-top: 5px;">
+												<small id="upload-filename" style="color: #667eea;"></small>
+											</div>
+										</div>
+									</div>
+									
+									<!-- Champ caché pour l'URL de l'image -->
+									<input type="hidden" id="edit-image-url" name="image_url" value="${this.escapeHtml(product.image_url || '')}">
 								</div>
 							</div>
 						</form>
@@ -533,59 +574,42 @@ class StockManager {
 
 		document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-		// Attacher les événements
+		// Gestionnaire d'upload d'image
+		const imageInput = document.getElementById('product-image-upload');
+		imageInput.addEventListener('change', async (e) => {
+			const file = e.target.files[0];
+			if (!file) return;
+			
+			// Prévisualisation
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const preview = document.getElementById('upload-preview');
+				const previewImg = document.getElementById('upload-preview-img');
+				const filename = document.getElementById('upload-filename');
+				
+				previewImg.src = e.target.result;
+				filename.textContent = file.name;
+				preview.style.display = 'block';
+			};
+			reader.readAsDataURL(file);
+		});
+
 		const modal = document.getElementById('edit-product-modal');
 		const closeBtn = document.getElementById('modal-close-btn');
 		const cancelBtn = document.getElementById('modal-cancel-btn');
 		const deleteBtn = document.getElementById('modal-delete-btn');
 		const saveBtn = document.getElementById('modal-save-btn');
 
-		if (!modal) {
-			console.error('❌ Modal non trouvé dans le DOM!');
-			return;
-		}
-
 		const closeModal = () => {
 			modal.remove();
 		};
 
-		if (closeBtn) {
-			closeBtn.onclick = (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				closeModal();
-			};
-		}
+		if (closeBtn) closeBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); closeModal(); };
+		if (cancelBtn) cancelBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); closeModal(); };
+		if (deleteBtn) deleteBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.deleteProduct(productId); };
+		if (saveBtn) saveBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.saveProductChanges(productId); };
 
-		if (cancelBtn) {
-			cancelBtn.onclick = (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				closeModal();
-			};
-		}
-
-		if (deleteBtn) {
-			deleteBtn.onclick = (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				this.deleteProduct(productId);
-			};
-		}
-
-		if (saveBtn) {
-			saveBtn.onclick = (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				this.saveProductChanges(productId);
-			};
-		}
-
-		modal.onclick = (e) => {
-			if (e.target === modal) {
-				closeModal();
-			}
-		};
+		modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 
 		const escapeHandler = (e) => {
 			if (e.key === 'Escape') {
@@ -630,18 +654,114 @@ class StockManager {
 	}
 
 
+	// Ouvrir la visionneuse d'image
+	openImageViewer(imagePath, productName) {
+		const viewerHTML = `
+			<div class="modal-overlay" id="image-viewer-modal" style="z-index: 10000; background: rgba(0,0,0,0.9);">
+				<div class="image-viewer-content" style="position: relative; width: 90%; max-width: 1200px; margin: 50px auto;">
+					<div class="image-viewer-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+						<h3 style="color: white; margin: 0;">
+							<i class="fas fa-image"></i> ${this.escapeHtml(productName)}
+						</h3>
+						<div>
+							<button class="stock-btn primary" onclick="window.stockManagerInstance.downloadImage('${imagePath}', '${this.escapeHtml(productName)}')" style="margin-right: 10px;">
+								<i class="fas fa-download"></i> Télécharger
+							</button>
+							<button class="modal-close" onclick="document.getElementById('image-viewer-modal').remove()" style="background: white; color: #333; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+					</div>
+					<div class="image-viewer-body" style="text-align: center; background: white; padding: 20px; border-radius: 12px;">
+						<img src="${imagePath}" 
+							alt="${this.escapeHtml(productName)}" 
+							style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+					</div>
+				</div>
+			</div>
+		`;
+		
+		document.body.insertAdjacentHTML('beforeend', viewerHTML);
+		
+		// Fermer en cliquant en dehors
+		document.getElementById('image-viewer-modal').addEventListener('click', (e) => {
+			if (e.target.id === 'image-viewer-modal') {
+				e.target.remove();
+			}
+		});
+		
+		// Fermer avec Escape
+		const escapeHandler = (e) => {
+			if (e.key === 'Escape') {
+				const modal = document.getElementById('image-viewer-modal');
+				if (modal) modal.remove();
+				document.removeEventListener('keydown', escapeHandler);
+			}
+		};
+		document.addEventListener('keydown', escapeHandler);
+	}
+
+	// Télécharger l'image
+	downloadImage(imagePath, productName) {
+		const link = document.createElement('a');
+		link.href = imagePath;
+		
+		// Extraire l'extension du fichier (ex: .jpg, .png)
+		const extension = imagePath.substring(imagePath.lastIndexOf('.'));
+		
+		// Créer un nom de fichier sécurisé
+		const fileName = productName.replace(/[^a-zA-Z0-9]/g, '-') + extension;
+		
+		link.download = fileName;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
+
+	// Modifier saveProductChanges pour gérer l'upload
 	async saveProductChanges(productId) {
 		const form = document.getElementById('edit-product-form');
 		const formData = new FormData(form);
 		
+		let imageUrl = document.getElementById('edit-image-url').value;
+		
+		// Vérifier s'il y a une nouvelle image à uploader
+		const imageInput = document.getElementById('product-image-upload');
+		if (imageInput && imageInput.files.length > 0) {
+			try {
+				// Upload de l'image
+				const uploadFormData = new FormData();
+				uploadFormData.append('image', imageInput.files[0]);
+				uploadFormData.append('category', formData.get('category'));
+				
+				const uploadResponse = await fetch('/api/products/upload-image', {
+					method: 'POST',
+					body: uploadFormData
+				});
+				
+				if (!uploadResponse.ok) {
+					const errorData = await uploadResponse.json();
+					throw new Error(errorData.error || 'Erreur lors de l\'upload');
+				}
+				
+				const uploadResult = await uploadResponse.json();
+				imageUrl = uploadResult.imagePath;
+				
+				this.showNotification('Image uploadée avec succès', 'success');
+			} catch (error) {
+				this.showNotification('Erreur upload image: ' + error.message, 'error');
+				return;
+			}
+		}
+		
 		const productData = {
 			name: formData.get('name'),
 			price: parseFloat(formData.get('price')),
-			origin_price: parseFloat(formData.get('origin_price')) || 0, // NOUVEAU
+			origin_price: parseFloat(formData.get('origin_price')) || 0,
 			category: formData.get('category'),
 			supplier: formData.get('supplier') || 'Non défini',
 			stock: parseInt(formData.get('stock')),
-			image_url: formData.get('image_url')
+			image_url: imageUrl
 		};
 
 		// Validation
@@ -677,7 +797,6 @@ class StockManager {
 			const result = await response.json();
 			console.log('✅ Résultat:', result);
 
-			// Mettre à jour les données locales
 			const productIndex = this.products.findIndex(p => p.id == productId);
 			if (productIndex !== -1) {
 				this.products[productIndex] = {
@@ -686,10 +805,8 @@ class StockManager {
 				};
 			}
 
-			// Fermer le modal
 			document.getElementById('edit-product-modal').remove();
 
-			// Rafraîchir l'affichage
 			await this.loadProducts();
 			this.renderSupplierFilter();
 			this.filterProducts();

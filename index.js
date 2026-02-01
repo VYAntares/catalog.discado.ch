@@ -9,6 +9,8 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
+const multer = require('multer');   
+const sharp = require('sharp');       
 const invoiceManagementService = require('./services/invoiceManagementService');
 const permissionService = require('./services/permissionService');
 const navigationService = require('./services/navigationService');
@@ -95,6 +97,28 @@ app.use(session({
     sameSite: 'strict'
   }
 }));
+
+// ===== CONFIGURATION UPLOAD D'IMAGES =====
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Limite de 5MB
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Seules les images (JPEG, PNG, GIF, WebP) sont autorisées'));
+    }
+  }
+});
+// ===== FIN CONFIGURATION UPLOAD =====
 
 // ===== SYSTÈME DE SÉCURITÉ =====
 const loginAttempts = {};
@@ -903,6 +927,102 @@ app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock')
     });
   }
 });
+
+// ===== ROUTES UPLOAD D'IMAGES ===== ← AJOUTER TOUT CE BLOC JUSTE APRÈS
+// Route pour l'upload d'image
+app.post('/api/products/upload-image', requireLogin, requireAdmin, requirePermission('stock'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucune image fournie' });
+    }
+    
+    // Récupérer la catégorie depuis le FormData
+    const category = req.body.category || 'other';
+    
+    console.log('📤 Upload image - Catégorie:', category);
+    console.log('📤 Fichier reçu:', req.file.originalname);
+    
+    // Créer le dossier de destination si nécessaire
+    const uploadPath = path.join(__dirname, 'public/images/products', category);
+    
+    if (!fs.existsSync(uploadPath)) {
+      console.log('📁 Création du dossier:', uploadPath);
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    // Générer un nom de fichier unique
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(req.file.originalname);
+    const nameWithoutExt = path.basename(req.file.originalname, ext);
+    const sanitizedName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = sanitizedName + '-' + uniqueSuffix + ext;
+    
+    const fullPath = path.join(uploadPath, filename);
+    const imagePath = `/images/products/${category}/${filename}`;
+    
+    console.log('💾 Sauvegarde dans:', fullPath);
+    
+    // Optimiser et sauvegarder l'image avec sharp
+    try {
+      await sharp(req.file.buffer)
+        .resize(800, 800, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: 85 })
+        .toFile(fullPath);
+      
+      console.log('✅ Image optimisée et sauvegardée');
+    } catch (sharpError) {
+      console.warn('⚠️ Sharp optimization failed, saving original:', sharpError.message);
+      // Si sharp échoue, sauvegarder l'original
+      fs.writeFileSync(fullPath, req.file.buffer);
+    }
+    
+    console.log('✅ Chemin final:', imagePath);
+    
+    res.json({
+      success: true,
+      imagePath: imagePath,
+      message: 'Image uploadée avec succès'
+    });
+  } catch (error) {
+    console.error('❌ Error uploading image:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors de l\'upload de l\'image',
+      details: error.message 
+    });
+  }
+});
+
+
+// Route pour supprimer une image
+app.delete('/api/products/delete-image', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
+  try {
+    const { imagePath } = req.body;
+    
+    if (!imagePath) {
+      return res.status(400).json({ error: 'Chemin d\'image manquant' });
+    }
+    
+    const fullPath = path.join(__dirname, 'public', imagePath);
+    
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      res.json({ success: true, message: 'Image supprimée avec succès' });
+    } else {
+      res.status(404).json({ error: 'Image non trouvée' });
+    }
+  } catch (error) {
+    console.error('❌ Error deleting image:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors de la suppression de l\'image',
+      details: error.message 
+    });
+  }
+});
+// ===== FIN ROUTES UPLOAD =====
+
 
 // 🔥 ROUTES GÉNÉRIQUES À LA FIN
 
