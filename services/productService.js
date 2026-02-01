@@ -219,6 +219,7 @@ const productService = {
 				id: product.id,
 				name: product.name,
 				price: Number(product.price) || 0,
+				origin_price: Number(product.origin_price) || 0, // ✅ ICI
 				category: product.category,
 				supplier: product.supplier || 'Non défini',  // ← AJOUTÉ
 				image_url: product.image_url,
