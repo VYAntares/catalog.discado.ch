@@ -6,9 +6,9 @@ const USERNAME = 'carole';
 const PERMISSIONS = {
   stock: true,
   compta: false,
-  orders: true,
-  clients: true,
-  order_history: true
+  orders: false,
+  clients: false,
+  order_history: false
 };
 
 permissionService.setUserPermissions(USERNAME, PERMISSIONS);

@@ -11,6 +11,7 @@ const fs = require('fs');
 const helmet = require('helmet');
 const invoiceManagementService = require('./services/invoiceManagementService');
 const permissionService = require('./services/permissionService');
+const navigationService = require('./services/navigationService');
 
 
 // securite dom protection XSS
@@ -142,67 +143,77 @@ function requirePermission(permission) {
     const hasPermission = permissionService.hasPermission(username, permission);
 
     if (!hasPermission) {
-      return res.status(403).send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Accès refusé</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    margin: 0;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                }
-                .container {
-                    background: white;
-                    padding: 40px;
-                    border-radius: 12px;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                    text-align: center;
-                    max-width: 500px;
-                }
-                h1 {
-                    color: #f56565;
-                    margin-bottom: 20px;
-                }
-                p {
-                    color: #4a5568;
-                    margin-bottom: 30px;
-                    line-height: 1.6;
-                }
-                a {
-                    display: inline-block;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 12px 30px;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    transition: transform 0.2s;
-                }
-                a:hover {
-                    transform: translateY(-2px);
-                }
-                .icon {
-                    font-size: 64px;
-                    margin-bottom: 20px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="icon">🔒</div>
-                <h1>Accès refusé</h1>
-                <p>Vous n'avez pas les autorisations nécessaires pour accéder à cette section.</p>
-                <p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter votre administrateur système.</p>
-                <a href="/admin/orders">← Retour au tableau de bord</a>
-            </div>
-        </body>
-        </html>
-      `);
+      // Au lieu d'afficher une erreur 403, rediriger vers la première page accessible
+      const firstAccessiblePage = navigationService.getFirstAccessiblePage(username);
+      
+      if (!firstAccessiblePage) {
+        // Aucune page accessible - afficher un message d'erreur
+        return res.status(403).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Accès refusé</title>
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      height: 100vh;
+                      margin: 0;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  }
+                  .container {
+                      background: white;
+                      padding: 40px;
+                      border-radius: 12px;
+                      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                      text-align: center;
+                      max-width: 500px;
+                  }
+                  h1 {
+                      color: #f56565;
+                      margin-bottom: 20px;
+                  }
+                  p {
+                      color: #4a5568;
+                      margin-bottom: 30px;
+                      line-height: 1.6;
+                  }
+                  a {
+                      display: inline-block;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      padding: 12px 30px;
+                      text-decoration: none;
+                      border-radius: 8px;
+                      transition: transform 0.2s;
+                  }
+                  a:hover {
+                      transform: translateY(-2px);
+                  }
+                  .icon {
+                      font-size: 64px;
+                      margin-bottom: 20px;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="icon">🔒</div>
+                  <h1>Aucun accès configuré</h1>
+                  <p>Votre compte n'a accès à aucune section du panneau d'administration.</p>
+                  <p>Veuillez contacter votre administrateur système pour configurer vos permissions.</p>
+                  <a href="/logout">← Se déconnecter</a>
+              </div>
+          </body>
+          </html>
+        `);
+      }
+      
+      // Rediriger vers la première page accessible
+      console.log(`🔄 Redirection de ${username} vers ${firstAccessiblePage.path} (pas d'accès à la page actuelle)`);
+      return res.redirect(firstAccessiblePage.path);
     }
 
     next();
@@ -287,7 +298,19 @@ app.post('/login', (req, res) => {
     };
     
     if (user.role === 'admin') {
-      return res.redirect('/admin/orders');
+      // Rediriger vers la première page accessible
+      const firstPage = navigationService.getFirstAccessiblePage(username);
+      
+      if (!firstPage) {
+        return res.status(403).send(`
+          Votre compte administrateur n'a accès à aucune section. 
+          Veuillez contacter l'administrateur système. 
+          <a href="/logout">Se déconnecter</a>
+        `);
+      }
+      
+      console.log(`✅ Login admin ${username} - Redirection vers ${firstPage.path}`);
+      return res.redirect(firstPage.path);
     } else {
       if (userService.isProfileComplete(username)) {
         return res.redirect('/pages/catalog.html');
@@ -388,6 +411,17 @@ app.get('/api/check-auth', (req, res) => {
     res.status(401).json({ authenticated: false });
   }
 });
+
+app.get('/api/accessible-pages', requireLogin, requireAdmin, (req, res) => {
+  const username = req.session.user.username;
+  const accessiblePages = navigationService.getAccessiblePages(username);
+  
+  res.json({
+    pages: accessiblePages,
+    count: accessiblePages.length
+  });
+});
+
 
 // ===== API ROUTES - PROFIL UTILISATEUR =====
 app.get('/api/user-profile', requireLogin, (req, res) => {

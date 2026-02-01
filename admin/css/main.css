@@ -498,3 +498,24 @@ main {
         font-size: 12px;
     }
 }
+
+/* Transitions pour le masquage des onglets */
+.admin-tabs .tab {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.admin-tabs .tab[style*="display: none"] {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
+/* Style pour le conteneur quand il n'y a pas d'onglets */
+.admin-tabs:empty::after {
+    content: "Chargement des onglets...";
+    display: block;
+    text-align: center;
+    padding: 20px;
+    color: #999;
+    font-style: italic;
+}

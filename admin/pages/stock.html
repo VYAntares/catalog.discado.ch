@@ -41,7 +41,7 @@
             <a href="/admin/compta" class="tab">
                 <i class="fas fa-calculator"></i> Compta
             </a>
-            <a href="/admin/stock" class="tab active">
+            <a href="/admin/stock" class="tab">
                 <i class="fas fa-boxes"></i> Stock
             </a>
         </div>
@@ -130,13 +130,13 @@
                             <i class="fas fa-sort"></i> Trier par
                         </label>
                         <select id="sort-select">
-							<option value="name-asc" selected>Nom (A-Z)</option>
-							<option value="name-desc">Nom (Z-A)</option>
-							<option value="stock-asc">Stock (croissant)</option>
-							<option value="stock-desc">Stock (décroissant)</option>
-							<option value="price-asc">Prix (croissant)</option>
-							<option value="price-desc">Prix (décroissant)</option>
-						</select>
+                            <option value="name-asc" selected>Nom (A-Z)</option>
+                            <option value="name-desc">Nom (Z-A)</option>
+                            <option value="stock-asc">Stock (croissant)</option>
+                            <option value="stock-desc">Stock (décroissant)</option>
+                            <option value="price-asc">Prix (croissant)</option>
+                            <option value="price-desc">Prix (décroissant)</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -161,6 +161,9 @@
     <div id="notification-container"></div>
 
     <!-- Scripts -->
+    <!-- ✅ AJOUTER LE MODULE DE PERMISSIONS EN PREMIER -->
+    <script type="module" src="/admin/js/utils/tabsPermissions.js"></script>
+    <!-- Ensuite charger le module spécifique à la page -->
     <script src="/admin/js/modules/stock/stockManager.js"></script>
 </body>
 </html>
