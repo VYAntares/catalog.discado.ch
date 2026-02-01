@@ -190,22 +190,22 @@ class StockManager {
 
     formatCategoryName(category) {
         const names = {
-            'tshirt': 'tshirt',
-            'caps': 'caps',
-            'bags': 'bags',
-            'keyring': 'keyring',
-            'pens': 'pens',
-            'lifestyle': 'lifestyle',
-            'gadget': 'gadget',
-            'patches': 'patches',
-            'cloths': 'cloths',
-            'lighter': 'lighter',
-            'magnet': 'magnet',
-            'bells': 'bells',
-            'plates': 'plates',
-            'softtoy': 'softtoy',
-            'hats': 'hats',
-            'farceattrape': 'farceattrape'
+            'tshirt': 'T-Shirt',
+            'caps': 'Caps',
+            'bags': 'Bags',
+            'keyring': 'Keyrings',
+            'pens': 'Pens',
+            'lifestyle': 'Lifestyle',
+            'gadget': 'Gadgets',
+            'patches': 'Patches',
+            'cloths': 'Cloths',
+            'lighter': 'Lighter',
+            'magnet': 'Magnets',
+            'bells': 'Bells',
+            'plates': 'Plates',
+            'softtoy': 'Soft-Toy',
+            'hats': 'Hats',
+            'farceattrape': 'Farce & Attrape'
         };
         return names[category] || category;
     }
@@ -915,77 +915,134 @@ class StockManager {
 		}
 	}
 
-    // ===== MODAL D'AJOUT =====
-    openAddProductModal() {
-        const modalHTML = `
-            <div class="modal-overlay" id="add-product-modal">
-                <div class="modal-content" style="max-width: 600px;">
-                    <div class="modal-header">
-                        <h3><i class="fas fa-plus"></i> Ajouter un nouveau produit</h3>
-                        <button class="modal-close" onclick="document.getElementById('add-product-modal').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="add-product-form">
-                            <div class="form-group">
-                                <label for="add-name">Nom du produit *</label>
-                                <input type="text" id="add-name" required placeholder="Ex: T-Shirt Rock Band">
-                            </div>
+	// ===== MODAL D'AJOUT =====
+	openAddProductModal() {
+		const modalHTML = `
+			<div class="modal-overlay" id="add-product-modal">
+				<div class="modal-content" style="max-width: 600px;">
+					<div class="modal-header">
+						<h3><i class="fas fa-plus"></i> Ajouter un nouveau produit</h3>
+						<button class="modal-close" onclick="document.getElementById('add-product-modal').remove()">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+					<div class="modal-body">
+						<form id="add-product-form">
+							<div class="form-group">
+								<label for="add-name">Nom du produit *</label>
+								<input type="text" id="add-name" required placeholder="Ex: T-Shirt Rock Band">
+							</div>
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="add-price">Prix (CHF) *</label>
-                                    <input type="number" id="add-price" step="0.01" required placeholder="19.90">
-                                </div>
+							<div class="form-row">
+								<div class="form-group">
+									<label for="add-price">Prix (CHF) *</label>
+									<input type="number" id="add-price" step="0.01" required placeholder="19.90">
+								</div>
 
-                                <div class="form-group">
-                                    <label for="add-stock">Stock initial *</label>
-                                    <input type="number" id="add-stock" value="10000" required>
-                                </div>
-                            </div>
+								<div class="form-group">
+									<label for="add-stock">Stock initial *</label>
+									<input type="number" id="add-stock" value="10000" required>
+								</div>
+							</div>
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="add-category">Catégorie *</label>
-                                    <select id="add-category" required>
-                                        ${this.getCategoryOptionsForAdd()}
-                                    </select>
-                                </div>
+							<div class="form-row">
+								<div class="form-group">
+									<label for="add-category">Catégorie *</label>
+									<select id="add-category" required>
+										${this.getCategoryOptionsForAdd()}
+									</select>
+								</div>
 
-                                <div class="form-group">
-                                    <label for="add-supplier">Fournisseur</label>
-                                    <input type="text" id="add-supplier" placeholder="Nom du fournisseur">
-                                </div>
-                            </div>
+								<div class="form-group">
+									<label for="add-supplier">Fournisseur</label>
+									<select id="add-supplier">
+										<option value="">Non défini</option>
+										${this.suppliers.map(supplier => `
+											<option value="${this.escapeHtml(supplier.name)}">
+												${this.escapeHtml(supplier.name)}
+											</option>
+										`).join('')}
+									</select>
+								</div>
+							</div>
 
-                            <div class="form-group">
-                                <label for="add-image-url">Chemin de l'image</label>
-                                <input type="text" id="add-image-url" placeholder="/images/category/product.jpg">
-                                <small>Exemple: /images/tshirt/tshirt-001.jpg</small>
-                            </div>
+							<!-- Section Upload d'image -->
+							<div class="form-group">
+								<label>
+									<i class="fas fa-image"></i> Image du produit
+								</label>
+								
+								<div class="image-upload-section" style="border: 2px dashed #ddd; padding: 15px; border-radius: 8px; background: #f9f9f9;">
+									<input type="file" 
+										id="add-product-image-upload" 
+										accept="image/jpeg,image/png,image/gif,image/webp"
+										style="display: none;">
+									
+									<button type="button" 
+											class="stock-btn secondary" 
+											onclick="document.getElementById('add-product-image-upload').click()"
+											style="width: 100%; margin-bottom: 10px;">
+										<i class="fas fa-upload"></i> Sélectionner une image
+									</button>
+									
+									<!-- Prévisualisation de l'image -->
+									<div id="add-upload-preview" style="display: none; margin-top: 10px; text-align: center;">
+										<img id="add-upload-preview-img" 
+											style="max-width: 200px; max-height: 200px; border: 2px solid #667eea; border-radius: 8px;">
+										<div style="margin-top: 5px;">
+											<small id="add-upload-filename" style="color: #667eea; font-weight: 600;"></small>
+										</div>
+										<button type="button" 
+												class="stock-btn secondary" 
+												onclick="document.getElementById('add-product-image-upload').value=''; document.getElementById('add-upload-preview').style.display='none';"
+												style="margin-top: 10px;">
+											<i class="fas fa-times"></i> Supprimer l'image
+										</button>
+									</div>
+								</div>
+							</div>
 
-                            <div class="modal-actions">
-                                <button type="button" class="modal-btn secondary" onclick="document.getElementById('add-product-modal').remove()">
-                                    Annuler
-                                </button>
-                                <button type="submit" class="modal-btn primary">
-                                    <i class="fas fa-plus"></i> Ajouter
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        `;
+							<div class="modal-actions" style="margin-top: 20px;">
+								<button type="button" class="modal-btn secondary" onclick="document.getElementById('add-product-modal').remove()">
+									<i class="fas fa-times"></i> Annuler
+								</button>
+								<button type="submit" class="modal-btn primary">
+									<i class="fas fa-plus"></i> Ajouter
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		`;
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+		document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.saveNewProduct();
-        });
-    }
+		// Gestionnaire d'upload d'image pour le modal d'ajout
+		const addImageInput = document.getElementById('add-product-image-upload');
+		addImageInput.addEventListener('change', (e) => {
+			const file = e.target.files[0];
+			if (!file) return;
+			
+			// Prévisualisation
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const preview = document.getElementById('add-upload-preview');
+				const previewImg = document.getElementById('add-upload-preview-img');
+				const filename = document.getElementById('add-upload-filename');
+				
+				previewImg.src = e.target.result;
+				filename.textContent = file.name;
+				preview.style.display = 'block';
+			};
+			reader.readAsDataURL(file);
+		});
+
+		document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			await this.saveNewProduct();
+		});
+	}
 
     getCategoryOptionsForAdd() {
         const categories = [
@@ -1012,35 +1069,84 @@ class StockManager {
         ).join('');
     }
 
-    async saveNewProduct() {
-        const productData = {
-            name: document.getElementById('add-name').value,
-            price: parseFloat(document.getElementById('add-price').value),
-            stock: parseInt(document.getElementById('add-stock').value),
-            category: document.getElementById('add-category').value,
-            supplier: document.getElementById('add-supplier').value || 'Non défini',
-            image_url: document.getElementById('add-image-url').value
-        };
+	async saveNewProduct() {
+		const category = document.getElementById('add-category').value;
+		let imageUrl = '';
+		
+		// Vérifier s'il y a une image à uploader
+		const imageInput = document.getElementById('add-product-image-upload');
+		if (imageInput && imageInput.files.length > 0) {
+			try {
+				// Upload de l'image d'abord
+				const uploadFormData = new FormData();
+				uploadFormData.append('image', imageInput.files[0]);
+				uploadFormData.append('category', category);
+				
+				console.log('📤 Upload image pour nouveau produit...');
+				
+				const uploadResponse = await fetch('/api/products/upload-image', {
+					method: 'POST',
+					body: uploadFormData
+				});
+				
+				if (!uploadResponse.ok) {
+					const errorData = await uploadResponse.json();
+					throw new Error(errorData.error || 'Erreur lors de l\'upload de l\'image');
+				}
+				
+				const uploadResult = await uploadResponse.json();
+				imageUrl = uploadResult.imagePath;
+				
+				console.log('✅ Image uploadée:', imageUrl);
+				
+				this.showNotification('Image uploadée avec succès', 'success');
+			} catch (error) {
+				this.showNotification('Erreur upload image: ' + error.message, 'error');
+				return; // Arrêter si l'upload de l'image échoue
+			}
+		}
+		
+		// Créer le produit avec l'URL de l'image
+		const productData = {
+			name: document.getElementById('add-name').value,
+			price: parseFloat(document.getElementById('add-price').value),
+			stock: parseInt(document.getElementById('add-stock').value),
+			category: category,
+			supplier: document.getElementById('add-supplier').value || 'Non défini',
+			image_url: imageUrl
+		};
 
-        try {
-            const response = await fetch('/api/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(productData)
-            });
+		console.log('📤 Création du produit:', productData);
 
-            if (!response.ok) throw new Error('Erreur lors de l\'ajout');
+		try {
+			const response = await fetch('/api/products', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(productData)
+			});
 
-            this.showNotification('Produit ajouté avec succès', 'success');
-            document.getElementById('add-product-modal').remove();
-            await this.loadProducts();
-            this.renderCategoryTabs();
-            this.renderSupplierFilter(); // Rafraîchir la liste des fournisseurs
-            this.filterProducts();
-        } catch (error) {
-            this.showNotification('Erreur: ' + error.message, 'error');
-        }
-    }
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(errorText || 'Erreur lors de l\'ajout');
+			}
+
+			const result = await response.json();
+			console.log('✅ Produit créé:', result);
+
+			this.showNotification('Produit ajouté avec succès', 'success');
+			document.getElementById('add-product-modal').remove();
+			
+			// Rafraîchir l'affichage
+			await this.loadProducts();
+			this.renderCategoryTabs();
+			this.renderSupplierFilter();
+			this.filterProducts();
+			
+		} catch (error) {
+			console.error('❌ Erreur création produit:', error);
+			this.showNotification('Erreur: ' + error.message, 'error');
+		}
+	}
 
 	updateStats() {
 		const totalProducts = this.products.length;
