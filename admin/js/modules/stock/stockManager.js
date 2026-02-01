@@ -457,7 +457,7 @@ class StockManager {
 
 								<div class="form-group">
 									<label for="edit-origin-price">
-										<i class="fas fa-dollar-sign"></i> Prix d'achat (CHF)
+										<i class="fas fa-dollar-sign"></i> Prix d'achat (USD)
 									</label>
 									<input type="number" 
 										id="edit-origin-price" 
