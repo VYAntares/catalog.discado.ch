@@ -54,6 +54,7 @@ const invoiceService = require('./services/invoiceService');
 const cryptoService = require('./services/cryptoService');
 const deliveryNoteService = require('./services/deliveryNoteService');
 const dbModule = require('./services/db');
+const statsService = require('./services/statsServices');
 
 // ===== CONFIGURATION DE BASE =====
 const app = express();
@@ -1622,6 +1623,135 @@ app.get('/api/invoices/unpaid', requireLogin, requireAdmin, requirePermission('c
     res.status(500).json({ error: 'Error getting unpaid invoices' });
   }
 });
+
+
+// ===== API ROUTES - STATISTIQUES =====
+/**
+ * GET /api/stats/overview
+ * Récupère les statistiques générales pour une année donnée
+ */
+app.get('/api/stats/overview', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const year = req.query.year || new Date().getFullYear();
+        const stats = await statsService.getYearlyOverview(year);
+        res.json(stats);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/overview:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
+    }
+});
+
+/**
+ * GET /api/stats/top-products
+ * Récupère les produits les plus vendus
+ */
+app.get('/api/stats/top-products', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const { year, category, limit = 10 } = req.query;
+        const topProducts = await statsService.getTopProducts({
+            year,
+            category,
+            limit: parseInt(limit)
+        });
+        res.json(topProducts);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/top-products:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+    }
+});
+
+/**
+ * GET /api/stats/monthly-evolution
+ * Récupère l'évolution mensuelle du chiffre d'affaires
+ */
+app.get('/api/stats/monthly-evolution', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const year = req.query.year || new Date().getFullYear();
+        const evolution = await statsService.getMonthlyEvolution(year);
+        res.json(evolution);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/monthly-evolution:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération de l\'évolution mensuelle' });
+    }
+});
+
+/**
+ * GET /api/stats/top-clients
+ * Récupère les meilleurs clients
+ */
+app.get('/api/stats/top-clients', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const { year, limit = 10 } = req.query;
+        const topClients = await statsService.getTopClients({
+            year,
+            limit: parseInt(limit)
+        });
+        res.json(topClients);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/top-clients:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des clients' });
+    }
+});
+
+/**
+ * GET /api/stats/categories
+ * Récupère les statistiques par catégorie
+ */
+app.get('/api/stats/categories', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const year = req.query.year || new Date().getFullYear();
+        const categories = await statsService.getCategoryStats(year);
+        res.json(categories);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/categories:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des catégories' });
+    }
+});
+
+/**
+ * GET /api/stats/payment-status
+ * Récupère les statistiques de paiement
+ */
+app.get('/api/stats/payment-status', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const year = req.query.year || new Date().getFullYear();
+        const paymentStats = await statsService.getPaymentStats(year);
+        res.json(paymentStats);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/payment-status:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des statistiques de paiement' });
+    }
+});
+
+/**
+ * GET /api/stats/categories-list
+ * Récupère la liste des catégories disponibles
+ */
+app.get('/api/stats/categories-list', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const categories = await statsService.getAvailableCategories();
+        res.json(categories);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/categories-list:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des catégories' });
+    }
+});
+
+/**
+ * GET /api/stats/category-details
+ * Récupère les statistiques détaillées par catégorie
+ */
+app.get('/api/stats/category-details', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
+    try {
+        const year = req.query.year || new Date().getFullYear();
+        const categoryDetails = await statsService.getCategoryDetails(year);
+        res.json(categoryDetails);
+    } catch (error) {
+        console.error('❌ Erreur /api/stats/category-details:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des détails par catégorie' });
+    }
+});
+
 
 // // Routes anciennes (pour compatibilité)
 // app.get('/api/admin/invoices', requireLogin, requireAdmin, (req, res) => {

@@ -44,7 +44,7 @@
             <a href="/admin/stock" class="tab">
                 <i class="fas fa-boxes"></i> Stock
             </a>
-            <a href="/admin/stats" class="tab">
+            <a href="/admin/stats" class="tab active">
                 <i class="fas fa-chart-line"></i> Stats
             </a>
         </div>
@@ -73,23 +73,59 @@
             <!-- Charts Section -->
             <div class="charts-section">
                 <h2 class="section-title">
-                    <i class="fas fa-chart-bar"></i> Graphiques
+                    <i class="fas fa-chart-bar"></i> Évolution mensuelle
                 </h2>
                 
-                <div class="charts-grid">
-                    <!-- Chart placeholders -->
-                    <div class="chart-card">
-                        <h3>Évolution mensuelle</h3>
-                        <div id="monthlyChart" class="chart-placeholder">
-                            Graphique à venir
-                        </div>
+                <div class="chart-card">
+                    <h3>Chiffre d'affaires mensuel</h3>
+                    <div id="monthlyChart" class="chart-placeholder">
+                        Chargement...
                     </div>
+                </div>
+            </div>
 
-                    <div class="chart-card">
-                        <h3>Top 10 clients</h3>
-                        <div id="topClientsChart" class="chart-placeholder">
-                            Graphique à venir
-                        </div>
+            <!-- Top Products Section -->
+            <div class="charts-section">
+                <h2 class="section-title">
+                    <i class="fas fa-trophy"></i> Produits les plus vendus
+                </h2>
+
+                <div class="filter-bar">
+                    <label for="categorySelect"><strong>Filtrer par catégorie :</strong></label>
+                    <select id="categorySelect" class="year-select">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                </div>
+                
+                <div class="chart-card">
+                    <div id="topProductsTable" class="data-table-container">
+                        <div class="loading">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Stats Section -->
+            <div class="charts-section">
+                <h2 class="section-title">
+                    <i class="fas fa-layer-group"></i> Statistiques par catégorie
+                </h2>
+                
+                <div class="chart-card">
+                    <div id="categoryStatsTable" class="data-table-container">
+                        <div class="loading">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Clients Section -->
+            <div class="charts-section">
+                <h2 class="section-title">
+                    <i class="fas fa-star"></i> Top clients
+                </h2>
+                
+                <div class="chart-card">
+                    <div id="topClientsTable" class="data-table-container">
+                        <div class="loading">Chargement...</div>
                     </div>
                 </div>
             </div>

@@ -161,6 +161,240 @@
     font-size: 16px;
 }
 
+/* Filter Bar */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Data Tables */
+.data-table-container {
+    min-height: 200px;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.data-table thead {
+    background: #f7fafc;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.data-table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s;
+}
+
+.data-table tbody tr:hover {
+    background: #f7fafc;
+}
+
+.data-table td {
+    padding: 12px 16px;
+    color: #2d3748;
+}
+
+.data-table tfoot {
+    background: #f7fafc;
+    font-weight: 600;
+    border-top: 2px solid #e2e8f0;
+}
+
+.data-table tfoot td {
+    padding: 12px 16px;
+    color: #2d3748;
+}
+
+.total-row {
+    background: #edf2f7 !important;
+}
+
+/* Table Text Colors */
+.text-primary {
+    color: #4299e1;
+}
+
+.text-success {
+    color: #48bb78;
+}
+
+.text-warning {
+    color: #ed8936;
+}
+
+.text-danger {
+    color: #f56565;
+}
+
+.text-muted {
+    color: #a0aec0;
+}
+
+/* Product & Client Names */
+.product-name {
+    font-weight: 500;
+    max-width: 300px;
+}
+
+.client-name {
+    font-weight: 500;
+}
+
+/* Category Badge */
+.category-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #e6fffa;
+    color: #047857;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Progress Bar */
+.progress-container {
+    position: relative;
+    width: 120px;
+    height: 24px;
+    background: #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ed8936, #f6ad55);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 600;
+    color: #2d3748;
+    z-index: 2;
+}
+
+/* No Data Message */
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: #a0aec0;
+    font-size: 16px;
+}
+
+/* Bar Chart */
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 280px;
+    padding: 20px 10px;
+    gap: 8px;
+}
+
+.bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 40px;
+}
+
+.bar-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #718096;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.bar-wrapper {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.bar {
+    width: 100%;
+    max-width: 50px;
+    background: linear-gradient(180deg, #4299e1, #63b3ed);
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 10px;
+}
+
+.bar:hover {
+    background: linear-gradient(180deg, #3182ce, #4299e1);
+    transform: scaleY(1.05);
+}
+
+.bar-value {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: #2d3748;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.bar:hover .bar-value {
+    opacity: 1;
+}
+
+/* Responsive Tables */
+@media (max-width: 1024px) {
+    .data-table {
+        font-size: 12px;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 8px 12px;
+    }
+
+    .product-name {
+        max-width: 200px;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .stats-grid {
@@ -177,5 +411,27 @@
 
     .stat-value {
         font-size: 28px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        min-width: 800px;
+    }
+
+    .bar-chart {
+        padding: 20px 5px;
+        gap: 4px;
+    }
+
+    .bar-item {
+        min-width: 25px;
+    }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
