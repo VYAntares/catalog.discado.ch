@@ -802,14 +802,23 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
       return res.status(404).json({ error: 'Produit non trouvé' });
     }
 
+    const oldName = product.name;
+
     // Mettre à jour le produit
     const updateStmt = dbModule.db.prepare(`
-      UPDATE products 
+      UPDATE products
       SET name = ?, price = ?, origin_price = ?, category = ?, supplier = ?, image_url = ?, stock = ?
       WHERE id = ?
     `);
 
     updateStmt.run(name, priceNum, originPriceNum, category, supplier || null, image_url || null, stockNum, id);
+
+    // Si le nom a changé, mettre à jour order_items et pending_deliveries
+    if (oldName && oldName !== name) {
+      dbModule.db.prepare('UPDATE order_items SET product_name = ? WHERE product_name = ?').run(name, oldName);
+      dbModule.db.prepare('UPDATE pending_deliveries SET product_name = ? WHERE product_name = ?').run(name, oldName);
+      console.log(`✅ Nom propagé: "${oldName}" → "${name}" dans order_items et pending_deliveries`);
+    }
 
     // Récupérer le produit mis à jour
     const updatedProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);

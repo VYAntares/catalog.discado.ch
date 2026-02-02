@@ -1,6 +1,6 @@
 // admin/js/modules/compta/comptaDetails.js - Détails mensuels des ventes
 
-import { formatCurrency } from '../../utils/formatter.js';
+import { formatCurrency, formatSwissNumber } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
 
 class ComptaDetails {
@@ -225,41 +225,64 @@ class ComptaDetails {
 
         let headers, rows;
 
+        // Calculer les totaux annuels
+        const totals = this.monthlyData.reduce((acc, month) => {
+            acc.invoice_count += month.invoice_count || 0;
+            acc.total_ht += month.total_ht || 0;
+            acc.total_vat += month.total_vat || 0;
+            acc.total_ttc += month.total_ttc || 0;
+            acc.total_paid += month.total_paid || 0;
+            acc.total_due += month.total_due || 0;
+            return acc;
+        }, { invoice_count: 0, total_ht: 0, total_vat: 0, total_ttc: 0, total_paid: 0, total_due: 0 });
+
         if (this.type === 'total_amount') {
             headers = ['Mois', 'Nombre de factures', 'Total HT', 'TVA', 'Total TTC'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
-                month.total_ht.toFixed(2),
-                month.total_vat.toFixed(2),
-                month.total_ttc.toFixed(2)
+                formatSwissNumber(month.total_ht),
+                formatSwissNumber(month.total_vat),
+                formatSwissNumber(month.total_ttc)
             ].join(','));
+            // Ajouter ligne vide puis ligne de totaux
+            rows.push('');
+            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ht), formatSwissNumber(totals.total_vat), formatSwissNumber(totals.total_ttc)].join(','));
         } else if (this.type === 'total_paid') {
             headers = ['Mois', 'Nombre de factures', 'Total Facturé', 'Total Payé', 'Taux de paiement (%)'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
-                month.total_ttc.toFixed(2),
-                month.total_paid.toFixed(2),
+                formatSwissNumber(month.total_ttc),
+                formatSwissNumber(month.total_paid),
                 this.calculatePaymentRate(month.total_paid, month.total_ttc)
             ].join(','));
+            // Ajouter ligne vide puis ligne de totaux
+            rows.push('');
+            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_paid), this.calculatePaymentRate(totals.total_paid, totals.total_ttc)].join(','));
         } else if (this.type === 'total_due') {
             headers = ['Mois', 'Nombre de factures', 'Total Facturé', 'Total Dû', 'Taux impayé (%)'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
-                month.total_ttc.toFixed(2),
-                month.total_due.toFixed(2),
+                formatSwissNumber(month.total_ttc),
+                formatSwissNumber(month.total_due),
                 this.calculatePaymentRate(month.total_due, month.total_ttc)
             ].join(','));
+            // Ajouter ligne vide puis ligne de totaux
+            rows.push('');
+            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_due), this.calculatePaymentRate(totals.total_due, totals.total_ttc)].join(','));
         } else { // total_invoices
             headers = ['Mois', 'Nombre de factures', 'Total TTC', 'Montant moyen'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
-                month.total_ttc.toFixed(2),
-                (month.total_ttc / month.invoice_count).toFixed(2)
+                formatSwissNumber(month.total_ttc),
+                formatSwissNumber(month.total_ttc / month.invoice_count)
             ].join(','));
+            // Ajouter ligne vide puis ligne de totaux
+            rows.push('');
+            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_ttc / totals.invoice_count)].join(','));
         }
 
         const csvContent = [headers.join(','), ...rows].join('\n');

@@ -693,7 +693,7 @@ const orderService = {
 				throw new Error(`Commande ${orderId} non trouvée`);
 			}
 			
-			const invoiceDate = order.date;
+			const invoiceDate = order.last_processed || order.date;
 			console.log(`📅 Date facture: ${invoiceDate}`);
 			
 			// Calculer le subtotal HT

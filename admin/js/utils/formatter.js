@@ -50,12 +50,25 @@ function formatPrice(price, options = {}) {
     }
 }
 
-// Formate un montant en devise CHF
+// Formate un montant en devise CHF avec format suisse (apostrophe pour milliers)
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '0.00 CHF';
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (isNaN(numAmount)) return '0.00 CHF';
-    return numAmount.toFixed(2) + ' CHF';
+    return formatSwissNumber(numAmount) + ' CHF';
+}
+
+// Formate un nombre au format suisse (apostrophe pour milliers, point pour décimales)
+// Ex: 21000.50 -> "21'000.50"
+function formatSwissNumber(number, decimals = 2) {
+    if (number === null || number === undefined) return '0.00';
+    const num = typeof number === 'string' ? parseFloat(number) : number;
+    if (isNaN(num)) return '0.00';
+
+    const fixed = num.toFixed(decimals);
+    const parts = fixed.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+    return parts.join('.');
 }
 
 
@@ -146,5 +159,6 @@ export {
     truncateText,
     toTitleCase,
     formatPhone,
-	formatCurrency
+	formatCurrency,
+    formatSwissNumber
 };
