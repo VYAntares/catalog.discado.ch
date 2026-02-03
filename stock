@@ -1,0 +1,959 @@
+LISTE DES MAGNET DANS LA DATABASE
+
+sqlite> SELECT * FROM products WHERE category = "magnet";
+id    name                                                                            price  category  supplier    image_url                             stock  created_at           origin_price  barcode
+----  ------------------------------------------------------------------------------  -----  --------  ----------  ------------------------------------  -----  -------------------  ------------  -------
+3224  Magnet 1 - Genève water jet relief (horloge)                                    1.7    magnet    Non défini  /images/products/magnet/M1.jpg        9976   2026-01-26 21:55:10  0.0                  
+3225  Magnet 2 - Genève water jet relief                                              1.7    magnet    Non défini  /images/products/magnet/M2.jpg        0      2026-01-26 21:55:10  0.0                  
+3226  Magnet 3 - Genève boat relief                                                   1.7    magnet    Non défini  /images/products/magnet/M3.jpg        9976   2026-01-26 21:55:10  0.0                  
+3227  Magnet 4 - Lake boat relief                                                     1.7    magnet    Non défini  /images/products/magnet/M4.jpg        10000  2026-01-26 21:55:10  0.0                  
+3228  Magnet 5 - Saas Fee city snow relief                                            1.7    magnet    Non défini  /images/products/magnet/M5.jpg        10000  2026-01-26 21:55:10  0.0                  
+3229  Magnet 6 - Lausanne City relief                                                 1.7    magnet    Non défini  /images/products/magnet/M6.jpg        10000  2026-01-26 21:55:10  0.0                  
+3230  Magnet 7 - Bottle-opener bikini                                                 2.0    magnet    Non défini  /images/products/magnet/M7.jpg        10000  2026-01-26 21:55:10  0.0                  
+3231  Magnet 8 - Swiss Bottle opener                                                  2.0    magnet    Non défini  /images/products/magnet/M8.jpg        10000  2026-01-26 21:55:10  0.0                  
+3232  Magnet 9 - Matterhorn Valais                                                    1.7    magnet    Non défini  /images/products/magnet/M9.jpg        10000  2026-01-26 21:55:10  0.0                  
+3233  Magnet 10 - Matterhorn                                                          1.7    magnet    Non défini  /images/products/magnet/M10.jpg       9988   2026-01-26 21:55:10  0.0                  
+3234  Magnet 11 - Matterhorn Switzerland                                              1.7    magnet    Non défini  /images/products/magnet/M11.jpg       10000  2026-01-26 21:55:10  0.0                  
+3235  Magnet 12 - Zermatt Matterhorn                                                  1.7    magnet    Non défini  /images/products/magnet/M12.jpg       10000  2026-01-26 21:55:10  0.0                  
+3236  Magnet 13 - Cartoon cow                                                         2.0    magnet    Non défini  /images/products/magnet/M13.jpg       9988   2026-01-26 21:55:10  0.7                  
+3237  Magnet 14 - Big bell                                                            3.0    magnet    Non défini  /images/products/magnet/M14.jpg       10000  2026-01-26 21:55:10  1.1                  
+3238  Magnet 15 - Luzern Kapellbrücke                                                 1.7    magnet    Non défini  /images/products/magnet/M15.jpg       10000  2026-01-26 21:55:10  0.0                  
+3239  Magnet 16 - Luzern Kapellbrücke                                                 1.7    magnet    Non défini  /images/products/magnet/M16.jpg       10000  2026-01-26 21:55:10  0.0                  
+3240  Magnet 17 - Fidget Spinner cows                                                 2.6    magnet    Non défini  /images/products/magnet/M17.jpg       9964   2026-01-26 21:55:10  1.25                 
+3241  Magnet 18 - Lausanne-Ouchy harbour                                              1.7    magnet    Non défini  /images/products/magnet/M18.jpg       10000  2026-01-26 21:55:10  0.0                  
+3242  Magnet 19 - Montreux Castle boat                                                1.7    magnet    Non défini  /images/products/magnet/M19.jpg       10000  2026-01-26 21:55:10  0.0                  
+3243  Magnet 20 - Montreux Chillon castle                                             1.7    magnet    Non défini  /images/products/magnet/M20.jpg       10000  2026-01-26 21:55:10  0.0                  
+3244  Magnet 22 - Montreux Chillon castle boat                                        1.7    magnet    Non défini  /images/products/magnet/M22.jpg       10000  2026-01-26 21:55:10  0.0                  
+3245  Magnet 25 - Gruyères Switzerland round                                          1.7    magnet    Non défini  /images/products/magnet/M25.jpg       10000  2026-01-26 21:55:10  0.0                  
+3246  Magnet 26 - Gruyères Street                                                     1.7    magnet    Non défini  /images/products/magnet/M26.jpg       10000  2026-01-26 21:55:10  0.0                  
+3247  Magnet 27 - Grimentz town Valais                                                1.7    magnet    Non défini  /images/products/magnet/M27.jpg       10000  2026-01-26 21:55:10  0.0                  
+3248  Magnet 28 - Grimentz town flowers                                               1.7    magnet    Non défini  /images/products/magnet/M28.jpg       10000  2026-01-26 21:55:10  0.0                  
+3249  Magnet 29 - Rheinfall boat                                                      1.7    magnet    Non défini  /images/products/magnet/M29.jpg       0      2026-01-26 21:55:10  0.0                  
+3250  Magnet 30 - Crans-Montana landscape                                             1.7    magnet    Non défini  /images/products/magnet/M30.jpg       10000  2026-01-26 21:55:10  0.0                  
+3251  Magnet 32 - Crans-Montana under snow                                            1.7    magnet    Non défini  /images/products/magnet/M32.jpg       10000  2026-01-26 21:55:10  0.0                  
+3252  Magnet 34 - Davos skiing                                                        1.7    magnet    Non défini  /images/products/magnet/M34.jpg       10000  2026-01-26 21:55:10  0.0                  
+3253  Magnet 35 - St-Moritz cable car cabin                                           1.7    magnet    Non défini  /images/products/magnet/M35.jpg       10000  2026-01-26 21:55:10  0.0                  
+3254  Magnet 36 - St-Moritz skiing                                                    1.7    magnet    Non défini  /images/products/magnet/M36.jpg       10000  2026-01-26 21:55:10  0.0                  
+3255  Magnet 37 - Morgins relief                                                      1.7    magnet    Non défini  /images/products/magnet/M37.jpg       10000  2026-01-26 21:55:10  0.0                  
+3256  Magnet 38 - Cabin and cable car relief                                          1.7    magnet    Non défini  /images/products/magnet/M38.jpg       10000  2026-01-26 21:55:10  0.0                  
+3257  Magnet 39 - Cabin and cable car relief                                          1.7    magnet    Non défini  /images/products/magnet/M39.jpg       10000  2026-01-26 21:55:10  0.0                  
+3258  Magnet 40 - Dookie long legs black                                              1.7    magnet    Non défini  /images/products/magnet/M40.jpg       0      2026-01-26 21:55:10  0.0                  
+3259  Magnet 42 - St-Bernard and puppies                                              1.7    magnet    Non défini  /images/products/magnet/M42.jpg       10000  2026-01-26 21:55:10  0.0                  
+3260  Magnet 48 - Marmot on green grass                                               1.7    magnet    Non défini  /images/products/magnet/M48.jpg       10000  2026-01-26 21:55:10  0.0                  
+3261  Magnet 49 - cuckoo clock                                                        4.0    magnet    Non défini  /images/products/magnet/M49.jpg       10000  2026-01-26 21:55:10  0.0                  
+3262  Magnet ASCONA - cuckoo                                                          1.7    magnet    Non défini  /images/products/magnet/M49.jpg       10000  2026-01-26 21:55:10  0.0                  
+3263  Magnet 51 - bottle-opener cow                                                   2.0    magnet    Non défini  /images/products/magnet/M51.jpg       10000  2026-01-26 21:55:10  0.0                  
+3264  Magnet 52 - bottle-opener dog                                                   2.0    magnet    Non défini  /images/products/magnet/M52.jpg       10000  2026-01-26 21:55:10  0.0                  
+3265  Magnet 53 - Swiss Chocolate Red                                                 1.7    magnet    Non défini  /images/products/magnet/M53.jpg       9976   2026-01-26 21:55:10  0.0                  
+3266  Magnet 54 - Swiss Chocolate Purple                                              1.7    magnet    Non défini  /images/products/magnet/M54.jpg       10000  2026-01-26 21:55:10  0.0                  
+3267  Magnet 55 - Switzerland Raclette                                                1.7    magnet    Non défini  /images/products/magnet/M55.jpg       10000  2026-01-26 21:55:10  0.0                  
+3268  Magnet 56 - Swiss Fondue Caquelon                                               1.7    magnet    Non défini  /images/products/magnet/M56.jpg       9880   2026-01-26 21:55:10  0.0                  
+3269  Magnet 57 - Dookie eating fondue                                                1.7    magnet    Non défini  /images/products/magnet/M57.jpg       10000  2026-01-26 21:55:10  0.0                  
+3270  Magnet 58 - Switzerland Lugano                                                  1.7    magnet    Non défini  /images/products/magnet/M58.jpg       10000  2026-01-26 21:55:10  0.0                  
+3271  Magnet 59 - Dookie head with flower                                             1.7    magnet    Non défini  /images/products/magnet/M59.jpg       10000  2026-01-26 21:55:10  0.0                  
+3272  Magnet 60 - bottle-opener dookie flower                                         2.0    magnet    Non défini  /images/products/magnet/M60.jpg       10000  2026-01-26 21:55:10  0.0                  
+3273  Magnet 61 - bottle-opener pint                                                  2.0    magnet    Non défini  /images/products/magnet/M61.jpg       10000  2026-01-26 21:55:10  0.0                  
+3274  Magnet 62 - Gold lingot                                                         1.7    magnet    Non défini  /images/products/magnet/M62.jpg       10000  2026-01-26 21:55:10  0.0                  
+3275  Magnet 63 - Toblerone                                                           1.7    magnet    Non défini  /images/products/magnet/M63.jpg       10000  2026-01-26 21:55:10  0.0                  
+3276  Magnet 64 - Poya Switzerland                                                    1.7    magnet    Non défini  /images/products/magnet/M64.jpg       10000  2026-01-26 21:55:10  0.0                  
+3277  Magnet 66 - Moon Boot Switzerland                                               1.7    magnet    Non défini  /images/products/magnet/M66.jpg       10000  2026-01-26 21:55:10  0.0                  
+3278  Magnet 67 - Red Cow                                                             1.7    magnet    Non défini  /images/products/magnet/M67.jpg       9880   2026-01-26 21:55:10  0.0                  
+3279  Magnet 68 - Rippling swiss flag                                                 1.7    magnet    Non défini  /images/products/magnet/M68.jpg       9940   2026-01-26 21:55:10  0.0                  
+3280  Magnet 69 - Bell Switzerland                                                    1.7    magnet    Non défini  /images/products/magnet/M69.jpg       0      2026-01-26 21:55:10  0.0                  
+3281  Magnet 71 - cuckoo thermometer                                                  1.7    magnet    Non défini  /images/products/magnet/M71.jpg       9892   2026-01-26 21:55:10  0.0                  
+3282  Magnet 72 - cuckoo thermometer                                                  1.7    magnet    Non défini  /images/products/magnet/M72.jpg       0      2026-01-26 21:55:10  0.0                  
+3283  Magnet 73 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M73.jpg       10000  2026-01-26 21:55:10  0.0                  
+3284  Magnet 74 - cuckoo thermometer                                                  1.7    magnet    Non défini  /images/products/magnet/M74.jpg       10000  2026-01-26 21:55:10  0.0                  
+3285  Magnet 75 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M75.jpg       10000  2026-01-26 21:55:10  0.0                  
+3286  Magnet 76 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M76.jpg       0      2026-01-26 21:55:10  0.0                  
+3287  Magnet 77 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M77.jpg       10000  2026-01-26 21:55:10  0.0                  
+3288  Magnet 78 - Jungfraujoch cuckoo                                                 1.7    magnet    Non défini  /images/products/magnet/M78.jpg       9988   2026-01-26 21:55:10  0.0                  
+3289  Magnet 79 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M79.jpg       0      2026-01-26 21:55:10  0.0                  
+3290  Magnet 80 - cuckoo thermometer                                                  1.7    magnet    Non défini  /images/products/magnet/M80.jpg       10000  2026-01-26 21:55:10  0.0                  
+3291  Magnet 81 - Genève cuckoo                                                       1.7    magnet    Non défini  /images/products/magnet/M81.jpg       0      2026-01-26 21:55:10  0.0                  
+3292  Magnet 82 - Gruyères cuckoo                                                     1.7    magnet    Non défini  /images/products/magnet/M82.jpg       10000  2026-01-26 21:55:10  0.0                  
+3293  Magnet 83 - Jungfraujoch                                                        1.7    magnet    Non défini  /images/products/magnet/M83.jpg       10000  2026-01-26 21:55:10  0.0                  
+3294  Magnet 84 - Jungfraujoch                                                        1.7    magnet    Non défini  /images/products/magnet/M84.jpg       10000  2026-01-26 21:55:10  0.0                  
+3295  Magnet 85 - Lausanne                                                            1.7    magnet    Non défini  /images/products/magnet/M85.jpg       9988   2026-01-26 21:55:10  0.0                  
+3296  Magnet 86 - Lausanne harbour                                                    1.7    magnet    Non défini  /images/products/magnet/M86.jpg       10000  2026-01-26 21:55:10  0.0                  
+3297  Magnet 87 - Luzern Kapellbrücke                                                 1.7    magnet    Non défini  /images/products/magnet/M87.jpg       10000  2026-01-26 21:55:10  0.0                  
+3298  Magnet 88 - Rheinfall                                                           1.7    magnet    Non défini  /images/products/magnet/M88.jpg       9880   2026-01-26 21:55:10  0.0                  
+3299  Magnet 89 - Schilthorn                                                          1.7    magnet    Non défini  /images/products/magnet/M89.jpg       10000  2026-01-26 21:55:10  0.0                  
+3300  Magnet 90 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M90.jpg       10000  2026-01-26 21:55:10  0.0                  
+3301  Magnet 91 - Zürich Switzerland Limmat                                           1.7    magnet    Non défini  /images/products/magnet/M91.jpg       10000  2026-01-26 21:55:10  0.0                  
+3302  Magnet 92 - Piz Gloria Schilthorn                                               1.7    magnet    Non défini  /images/products/magnet/M92.jpg       10000  2026-01-26 21:55:10  0.0                  
+3303  Magnet 93 - cuckoo thermometer                                                  1.7    magnet    Non défini  /images/products/magnet/M93.jpg       0      2026-01-26 21:55:10  0.0                  
+3304  Magnet 94 - cuckoo / Swiss Vapeur Parc MM                                       1.7    magnet    Non défini  /images/products/magnet/M94.jpg       0      2026-01-26 21:55:10  0.0                  
+3305  Magnet 95 - cuckoo                                                              1.7    magnet    Non défini  /images/products/magnet/M95.jpg       9988   2026-01-26 21:55:10  0.0                  
+3306  Magnet 96 - Chillon castle cuckoo                                               1.7    magnet    Non défini  /images/products/magnet/M96.jpg       10000  2026-01-26 21:55:10  0.0                  
+3307  Magnet 97 - Bern Switzerland cuckoo bear                                        1.7    magnet    Non défini  /images/products/magnet/M97.jpg       10000  2026-01-26 21:55:10  0.0                  
+3308  Magnet 98 - Bern Switzerland Zytglogge                                          1.7    magnet    Non défini  /images/products/magnet/M98.jpg       10000  2026-01-26 21:55:10  0.0                  
+3309  Magnet 99 - Morcote City                                                        1.7    magnet    Non défini  /images/products/magnet/M99.jpg       10000  2026-01-26 21:55:10  0.0                  
+3310  Magnet 100 - Simplon Pass eagle statue                                          1.7    magnet    Non défini  /images/products/magnet/M100.jpg      10000  2026-01-26 21:55:10  0.0                  
+3311  Magnet 101 - Cathedral Lausanne                                                 1.7    magnet    Non défini  /images/products/magnet/M101.jpg      10000  2026-01-26 21:55:10  0.0                  
+3312  Magnet 102 - St-Bernard and puppies                                             1.7    magnet    Non défini  /images/products/magnet/M102.jpg      10000  2026-01-26 21:55:10  0.0                  
+3313  Magnet 103 - Les Pacots ski club                                                1.7    magnet    Non défini  /images/products/magnet/M103.jpg      10000  2026-01-26 21:55:10  0.0                  
+3314  Magnet 104 - Jungfraujoch relief                                                1.7    magnet    Non défini  /images/products/magnet/M104.jpg      10000  2026-01-26 21:55:10  0.0                  
+3315  Magnet 105 - Verbier snow Switzerland                                           1.7    magnet    Non défini  /images/products/magnet/M105.jpg      10000  2026-01-26 21:55:10  0.0                  
+3316  Magnet 106 - City view                                                          1.7    magnet    Non défini  /images/products/magnet/M106.jpg      10000  2026-01-26 21:55:10  0.0                  
+3317  Magnet 107 - Bundeshaus                                                         1.7    magnet    Non défini  /images/products/magnet/M107.jpg      10000  2026-01-26 21:55:10  0.0                  
+3318  Magnet 108 - Zytglogge                                                          1.7    magnet    Non défini  /images/products/magnet/M108.jpg      10000  2026-01-26 21:55:10  0.0                  
+3319  Magnet 109 - Zytglogge                                                          1.7    magnet    Non défini  /images/products/magnet/M109.jpg      10000  2026-01-26 21:55:10  0.0                  
+3320  Magnet 110 - Zytglogge                                                          1.7    magnet    Non défini  /images/products/magnet/M110.jpg      10000  2026-01-26 21:55:10  0.0                  
+3321  Magnet 111 - Bear and cub tree                                                  1.7    magnet    Non défini  /images/products/magnet/M111.jpg      10000  2026-01-26 21:55:10  0.0                  
+3322  Magnet 112 - Bern bear MM                                                       1.7    magnet    Non défini  /images/products/magnet/M112.jpg      10000  2026-01-26 21:55:10  0.0                  
+3323  Magnet 113 - Zytglogge relief MM                                                1.7    magnet    Non défini  /images/products/magnet/M113.jpg      10000  2026-01-26 21:55:10  0.0                  
+3324  Magnet 114 - Bern badge MM                                                      1.7    magnet    Non défini  /images/products/magnet/M114.jpg      10000  2026-01-26 21:55:10  0.0                  
+3325  Magnet 115 - St-Moritz                                                          1.7    magnet    Non défini  /images/products/magnet/M115.jpg      10000  2026-01-26 21:55:10  0.0                  
+3326  Magnet 116 - Bottle-opener                                                      2.0    magnet    Non défini  /images/products/magnet/M116.jpg      10000  2026-01-26 21:55:10  0.0                  
+3327  Magnet 116f - Bear figurine FIG                                                 3.0    magnet    Non défini  /images/products/magnet/M116f.jpg     10000  2026-01-26 21:55:10  0.0                  
+3328  Magnet 117 - Water jet Genève                                                   1.7    magnet    Non défini  /images/products/magnet/M117.jpg      10000  2026-01-26 21:55:10  0.0                  
+3329  Magnet 117f - Bear figurine FIG                                                 3.0    magnet    Non défini  /images/products/magnet/M117f.jpg     10000  2026-01-26 21:55:10  0.0                  
+3330  Magnet 118 - City Cathedral relief MM                                           1.7    magnet    Non défini  /images/products/magnet/M118.jpg      10000  2026-01-26 21:55:10  0.0                  
+3331  Magnet 119 - Chillon castle MM                                                  1.7    magnet    Non défini  /images/products/magnet/M119.jpg      10000  2026-01-26 21:55:10  0.0                  
+3332  Magnet 120 - Swiss badge MM                                                     1.7    magnet    Non défini  /images/products/magnet/M120.jpg      10000  2026-01-26 21:55:10  0.48                 
+3333  Magnet 121 - Valais badge MM                                                    1.7    magnet    Non défini  /images/products/magnet/M121.jpg      10000  2026-01-26 21:55:10  0.0                  
+3334  Magnet 122 - Flag. cow. edelweis. bell MM                                       2.0    magnet    Non défini  /images/products/magnet/M122.jpg      10000  2026-01-26 21:55:10  0.65                 
+3335  Magnet 123 - Matterhorn red letters                                             1.7    magnet    Non défini  /images/products/magnet/M123.jpg      10000  2026-01-26 21:55:10  0.0                  
+3336  Magnet 124 - I love Luzern MM                                                   1.7    magnet    Non défini  /images/products/magnet/M124.jpg      10000  2026-01-26 21:55:10  0.0                  
+3337  Magnet 125 - I love Zermatt MM                                                  1.7    magnet    Non défini  /images/products/magnet/M125.jpg      10000  2026-01-26 21:55:10  0.0                  
+3338  Magnet 126 - I love Genève water jet MM                                         1.7    magnet    Non défini  /images/products/magnet/M126.jpg      9928   2026-01-26 21:55:10  0.0                  
+3339  Magnet 127 - Cuckoo                                                             1.7    magnet    Non défini  /images/products/magnet/M127.jpg      10000  2026-01-26 21:55:10  0.0                  
+3340  Magnet 128 - bottle-opener I love Swiss MM                                      2.0    magnet    Non défini  /images/products/magnet/M128.jpg      9976   2026-01-26 21:55:10  0.0                  
+3341  Magnet 129 - bottle-opener golden cow MM                                        2.0    magnet    Non défini  /images/products/magnet/M129.jpg      10000  2026-01-26 21:55:10  0.0                  
+3342  Magnet 131 - bottle-opener swiss token MM                                       2.0    magnet    Non défini  /images/products/magnet/M131.jpg      10000  2026-01-26 21:55:10  0.0                  
+3343  Magnet 131c - Switzerland cuckoo clock                                          1.7    magnet    Non défini  /images/products/magnet/M131c.jpg     10000  2026-01-26 21:55:10  0.0                  
+3344  Magnet 132 - Locarno panorama lake                                              1.7    magnet    Non défini  /images/products/magnet/M132.jpg      10000  2026-01-26 21:55:10  0.0                  
+3345  Magnet 134 - Bottle-opener relief MM                                            2.0    magnet    Non défini  /images/products/magnet/M134.jpg      10000  2026-01-26 21:55:10  0.0                  
+3346  Magnet 135 - Zermatt town Matterhorn                                            1.7    magnet    Non défini  /images/products/magnet/M135.jpg      10000  2026-01-26 21:55:10  0.0                  
+3347  Magnet 137 - Zermatt city                                                       1.7    magnet    Non défini  /images/products/magnet/M137.jpg      10000  2026-01-26 21:55:10  0.0                  
+3348  Magnet 138 - Genève badge                                                       1.7    magnet    Non défini  /images/products/magnet/M138.jpg      10000  2026-01-26 21:55:10  0.48                 
+3349  Magnet 139 - panorama                                                           1.7    magnet    Non défini  /images/products/magnet/M139.jpg      10000  2026-01-26 21:55:10  0.0                  
+3350  Magnet 140 - Matterhorn 4470 m                                                  1.7    magnet    Non défini  /images/products/magnet/M140.jpg      9976   2026-01-26 21:55:10  0.0                  
+3351  Magnet 141 - Zermatt Matterhorn                                                 1.7    magnet    Non défini  /images/products/magnet/M141.jpg      10000  2026-01-26 21:55:10  0.0                  
+3352  Magnet 142 - St-Bernard with barrel                                             1.7    magnet    Non défini  /images/products/magnet/M142.jpg      10000  2026-01-26 21:55:10  0.0                  
+3353  Magnet 143 - Gruyères street Moleson                                            1.7    magnet    Non défini  /images/products/magnet/M143.jpg      10000  2026-01-26 21:55:10  0.0                  
+3354  Magnet 144 - Rheinfall Switzerland                                              1.7    magnet    Non défini  /images/products/magnet/M144.jpg      0      2026-01-26 21:55:10  0.0                  
+3355  Magnet 145 - Dookie Crans-Montana                                               1.7    magnet    Non défini  /images/products/magnet/M145.jpg      10000  2026-01-26 21:55:10  0.0                  
+3356  Magnet 146 - Dookie skiing                                                      1.7    magnet    Non défini  /images/products/magnet/M146.jpg      10000  2026-01-26 21:55:10  0.0                  
+3357  Magnet 147 - Dookie St-Moritz sign                                              1.7    magnet    Non défini  /images/products/magnet/M147.jpg      10000  2026-01-26 21:55:10  0.0                  
+3358  Magnet 148 - Davos Dookie sign                                                  1.7    magnet    Non défini  /images/products/magnet/M148.jpg      10000  2026-01-26 21:55:10  0.0                  
+3359  Magnet 149 - Dookie Gruyères sign                                               1.7    magnet    Non défini  /images/products/magnet/M149.jpg      10000  2026-01-26 21:55:10  0.0                  
+3360  Magnet 150 - St-Bernard thermometer                                             2.0    magnet    Non défini  /images/products/magnet/M150.jpg      10000  2026-01-26 21:55:10  0.0                  
+3361  Magnet 152 - Red bell white cross MM                                            1.7    magnet    Non défini  /images/products/magnet/M152.jpg      0      2026-01-26 21:55:10  0.0                  
+3362  Magnet 153 - Leman Lake grapes Lavaux                                           1.7    magnet    Non défini  /images/products/magnet/M153.jpg      10000  2026-01-26 21:55:10  0.0                  
+3363  Magnet 155 - Interlaken bilboard Dookie                                         1.7    magnet    Non défini  /images/products/magnet/M155.jpg      10000  2026-01-26 21:55:10  0.0                  
+3364  Magnet 156 - Grand St-Bernard cuckoo                                            1.7    magnet    Non défini  /images/products/magnet/M156.jpg      10000  2026-01-26 21:55:10  0.0                  
+3365  Magnet 157 - Genève cuckoo                                                      1.7    magnet    Non défini  /images/products/magnet/M157.jpg      0      2026-01-26 21:55:10  0.0                  
+3366  Magnet 158 - Zermatt cuckoo                                                     1.7    magnet    Non défini  /images/products/magnet/M158.jpg      10000  2026-01-26 21:55:10  0.0                  
+3367  Magnet 161Ge - Dookie GE                                                        1.7    magnet    Non défini  /images/products/magnet/M161Ge.jpg    10000  2026-01-26 21:55:10  0.0                  
+3368  Magnet 161Be - Dookie Be                                                        1.7    magnet    Non défini  /images/products/magnet/M161Be.jpg    10000  2026-01-26 21:55:10  0.0                  
+3369  Magnet 161In - Dookie In                                                        1.7    magnet    Non défini  /images/products/magnet/M161In.jpg    10000  2026-01-26 21:55:10  0.0                  
+3370  Magnet 161L - Dookie L                                                          1.7    magnet    Non défini  /images/products/magnet/M161L.jpg     10000  2026-01-26 21:55:10  0.0                  
+3371  Magnet 161Lu - Dookie Lu                                                        1.7    magnet    Non défini  /images/products/magnet/M161Lu.jpg    10000  2026-01-26 21:55:10  0.0                  
+3372  Magnet 161Mo - Dookie Mo                                                        1.7    magnet    Non défini  /images/products/magnet/M161Mo.jpg    10000  2026-01-26 21:55:10  0.0                  
+3373  Magnet 161Rh - Dookie Rh                                                        1.7    magnet    Non défini  /images/products/magnet/M161Rh.jpg    10000  2026-01-26 21:55:10  0.0                  
+3374  Magnet 161Ze - Dookie Ze                                                        1.7    magnet    Non défini  /images/products/magnet/M161Ze.jpg    10000  2026-01-26 21:55:10  0.0                  
+3375  Magnet 161Zh - Dookie Zh                                                        1.7    magnet    Non défini  /images/products/magnet/M161Zh.jpg    10000  2026-01-26 21:55:10  0.0                  
+3376  Magnet 162 - Bear Zytglogge                                                     1.7    magnet    Non défini  /images/products/magnet/M162.jpg      10000  2026-01-26 21:55:10  0.0                  
+3377  Magnet 163 - Matterhorn train                                                   1.7    magnet    Non défini  /images/products/magnet/M163.jpg      10000  2026-01-26 21:55:10  0.0                  
+3378  Magnet 164 - Grand St-Bernard                                                   1.7    magnet    Non défini  /images/products/magnet/M164.jpg      10000  2026-01-26 21:55:10  0.0                  
+3379  Magnet 165 - Zürich cuckoo                                                      1.7    magnet    Non défini  /images/products/magnet/M165.jpg      10000  2026-01-26 21:55:10  0.0                  
+3380  Magnet 166 - St-Bernard                                                         1.7    magnet    Non défini  /images/products/magnet/M166.jpg      10000  2026-01-26 21:55:10  0.0                  
+3381  Magnet 167 - Lanterbrunnen                                                      1.7    magnet    Non défini  /images/products/magnet/M167.jpg      10000  2026-01-26 21:55:10  0.0                  
+3382  Magnet 168 - Metallic Postal bus                                                1.0    magnet    Non défini  /images/products/magnet/M168.jpg      10000  2026-01-26 21:55:10  0.0                  
+3383  Magnet 169 - Metallic Zermatt                                                   1.0    magnet    Non défini  /images/products/magnet/M169.jpg      133    2026-01-26 21:55:10  0.0                  
+3384  Magnet 170 - Metallic train                                                     1.0    magnet    Non défini  /images/products/magnet/M170.jpg      0      2026-01-26 21:55:10  0.0                  
+3385  Magnet 171 - Andermatt train                                                    1.7    magnet    Non défini  /images/products/magnet/M171.jpg      10000  2026-01-26 21:55:10  0.0                  
+3386  Magnet 172 - Grossmunster Zürich MM                                             1.7    magnet    Non défini  /images/products/magnet/M172.jpg      10000  2026-01-26 21:55:10  0.0                  
+3387  Magnet 173 - Metallic Zürich                                                    1.0    magnet    Non défini  /images/products/magnet/M173.jpg      1211   2026-01-26 21:55:10  0.0                  
+3388  Magnet 174 - Metallic Interlaken                                                1.0    magnet    Non défini  /images/products/magnet/M174.jpg      327    2026-01-26 21:55:10  0.0                  
+3389  Magnet 175 - Matterhorn cabin landscape MM                                      2.0    magnet    Non défini  /images/products/magnet/M175.jpg      10000  2026-01-26 21:55:10  0.0                  
+3390  Magnet 176 - Andermatt ski                                                      1.7    magnet    Non défini  /images/products/magnet/M176.jpg      10000  2026-01-26 21:55:10  0.0                  
+3391  Magnet 178 - Lucerne Kapellbrücke MM                                            1.7    magnet    Non défini  /images/products/magnet/M178.jpg      10000  2026-01-26 21:55:10  0.0                  
+3392  Magnet 179 - Nyon castle                                                        1.7    magnet    Non défini  /images/products/magnet/M179.jpg      10000  2026-01-26 21:55:10  0.0                  
+3393  Magnet 181 - fondue pot                                                         1.7    magnet    Non défini  /images/products/magnet/M181.jpg      0      2026-01-26 21:55:10  0.0                  
+3394  Magnet 182 - Red cow head                                                       1.7    magnet    Non défini  /images/products/magnet/M182.jpg      0      2026-01-26 21:55:10  0.0                  
+3395  Magnet 183 - Red cow                                                            1.7    magnet    Non défini  /images/products/magnet/M183.jpg      9880   2026-01-26 21:55:10  0.0                  
+3396  Magnet 184 - BW cow switzerland                                                 1.7    magnet    Non défini  /images/products/magnet/M184.jpg      9868   2026-01-26 21:55:10  0.0                  
+3397  Magnet 185 - Costume Suisse                                                     1.3    magnet    Non défini  /images/products/magnets/M185.jpg     10000  2026-01-26 21:55:10  0.0                  
+3398  Magnet 186 - Cuckoo                                                             1.7    magnet    Non défini  /images/products/magnet/M186.jpg      9904   2026-01-26 21:55:10  0.0                  
+3399  Magnet 186f - Raclette and wine MM                                              1.7    magnet    Non défini  /images/products/magnet/M186f.jpg     10000  2026-01-26 21:55:10  0.0                  
+3400  Magnet 187 - Cuckoo                                                             1.7    magnet    Non défini  /images/products/magnet/M187.jpg      9904   2026-01-26 21:55:10  0.0                  
+3401  Magnet 188 - Cuckoo                                                             1.7    magnet    Non défini  /images/products/magnet/M188.jpg      9988   2026-01-26 21:55:10  0.0                  
+3402  Magnet 189 - Cuckoo                                                             1.7    magnet    Non défini  /images/products/magnet/M189.jpg      9988   2026-01-26 21:55:10  0.0                  
+3403  Magnet 190 - Magnet box                                                         2.4    magnet    Non défini  /images/products/magnet/M190.jpg      0      2026-01-26 21:55:10  0.0                  
+3404  Magnet 191 - Magnet box                                                         2.4    magnet    Non défini  /images/products/magnet/M191.jpg      10000  2026-01-26 21:55:10  0.0                  
+3405  Magnet 192 - BASEL charm magnet                                                 2.0    magnet    Non défini  /images/products/magnet/M192.jpg      10000  2026-01-26 21:55:10  0.0                  
+3406  Magnet 193 - Animals hand spinner                                               2.6    magnet    Non défini  /images/products/magnet/M193.jpg      10000  2026-01-26 21:55:10  1.25                 
+3407  Magnet 194 - Yellow plates hand spinner                                         2.6    magnet    Non défini  /images/products/magnet/M194.jpg      10000  2026-01-26 21:55:10  1.25                 
+3408  Magnet 195 - Bottle-opener Bern Beer                                            2.0    magnet    Non défini  /images/products/magnet/M195.jpg      10000  2026-01-26 21:55:10  0.0                  
+3409  Magnet 196 - Camera magnet GENEVA                                               1.7    magnet    Non défini  /images/products/magnet/M196.jpg      10000  2026-01-26 21:55:10  0.0                  
+3410  Magnet 197 - Camera magnet Bern bear                                            1.7    magnet    Non défini  /images/products/magnet/M197.jpg      10000  2026-01-26 21:55:10  0.0                  
+3411  Magnet 198 - Camera magnet Bern                                                 1.7    magnet    Non défini  /images/products/magnet/M198.jpg      10000  2026-01-26 21:55:10  0.0                  
+3412  Magnet 199 - Camera magnet Switzerland                                          1.7    magnet    Non défini  /images/products/magnet/M199.jpg      10000  2026-01-26 21:55:10  0.0                  
+3413  Magnet 200 - Bicycles magnet GENEVA                                             1.7    magnet    Non défini  /images/products/magnet/M200.jpg      10000  2026-01-26 21:55:10  0.0                  
+3414  Magnet 201 - Bicycles magnet Bern                                               1.7    magnet    Non défini  /images/products/magnet/M201.jpg      10000  2026-01-26 21:55:10  0.0                  
+3415  Magnet 202 - Bicycles magnet Zürich                                             1.7    magnet    Non défini  /images/products/magnet/M202.jpg      10000  2026-01-26 21:55:10  0.0                  
+3416  Magnet 203 - Bear magnet with bottle opener UV printing Green.White. Pink.Blue  2.0    magnet    Non défini  /images/products/magnet/M203.jpg      10000  2026-01-26 21:55:10  0.0                  
+3417  Magnet 204 - Magnet Geneva broken chair                                         2.0    magnet    Non défini  /images/products/magnet/M204.jpg      10000  2026-01-26 21:55:10  0.0                  
+3418  Magnet 220 - Magnet Bern                                                        1.0    magnet    Non défini  /images/products/magnet/M220.jpg      10000  2026-01-26 21:55:10  0.0                  
+3419  Magnet 221 - Magnet Genève                                                      1.0    magnet    Non défini  /images/products/magnet/M221.jpg      10000  2026-01-26 21:55:10  0.0                  
+3420  Magnet 222 - Magnet Interlaken                                                  1.0    magnet    Non défini  /images/products/magnet/M222.jpg      10000  2026-01-26 21:55:10  0.0                  
+3421  Magnet 223 - Magnet Zurich                                                      1.0    magnet    Non défini  /images/products/magnet/M223.jpg      10000  2026-01-26 21:55:10  0.0                  
+3422  Magnet 225 MM - Magnet montreux                                                 2.0    magnet    Non défini  /images/products/magnet/M225.jpg      10000  2026-01-26 21:55:10  0.0                  
+3423  Magnet 226 - Magnet montreux                                                    2.8    magnet    Non défini  /images/products/magnet/M226.jpg      10000  2026-01-26 21:55:10  0.0                  
+3424  Magnet 252 - Genève water jet                                                   1.7    magnet    Non défini  /images/products/magnet/M252.jpg      9976   2026-01-26 21:55:10  0.0                  
+3425  Magnet 257 - Swiss mountains (magnet seins)                                     1.7    magnet    Non défini  /images/products/magnet/M257.jpg      10000  2026-01-26 21:55:10  0.0                  
+3426  Magnet 258 - Luzern Kapellbrücke                                                1.7    magnet    Non défini  /images/products/magnet/M258.jpg      10000  2026-01-26 21:55:10  0.0                  
+3427  Magnet 261 - Metallic Montreux                                                  1.0    magnet    Non défini  /images/products/magnet/M161.jpg      11     2026-01-26 21:55:10  0.0                  
+3428  Magnet 262 - Set Swiss DE                                                       2.4    magnet    Non défini  /images/products/magnet/M262.jpg      10000  2026-01-26 21:55:10  0.0                  
+3429  Magnet 263 - Set Swiss FR                                                       2.4    magnet    Non défini  /images/products/magnet/M263.jpg      10000  2026-01-26 21:55:10  0.0                  
+3430  Magnet 264 - Planchette aperitif                                                1.7    magnet    Non défini  /images/products/magnet/M264.jpg      10000  2026-01-26 21:55:10  0.0                  
+3431  Magnet 265 - Metallic Genève                                                    1.0    magnet    Non défini  /images/products/magnet/M265.jpg      2300   2026-01-26 21:55:10  0.0                  
+3432  Magnet 266 - Metallic Bern                                                      1.0    magnet    Non défini  /images/products/magnet/M266.jpg      0      2026-01-26 21:55:10  0.0                  
+3433  Magnet 267 - Fondue pot                                                         1.7    magnet    Non défini  /images/products/magnet/M267.jpg      0      2026-01-26 21:55:10  0.0                  
+3434  Magnet 268 - Metallic Crans-Montana                                             1.0    magnet    Non défini  /images/products/magnet/M268.jpg      0      2026-01-26 21:55:10  0.0                  
+3435  Magnet 269 - Metallic Lausanne | 30x15 Metallic plate MM                        1.0    magnet    Non défini  /images/products/magnet/M269.jpg      0      2026-01-26 21:55:10  0.0                  
+3436  Magnet 270 - Metallic 1291 | 30x15 Metallic plate MM                            1.0    magnet    Non défini  /images/products/magnet/M270.jpg      150    2026-01-26 21:55:10  0.0                  
+3437  Magnet 271 - Kapellbrücke Pilatus                                               1.7    magnet    Non défini  /images/products/magnet/M271.jpg      10000  2026-01-26 21:55:10  0.0                  
+3438  Magnet 272 - Swiss map rubber Red                                               1.0    magnet    Non défini  /images/products/magnet/M272.jpg      9855   2026-01-26 21:55:10  0.0                  
+3439  Magnet 273 - Swiss map rubber White                                             1.0    magnet    Non défini  /images/products/magnet/M273.jpg      9900   2026-01-26 21:55:10  0.0                  
+3440  Magnet 274 - Metallic red poya                                                  1.2    magnet    Non défini  /images/products/magnet/M274.jpg      0      2026-01-26 21:55:10  0.0                  
+3441  Magnet 275 - Metallic Pedestrian VS 10x3cm                                      1.2    magnet    Non défini  /images/products/magnet/M275.jpg      650    2026-01-26 21:55:10  0.0                  
+3442  Magnet 276 - Metallic Pedestrian Lausanne 10x3cm                                1.2    magnet    Non défini  /images/products/magnet/M276.jpg      700    2026-01-26 21:55:10  0.0                  
+3443  Magnet 277 - Metallic Pedestrian Luzern 10x3cm                                  1.2    magnet    Non défini  /images/products/magnet/M277.jpg      950    2026-01-26 21:55:10  0.0                  
+3444  Magnet 278 - Metallic Pedestrian Zermatt 10x3cm                                 1.2    magnet    Non défini  /images/products/magnet/M278.jpg      940    2026-01-26 21:55:10  0.0                  
+3445  Magnet 279 - Metallic Pedestrian Interlaken 10x3cm                              1.2    magnet    Non défini  /images/products/magnet/M279.jpg      150    2026-01-26 21:55:10  0.0                  
+3446  Magnet 280 - Metallic Pedestrian Bern 10x3cm                                    1.2    magnet    Non défini  /images/products/magnet/M280.jpg      0      2026-01-26 21:55:10  0.0                  
+3447  Magnet 281 - Metallic Pedestrian GE 10x3cm                                      1.2    magnet    Non défini  /images/products/magnet/M281.jpg      70     2026-01-26 21:55:10  0.0                  
+3448  Magnet 282 - Metallic Pedestrian ZU 10x3cm                                      1.2    magnet    Non défini  /images/products/magnet/M282.jpg      650    2026-01-26 21:55:10  0.0                  
+3449  Magnet 283 - Metallic Asutralian 10x3cm                                         1.2    magnet    Non défini  /images/products/magnet/M283.jpg      457    2026-01-26 21:55:10  0.0                  
+3450  Magnet 284 - Metallic Pedestrian Rheinfall 10x3cm                               1.2    magnet    Non défini  /images/products/magnet/M284.jpg      0      2026-01-26 21:55:10  0.0                  
+3451  Magnet 285 - Swiss map Interlaken                                               1.0    magnet    Non défini  /images/products/magnet/M285.jpg      10000  2026-01-26 21:55:10  0.0                  
+3452  Magnet 286 - Swiss map Lausanne                                                 1.0    magnet    Non défini  /images/products/magnet/M286.jpg      10000  2026-01-26 21:55:10  0.0                  
+3453  Magnet 287 - Swiss map Luzern                                                   1.0    magnet    Non défini  /images/products/magnet/M287.jpg      10000  2026-01-26 21:55:10  0.0                  
+3454  Magnet 288 - Swiss map Rheinfall                                                1.0    magnet    Non défini  /images/products/magnet/M288.jpg      10000  2026-01-26 21:55:10  0.0                  
+3455  Magnet 289 - Swiss map Zermatt (night)                                          1.0    magnet    Non défini  /images/products/magnet/M289.jpg      10000  2026-01-26 21:55:10  0.0                  
+3456  Magnet 290 - Swiss map Zermatt                                                  1.0    magnet    Non défini  /images/products/magnet/M290.jpg      10000  2026-01-26 21:55:10  0.0                  
+3457  Magnet 291 - Bear Bern Switzerland                                              1.7    magnet    Non défini  /images/products/magnet/M291.jpg      10000  2026-01-26 21:55:10  0.0                  
+3458  Magnet 292 - Swiss map Zürich                                                   1.0    magnet    Non défini  /images/products/magnet/M292.jpg      10000  2026-01-26 21:55:10  0.0                  
+3459  Magnet 292z - Bicycles magnet Zürich                                            1.7    magnet    Non défini  /images/products/magnet/M292z.jpg     10000  2026-01-26 21:55:10  0.0                  
+3460  Magnet 293 - Zytglogge                                                          1.7    magnet    Non défini  /images/products/magnet/M293.jpg      10000  2026-01-26 21:55:10  0.0                  
+3461  Magnet 294 - Swiss map Genève                                                   1.0    magnet    Non défini  /images/products/magnet/M294.jpg      0      2026-01-26 21:55:10  0.0                  
+3462  Magnet 295 - Swiss map Bern                                                     1.0    magnet    Non défini  /images/products/magnet/M295.jpg      10000  2026-01-26 21:55:10  0.0                  
+3463  Magnet 296c - Cuckoo clock                                                      1.7    magnet    Non défini  /images/products/magnet/M296c.jpg     9904   2026-01-26 21:55:10  0.0                  
+3464  Magnet 296 - Swiss map Montreux                                                 1.0    magnet    Non défini  /images/products/magnet/M296.jpg      10000  2026-01-26 21:55:10  0.0                  
+3465  Magnet 297 - Swiss map Crans-Montana                                            1.0    magnet    Non défini  /images/products/magnet/M297.jpg      10000  2026-01-26 21:55:10  0.0                  
+3466  Magnet 298 - Metallic Pedestrian Gruyères 10x3cm                                1.2    magnet    Non défini  /images/products/magnet/M298.jpg      300    2026-01-26 21:55:10  0.0                  
+3467  Magnet 299 - Swiss map panorama                                                 1.0    magnet    Non défini  /images/products/magnet/M299.jpg      10000  2026-01-26 21:55:10  0.0                  
+3468  Magnet 300 - Switzerland red MM                                                 1.7    magnet    Non défini  /images/products/magnet/M300.jpg      9940   2026-01-26 21:55:10  0.63                 
+3469  Magnet 301 - bottle-opener Dookie MM                                            2.0    magnet    Non défini  /images/products/magnet/M301.jpg      10000  2026-01-26 21:55:10  0.0                  
+3470  Magnet 302 - Metallic cycle track                                               1.2    magnet    Non défini  /images/products/magnet/M302.jpg      0      2026-01-26 21:55:10  0.0                  
+3471  Magnet 303 - Red cow over Switzerland text MM                                   1.7    magnet    Non défini  /images/products/magnet/M303.jpg      10000  2026-01-26 21:55:10  0.0                  
+3472  Magnet 304 - Fondue cheese. cow. bell MM                                        2.0    magnet    Non défini  /images/products/magnet/M304.jpg      9964   2026-01-26 21:55:10  0.78                 
+3473  Magnet 305 - Cow bell Switzerland MM                                            2.0    magnet    Non défini  /images/products/magnet/M305.jpg      10000  2026-01-26 21:55:10  0.0                  
+3474  Magnet 306 - Jungfraujoch MM                                                    2.0    magnet    Non défini  /images/products/magnet/M306.jpg      10000  2026-01-26 21:55:10  0.0                  
+3475  Magnet 307g - Golden bell swiss flag                                            1.7    magnet    Non défini  /images/products/magnet/M307g.jpg     0      2026-01-26 21:55:10  0.0                  
+3476  Magnet 307 - Water jet magnet MM                                                2.0    magnet    Non défini  /images/products/magnet/M307.jpg      10000  2026-01-26 21:55:10  0.7                  
+3477  Magnet 308 - flag. clock. water jet. chocolate MM                               2.0    magnet    Non défini  /images/products/magnet/M308.jpg      10000  2026-01-26 21:55:10  0.0                  
+3478  Magnet 315 - Bear MM                                                            2.0    magnet    Non défini  /images/products/magnet/M315.jpg      10000  2026-01-26 21:55:10  0.0                  
+3479  Magnet 316 - Zytglogge MM                                                       2.0    magnet    Non défini  /images/products/magnet/M316.jpg      10000  2026-01-26 21:55:10  0.0                  
+3480  Magnet 317 - Zytglogge MM                                                       2.0    magnet    Non défini  /images/products/magnet/M317.jpg      10000  2026-01-26 21:55:10  0.75                 
+3481  Magnet 318 - Zytglogge MM                                                       1.7    magnet    Non défini  /images/products/magnet/M318.jpg      10000  2026-01-26 21:55:10  0.0                  
+3482  Magnet 319 - Heart shaped Zytglogge                                             1.7    magnet    Non défini  /images/products/magnet/M319.jpg      10000  2026-01-26 21:55:10  0.0                  
+3483  Magnet 320 - Bear head trophy 1                                                 1.7    magnet    Non défini  /images/products/magnet/M320.jpg      10000  2026-01-26 21:55:10  0.0                  
+3484  Magnet 321 - Interlaken                                                         2.0    magnet    Non défini  /images/products/magnet/M321.jpg      10000  2026-01-26 21:55:10  0.0                  
+3485  Magnet 322 - Montreux                                                           2.0    magnet    Non défini  /images/products/magnet/M322.jpg      10000  2026-01-26 21:55:10  0.78                 
+3486  Magnet 323 - Lausanne-Ouchy harbour                                             1.7    magnet    Non défini  /images/products/magnet/M323.jpg      10000  2026-01-26 21:55:10  0.0                  
+3487  Magnet 324 - Cathedral Lausanne MM                                              2.0    magnet    Non défini  /images/products/magnet/M324.jpg      10000  2026-01-26 21:55:10  0.0                  
+3488  Magnet 326 - Lausanne Ouchy harbour MM                                          1.3    magnet    Non défini  /images/products/magnet/M326.jpg      10000  2026-01-26 21:55:10  0.0                  
+3489  Magnet 328 - Dookie Bottle-opener                                               2.0    magnet    Non défini  /images/products/magnet/M328.jpg      10000  2026-01-26 21:55:10  0.0                  
+3490  Magnet 336 - Magnet Gruyères MM                                                 2.0    magnet    Non défini  /images/products/magnet/M336.jpg      10000  2026-01-26 21:55:10  0.0                  
+3491  Magnet 336E - Magnet Einstein Crystal                                           1.0    magnet    Non défini  /images/products/magnet/M336E.jpg     10000  2026-01-26 21:55:10  0.0                  
+3492  Magnet 337 - Hearth shaped Gruyères                                             1.7    magnet    Non défini  /images/products/magnet/M337.jpg      10000  2026-01-26 21:55:10  0.0                  
+3493  Magnet 338 - Gruyères city double sided MM                                      1.3    magnet    Non défini  /images/products/magnet/M338.jpg      10000  2026-01-26 21:55:10  0.0                  
+3494  Magnet 339 - Crans-Montana double sided MM                                      1.3    magnet    Non défini  /images/products/magnet/M339.jpg      10000  2026-01-26 21:55:10  0.0                  
+3495  Magnet 340 - Heart Bern                                                         1.0    magnet    Non défini  /images/products/magnet/M340.jpg      10000  2026-01-26 21:55:10  0.0                  
+3496  Magnet 341 - Heart Zermatt                                                      1.0    magnet    Non défini  /images/products/magnet/M341.jpg      10000  2026-01-26 21:55:10  0.0                  
+3497  Magnet 342 - Heart Zürich                                                       1.0    magnet    Non défini  /images/products/magnet/M342.jpg      10000  2026-01-26 21:55:10  0.0                  
+3498  Magnet 343 - Heart Crans-Montana                                                1.0    magnet    Non défini  /images/products/magnet/M343.jpg      10000  2026-01-26 21:55:10  0.0                  
+3499  Magnet 344 - Heart Genève                                                       1.0    magnet    Non défini  /images/products/magnet/M344.jpg      10000  2026-01-26 21:55:10  0.0                  
+3500  Magnet 345 - Heart Interlaken                                                   1.0    magnet    Non défini  /images/products/magnet/M345.jpg      10000  2026-01-26 21:55:10  0.0                  
+3501  Magnet 346 - Heart Lausanne                                                     1.0    magnet    Non défini  /images/products/magnet/M346.jpg      10000  2026-01-26 21:55:10  0.0                  
+3502  Magnet 347 - Heart Luzern                                                       1.0    magnet    Non défini  /images/products/magnet/M347.jpg      10000  2026-01-26 21:55:10  0.0                  
+3503  Magnet 348 - Heart Montreux                                                     1.0    magnet    Non défini  /images/products/magnet/M348.jpg      10000  2026-01-26 21:55:10  0.0                  
+3504  Magnet 349 - Heart Rheinfall                                                    1.0    magnet    Non défini  /images/products/magnet/M349.jpg      10000  2026-01-26 21:55:10  0.0                  
+3505  Magnet 350 - Heart Switzerland                                                  1.0    magnet    Non défini  /images/products/magnet/M350.jpg      10000  2026-01-26 21:55:10  0.0                  
+3506  Magnet 288C - Heart Switzerland C                                               1.0    magnet    Non défini  /images/products/magnet/Mxxx.jpg      10000  2026-01-26 21:55:10  0.0                  
+3507  Magnet 288B - Heart Switzerland B                                               1.0    magnet    Non défini  /images/products/magnet/Mxxx.jpg      10000  2026-01-26 21:55:10  0.0                  
+3508  Magnet 288A - Heart Switzerland A                                               1.0    magnet    Non défini  /images/products/magnet/Mxxx.jpg      10000  2026-01-26 21:55:10  0.0                  
+3509  Magnet 352 - Bear figurine FIG                                                  3.0    magnet    Non défini  /images/products/magnet/M352.jpg      10000  2026-01-26 21:55:10  0.0                  
+3510  Magnet 353 - Heart Freddie                                                      1.0    magnet    Non défini  /images/products/magnet/M353.jpg      10000  2026-01-26 21:55:10  0.0                  
+3511  Magnet 355 - Bottle-opener MM                                                   2.0    magnet    Non défini  /images/products/magnet/M355.jpg      10000  2026-01-26 21:55:10  0.0                  
+3512  Magnet 356 - grey cow head with flower                                          1.7    magnet    Non défini  /images/products/magnet/M356.jpg      10000  2026-01-26 21:55:10  0.0                  
+3513  Magnet 358 - Cuckoo clock                                                       5.0    magnet    Non défini  /images/products/magnet/M358.jpg      10000  2026-01-26 21:55:10  0.0                  
+3514  Magnet 359 - Double-sided GE                                                    1.3    magnet    Non défini  /images/products/magnet/M359.jpg      0      2026-01-26 21:55:10  0.0                  
+3515  Magnet 360 - Water jet Switzerland MM                                           1.7    magnet    Non défini  /images/products/magnet/M360.jpg      10000  2026-01-26 21:55:10  0.0                  
+3516  Magnet 362 - Cow bell Genève MM                                                 1.7    magnet    Non défini  /images/products/magnet/M362.jpg      0      2026-01-26 21:55:10  0.0                  
+3517  Magnet 363 - double-sided panorama MM                                           1.3    magnet    Non défini  /images/products/magnet/M363.jpg      10000  2026-01-26 21:55:10  0.0                  
+3518  Magnet 364 - Limmat MM                                                          2.0    magnet    Non défini  /images/products/magnet/M364.jpg      10000  2026-01-26 21:55:10  0.0                  
+3519  Magnet 365 - Hearth shaped Limmat MM                                            1.7    magnet    Non défini  /images/products/magnet/M365.jpg      10000  2026-01-26 21:55:10  0.0                  
+3520  Magnet 366 - double-sided Zytglogge MM                                          1.3    magnet    Non défini  /images/products/magnet/M366.jpg      10000  2026-01-26 21:55:10  0.0                  
+3521  Magnet 367 - Bear. Zytglogge figurine FIG                                       3.5    magnet    Non défini  /images/products/magnet/M367.jpg      10000  2026-01-26 21:55:10  0.0                  
+3522  Magnet 368 - Bear head trophy 2                                                 1.7    magnet    Non défini  /images/products/magnet/M386.jpg      10000  2026-01-26 21:55:10  0.0                  
+3523  Magnet 369 - Lausanne City MM                                                   1.3    magnet    Non défini  /images/products/magnet/M369.jpg      10000  2026-01-26 21:55:10  0.0                  
+3524  Magnet 370 - Rheinfall MM                                                       2.0    magnet    Non défini  /images/products/magnet/M370.jpg      10000  2026-01-26 21:55:10  0.0                  
+3525  Magnet 371 - Grd St-Bernard MM                                                  2.0    magnet    Non défini  /images/products/magnet/M371.jpg      10000  2026-01-26 21:55:10  0.0                  
+3526  Magnet 372 - Zermatt hanger MM                                                  2.0    magnet    Non défini  /images/products/magnet/M372.jpg      10000  2026-01-26 21:55:10  0.0                  
+3527  Magnet 373 - Matterhorn train MM                                                1.3    magnet    Non défini  /images/products/magnet/M373.jpg      10000  2026-01-26 21:55:10  0.0                  
+3528  Magnet 374 - Matterhorn Valais MM                                               1.7    magnet    Non défini  /images/products/magnet/M374.jpg      10000  2026-01-26 21:55:10  0.0                  
+3529  Magnet 376 - Zermatt MM                                                         2.0    magnet    Non défini  /images/products/magnet/M376.jpg      10000  2026-01-26 21:55:10  0.0                  
+3530  Magnet 377 - Matterhorn Valais                                                  1.7    magnet    Non défini  /images/products/magnet/M377.jpg      10000  2026-01-26 21:55:10  0.0                  
+3531  Magnet 378 - Kapellbrücke MM                                                    1.3    magnet    Non défini  /images/products/magnet/M378.jpg      10000  2026-01-26 21:55:10  0.0                  
+3532  Magnet 379 - Montreux MM                                                        2.0    magnet    Non défini  /images/products/magnet/M379.jpg      10000  2026-01-26 21:55:10  0.0                  
+3533  Magnet 380 - Castle double sided MM                                             1.3    magnet    Non défini  /images/products/magnet/M380.jpg      10000  2026-01-26 21:55:10  0.0                  
+3534  Magnet 381 - Montreux double sided MM                                           1.3    magnet    Non défini  /images/products/magnet/M381.jpg      10000  2026-01-26 21:55:10  0.0                  
+3535  Magnet 382 - Rheinfall double sided MM                                          1.3    magnet    Non défini  /images/products/magnet/M382.jpg      10000  2026-01-26 21:55:10  0.0                  
+3536  Magnet 383 - Hearth Rheinfall                                                   1.7    magnet    Non défini  /images/products/magnet/M383.jpg      9976   2026-01-26 21:55:10  0.0                  
+3537  Magnet 384 - Bear with cub                                                      1.7    magnet    Non défini  /images/products/magnet/M384.jpg      10000  2026-01-26 21:55:10  0.0                  
+3538  Magnet 385 - Fondue pot Bern                                                    1.7    magnet    Non défini  /images/products/magnet/M385.jpg      10000  2026-01-26 21:55:10  0.0                  
+3539  Magnet 386 - Fondue pot Crans-Montana                                           1.7    magnet    Non défini  /images/products/magnet/M386.jpg      10000  2026-01-26 21:55:10  0.0                  
+3540  Magnet 387 - Fondue pot Genève                                                  1.7    magnet    Non défini  /images/products/magnet/M387.jpg      10000  2026-01-26 21:55:10  0.0                  
+3541  Magnet 388 - Fondue pot Interlaken                                              1.7    magnet    Non défini  /images/products/magnet/M388.jpg      10000  2026-01-26 21:55:10  0.0                  
+3542  Magnet 389 - Fondue pot Lausanne                                                1.7    magnet    Non défini  /images/products/magnet/M389.jpg      10000  2026-01-26 21:55:10  0.0                  
+3543  Magnet 390 - Fondue pot Luzern                                                  1.7    magnet    Non défini  /images/products/magnet/M390.jpg      10000  2026-01-26 21:55:10  0.0                  
+3544  Magnet 391 - Fondue pot Montreux                                                1.7    magnet    Non défini  /images/products/magnet/M391.jpg      10000  2026-01-26 21:55:10  0.0                  
+3545  Magnet 392 - Fondue pot Rheinfall                                               1.7    magnet    Non défini  /images/products/magnet/M392.jpg      9880   2026-01-26 21:55:10  0.0                  
+3546  Magnet 393 - Fondue pot Zermatt                                                 1.7    magnet    Non défini  /images/products/magnet/M393.jpg      10000  2026-01-26 21:55:10  0.0                  
+3547  Magnet 394 - Fondue pot Zürich                                                  1.7    magnet    Non défini  /images/products/magnet/M394.jpg      10000  2026-01-26 21:55:10  0.0                  
+3548  Magnet 395 - Bern                                                               1.0    magnet    Non défini  /images/products/magnet/M395.jpg      10000  2026-01-26 21:55:10  0.0                  
+3549  Magnet 396 - Crans-Montana                                                      1.0    magnet    Non défini  /images/products/magnet/M396.jpg      10000  2026-01-26 21:55:10  0.0                  
+3550  Magnet 397 - Genève                                                             1.0    magnet    Non défini  /images/products/magnet/M397.jpg      10000  2026-01-26 21:55:10  0.0                  
+3551  Magnet 398 - Interlaken                                                         1.0    magnet    Non défini  /images/products/magnet/M398.jpg      10000  2026-01-26 21:55:10  0.0                  
+3552  Magnet 399 - Lausanne                                                           1.0    magnet    Non défini  /images/products/magnet/M399.jpg      10000  2026-01-26 21:55:10  0.0                  
+3553  Magnet 400 - Luzern                                                             1.0    magnet    Non défini  /images/products/magnet/M400.jpg      10000  2026-01-26 21:55:10  0.0                  
+3554  Magnet 401 - Montreux                                                           1.0    magnet    Non défini  /images/products/magnet/M401.jpg      10000  2026-01-26 21:55:10  0.0                  
+3555  Magnet 402 - Rheinfall                                                          1.0    magnet    Non défini  /images/products/magnet/M402.jpg      10000  2026-01-26 21:55:10  0.0                  
+3556  Magnet 403 - Zermatt                                                            1.0    magnet    Non défini  /images/products/magnet/M403.jpg      10000  2026-01-26 21:55:10  0.0                  
+3557  Magnet 404 - Zürich                                                             1.0    magnet    Non défini  /images/products/magnet/M404.jpg      10000  2026-01-26 21:55:10  0.0                  
+3558  Magnet 405 - Switzerland                                                        1.0    magnet    Non défini  /images/products/magnet/M405.jpg      10000  2026-01-26 21:55:10  0.0                  
+3559  Magnet 406 - Swiss Round                                                        2.0    magnet    Non défini  /images/products/magnet/M406.jpg      10000  2026-01-26 21:55:10  0.0                  
+3560  Magnet 408 - Hanger Crans-Montana                                               2.0    magnet    Non défini  /images/products/magnet/M408.jpg      10000  2026-01-26 21:55:10  0.0                  
+3561  Magnet 409 - Cartoon cow                                                        2.0    magnet    Non défini  /images/products/magnet/M409.jpg      9964   2026-01-26 21:55:10  0.7                  
+3562  Magnet 410 - bell magnet Gd-St-Bernard                                          3.0    magnet    Non défini  /images/products/magnet/M410.jpg      10000  2026-01-26 21:55:10  0.0                  
+3563  Magnet 411 - bell magnet Zürich                                                 3.0    magnet    Non défini  /images/products/magnet/M411.jpg      10000  2026-01-26 21:55:10  0.0                  
+3564  Magnet 412 - bell magnet Luzern                                                 3.0    magnet    Non défini  /images/products/magnet/M412.jpg      10000  2026-01-26 21:55:10  0.0                  
+3565  Magnet 413 - bell magnet Lausanne                                               3.0    magnet    Non défini  /images/products/magnet/M413.jpg      10000  2026-01-26 21:55:10  0.0                  
+3566  Magnet 414 - bell magnet Bern                                                   3.0    magnet    Non défini  /images/products/magnet/M414.jpg      10000  2026-01-26 21:55:10  0.0                  
+3567  Magnet 415 - bell magnet Interlaken                                             3.0    magnet    Non défini  /images/products/magnet/M415.jpg      10000  2026-01-26 21:55:10  0.0                  
+3568  Magnet 416 - bell magnet Switzerland                                            3.0    magnet    Non défini  /images/products/magnet/M416.jpg      10000  2026-01-26 21:55:10  0.0                  
+3569  Magnet 417 - bell magnet Rheinfall                                              3.0    magnet    Non défini  /images/products/magnet/M417.jpg      10000  2026-01-26 21:55:10  0.0                  
+3570  Magnet 418 - Bottle-opener swiss spoon                                          2.0    magnet    Non défini  /images/products/magnet/M418.jpg      10000  2026-01-26 21:55:10  0.0                  
+3571  Magnet 420 - Bottle-opener BE                                                   2.0    magnet    Non défini  /images/products/magnet/M420.jpg      10000  2026-01-26 21:55:10  0.69                 
+3572  Magnet 421 - Bottle-opener Crans-Montana                                        2.0    magnet    Non défini  /images/products/magnet/M421.jpg      10000  2026-01-26 21:55:10  0.69                 
+3573  Magnet 422 - Bottle-opener GE                                                   2.0    magnet    Non défini  /images/products/magnet/M422.jpg      10000  2026-01-26 21:55:10  0.69                 
+3574  Magnet 423 - Bottle-opener IN                                                   2.0    magnet    Non défini  /images/products/magnet/M423.jpg      10000  2026-01-26 21:55:10  0.69                 
+3575  Magnet 424 - Bottle-opener LU                                                   2.0    magnet    Non défini  /images/products/magnet/M424.jpg      10000  2026-01-26 21:55:10  0.69                 
+3576  Magnet 425 - Bottle-opener Nyon                                                 2.0    magnet    Non défini  /images/products/magnet/M425.jpg      10000  2026-01-26 21:55:10  0.69                 
+3577  Magnet 426 - Bottle-opener Rheinfall                                            2.0    magnet    Non défini  /images/products/magnet/M426.jpg      10000  2026-01-26 21:55:10  0.69                 
+3578  Magnet 427 - Bottle-opener Switzerland                                          2.0    magnet    Non défini  /images/products/magnet/M427.jpg      10000  2026-01-26 21:55:10  0.69                 
+3579  Magnet 428 - Bottle-opener Zermatt                                              2.0    magnet    Non défini  /images/products/magnet/M428.jpg      10000  2026-01-26 21:55:10  0.69                 
+3580  Magnet 429 - Bottle-opener ZU                                                   2.0    magnet    Non défini  /images/products/magnet/M429.jpg      10000  2026-01-26 21:55:10  0.69                 
+3581  Magnet 430 - Edelweiss on bell                                                  1.9    magnet    Non défini  /images/products/magnet/M430.jpg      10000  2026-01-26 21:55:10  0.0                  
+3582  Magnet 431 - Decorative frame BE                                                2.0    magnet    Non défini  /images/products/magnet/M431.jpg      10000  2026-01-26 21:55:10  0.55                 
+3583  Magnet 432 - Decorative frame Crans-Montana                                     2.0    magnet    Non défini  /images/products/magnet/M432.jpg      10000  2026-01-26 21:55:10  0.55                 
+3584  Magnet 433 - Decorative frame GE                                                2.0    magnet    Non défini  /images/products/magnet/M433.jpg      10000  2026-01-26 21:55:10  0.55                 
+3585  Magnet 434 - Decorative frame IN                                                2.0    magnet    Non défini  /images/products/magnet/M434.jpg      10000  2026-01-26 21:55:10  0.55                 
+3586  Magnet 435 - Decorative frame LU                                                2.0    magnet    Non défini  /images/products/magnet/M435.jpg      10000  2026-01-26 21:55:10  0.55                 
+3587  Magnet 436 - Decorative frame Nyon                                              2.0    magnet    Non défini  /images/products/magnet/M436.jpg      10000  2026-01-26 21:55:10  0.55                 
+3588  Magnet 437 - Decorative frame RH                                                2.0    magnet    Non défini  /images/products/magnet/M437.jpg      10000  2026-01-26 21:55:10  0.55                 
+3589  Magnet 438 - Decorative frame CH                                                2.0    magnet    Non défini  /images/products/magnet/M438.jpg      10000  2026-01-26 21:55:10  0.55                 
+3590  Magnet 439 - Decorative frame Zermatt                                           2.0    magnet    Non défini  /images/products/magnet/M439.jpg      10000  2026-01-26 21:55:10  0.55                 
+3591  Magnet 440 - Decorative frame ZU                                                2.0    magnet    Non défini  /images/products/magnet/M440.jpg      10000  2026-01-26 21:55:10  0.55                 
+3592  Magnet 441 - Red edelweiss                                                      1.9    magnet    Non défini  /images/products/magnet/M441.jpg      0      2026-01-26 21:55:10  0.0                  
+3593  Magnet 442 - Swiss chocolate packaging                                          1.7    magnet    Non défini  /images/products/magnet/M442.jpg      10000  2026-01-26 21:55:10  0.0                  
+3594  Magnet 443 - Resin Bern Magnet                                                  1.7    magnet    Non défini  /images/products/magnet/M443.jpg      10000  2026-01-26 21:55:10  0.0                  
+3595  Magnet 444 - Magnet Decorative frame                                            2.0    magnet    Non défini  /images/products/magnet/M444.jpg      10000  2026-01-26 21:55:10  0.0                  
+3596  Magnet 445 - Metallic Switzerland 10x6cm                                        1.2    magnet    Non défini  /images/products/magnet/M445.jpg      0      2026-01-26 21:55:10  0.0                  
+3597  Magnet 446 - Metallic framed 10x6cm                                             1.2    magnet    Non défini  /images/products/magnet/M446.jpg      0      2026-01-26 21:55:10  0.0                  
+3598  Magnet 447 - Metallic swiss pikes 10x6cm                                        1.2    magnet    Non défini  /images/products/magnet/M447.jpg      21     2026-01-26 21:55:10  0.0                  
+3599  Magnet 448 - Metallic Valais 10x6cm                                             1.2    magnet    Non défini  /images/products/magnet/M448.jpg      209    2026-01-26 21:55:10  0.0                  
+3600  Magnet 449 - Metallic Genève 10x6cm                                             1.2    magnet    Non défini  /images/products/magnet/M449.jpg      737    2026-01-26 21:55:10  0.0                  
+3601  Magnet 450 - Metallic Vaud 10x6cm                                               1.2    magnet    Non défini  /images/products/magnet/M450.jpg      109    2026-01-26 21:55:10  0.0                  
+3602  Magnet 451 - Metallic Bern 10x6cm                                               1.2    magnet    Non défini  /images/products/magnet/M451.jpg      0      2026-01-26 21:55:10  0.0                  
+3603  Magnet 452 - Metallic Zürich 10x6cm                                             1.2    magnet    Non défini  /images/products/magnet/M452.jpg      159    2026-01-26 21:55:10  0.0                  
+3604  Magnet 453 - Metallic Pedestrian 10x3cm                                         1.2    magnet    Non défini  /images/products/magnet/M453.jpg      0      2026-01-26 21:55:10  0.0                  
+3605  Magnet 454a - Bern Bear                                                         1.0    magnet    Non défini  /images/products/magnet/M454a.jpg     10000  2026-01-26 21:55:10  0.0                  
+3606  Magnet 454 - Bottle-opener dookie                                               2.0    magnet    Non défini  /images/products/magnet/M454.jpg      10000  2026-01-26 21:55:10  0.0                  
+3607  Magnet 454b - Spinner Cheese Fondue                                             2.6    magnet    Non défini  /images/products/magnet/M454b.jpg     9976   2026-01-26 21:55:10  1.25                 
+3608  Magnet 455 - Cheese Fondue                                                      2.0    magnet    Non défini  /images/products/magnet/MB454.jpg     10000  2026-01-26 21:55:10  0.0                  
+3609  Magnet 456f - Einstein head E=mc2                                               1.7    magnet    Non défini  /images/products/magnet/M456f.jpg     10000  2026-01-26 21:55:10  0.0                  
+3610  Magnet 456 - Einstein colors                                                    1.7    magnet    Non défini  /images/products/magnet/M456.jpg      10000  2026-01-26 21:55:10  0.0                  
+3611  Magnet 457 - METALLIC MAGNET Vevey                                              1.0    magnet    Non défini  /images/products/magnet/M457.jpg      10000  2026-01-26 21:55:10  0.0                  
+3612  Magnet 458 - Swiss animals MDF (in cork)                                        1.0    magnet    Non défini  /images/products/magnet/M458.jpg      10000  2026-01-26 21:55:10  0.0                  
+3613  Magnet 459 - Swiss cities MDF (in cork)                                         1.0    magnet    Non défini  /images/products/magnet/M459.jpg      10000  2026-01-26 21:55:10  0.0                  
+3614  Magnet 461 - Swiss ropeway                                                      2.0    magnet    Non défini  /images/products/magnet/M461.jpg      10000  2026-01-26 21:55:10  0.0                  
+3615  Magnet 462MM - Fondue Pot Switzerland                                           2.0    magnet    Non défini  /images/products/magnet/M462MM.jpg    10000  2026-01-26 21:55:10  0.0                  
+3616  Magnet 462 - Swiss boat                                                         2.0    magnet    Non défini  /images/products/magnet/M462.jpg      10000  2026-01-26 21:55:10  0.0                  
+3617  Magnet 463 - Swiss train                                                        2.0    magnet    Non défini  /images/products/magnet/M463.jpg      10000  2026-01-26 21:55:10  0.0                  
+3618  Magnet 464 - Magnet Decorative frame - Cantons                                  2.0    magnet    Non défini  /images/products/magnet/M464.jpg      10000  2026-01-26 21:55:10  0.0                  
+3619  Magnet 465 - Cuckoo clock                                                       5.0    magnet    Non défini  /images/products/magnet/M465.jpg      10000  2026-01-26 21:55:10  0.0                  
+3620  Magnet 466 - Cuckoo clock                                                       5.0    magnet    Non défini  /images/products/magnet/M466.jpg      10000  2026-01-26 21:55:10  0.0                  
+3621  Magnet 468 - 2 Bears head trophy                                                1.7    magnet    Non défini  /images/products/magnet/M468.jpg      10000  2026-01-26 21:55:10  0.0                  
+3622  Magnet 471 - Switzerland Wood Signs                                             1.7    magnet    Non défini  /images/products/magnet/M471.jpg      10000  2026-01-26 21:55:10  0.0                  
+3623  Magnet 472 - Heart Basel Switzerland                                            1.0    magnet    Non défini  /images/products/magnet/M472.jpg      10000  2026-01-26 21:55:10  0.0                  
+3624  Magnet 473 - Basel Switzerland map                                              1.0    magnet    Non défini  /images/products/magnet/M473.jpg      10000  2026-01-26 21:55:10  0.0                  
+3625  Magnet 474 - METALLIC MAGNET Vevey                                              1.0    magnet    Non défini  /images/products/magnet/M474.jpg      10000  2026-01-26 21:55:10  0.0                  
+3626  Magnet 477 - Bear magnet resin                                                  1.7    magnet    Non défini  /images/products/magnet/M477.jpg      10000  2026-01-26 21:55:10  0.0                  
+3627  Magnet VilleGe - cuckoo Ville Ge                                                1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3628  Magnet VilleBe - cuckoo Ville Be                                                1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3629  Magnet VilleMo - cuckoo Ville Mo                                                1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3630  Magnet VilleLs - cuckoo Ville Ls                                                1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3631  Magnet VilleZh - cuckoo Ville Zh                                                1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3632  Magnet VilleLu - cuckoo Ville Lu                                                1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3633  Magnet VilleLe - cuckoo Ville Leysin                                            1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3634  Magnet VilleDa - cuckoo Ville Davos                                             1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3635  Magnet VilleRh - cuckoo Ville Rheinfall                                         1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3636  Magnet VilleVe - cuckoo Ville Vevey                                             1.7    magnet    Non défini  /images/products/magnet/Mville.jpg    10000  2026-01-26 21:55:10  0.0                  
+3637  Magnet Cow resine                                                               1.0    magnet    Non défini  /images/products/magnet/vache.jpg     10000  2026-01-26 21:55:10  0.0                  
+3638  Magnet New Geneve - square shiny                                                1.0    magnet    Non défini  /images/products/magnet/Mville44.jpg  10000  2026-01-26 21:55:10  0.0                  
+
+
+
+
+
+
+
+
+
+
+ET STOCK DES MAGNET
+
+Magnet ref	Stock	TP2505CH027
+1	1200	
+2	100	
+3	500	
+4	200	
+5	200	
+6	600	
+7		
+8		
+9	400	
+10	700	
+11	150	
+12	400	
+13	0	2920
+14	0	2000
+15	500	
+16	150	
+17	0	1800
+18	0	
+19	0	
+20	0	
+21		
+22	1000	
+23		
+24		
+25	400	
+26	500	
+27	400	
+28	0	
+29	100	
+30	500	
+31		
+32	0	
+33	100	
+34	100	
+35	0	
+36	0	
+37	400	
+38	0	
+39	0	
+40	0	
+41		
+42	1500	
+43		
+44		
+45		
+46		
+47		
+48	500	
+49	200	
+50		
+51		
+52		
+53	0	
+54	200	
+55	300	
+56	0	
+57	200	
+58	300	
+59	500	
+60	800	
+61	0	
+62	800	
+63	1000	
+64	100	
+65		
+66	600	
+67	500	
+68	500	
+69	0	
+70		
+71	100	
+72	0	
+73	0	
+74	0	
+75	400	
+76	0	
+77	0	
+78	500	
+79	500	
+80	250	
+81	0	
+82	100	
+83	600	
+84	500	
+85	200	
+86	600	
+87	0	
+88	300	
+89	250	
+90	200	
+		
+91	1600	
+92	0	
+93	0	
+94	0	
+95	200	
+96	800	
+97	400	
+98	1200	
+99	0	
+100	0	
+101	1000	
+102	600	
+103	0	
+104	0	
+105	0	
+106	300 (aussi 265?)	
+107	0	
+108	0	
+109	300	
+110	0	
+111	2000	
+112	1000	
+113	800	
+114	1000	
+115	0	
+116-FIG	100	
+116	0	
+117MM	1000	
+117-FIG	800	
+118	1000	
+119	0	
+120	0	1200
+121	0	
+122	2400	960
+123	500	
+124	300	
+125	1000	
+126	100	
+127	200	
+128	800	
+129	500	
+130		
+131mm	1000	
+131	1200	
+132	0	
+133		
+134		
+135	1400	
+136		
+137	200	
+138	0	1200
+139	600	
+140	500	
+141	800	
+142	0	
+143	0	
+144	0	
+145 crans	500	
+146zermatt	1400	
+147St-Moritz	1000	
+148 Davos	0	
+149 gruyeres	700	
+150	500	
+151		
+152	0	
+153	100	
+154		
+155 Interlaken	0	
+156	0	
+157	0	
+158	1000	
+159		
+160		
+161-Be	1600	
+161-Ge	800	
+161-IN	600	
+161-LS	0	
+161-LU	0	
+161-MTX	600	
+161-RH	300	
+161-ZE	100	
+161-ZH	800	
+162	400	
+163	1400	
+164	700	
+165	1500	
+166	50	
+167	300	
+168	100	
+169	100	
+170	0	
+171	400	
+172	0	
+173	1200	
+174	500	
+175	1000	
+176	0	
+177		
+178	1000	
+179	400	
+180		
+181	0	
+182	0	
+183	0	
+184	0	
+185		
+186MM	50	
+186	100	
+187	500	
+188	600	
+189	500	
+190	150	
+191	300	
+192		
+193		1000
+194		2000
+195	800	
+196	300	
+197	400	
+198	300	
+199	200	
+200	400	
+201	200	
+202	400	
+203		
+204		
+205		
+206		
+207		
+208		
+209		
+210		
+211		
+212		
+213		
+214		
+215		
+216		
+217		
+218		
+219		
+220		
+221		
+222		
+223		
+224		
+225		
+226		
+227		
+228		
+229		
+230		
+231		
+232		
+233		
+234		
+235		
+236		
+237		
+238		
+239		
+240		
+241		
+242		
+243		
+244		
+245		
+246		
+247		
+248		
+249		
+250		
+251		
+252	200	
+253		
+254		
+255		
+256		
+257	0	
+258	0	
+259		
+260	0	
+261	0	
+262	600	
+263	600	
+264	200	
+265	2500	
+266	0	
+267	0	
+268	0	
+269	100	
+270	200	
+271	800	
+272	1000	
+273	1500	
+274	0	
+275(vs)	650	
+276(ls)	650	
+277(lu)	500	
+278(zermat)	800	
+279(IN)	200	
+280	0	
+281(ge)	300	
+282	C’est quoi? Aussi 361	
+282(zh)	750	
+283	450	
+284	0	
+285	1000	
+286	800	
+287	800	
+287	200	
+288	900	
+289	1000	
+290	1000	
+291	100	
+292	300	
+293	300	
+294	0	
+295	400	
+296	600	
+296	0	
+297	0	
+298		
+299	600	
+300	0	2800
+301	500	
+302		
+303	600	
+304	0	960
+305	800	
+306	300	
+307	0	
+307MM	0	3000
+308	250	
+309		
+310		
+311		
+312		
+313		
+314		
+315	800	
+316	0	
+317	300	960
+318	0	
+319	0	
+320	500	
+321	200	
+322	0	960
+323	100	
+324	50	
+325		
+326	0	
+327	0	
+328		
+329		
+330		
+331		
+332		
+333		
+334		
+335		
+336	200	
+336MM	0	
+337	100	
+338	50	
+339	150	
+340	1500	
+341	0	
+342	0	
+343	0	
+344	800	
+345	1000	
+346	0	
+347	800	
+348	700	
+349	0	
+350	1000	
+351		
+352 FIG	0	
+353	1000	
+354		
+355	0	
+356	500	
+357		
+358	0	
+359	0	
+360	1200	
+361	C’est quoi? Aussi 282	
+362	0	
+363	0	
+364	250	
+365	800	
+366	500	
+367	0	
+368		
+369	500	
+370	500	
+371	1000	
+372	500	
+373	50	
+374	1000	
+375		
+376	1000	
+377	800	
+378	0	
+379	50	
+380	300	
+381	1500	
+382	2000	
+383	0	
+384	Comme 116	
+385 Bern	0	
+386 Crans	0	
+387 Ge	400	
+388 IN	300	
+389 LS	0	
+390 LU	300	
+391 MTX	300	
+392 RH	300	
+393 ZE	1400	
+394 ZH	200	
+395	1000	
+396	0	
+397	1200	
+398	1300	
+399	1000	
+400	700	
+401	0	
+402	1200	
+402 fig	?	
+403	0	
+404	2000	
+405	1500	
+406	1000	
+407		
+408	0	
+409	0	2920
+410		
+411		
+412		
+413		
+414		
+415		
+416		
+417		
+418		
+419		
+420	150	480
+421	0	
+422	150	480
+423	50	480
+424	0	480
+425	0	480
+426	150	
+427	0	480
+428	0	480
+429	400	
+430(bell)	0	
+431	150	300
+432	0	
+433	400	
+434	150	500
+435	0	500
+436	400	
+437	150	500
+438	300	
+439	50	300
+440	0	500
+441	0	
+442	NO	
+443		
+444		500
+445	0	
+446	0	
+447	0	
+448	200	
+449	600	
+450	0	
+451	0	
+452	300	
+453	0	
+454	50	1000
+455	150	
+455	1400	
+456	1200	
+457	2000	
+458		
+459		
+460		
+461		
+462		
+462		
+463		
+464		500
+465		
+466		
+467		
+468		
+469		
+470		
+471		
+472	400	
+473	400	
+474		
+475		
+476		
+477	200	
+478		
+479		
+480		
+481		
+482		
+483		
+484		
+485		
+486		
+487		
+488		
+489		
+490		
+491		
+492		
+493		
+494		
+495		
+496		
+497		
+498		
+499		
+Cuckoo Saillon	288	
+Cuckoo simplon pass	288	
+		
+		
+		
+		

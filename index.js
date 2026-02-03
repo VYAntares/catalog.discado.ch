@@ -886,9 +886,9 @@ app.delete('/api/products/:id', requireLogin, requireAdmin, requirePermission('s
 // ADD product (CREATE)
 app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
   try {
-    const { name, price, category, supplier, image_url, stock } = req.body;
+    const { name, price, category, supplier, image_url, stock, barcode } = req.body;
 
-    console.log(`➕ Ajout nouveau produit:`, { name, price, category, supplier, image_url, stock });
+    console.log(`➕ Ajout nouveau produit:`, { name, price, category, supplier, image_url, stock, barcode });
 
     // Validation
     if (!name || !price || !category) {
@@ -908,11 +908,11 @@ app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock')
 
     // Insérer le nouveau produit
     const insertStmt = dbModule.db.prepare(`
-      INSERT INTO products (name, price, category, supplier, image_url, stock, barecode)
+      INSERT INTO products (name, price, category, supplier, image_url, stock, barcode)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const result = insertStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum, '');
+    const result = insertStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum, barcode || '');
 
     // Récupérer le produit créé
     const newProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);

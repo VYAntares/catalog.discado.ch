@@ -945,6 +945,11 @@ class StockManager {
 								<input type="text" id="add-name" required placeholder="Ex: T-Shirt Rock Band">
 							</div>
 
+							<div class="form-group">
+								<label for="add-barcode"><i class="fas fa-barcode"></i> Code-barres</label>
+								<input type="text" id="add-barcode" placeholder="Ex: 7610123456789">
+							</div>
+
 							<div class="form-row">
 								<div class="form-group">
 									<label for="add-price">Prix (CHF) *</label>
@@ -1126,7 +1131,7 @@ class StockManager {
 			category: category,
 			supplier: document.getElementById('add-supplier').value || 'Non défini',
 			image_url: imageUrl,
-			barcode: ''
+			barcode: document.getElementById('add-barcode').value || ''
 		};
 
 		console.log('📤 Création du produit:', productData);

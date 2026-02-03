@@ -224,6 +224,7 @@ const productService = {
 				supplier: product.supplier || 'Non défini',  // ← AJOUTÉ
 				image_url: product.image_url,
 				stock: Number(product.stock) || 0,
+				barcode: product.barcode || '',
 				created_at: product.created_at
 			}));
 		} catch (error) {
