@@ -122,6 +122,8 @@
                 </button>
                 
                 <select id="sortSelect" class="search-input" style="max-width: 250px;">
+                    <option value="referral_asc">Source (A-Z)</option>
+                    <option value="referral_desc">Source (Z-A)</option>
                     <option value="total_desc">Montant total (décroissant)</option>
                     <option value="total_asc">Montant total (croissant)</option>
                     <option value="paid_desc">Montant payé (décroissant)</option>
@@ -146,6 +148,7 @@
                         <tr>
                             <th>ID Client</th>
                             <th>Nom complet</th>
+                            <th>Source</th>
                             <th>Nb. Factures</th>
                             <th>Total TTC</th>
                             <th>Payé</th>
@@ -155,7 +158,7 @@
                     </thead>
                     <tbody id="clientsSummaryTableBody">
                         <tr>
-                            <td colspan="7" class="loading">Chargement des clients...</td>
+                            <td colspan="8" class="loading">Chargement des clients...</td>
                         </tr>
                     </tbody>
                 </table>

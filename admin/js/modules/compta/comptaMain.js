@@ -11,7 +11,7 @@ class ComptaMain {
         this.unpaidSortOrder = 'desc';
 		this.unpaidSortType = 'date';
         this.selectedYear = new Date().getFullYear();
-        this.currentSortOption = 'total_desc';
+        this.currentSortOption = 'referral_asc';
         this.editingCells = new Map();
 		this.chart = null;
         this.init();
@@ -631,8 +631,20 @@ class ComptaMain {
 
     sortClients(clients, sortOption) {
         const sorted = [...clients];
-        
+
         switch(sortOption) {
+            case 'referral_asc':
+                return sorted.sort((a, b) => {
+                    const refA = (a.referral_source || 'ZZZ').toLowerCase();
+                    const refB = (b.referral_source || 'ZZZ').toLowerCase();
+                    return refA.localeCompare(refB);
+                });
+            case 'referral_desc':
+                return sorted.sort((a, b) => {
+                    const refA = (a.referral_source || '').toLowerCase();
+                    const refB = (b.referral_source || '').toLowerCase();
+                    return refB.localeCompare(refA);
+                });
             case 'total_desc':
                 return sorted.sort((a, b) => (b.total_amount || 0) - (a.total_amount || 0));
             case 'total_asc':
@@ -668,30 +680,73 @@ class ComptaMain {
 
     displayClientsData(clients) {
         const tbody = document.getElementById('clientsSummaryTableBody');
-        
+
         if (!clients || clients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="no-data">Aucun client trouvé</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">Aucun client trouvé</td></tr>';
             return;
         }
 
         const sortedClients = this.sortClients(clients, this.currentSortOption);
 
-        tbody.innerHTML = sortedClients.map(client => `
-            <tr>
-                <td><strong>${client.user_id}</strong></td>
-                <td>${client.client_full_name || 'N/A'}</td>
-                <td>${client.invoice_count}</td>
-                <td>${formatCurrency(client.total_amount)}</td>
-                <td class="text-success">${formatCurrency(client.total_paid)}</td>
-                <td class="text-danger">${formatCurrency(client.total_due)}</td>
-                <td>
-                    <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}&year=${this.selectedYear}" 
-                    class="action-btn primary-btn btn-sm">
-                        <i class="fas fa-eye"></i> Voir factures
-                    </a>
-                </td>
-            </tr>
-        `).join('');
+        // Grouper par referral_source
+        const groupedByReferral = {};
+        sortedClients.forEach(client => {
+            const source = client.referral_source || 'Non défini';
+            if (!groupedByReferral[source]) {
+                groupedByReferral[source] = [];
+            }
+            groupedByReferral[source].push(client);
+        });
+
+        // Générer le HTML avec les groupes
+        let html = '';
+        const sources = Object.keys(groupedByReferral).sort((a, b) => {
+            if (a === 'Non défini') return 1;
+            if (b === 'Non défini') return -1;
+            return a.localeCompare(b);
+        });
+
+        sources.forEach(source => {
+            const groupClients = groupedByReferral[source];
+            const groupTotal = groupClients.reduce((sum, c) => sum + (c.total_amount || 0), 0);
+            const groupPaid = groupClients.reduce((sum, c) => sum + (c.total_paid || 0), 0);
+            const groupDue = groupClients.reduce((sum, c) => sum + (c.total_due || 0), 0);
+
+            // Ligne d'en-tête du groupe
+            html += `
+                <tr class="referral-group-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <td colspan="8" style="padding: 10px 15px; font-weight: bold;">
+                        <i class="fas fa-users"></i> ${source}
+                        <span style="float: right; font-size: 0.9em;">
+                            ${groupClients.length} client(s) | Total: ${formatCurrency(groupTotal)} | Payé: ${formatCurrency(groupPaid)} | Dû: ${formatCurrency(groupDue)}
+                        </span>
+                    </td>
+                </tr>
+            `;
+
+            // Lignes des clients du groupe
+            groupClients.forEach(client => {
+                html += `
+                    <tr>
+                        <td><strong>${client.user_id}</strong></td>
+                        <td>${client.client_full_name || 'N/A'}</td>
+                        <td>${client.referral_source || 'Non défini'}</td>
+                        <td>${client.invoice_count}</td>
+                        <td>${formatCurrency(client.total_amount)}</td>
+                        <td class="text-success">${formatCurrency(client.total_paid)}</td>
+                        <td class="text-danger">${formatCurrency(client.total_due)}</td>
+                        <td>
+                            <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}&year=${this.selectedYear}"
+                            class="action-btn primary-btn btn-sm">
+                                <i class="fas fa-eye"></i> Voir factures
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+
+        tbody.innerHTML = html;
     }
 
     searchClients() {

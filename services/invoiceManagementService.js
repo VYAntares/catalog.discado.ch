@@ -215,11 +215,12 @@ function getInvoiceStatistics(year = null) {
 function getClientsSummary(year = null) {
     try {
         let query = `
-            SELECT 
+            SELECT
                 i.user_id,
                 up.first_name,
                 up.last_name,
                 up.shop_name,
+                up.referral_source,
                 COUNT(i.id) as invoice_count,
                 SUM(i.total_ttc) as total_amount,
                 SUM(i.amount_paid) as total_paid,
@@ -230,29 +231,31 @@ function getClientsSummary(year = null) {
             FROM invoices i
             LEFT JOIN user_profiles up ON i.user_id = up.username
         `;
-        
+
         const params = [];
         if (year) {
             query += ` WHERE strftime('%Y', i.invoice_date) = ?`;
             params.push(year.toString());
         }
-        
+
         query += `
             GROUP BY i.user_id
-            ORDER BY 
-                CASE 
+            ORDER BY
+                COALESCE(up.referral_source, 'ZZZ') ASC,
+                CASE
                     WHEN up.last_name IS NOT NULL THEN up.last_name
                     ELSE i.user_id
                 END ASC
         `;
-        
+
         const clients = db.db.prepare(query).all(...params);
-        
+
         return clients.map(client => ({
             ...client,
             client_full_name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.user_id,
             displayName: `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.user_id,
-            shopName: client.shop_name || 'N/A'
+            shopName: client.shop_name || 'N/A',
+            referral_source: client.referral_source || 'Non défini'
         }));
     } catch (error) {
         console.error('Error getting clients summary:', error);
