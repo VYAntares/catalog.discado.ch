@@ -499,6 +499,17 @@ class StockManager {
 								</div>
 
 								<div class="form-group full-width">
+									<label for="edit-barcode">
+										<i class="fas fa-barcode"></i> Code barre
+									</label>
+									<input type="text" 
+										id="edit-barcode" 
+										name="barcode" 
+										value="${this.escapeHtml(product.barcode || '')}"
+										placeholder="Code barre du produit">
+								</div>
+
+								<div class="form-group full-width">
 									<label>
 										<i class="fas fa-image"></i> Image du produit
 									</label>
@@ -761,7 +772,8 @@ class StockManager {
 			category: formData.get('category'),
 			supplier: formData.get('supplier') || 'Non défini',
 			stock: parseInt(formData.get('stock')),
-			image_url: imageUrl
+			image_url: imageUrl,
+			barcode: formData.get('barcode') || ''
 		};
 
 		// Validation
@@ -1113,7 +1125,8 @@ class StockManager {
 			stock: parseInt(document.getElementById('add-stock').value),
 			category: category,
 			supplier: document.getElementById('add-supplier').value || 'Non défini',
-			image_url: imageUrl
+			image_url: imageUrl,
+			barcode: ''
 		};
 
 		console.log('📤 Création du produit:', productData);

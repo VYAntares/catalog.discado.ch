@@ -770,9 +770,9 @@ app.put('/api/products/:id/stock', requireLogin, requireAdmin, requirePermission
 app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, origin_price, category, supplier, image_url, stock } = req.body;
+    const { name, price, origin_price, category, supplier, image_url, stock, barcode } = req.body;
 
-    console.log(`📝 Mise à jour produit ${id}:`, { name, price, origin_price, category, supplier, image_url, stock });
+    console.log(`📝 Mise à jour produit ${id}:`, { name, price, origin_price, category, supplier, image_url, stock, barcode });
 
     // Validation
     if (!name || !price || !category) {
@@ -807,11 +807,11 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
     // Mettre à jour le produit
     const updateStmt = dbModule.db.prepare(`
       UPDATE products
-      SET name = ?, price = ?, origin_price = ?, category = ?, supplier = ?, image_url = ?, stock = ?
+      SET name = ?, price = ?, origin_price = ?, category = ?, supplier = ?, image_url = ?, stock = ?, barcode = ?
       WHERE id = ?
     `);
 
-    updateStmt.run(name, priceNum, originPriceNum, category, supplier || null, image_url || null, stockNum, id);
+    updateStmt.run(name, priceNum, originPriceNum, category, supplier || null, image_url || null, stockNum, barcode || null, id);
 
     // Si le nom a changé, mettre à jour order_items et pending_deliveries
     if (oldName && oldName !== name) {
@@ -908,11 +908,11 @@ app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock')
 
     // Insérer le nouveau produit
     const insertStmt = dbModule.db.prepare(`
-      INSERT INTO products (name, price, category, supplier, image_url, stock)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO products (name, price, category, supplier, image_url, stock, barecode)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const result = insertStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum);
+    const result = insertStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum, '');
 
     // Récupérer le produit créé
     const newProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);

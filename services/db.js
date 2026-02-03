@@ -112,6 +112,18 @@ function initDatabase() {
         }
     }
 
+    if (!columnExists('products', 'barcode')) {
+        try {
+            db.exec(`
+                ALTER TABLE products 
+                ADD COLUMN barcode TEXT
+            `);
+            console.log('✅ Colonne barcode ajoutée à la table products');
+        } catch (error) {
+            console.error('⚠️ Erreur lors de l\'ajout de barcode:', error.message);
+        }
+    }
+
     // Création de la table suppliers
     db.exec(`
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -284,12 +296,12 @@ module.exports = {
         getAll: db.prepare('SELECT * FROM products'),
         getById: db.prepare('SELECT * FROM products WHERE id = ?'),
         create: db.prepare(`
-            INSERT INTO products (name, price, category, supplier, image_url, stock, origin_price) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO products (name, price, category, supplier, image_url, stock, origin_price, barcode) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `),
         update: db.prepare(`
             UPDATE products 
-            SET name = ?, price = ?, category = ?, supplier = ?, image_url = ?, stock = ?, origin_price = ?
+            SET name = ?, price = ?, category = ?, supplier = ?, image_url = ?, stock = ?, origin_price = ?, barcode = ?
             WHERE id = ?
         `),
         updateStock: db.prepare('UPDATE products SET stock = ? WHERE id = ?'),
