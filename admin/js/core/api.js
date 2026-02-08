@@ -187,6 +187,214 @@ async function saveUserPassword(passwordData) {
     };
   }
 }
+// ============================================
+// API FOURNISSEURS ET COMMANDES FOURNISSEURS
+// ============================================
+
+// Récupère tous les fournisseurs
+async function fetchSuppliers() {
+  try {
+    const response = await fetch('/api/suppliers', API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère les commandes d'un fournisseur spécifique
+async function fetchSupplierOrders(supplierId) {
+  try {
+    const response = await fetch(`/api/suppliers/${supplierId}/orders`, API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère les statistiques d'un fournisseur
+async function fetchSupplierStats(supplierId) {
+  try {
+    const response = await fetch(`/api/suppliers/${supplierId}/stats`, API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère toutes les commandes fournisseurs
+async function fetchAllSupplierOrders() {
+  try {
+    const response = await fetch('/api/order-suppliers', API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère les détails d'une commande fournisseur
+async function fetchSupplierOrderDetails(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}`, API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère les items d'une commande fournisseur
+async function fetchSupplierOrderItems(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/items`, API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Crée une nouvelle commande fournisseur
+async function createSupplierOrder(orderData) {
+  try {
+    const response = await fetch('/api/order-suppliers', {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify(orderData)
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Commande fournisseur créée avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Met à jour une commande fournisseur
+async function updateSupplierOrder(orderId, orderData) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}`, {
+      ...API_CONFIG,
+      method: 'PUT',
+      body: JSON.stringify(orderData)
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Commande mise à jour avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Met à jour le statut d'une commande fournisseur
+async function updateSupplierOrderStatus(orderId, status) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/status`, {
+      ...API_CONFIG,
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Statut mis à jour avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Met à jour les montants d'une commande fournisseur
+async function updateSupplierOrderAmounts(orderId, total_amount, amount_paid) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/amounts`, {
+      ...API_CONFIG,
+      method: 'PATCH',
+      body: JSON.stringify({ total_amount, amount_paid })
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Montants mis à jour avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Ajoute un item à une commande fournisseur
+async function addSupplierOrderItem(orderId, itemData) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/items`, {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify(itemData)
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Article ajouté avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Supprime un item d'une commande fournisseur
+async function deleteSupplierOrderItem(itemId) {
+  try {
+    const response = await fetch(`/api/order-supplier-items/${itemId}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Article supprimé avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Supprime une commande fournisseur
+async function deleteSupplierOrder(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification('Commande supprimée avec succès', 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
 
 export {
   fetchPendingOrders,
@@ -199,5 +407,18 @@ export {
   deletePendingItems,
   createNewClient,
   getInvoiceDownloadLink,
-  saveUserPassword
+  saveUserPassword,
+  fetchSuppliers,
+  fetchSupplierOrders,
+  fetchSupplierStats,
+  fetchAllSupplierOrders,
+  fetchSupplierOrderDetails,
+  fetchSupplierOrderItems,
+  createSupplierOrder,
+  updateSupplierOrder,
+  updateSupplierOrderStatus,
+  updateSupplierOrderAmounts,
+  addSupplierOrderItem,
+  deleteSupplierOrderItem,
+  deleteSupplierOrder
 };

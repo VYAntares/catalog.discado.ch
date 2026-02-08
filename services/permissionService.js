@@ -47,6 +47,7 @@ const permissionService = {
                 orders: permissions.orders === 1,
                 clients: permissions.clients === 1,
                 order_history: permissions.order_history === 1,
+                suppliers: permissions.suppliers === 1,
                 stats: permissions.stats === 1
             };
         } catch (error) {
@@ -60,8 +61,8 @@ const permissionService = {
         try {
             const stmt = dbModule.db.prepare(`
                 INSERT OR REPLACE INTO user_permissions 
-                (username, stock, compta, orders, clients, order_history, stats)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (username, stock, compta, orders, clients, order_history, suppliers, stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `);
             
             stmt.run(
@@ -71,6 +72,7 @@ const permissionService = {
                 permissions.orders ? 1 : 0,
                 permissions.clients ? 1 : 0,
                 permissions.order_history ? 1 : 0,
+                permissions.suppliers ? 1 : 0,
                 permissions.stats ? 1 : 0
             );
             
@@ -94,12 +96,12 @@ const permissionService = {
             // Créer des permissions par défaut
             const stmt = dbModule.db.prepare(`
                 INSERT INTO user_permissions 
-                (username, stock, compta, orders, clients, order_history, stats)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (username, stock, compta, orders, clients, order_history, suppliers, stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `);
             
             // Par défaut, tous les admins ont accès aux commandes et à l'historique
-            stmt.run(username, 0, 0, 1, 0, 1, 0);
+            stmt.run(username, 0, 0, 1, 0, 1, 0, 0);
             
             return { success: true, message: 'Permissions initialisées' };
         } catch (error) {
@@ -120,6 +122,7 @@ const permissionService = {
                     COALESCE(p.orders, 0) as orders,
                     COALESCE(p.clients, 0) as clients,
                     COALESCE(p.order_history, 0) as order_history,
+                    COALESCE(p.suppliers, 0) as suppliers,
                     COALESCE(p.stats, 0) as stats
                 FROM users u
                 LEFT JOIN user_permissions p ON u.username = p.username

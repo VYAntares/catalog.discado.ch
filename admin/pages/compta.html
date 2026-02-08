@@ -121,17 +121,20 @@
                     <i class="fas fa-search"></i> Rechercher
                 </button>
                 
-                <select id="sortSelect" class="search-input" style="max-width: 250px;">
-                    <option value="referral_asc">Source (A-Z)</option>
-                    <option value="referral_desc">Source (Z-A)</option>
-                    <option value="total_desc">Montant total (décroissant)</option>
-                    <option value="total_asc">Montant total (croissant)</option>
-                    <option value="paid_desc">Montant payé (décroissant)</option>
-                    <option value="paid_asc">Montant payé (croissant)</option>
-                    <option value="due_desc">Montant dû (décroissant)</option>
-                    <option value="due_asc">Montant dû (croissant)</option>
-                    <option value="invoices_desc">Nb. factures (décroissant)</option>
-                    <option value="invoices_asc">Nb. factures (croissant)</option>
+                <select id="viewModeSelect" class="search-input" style="max-width: 200px;">
+                    <option value="all">Tous les clients</option>
+                    <option value="by_source">Groupé par source</option>
+                </select>
+
+                <select id="sortSelect" class="search-input" style="max-width: 220px;">
+                    <option value="total_desc">Montant total ↓</option>
+                    <option value="total_asc">Montant total ↑</option>
+                    <option value="paid_desc">Montant payé ↓</option>
+                    <option value="paid_asc">Montant payé ↑</option>
+                    <option value="due_desc">Montant dû ↓</option>
+                    <option value="due_asc">Montant dû ↑</option>
+                    <option value="invoices_desc">Nb. factures ↓</option>
+                    <option value="invoices_asc">Nb. factures ↑</option>
                     <option value="name_asc">Nom (A-Z)</option>
                     <option value="name_desc">Nom (Z-A)</option>
                 </select>

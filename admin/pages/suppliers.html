@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestion Fournisseurs - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/suppliers.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="admin-tabs">
+        <div class="tabs-container">
+            <a href="/admin/orders" class="tab">
+                <i class="fas fa-shopping-cart"></i> Gestion des commandes
+            </a>
+            <a href="/admin/order-history" class="tab">
+                <i class="fas fa-history"></i> Historique des commandes
+            </a>
+            <a href="/admin/clients" class="tab">
+                <i class="fas fa-users"></i> Client Database
+            </a>
+            <a href="/admin/compta" class="tab">
+                <i class="fas fa-calculator"></i> Compta
+            </a>
+            <a href="/admin/stock" class="tab">
+                <i class="fas fa-boxes"></i> Stock
+            </a>
+            <a href="/admin/suppliers" class="tab active">
+                <i class="fas fa-truck"></i> Fournisseurs
+            </a>
+            <a href="/admin/stats" class="tab">
+                <i class="fas fa-chart-line"></i> Stats
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <div class="suppliers-container">
+            <!-- Vue liste des fournisseurs -->
+            <section id="suppliersListView" class="view active">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="fas fa-truck"></i> Gestion des Fournisseurs
+                    </h1>
+                </div>
+
+                <div class="suppliers-grid" id="suppliersGrid">
+                    <!-- Les cartes fournisseurs seront générées ici -->
+                    <div class="loading">Chargement des fournisseurs...</div>
+                </div>
+            </section>
+
+            <!-- Vue détails fournisseur -->
+            <section id="supplierDetailsView" class="view">
+                <div class="back-navigation">
+                    <button class="btn btn-secondary back-btn" id="backToSuppliersBtn">
+                        <i class="fas fa-arrow-left"></i> Retour aux fournisseurs
+                    </button>
+                </div>
+
+                <div class="supplier-header">
+                    <div class="supplier-info">
+                        <h2 id="supplierName"></h2>
+                        <div class="supplier-contacts" id="supplierContacts"></div>
+                    </div>
+                    <button class="btn btn-primary" id="createOrderBtn">
+                        <i class="fas fa-plus"></i> Nouvelle Commande
+                    </button>
+                    <div class="supplier-stats">
+                        <div class="stat-card">
+                            <span class="stat-label">Commandes</span>
+                            <span class="stat-value" id="statTotalOrders">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label amount">Total dépensé</span>
+                            <span class="stat-value amount" id="statTotalSpent">0 CHF</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label remaining">Restant à payer</span>
+                            <span class="stat-value remaining" id="statUnpaid">0 CHF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="orders-section">
+                    <h3><i class="fas fa-file-invoice"></i> Commandes</h3>
+                    <div class="orders-list" id="supplierOrdersList">
+                        <!-- Les commandes du fournisseur seront générées ici -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vue détails commande -->
+            <section id="orderDetailsView" class="view">
+                <div class="back-navigation">
+                    <button class="btn btn-secondary back-btn" id="backToSupplierBtn">
+                        <i class="fas fa-arrow-left"></i> Retour au fournisseur
+                    </button>
+                </div>
+
+                <div class="order-header">
+                    <div class="order-header-top">
+                        <div class="order-info">
+                            <h2>Commande <span id="orderInvoiceNumber"></span></h2>
+                            <p class="order-date" id="orderDate"></p>
+                        </div>
+                        <div class="order-actions">
+                            <select class="status-select" id="orderStatusSelect">
+                                <option value="Passée">Passée</option>
+                                <option value="En production">En production</option>
+                                <option value="Terminée">Terminée</option>
+                                <option value="En chemin">En chemin</option>
+                                <option value="Livrée">Livrée</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                            <button class="btn btn-danger" id="deleteOrderBtn">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-financial">
+                    <h3>Informations financières</h3>
+                    <div class="financial-grid">
+                        <div class="financial-field">
+                            <label>Montant total</label>
+                            <input type="number" id="orderTotalAmount" step="0.01" readonly>
+                            <span class="currency">CHF</span>
+                        </div>
+                        <div class="financial-field">
+                            <label>Montant payé</label>
+                            <input type="number" id="orderAmountPaid" step="0.01">
+                            <span class="currency">CHF</span>
+                        </div>
+                        <div class="financial-field remaining">
+                            <label>Reste à payer</label>
+                            <input type="number" id="orderRemaining" step="0.01" readonly>
+                            <span class="currency">CHF</span>
+                        </div>
+                        <div style="display: flex; align-items: end;">
+                            <button class="btn btn-primary" id="saveAmountsBtn">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-notes">
+                    <h3>Notes</h3>
+                    <textarea id="orderNotes" rows="3" placeholder="Notes sur la commande..."></textarea>
+                </div>
+
+                <div class="items-section">
+                    <h3><i class="fas fa-box"></i> Articles commandés</h3>
+                    <div class="items-list" id="orderItemsList">
+                        <!-- Les articles seront générés ici -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal création commande -->
+    <div class="modal-overlay" id="createOrderModal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Nouvelle Commande</h2>
+                <button class="modal-close" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createOrderForm">
+                    <div class="form-group">
+                        <label>Fournisseur</label>
+                        <input type="text" id="modalSupplierName" readonly style="background: #f7fafc; font-weight: 600;">
+                        <input type="hidden" id="modalSupplierId">
+                    </div>
+                    <div class="form-group">
+                        <label>N° Facture *</label>
+                        <input type="text" id="modalInvoiceNumber" required placeholder="Ex: INV-2024-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" id="modalOrderDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select id="modalStatus">
+                            <option value="Passée">Passée</option>
+                            <option value="En production">En production</option>
+                            <option value="Terminée">Terminée</option>
+                            <option value="En chemin">En chemin</option>
+                            <option value="Livrée">Livrée</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="modalNotes" rows="3" placeholder="Notes sur cette commande..."></textarea>
+                    </div>
+                    <p style="color: #718096; font-size: 14px; margin-top: 16px;">
+                        <i class="fas fa-info-circle"></i> Les articles seront ajoutés après la création de la commande.
+                    </p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-secondary" id="cancelModalBtn">Annuler</button>
+                <button type="button" class="modal-btn modal-btn-primary" id="submitOrderBtn">
+                    <i class="fas fa-check"></i> Créer la commande
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur de notifications -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="/admin/js/utils/tabsPermissions.js"></script>
+    <script type="module">
+        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+          SuppliersModule.init();
+        });
+    </script>
+</body>
+</html>

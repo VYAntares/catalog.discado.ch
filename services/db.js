@@ -124,6 +124,16 @@ function initDatabase() {
         }
     }
 
+        // Ajouter la colonne suppliers si elle n'existe pas
+    if (!columnExists('user_permissions', 'suppliers')) {
+        try {
+            db.exec(`ALTER TABLE user_permissions ADD COLUMN suppliers INTEGER DEFAULT 0`);
+            console.log('✅ Colonne suppliers ajoutée à user_permissions');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne suppliers:', error.message);
+        }
+    }
+
     // Création de la table suppliers
     db.exec(`
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -138,6 +148,41 @@ function initDatabase() {
     )
     `);
     console.log('✅ Table suppliers créée ou déjà existante');
+
+    // Table pour les commandes fournisseurs
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS order_supplier (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          supplier_id INTEGER NOT NULL,
+          invoice_number TEXT UNIQUE NOT NULL,
+          order_date DATE NOT NULL,
+          status TEXT DEFAULT 'Passée',
+          total_amount DECIMAL(10,2) DEFAULT 0,
+          amount_paid DECIMAL(10,2) DEFAULT 0,
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+        )
+      `);
+  
+      // Table pour les items des commandes fournisseurs
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS order_supplier_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          order_supplier_id INTEGER NOT NULL,
+          product_id INTEGER NULL,
+          product_name TEXT NOT NULL,
+          unit_price DECIMAL(10,2) NOT NULL,
+          quantity INTEGER NOT NULL,
+          total_price DECIMAL(10,2) NOT NULL,
+          category TEXT,
+          image_url TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (order_supplier_id) REFERENCES order_supplier(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+        )
+      `);
 
     // Création de la table orders
     db.exec(`
@@ -217,6 +262,7 @@ function initDatabase() {
         orders INTEGER DEFAULT 1,
         clients INTEGER DEFAULT 0,
         order_history INTEGER DEFAULT 1,
+        suppliers INTEGER DEFAULT 0,
         FOREIGN KEY (username) REFERENCES users(username)
     )
     `);
@@ -289,6 +335,96 @@ module.exports = {
             WHERE id = ?
         `),
         delete: db.prepare('DELETE FROM suppliers WHERE id = ?')
+    },
+
+    // Gestion des commandes fournisseurs
+    orderSupplier: {
+        getAll: db.prepare('SELECT * FROM order_supplier ORDER BY order_date DESC'),
+        
+        getById: db.prepare('SELECT * FROM order_supplier WHERE id = ?'),
+        
+        getBySupplierId: db.prepare(`
+        SELECT * FROM order_supplier 
+        WHERE supplier_id = ? 
+        ORDER BY order_date DESC
+        `),
+        
+        create: db.prepare(`
+        INSERT INTO order_supplier (
+            supplier_id, invoice_number, order_date, status, 
+            total_amount, amount_paid, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `),
+        
+        update: db.prepare(`
+        UPDATE order_supplier 
+        SET supplier_id = ?, invoice_number = ?, order_date = ?, 
+            status = ?, total_amount = ?, amount_paid = ?, 
+            notes = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        `),
+        
+        updateAmounts: db.prepare(`
+        UPDATE order_supplier 
+        SET total_amount = ?, amount_paid = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        `),
+        
+        updateStatus: db.prepare(`
+        UPDATE order_supplier 
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        `),
+        
+        delete: db.prepare('DELETE FROM order_supplier WHERE id = ?'),
+        
+        // Stats par fournisseur
+        getStatsBySupplierId: db.prepare(`
+        SELECT 
+            COUNT(*) as total_orders,
+            SUM(total_amount) as total_spent,
+            SUM(amount_paid) as total_paid
+        FROM order_supplier 
+        WHERE supplier_id = ?
+        `)
+    },
+
+    // Gestion des items des commandes fournisseurs
+    orderSupplierItems: {
+        getAll: db.prepare('SELECT * FROM order_supplier_items'),
+        
+        getById: db.prepare('SELECT * FROM order_supplier_items WHERE id = ?'),
+        
+        getByOrderId: db.prepare(`
+        SELECT * FROM order_supplier_items 
+        WHERE order_supplier_id = ? 
+        ORDER BY created_at
+        `),
+        
+        add: db.prepare(`
+        INSERT INTO order_supplier_items (
+            order_supplier_id, product_id, product_name, 
+            unit_price, quantity, total_price, category, image_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `),
+        
+        update: db.prepare(`
+        UPDATE order_supplier_items 
+        SET product_id = ?, product_name = ?, unit_price = ?, 
+            quantity = ?, total_price = ?, category = ?, image_url = ?
+        WHERE id = ?
+        `),
+        
+        delete: db.prepare('DELETE FROM order_supplier_items WHERE id = ?'),
+        
+        deleteByOrderId: db.prepare('DELETE FROM order_supplier_items WHERE order_supplier_id = ?'),
+        
+        // Calculer le total d'une commande
+        getTotalByOrderId: db.prepare(`
+        SELECT SUM(total_price) as total 
+        FROM order_supplier_items 
+        WHERE order_supplier_id = ?
+        `)
     },
 
     // Requêtes liées aux produits

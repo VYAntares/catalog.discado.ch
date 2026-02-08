@@ -8,6 +8,7 @@ const PAGE_PRIORITY = [
   { permission: 'clients', path: '/admin/clients', name: 'Client Database' },
   { permission: 'compta', path: '/admin/compta', name: 'Compta' },
   { permission: 'stock', path: '/admin/stock', name: 'Stock' },
+  { permission: 'suppliers', path: '/admin/suppliers', name: 'Fournisseurs' },
   { permission: 'stats', path: '/admin/stats', name: 'Statistiques' }
 ];
 
@@ -43,6 +44,7 @@ function checkPageAccess(username, requestedPath) {
     '/admin/clients': 'clients',
     '/admin/compta': 'compta',
     '/admin/stock': 'stock',
+    '/admin/suppliers': 'suppliers',
     '/admin/client-invoices': 'compta',
     '/admin/compta-details': 'compta',
     '/admin/compta-month': 'compta',

@@ -9,6 +9,7 @@ const PERMISSIONS = {
   orders: true,
   clients: true,
   order_history: true,
+  suppliers: true,
   stats: true,
 };
 

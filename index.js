@@ -278,15 +278,12 @@ app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/components', express.static(path.join(__dirname, 'public/components')));
 
-app.use('/admin/js', (req, res, next) => {
-  if (req.path.endsWith('.js')) {
-    res.set('Content-Type', 'application/javascript; charset=UTF-8');
-  }
-  next();
-});
-
 app.use('/admin/css', express.static(path.join(__dirname, 'admin/css')));
-app.use('/admin/js', express.static(path.join(__dirname, 'admin/js')));
+
+app.use('/admin/js', (req, res, next) => {
+  res.set('Content-Type', 'application/javascript; charset=UTF-8');
+  next();
+}, express.static(path.join(__dirname, 'admin/js')));
 
 app.use('/pages/', (req, res, next) => {
   const requestPath = req.path;
@@ -393,6 +390,14 @@ app.get('/admin/client-invoices', requireLogin, requireAdmin, requirePermission(
 
 app.get('/admin/stock', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'stock.html'));
+});
+
+app.get('/admin/suppliers', requireLogin, requireAdmin, requirePermission('suppliers'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'suppliers.html'));
+});
+
+app.get('/admin/stats', requireLogin, requireAdmin, requirePermission('stats'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'stats.html'));
 });
 
 app.get('/admin/stats', requireLogin, requireAdmin, requirePermission('stats'), (req, res) => {
@@ -1532,6 +1537,222 @@ app.delete('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) =>
         console.error('Error deleting supplier:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression du fournisseur' });
     }
+});
+
+// ============================================
+// ROUTES COMMANDES FOURNISSEURS
+// ============================================
+
+// Récupérer toutes les commandes fournisseurs
+app.get('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const orders = dbModule.orderSupplier.getAll.all();
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching supplier orders:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier orders' });
+  }
+});
+
+// Récupérer une commande fournisseur par ID
+app.get('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const order = dbModule.orderSupplier.getById.get(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json(order);
+  } catch (error) {
+    console.error('Error fetching supplier order:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier order' });
+  }
+});
+
+// Récupérer toutes les commandes d'un fournisseur spécifique
+app.get('/api/suppliers/:supplierId/orders', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const orders = dbModule.orderSupplier.getBySupplierId.all(req.params.supplierId);
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching supplier orders:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier orders' });
+  }
+});
+
+// Récupérer les statistiques d'un fournisseur
+app.get('/api/suppliers/:supplierId/stats', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const stats = dbModule.orderSupplier.getStatsBySupplierId.get(req.params.supplierId);
+    res.json(stats || { total_orders: 0, total_spent: 0, total_paid: 0 });
+  } catch (error) {
+    console.error('Error fetching supplier stats:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier stats' });
+  }
+});
+
+// Récupérer les items d'une commande fournisseur
+app.get('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const items = dbModule.orderSupplierItems.getByOrderId.all(req.params.orderId);
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching order items:', error);
+    res.status(500).json({ error: 'Failed to fetch order items' });
+  }
+});
+
+// Créer une nouvelle commande fournisseur avec ses items
+app.post('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { supplier_id, invoice_number, order_date, status, notes, items } = req.body;
+
+    // Validation
+    if (!supplier_id || !invoice_number || !order_date) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Calculer le total des items (peut être 0)
+    let total_amount = 0;
+    if (items && items.length > 0) {
+      items.forEach(item => {
+        item.total_price = item.unit_price * item.quantity;
+        total_amount += item.total_price;
+      });
+    }
+
+    // Créer la commande
+    const result = dbModule.orderSupplier.create.run(
+      supplier_id,
+      invoice_number,
+      order_date,
+      status || 'Passée',
+      total_amount,
+      0,
+      notes || null
+    );
+
+    const orderId = result.lastInsertRowid;
+
+    // Ajouter les items si présents
+    if (items && items.length > 0) {
+      items.forEach(item => {
+        dbModule.orderSupplierItems.add.run(
+          orderId,
+          item.product_id || null,
+          item.product_name,
+          item.unit_price,
+          item.quantity,
+          item.total_price,
+          item.category || null,
+          item.image_url || null
+        );
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      orderId: orderId,
+      message: 'Order created successfully' 
+    });
+
+  } catch (error) {
+    console.error('Error creating supplier order:', error);
+    res.status(500).json({ error: 'Failed to create supplier order' });
+  }
+});
+
+// Mettre à jour une commande fournisseur
+app.put('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { supplier_id, invoice_number, order_date, status, total_amount, amount_paid, notes } = req.body;
+
+    dbModule.orderSupplier.update.run(
+      supplier_id,
+      invoice_number,
+      order_date,
+      status,
+      total_amount,
+      amount_paid,
+      notes,
+      req.params.id
+    );
+
+    res.json({ success: true, message: 'Order updated successfully' });
+
+  } catch (error) {
+    console.error('Error updating supplier order:', error);
+    res.status(500).json({ error: 'Failed to update supplier order' });
+  }
+});
+
+// Mettre à jour uniquement le statut
+app.patch('/api/order-suppliers/:id/status', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    dbModule.orderSupplier.updateStatus.run(status, req.params.id);
+    res.json({ success: true, message: 'Status updated successfully' });
+
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// Mettre à jour les montants
+app.patch('/api/order-suppliers/:id/amounts', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { total_amount, amount_paid } = req.body;
+
+    dbModule.orderSupplier.updateAmounts.run(total_amount, amount_paid, req.params.id);
+    res.json({ success: true, message: 'Amounts updated successfully' });
+
+  } catch (error) {
+    console.error('Error updating amounts:', error);
+    res.status(500).json({ error: 'Failed to update amounts' });
+  }
+});
+
+// Supprimer un item
+app.delete('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const item = dbModule.orderSupplierItems.getById.get(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const orderId = item.order_supplier_id;
+    dbModule.orderSupplierItems.delete.run(req.params.id);
+
+    const totalResult = dbModule.orderSupplierItems.getTotalByOrderId.get(orderId);
+    const newTotal = totalResult.total || 0;
+
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    dbModule.orderSupplier.updateAmounts.run(newTotal, order.amount_paid, orderId);
+
+    res.json({ success: true, message: 'Item deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+// Supprimer une commande fournisseur
+app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    dbModule.orderSupplier.delete.run(req.params.id);
+    res.json({ success: true, message: 'Order deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting supplier order:', error);
+    res.status(500).json({ error: 'Failed to delete supplier order' });
+  }
 });
 
 // ===== API ROUTES - COMPTABILITÉ =====

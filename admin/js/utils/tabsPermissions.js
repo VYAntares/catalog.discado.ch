@@ -10,6 +10,7 @@ const TAB_PERMISSIONS = {
   '/admin/clients': 'clients',
   '/admin/compta': 'compta',
   '/admin/stock': 'stock',
+  '/admin/suppliers': 'suppliers',
   '/admin/stats': 'stats'
 };
 
