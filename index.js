@@ -1755,6 +1755,45 @@ app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) =>
   }
 });
 
+// Ajouter un item à une commande fournisseur
+app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { product_id, product_name, unit_price, quantity, category, image_url } = req.body;
+
+    if (!product_name || !unit_price || !quantity) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const total_price = unit_price * quantity;
+
+    // Ajouter l'item
+    dbModule.orderSupplierItems.add.run(
+      orderId,
+      product_id || null,
+      product_name,
+      unit_price,
+      quantity,
+      total_price,
+      category || null,
+      image_url || null
+    );
+
+    // Recalculer le total de la commande
+    const totalResult = dbModule.orderSupplierItems.getTotalByOrderId.get(orderId);
+    const newTotal = totalResult.total || 0;
+
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    dbModule.orderSupplier.updateAmounts.run(newTotal, order.amount_paid, orderId);
+
+    res.json({ success: true, message: 'Item added successfully' });
+
+  } catch (error) {
+    console.error('Error adding item:', error);
+    res.status(500).json({ error: 'Failed to add item' });
+  }
+});
+
 // ===== API ROUTES - COMPTABILITÉ =====
 app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const { invoiceId } = req.params;

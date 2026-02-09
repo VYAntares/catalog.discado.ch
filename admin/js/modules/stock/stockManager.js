@@ -290,6 +290,7 @@ class StockManager {
 
         this.attachUpdateListeners();
         this.attachEditListeners();
+		this.attachAddToOrderListeners();
     }
 
 	createProductCard(product) {
@@ -357,10 +358,15 @@ class StockManager {
 						</div>
 						
 						<div class="product-actions">
-							<button class="stock-btn secondary edit-product-btn"
-									data-product-id="${product.id}">
-								<i class="fas fa-edit"></i> Modifier le produit
-							</button>
+   							<button class="stock-btn secondary edit-product-btn"
+            						data-product-id="${product.id}">
+        						<i class="fas fa-edit"></i> Modifier le produit
+    						</button>
+    						<button class="stock-btn primary add-to-order-btn"
+            						data-product-id="${product.id}"
+            						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        						<i class="fas fa-truck-loading"></i> Ajouter à commande
+   							</button>
 						</div>
 					</div>
 				</div>
@@ -710,6 +716,16 @@ class StockManager {
 			}
 		};
 		document.addEventListener('keydown', escapeHandler);
+	}
+	
+	attachAddToOrderListeners() {
+		document.querySelectorAll('.add-to-order-btn').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const productId = parseInt(btn.dataset.productId);
+				this.openAddToOrderModal(productId);
+			});
+		});
 	}
 
 	// Télécharger l'image
@@ -1196,6 +1212,126 @@ class StockManager {
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
+
+	async openAddToOrderModal(productId) {
+		const modal = document.getElementById('addToOrderModal');
+		const product = this.products.find(p => p.id === productId);
+		
+		if (!product) {
+			this.showNotification('Produit introuvable', 'error');
+			return;
+		}
+		
+		// Remplir les infos du produit
+		document.getElementById('addOrderProductName').value = product.name;
+		document.getElementById('addOrderProductId').value = product.id;
+		document.getElementById('addOrderPrice').value = product.origin_price || 0;
+		document.getElementById('addOrderQuantity').value = 50;
+		
+		// Charger les commandes fournisseurs
+		try {
+			const response = await fetch('/api/order-suppliers');
+			const orders = await response.json();
+			
+			// Filtrer uniquement les commandes non livrées
+			const activeOrders = orders.filter(o => o.status !== 'Livrée');
+			
+			const orderSelect = document.getElementById('addOrderSelect');
+			if (activeOrders.length === 0) {
+				orderSelect.innerHTML = '<option value="">Aucune commande active</option>';
+				this.showNotification('Aucune commande fournisseur active', 'info');
+			} else {
+				orderSelect.innerHTML = '<option value="">Sélectionner une commande</option>' +
+					activeOrders.map(order => {
+						// Trouver le nom du fournisseur
+						const supplier = this.suppliers.find(s => s.id === order.supplier_id);
+						const supplierName = supplier ? supplier.name : 'Inconnu';
+						return `<option value="${order.id}">${supplierName} - ${order.invoice_number} (${order.order_date})</option>`;
+					}).join('');
+			}
+		} catch (error) {
+			console.error('Erreur chargement commandes:', error);
+			this.showNotification('Erreur chargement des commandes', 'error');
+		}
+		
+		// Event listeners
+		this.setupAddToOrderListeners();
+		
+		modal.style.display = 'flex';
+	}
+	
+	setupAddToOrderListeners() {
+		const closeBtn = document.getElementById('closeAddToOrderModal');
+		const cancelBtn = document.getElementById('cancelAddToOrder');
+		const submitBtn = document.getElementById('submitAddToOrder');
+		const quantityInput = document.getElementById('addOrderQuantity');
+		const priceInput = document.getElementById('addOrderPrice');
+		const totalInput = document.getElementById('addOrderTotal');
+		
+		// Calcul automatique du total
+		const calculateTotal = () => {
+			const quantity = parseFloat(quantityInput.value) || 0;
+			const price = parseFloat(priceInput.value) || 0;
+			const total = quantity * price;
+			totalInput.value = `${total.toFixed(2)} CHF`;
+		};
+		
+		quantityInput.removeEventListener('input', calculateTotal);
+		priceInput.removeEventListener('input', calculateTotal);
+		quantityInput.addEventListener('input', calculateTotal);
+		priceInput.addEventListener('input', calculateTotal);
+		
+		calculateTotal(); // Calcul initial
+		
+		// Fermeture
+		const closeModal = () => {
+			document.getElementById('addToOrderModal').style.display = 'none';
+		};
+		
+		closeBtn.onclick = closeModal;
+		cancelBtn.onclick = closeModal;
+		
+		// Soumission
+		submitBtn.onclick = async () => {
+			const orderId = document.getElementById('addOrderSelect').value;
+			const productId = document.getElementById('addOrderProductId').value;
+			const productName = document.getElementById('addOrderProductName').value;
+			const quantity = parseInt(document.getElementById('addOrderQuantity').value);
+			const price = parseFloat(document.getElementById('addOrderPrice').value);
+			
+			if (!orderId || !quantity || !price) {
+				alert('Veuillez remplir tous les champs obligatoires');
+				return;
+			}
+			
+			try {
+				const response = await fetch(`/api/order-suppliers/${orderId}/items`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						product_id: parseInt(productId),
+						product_name: productName,
+						unit_price: price,
+						quantity: quantity,
+						category: this.products.find(p => p.id == productId)?.category || null,
+						image_url: this.products.find(p => p.id == productId)?.image_url || null
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					this.showNotification('Produit ajouté à la commande avec succès', 'success');
+					closeModal();
+				} else {
+					this.showNotification('Erreur lors de l\'ajout', 'error');
+				}
+			} catch (error) {
+				console.error('Erreur ajout produit:', error);
+				this.showNotification('Erreur lors de l\'ajout', 'error');
+			}
+		};
+	}
 }
 
 document.addEventListener('DOMContentLoaded', () => {

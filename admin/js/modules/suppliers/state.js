@@ -108,3 +108,14 @@ export const state = {
 		break;
 	}
   }
+
+let currentOrder = null;
+
+export function setCurrentOrder(order) {
+  currentOrder = order;
+  currentOrderId = order ? order.id : null;
+}
+
+export function getCurrentOrder() {
+  return currentOrder;
+}
