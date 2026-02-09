@@ -404,8 +404,14 @@ module.exports = {
         `),
         
         updateStatus: db.prepare(`
-        UPDATE order_supplier 
+        UPDATE order_supplier
         SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        `),
+
+        updateNotes: db.prepare(`
+        UPDATE order_supplier
+        SET notes = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         `),
         

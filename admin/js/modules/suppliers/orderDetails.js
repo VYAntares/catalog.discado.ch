@@ -80,18 +80,33 @@ function createItemCard(item) {
   const unitPrice = (item.unit_price || 0).toFixed(2);
 
   return `
-    <div class="item-card">
-      <img src="${imageUrl}" 
-           alt="${item.product_name}" 
+    <div class="item-card" data-item-id="${item.id}">
+      <img src="${imageUrl}"
+           alt="${item.product_name}"
            class="item-image"
            onerror="this.src='/images/placeholder.png'">
       <div class="item-details">
         <h4>${item.product_name}</h4>
         <p>Catégorie: ${category}</p>
-        <p>Quantité: ${item.quantity} × ${unitPrice} USD = <strong>${totalPrice}</strong></p>
+        <div class="item-display" data-item-id="${item.id}">
+          <p>Quantité: ${item.quantity} × ${unitPrice} USD = <strong>${totalPrice}</strong></p>
+        </div>
+        <div class="item-edit" data-item-id="${item.id}" style="display:none;">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <label style="font-size:13px;">Qté:
+              <input type="number" class="edit-quantity" value="${item.quantity}" min="1" style="width:70px; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
+            </label>
+            <label style="font-size:13px;">Prix unit. (USD):
+              <input type="number" class="edit-price" value="${unitPrice}" min="0" step="0.01" style="width:90px; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
+            </label>
+            <button class="btn btn-primary btn-sm save-edit-btn" data-item-id="${item.id}">Enregistrer</button>
+            <button class="btn btn-sm cancel-edit-btn" data-item-id="${item.id}" style="background:#e2e8f0; color:#4a5568;">Annuler</button>
+          </div>
+        </div>
       </div>
       <div class="item-actions">
-        <button class="btn btn-danger btn-sm" data-item-id="${item.id}">Supprimer</button>
+        <button class="btn btn-sm edit-item-btn" data-item-id="${item.id}" style="background:#edf2f7; color:#4a5568; margin-bottom:4px;">Modifier</button>
+        <button class="btn btn-danger btn-sm delete-item-btn" data-item-id="${item.id}">Supprimer</button>
       </div>
     </div>
   `;
@@ -116,10 +131,44 @@ function attachEventListeners() {
   deleteBtn.removeEventListener('click', handleDeleteOrder);
   deleteBtn.addEventListener('click', handleDeleteOrder);
 
-  // Suppression items
-  document.querySelectorAll('.item-actions button').forEach(btn => {
+  // Sauvegarde des notes (debounce)
+  const notesField = document.getElementById('orderNotes');
+  notesField.removeEventListener('input', handleNotesInput);
+  notesField.addEventListener('input', handleNotesInput);
+
+  // Boutons items
+  document.querySelectorAll('.delete-item-btn').forEach(btn => {
     btn.addEventListener('click', handleDeleteItem);
   });
+  document.querySelectorAll('.edit-item-btn').forEach(btn => {
+    btn.addEventListener('click', handleEditItem);
+  });
+  document.querySelectorAll('.save-edit-btn').forEach(btn => {
+    btn.addEventListener('click', handleSaveItem);
+  });
+  document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+    btn.addEventListener('click', handleCancelEdit);
+  });
+}
+
+/**
+ * Gère la saisie des notes avec debounce
+ */
+let notesTimeout;
+function handleNotesInput() {
+  clearTimeout(notesTimeout);
+  notesTimeout = setTimeout(() => saveNotes(), 800);
+}
+
+async function saveNotes() {
+  const orderId = State.getCurrentOrderId();
+  const notes = document.getElementById('orderNotes').value;
+
+  try {
+    await API.updateSupplierOrderNotes(orderId, notes);
+  } catch (error) {
+    console.error('Erreur sauvegarde notes:', error);
+  }
 }
 
 /**
@@ -273,6 +322,50 @@ async function handleDeleteOrder() {
     await SupplierDetails.show(supplierId);
   } catch (error) {
     console.error('Erreur suppression commande:', error);
+  }
+}
+
+/**
+ * Affiche les champs d'édition d'un item
+ */
+function handleEditItem(event) {
+  const itemId = event.currentTarget.dataset.itemId;
+  document.querySelector(`.item-display[data-item-id="${itemId}"]`).style.display = 'none';
+  document.querySelector(`.item-edit[data-item-id="${itemId}"]`).style.display = 'block';
+  event.currentTarget.style.display = 'none';
+}
+
+/**
+ * Annule l'édition d'un item
+ */
+function handleCancelEdit(event) {
+  const itemId = event.currentTarget.dataset.itemId;
+  document.querySelector(`.item-display[data-item-id="${itemId}"]`).style.display = '';
+  document.querySelector(`.item-edit[data-item-id="${itemId}"]`).style.display = 'none';
+  document.querySelector(`.edit-item-btn[data-item-id="${itemId}"]`).style.display = '';
+}
+
+/**
+ * Sauvegarde les modifications d'un item
+ */
+async function handleSaveItem(event) {
+  const itemId = event.currentTarget.dataset.itemId;
+  const card = document.querySelector(`.item-card[data-item-id="${itemId}"]`);
+  const quantity = parseInt(card.querySelector('.edit-quantity').value);
+  const unitPrice = parseFloat(card.querySelector('.edit-price').value);
+
+  if (!quantity || quantity < 1 || isNaN(unitPrice)) {
+    alert('Veuillez entrer une quantité et un prix valides');
+    return;
+  }
+
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    await API.updateSupplierOrderItem(itemId, unitPrice, quantity);
+    await show(orderId);
+  } catch (error) {
+    console.error('Erreur modification item:', error);
   }
 }
 

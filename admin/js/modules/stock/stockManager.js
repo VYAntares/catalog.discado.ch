@@ -1273,7 +1273,7 @@ class StockManager {
 			const quantity = parseFloat(quantityInput.value) || 0;
 			const price = parseFloat(priceInput.value) || 0;
 			const total = quantity * price;
-			totalInput.value = `${total.toFixed(2)} CHF`;
+			totalInput.value = `${total.toFixed(2)} USD`;
 		};
 		
 		quantityInput.removeEventListener('input', calculateTotal);

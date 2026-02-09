@@ -314,6 +314,21 @@ async function updateSupplierOrderStatus(orderId, status) {
   }
 }
 
+// Met à jour les notes d'une commande fournisseur
+async function updateSupplierOrderNotes(orderId, notes) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/notes`, {
+      ...API_CONFIG,
+      method: 'PATCH',
+      body: JSON.stringify({ notes })
+    });
+
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Met à jour les montants d'une commande fournisseur
 async function updateSupplierOrderAmounts(orderId, total_amount, amount_paid) {
   try {
@@ -407,6 +422,27 @@ async function addSupplierOrderItem(orderId, itemData) {
   }
 }
 
+// Met à jour un item d'une commande fournisseur (prix, quantité)
+async function updateSupplierOrderItem(itemId, unitPrice, quantity) {
+  try {
+    const response = await fetch(`/api/order-supplier-items/${itemId}`, {
+      ...API_CONFIG,
+      method: 'PUT',
+      body: JSON.stringify({ unit_price: unitPrice, quantity })
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification('Article mis à jour', 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Supprime un item d'une commande fournisseur
 async function deleteSupplierOrderItem(itemId) {
   try {
@@ -468,8 +504,10 @@ export {
   createSupplierOrder,
   updateSupplierOrder,
   updateSupplierOrderStatus,
+  updateSupplierOrderNotes,
   updateSupplierOrderAmounts,
   addSupplierOrderItem,
+  updateSupplierOrderItem,
   deleteSupplierOrderItem,
   deleteSupplierOrder,
   getSupplierOrderPayments,

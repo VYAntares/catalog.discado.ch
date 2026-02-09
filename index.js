@@ -1715,6 +1715,18 @@ app.patch('/api/order-suppliers/:id/status', requireLogin, requireAdmin, (req, r
   }
 });
 
+// Mettre à jour les notes
+app.patch('/api/order-suppliers/:id/notes', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { notes } = req.body;
+    dbModule.orderSupplier.updateNotes.run(notes || '', req.params.id);
+    res.json({ success: true, message: 'Notes updated successfully' });
+  } catch (error) {
+    console.error('Error updating order notes:', error);
+    res.status(500).json({ error: 'Failed to update order notes' });
+  }
+});
+
 // Mettre à jour les montants
 app.patch('/api/order-suppliers/:id/amounts', requireLogin, requireAdmin, (req, res) => {
   try {
@@ -1784,6 +1796,44 @@ app.delete('/api/order-suppliers/:id/payments/:paymentId', requireLogin, require
   } catch (error) {
     console.error('Error deleting payment:', error);
     res.status(500).json({ error: 'Failed to delete payment' });
+  }
+});
+
+// Modifier un item (prix, quantité)
+app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const item = dbModule.orderSupplierItems.getById.get(req.params.id);
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const { unit_price, quantity } = req.body;
+    const newUnitPrice = parseFloat(unit_price);
+    const newQuantity = parseInt(quantity);
+
+    if (isNaN(newUnitPrice) || isNaN(newQuantity) || newQuantity < 1) {
+      return res.status(400).json({ error: 'Invalid price or quantity' });
+    }
+
+    const newTotalPrice = newUnitPrice * newQuantity;
+    const orderId = item.order_supplier_id;
+
+    dbModule.orderSupplierItems.update.run(
+      item.product_id, item.product_name, newUnitPrice,
+      newQuantity, newTotalPrice, item.category, item.image_url,
+      req.params.id
+    );
+
+    // Recalculer le total de la commande
+    const totalResult = dbModule.orderSupplierItems.getTotalByOrderId.get(orderId);
+    const newTotal = totalResult.total || 0;
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    dbModule.orderSupplier.updateAmounts.run(newTotal, order.amount_paid, orderId);
+
+    res.json({ success: true, message: 'Item updated successfully' });
+  } catch (error) {
+    console.error('Error updating item:', error);
+    res.status(500).json({ error: 'Failed to update item' });
   }
 });
 
