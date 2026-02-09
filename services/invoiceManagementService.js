@@ -240,8 +240,8 @@ function getClientsSummary(year = null) {
                 SUM(CASE WHEN i.payment_status = 'paid' THEN 1 ELSE 0 END) as paid_count,
                 SUM(CASE WHEN i.payment_status = 'unpaid' THEN 1 ELSE 0 END) as unpaid_count,
                 SUM(CASE WHEN i.payment_status = 'partial' THEN 1 ELSE 0 END) as partial_count,
-                SUM(CASE WHEN i.payment_status = 'paid' THEN i.total_ttc ELSE 0 END) * 0.10 as commission_total,
-                SUM(CASE WHEN i.payment_status = 'paid' AND i.commission_status = 'received' THEN i.total_ttc ELSE 0 END) * 0.10 as commission_received
+                SUM(CASE WHEN i.payment_status IN ('paid', 'partial') THEN i.amount_paid ELSE 0 END) * 0.10 as commission_total,
+                SUM(CASE WHEN i.payment_status IN ('paid', 'partial') AND i.commission_status = 'received' THEN i.amount_paid ELSE 0 END) * 0.10 as commission_received
             FROM invoices i
             LEFT JOIN user_profiles up ON i.user_id = up.username
         `;

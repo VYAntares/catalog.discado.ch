@@ -353,8 +353,7 @@ class ComptaClientTable {
 			'Montant encaissé',
 			'Solde dû',
 			'Date paiement',
-			'Statut',
-			'Commissions'
+			'Statut'
 		];
 
 		const sortedInvoices = [...this.invoices].sort((a, b) => {
@@ -394,8 +393,7 @@ class ComptaClientTable {
 				this.formatNumberForCSV(invoice.amount_paid),
 				this.formatNumberForCSV(invoice.amount_due),
 				invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
-				this.getStatusText(invoice.payment_status),
-				invoice.commission_status === 'received' ? 'Reçu' : 'Non reçu'
+				this.getStatusText(invoice.payment_status)
 			].join(',');
 		});
 
