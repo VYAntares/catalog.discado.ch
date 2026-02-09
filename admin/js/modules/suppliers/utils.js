@@ -16,10 +16,10 @@ export function formatDate(dateString) {
   }
   
   /**
-   * Formate un montant en CHF
+   * Formate un montant en USD
    */
   export function formatAmount(amount) {
-	return `${(amount || 0).toFixed(2)} CHF`;
+	return `${(amount || 0).toFixed(2)} USD`;
   }
   
   /**

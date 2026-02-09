@@ -93,11 +93,11 @@
                         </div>
                         <div class="stat-card">
                             <span class="stat-label amount">Total dépensé</span>
-                            <span class="stat-value amount" id="statTotalSpent">0 CHF</span>
+                            <span class="stat-value amount" id="statTotalSpent">0 USD</span>
                         </div>
                         <div class="stat-card">
                             <span class="stat-label remaining">Restant à payer</span>
-                            <span class="stat-value remaining" id="statUnpaid">0 CHF</span>
+                            <span class="stat-value remaining" id="statUnpaid">0 USD</span>
                         </div>
                     </div>
                 </div>
@@ -146,17 +146,17 @@
                         <div class="financial-field">
                             <label>Montant total</label>
                             <input type="number" id="orderTotalAmount" step="0.01" readonly>
-                            <span class="currency">CHF</span>
+                            <span class="currency">USD</span>
                         </div>
                         <div class="financial-field">
                             <label>Montant payé</label>
                             <input type="number" id="orderAmountPaid" step="0.01">
-                            <span class="currency">CHF</span>
+                            <span class="currency">USD</span>
                         </div>
                         <div class="financial-field remaining">
                             <label>Reste à payer</label>
                             <input type="number" id="orderRemaining" step="0.01" readonly>
-                            <span class="currency">CHF</span>
+                            <span class="currency">USD</span>
                         </div>
                         <div style="display: flex; align-items: end;">
                             <button class="btn btn-primary" id="saveAmountsBtn">
@@ -235,21 +235,39 @@
             </div>
         </div>
     </div>
-    <!-- Modal Ajouter article à commande -->
+        <!-- Modal Ajouter article à commande -->
     <div class="modal-overlay" id="addItemToOrderModal" style="display: none;">
-        <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-content" style="max-width: 1000px;">
             <div class="modal-header">
                 <h2><i class="fas fa-box-open"></i> Ajouter un article</h2>
                 <button class="modal-close" id="closeAddItemModal">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Filtre de recherche -->
-                <div class="form-group">
-                    <input type="text" 
-                        id="searchProductInput" 
-                        class="form-control" 
-                        placeholder="🔍 Rechercher un produit..."
-                        style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; font-size: 14px;">
+                <!-- Filtres -->
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <!-- Recherche -->
+                    <div class="form-group" style="margin: 0;">
+                        <input type="text" 
+                            id="searchProductInput" 
+                            placeholder="🔍 Rechercher par nom, numéro ou code-barres..."
+                            style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; font-size: 14px;">
+                    </div>
+                    
+                    <!-- Filtre Fournisseur -->
+                    <div class="form-group" style="margin: 0;">
+                        <select id="filterSupplierSelect" 
+                                style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; font-size: 14px;">
+                            <option value="">Tous les fournisseurs</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Filtre Catégorie -->
+                    <div class="form-group" style="margin: 0;">
+                        <select id="filterCategorySelect" 
+                                style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; font-size: 14px;">
+                            <option value="">Toutes les catégories</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <!-- Liste des produits -->

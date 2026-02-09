@@ -1156,6 +1156,18 @@ app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
   }
 });
 
+// GET all products (pour le module fournisseurs)
+app.get('/api/products', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const products = db.prepare('SELECT * FROM products ORDER BY name').all();
+    console.log(`📦 API /api/products - Retour de ${products.length} produits`);
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
 // ===== API ROUTES - ADMINISTRATEUR =====
 app.get('/api/admin/pending-orders', requireLogin, requireAdmin, (req, res) => {
   try {

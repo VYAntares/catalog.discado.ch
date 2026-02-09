@@ -85,7 +85,7 @@ function createItemCard(item) {
       <div class="item-details">
         <h4>${item.product_name}</h4>
         <p>Catégorie: ${category}</p>
-        <p>Quantité: ${item.quantity} × ${unitPrice} CHF = <strong>${totalPrice}</strong></p>
+        <p>Quantité: ${item.quantity} × ${unitPrice} USD = <strong>${totalPrice}</strong></p>
       </div>
       <div class="item-actions">
         <button class="btn btn-danger btn-sm" data-item-id="${item.id}">Supprimer</button>
@@ -225,45 +225,137 @@ export function openAddItemModal() {
 }
 
 /**
- * Charge les produits du fournisseur
+ * Charge TOUS les produits du catalogue
  */
 async function loadSupplierProducts(supplierId) {
   const container = document.getElementById('productsListContainer');
-  const suppliers = State.getSuppliers();
-  const supplier = suppliers.find(s => s.id == supplierId);
-  
-  if (!supplier) {
-    container.innerHTML = '<p style="text-align: center; color: #718096;">Fournisseur introuvable</p>';
-    return;
-  }
   
   try {
     // Récupérer tous les produits
-    const response = await fetch('/api/products');
+    const response = await fetch('/api/products/stock');
     const allProducts = await response.json();
     
-    // Filtrer par fournisseur
-    const supplierProducts = allProducts.filter(p => p.supplier === supplier.name);
+    console.log('📦 Total produits chargés:', allProducts.length);
     
-    if (supplierProducts.length === 0) {
+    if (allProducts.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-box-open"></i>
-          <p>Aucun produit trouvé pour ce fournisseur</p>
+          <p>Aucun produit trouvé</p>
         </div>
       `;
       return;
     }
     
-    // Stocker les produits pour la recherche
-    window.currentSupplierProducts = supplierProducts;
+    // Stocker tous les produits
+    window.currentSupplierProducts = allProducts;
     
-    // Afficher les produits
-    renderProductsList(supplierProducts);
+    // Remplir les filtres
+    populateFilters(allProducts);
+    
+    // Afficher les produits (limiter à 50 par défaut)
+    applyFilters();
     
   } catch (error) {
     console.error('Erreur chargement produits:', error);
     container.innerHTML = '<p style="text-align: center; color: #f56565;">Erreur de chargement</p>';
+  }
+}
+
+/**
+ * Remplit les filtres fournisseur et catégorie
+ */
+function populateFilters(products) {
+  // Extraire les fournisseurs uniques
+  const suppliers = [...new Set(products.map(p => p.supplier).filter(Boolean))].sort();
+  const supplierSelect = document.getElementById('filterSupplierSelect');
+  supplierSelect.innerHTML = '<option value="">Tous les fournisseurs</option>' +
+    suppliers.map(s => `<option value="${s}">${s}</option>`).join('');
+  
+  // Extraire les catégories uniques
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+  const categorySelect = document.getElementById('filterCategorySelect');
+  categorySelect.innerHTML = '<option value="">Toutes les catégories</option>' +
+    categories.map(c => `<option value="${c}">${formatCategoryName(c)}</option>`).join('');
+}
+
+/**
+ * Formate le nom de catégorie
+ */
+function formatCategoryName(category) {
+  const names = {
+    'tshirt': 'T-Shirts',
+    'caps': 'Casquettes',
+    'bags': 'Sacs',
+    'keyring': 'Porte-clés',
+    'pens': 'Stylos',
+    'lifestyle': 'Lifestyle',
+    'gadget': 'Gadgets',
+    'patches': 'Patches',
+    'cloths': 'Textiles',
+    'lighter': 'Briquets',
+    'magnet': 'Aimants',
+    'bells': 'Clochettes',
+    'plates': 'Plaques',
+    'softtoy': 'Peluches',
+    'hats': 'Chapeaux',
+    'farceattrape': 'Farces & Attrapes'
+  };
+  return names[category] || category;
+}
+
+/**
+ * Applique tous les filtres
+ */
+function applyFilters() {
+  const products = window.currentSupplierProducts || [];
+  const searchTerm = document.getElementById('searchProductInput').value.toLowerCase().trim();
+  const selectedSupplier = document.getElementById('filterSupplierSelect').value;
+  const selectedCategory = document.getElementById('filterCategorySelect').value;
+  
+  let filtered = products;
+  
+  // Filtre par recherche
+  if (searchTerm) {
+    filtered = filtered.filter(p => {
+      const name = (p.name || '').toLowerCase();
+      const barcode = (p.barcode || '').toLowerCase();
+      const category = (p.category || '').toLowerCase();
+      const supplier = (p.supplier || '').toLowerCase();
+      const numberMatch = p.name.match(/\d+/g);
+      const numbers = numberMatch ? numberMatch.join(' ') : '';
+      
+      return name.includes(searchTerm) ||
+             barcode.includes(searchTerm) ||
+             category.includes(searchTerm) ||
+             supplier.includes(searchTerm) ||
+             numbers.includes(searchTerm);
+    });
+  }
+  
+  // Filtre par fournisseur
+  if (selectedSupplier) {
+    filtered = filtered.filter(p => p.supplier === selectedSupplier);
+  }
+  
+  // Filtre par catégorie
+  if (selectedCategory) {
+    filtered = filtered.filter(p => p.category === selectedCategory);
+  }
+  
+  console.log(`🔍 Filtres appliqués: ${filtered.length} résultats`);
+  
+  // Limiter à 100 résultats pour la performance
+  renderProductsList(filtered.slice(0, 100));
+  
+  // Message si trop de résultats
+  const container = document.getElementById('productsListContainer');
+  if (filtered.length > 100) {
+    container.insertAdjacentHTML('afterbegin', `
+      <div style="background: #fff3e0; padding: 12px; border-radius: 6px; margin-bottom: 16px; text-align: center; color: #f57c00;">
+        <i class="fas fa-info-circle"></i> <strong>${filtered.length} produits trouvés</strong> - Affichage limité à 100. Affinez votre recherche.
+      </div>
+    `);
   }
 }
 
@@ -285,19 +377,26 @@ function renderProductsList(products) {
   
   container.innerHTML = products.map(product => `
     <div class="product-list-item">
-      <img src="${product.image_url || '/images/placeholder.png'}" 
-           alt="${product.name}" 
-           class="product-list-image"
-           onerror="this.src='/images/placeholder.png'">
+      <div style="position: relative; width: 80px; height: 80px;">
+        <img src="${product.image_url || ''}" 
+             alt="${product.name}" 
+             class="product-list-image"
+             style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; background: #f7fafc; border: 1px solid #e2e8f0;"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div style="display: none; width: 80px; height: 80px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; align-items: center; justify-content: center;">
+          <i class="fas fa-image" style="color: #cbd5e0; font-size: 24px;"></i>
+        </div>
+      </div>
       
       <div class="product-list-info">
         <h4>${product.name}</h4>
         <p><i class="fas fa-tag"></i> ${product.category || 'Autre'}</p>
         <p><i class="fas fa-barcode"></i> ${product.barcode || 'N/A'}</p>
+        ${product.origin_price > 0 ? `<p style="color: #718096; font-size: 12px;">Prix d'origine: ${product.origin_price.toFixed(2)} USD</p>` : ''}
       </div>
       
       <div class="product-list-price">
-        ${(product.origin_price || 0).toFixed(2)} CHF
+        ${(product.origin_price || 0).toFixed(2)} USD
       </div>
       
       <div class="product-list-actions">
@@ -305,7 +404,9 @@ function renderProductsList(products) {
                class="item-quantity-input" 
                value="50" 
                min="1"
-               data-product-id="${product.id}">
+               placeholder="Qté"
+               data-product-id="${product.id}"
+               onfocus="this.select()">
         <button class="btn btn-primary btn-icon add-item-btn" 
                 data-product-id="${product.id}"
                 data-product-name="${product.name}"
@@ -320,6 +421,7 @@ function renderProductsList(products) {
   
   // Attacher les event listeners
   attachAddItemButtonsListeners();
+  attachQuantityInputListeners();
 }
 
 /**
@@ -377,23 +479,25 @@ async function addItemToCurrentOrder(productId, productName, price, quantity, ca
 function setupAddItemModalListeners() {
   const closeBtn = document.getElementById('closeAddItemModal');
   const searchInput = document.getElementById('searchProductInput');
+  const supplierSelect = document.getElementById('filterSupplierSelect');
+  const categorySelect = document.getElementById('filterCategorySelect');
   
   // Fermeture
   closeBtn.onclick = () => {
     document.getElementById('addItemToOrderModal').style.display = 'none';
   };
   
-  // Recherche
-  searchInput.oninput = (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const products = window.currentSupplierProducts || [];
-    
-    const filtered = products.filter(p => 
-      p.name.toLowerCase().includes(searchTerm) ||
-      (p.barcode && p.barcode.toLowerCase().includes(searchTerm)) ||
-      (p.category && p.category.toLowerCase().includes(searchTerm))
-    );
-    
-    renderProductsList(filtered);
+  // Recherche en temps réel
+  let searchTimeout;
+  searchInput.oninput = () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => applyFilters(), 300);
   };
+  
+  // Filtres
+  supplierSelect.onchange = () => applyFilters();
+  categorySelect.onchange = () => applyFilters();
+  
+  // Focus automatique sur la recherche
+  searchInput.focus();
 }

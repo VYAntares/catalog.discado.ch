@@ -840,7 +840,7 @@
 /* ===== LISTE PRODUITS DANS MODAL ===== */
 .product-list-item {
     display: grid;
-    grid-template-columns: 80px 1fr 150px 120px;
+    grid-template-columns: 80px 1fr 120px 180px; /* Augmenté la dernière colonne */
     gap: 16px;
     padding: 16px;
     border: 1px solid #e2e8f0;
@@ -850,43 +850,11 @@
     transition: box-shadow 0.2s;
 }
 
-.product-list-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.product-list-image {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 6px;
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-}
-
-.product-list-info h4 {
-    margin: 0 0 8px 0;
-    font-size: 16px;
-    color: #2d3748;
-    font-weight: 600;
-}
-
-.product-list-info p {
-    margin: 4px 0;
-    font-size: 14px;
-    color: #718096;
-}
-
-.product-list-price {
-    font-size: 18px;
-    font-weight: 700;
-    color: #4299e1;
-    text-align: center;
-}
-
 .product-list-actions {
     display: flex;
     align-items: center;
     gap: 8px;
+    justify-content: flex-end; /* Alignement à droite */
 }
 
 .product-list-actions input {
@@ -900,6 +868,7 @@
 }
 
 .product-list-actions button {
-    padding: 8px 16px;
+    padding: 8px 12px;
     white-space: nowrap;
+    flex-shrink: 0; /* Empêche le bouton de rétrécir */
 }

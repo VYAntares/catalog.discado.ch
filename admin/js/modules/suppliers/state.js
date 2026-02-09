@@ -84,38 +84,36 @@ export const state = {
   }
   
   export function getCurrentSupplierOrders() {
-	return state.currentSupplierOrders;
+    return state.currentSupplierOrders;
   }
   
   // ===== GESTION DES VUES =====
-  
   function updateViewVisibility() {
-	// Cacher toutes les vues
-	document.querySelectorAll('.view').forEach(view => {
-	  view.classList.remove('active');
-	});
-  
-	// Afficher la vue demandée
-	switch(state.currentView) {
-	  case 'list':
-		document.getElementById('suppliersListView')?.classList.add('active');
-		break;
-	  case 'supplier':
-		document.getElementById('supplierDetailsView')?.classList.add('active');
-		break;
-	  case 'order':
-		document.getElementById('orderDetailsView')?.classList.add('active');
-		break;
-	}
+    // Cacher toutes les vues
+    document.querySelectorAll('.view').forEach(view => {
+      view.classList.remove('active');
+    });
+    
+    // Afficher la vue demandée
+    switch(state.currentView) {
+      case 'list':
+        document.getElementById('suppliersListView')?.classList.add('active');
+        break;
+      case 'supplier':
+        document.getElementById('supplierDetailsView')?.classList.add('active');
+        break;
+      case 'order':
+        document.getElementById('orderDetailsView')?.classList.add('active');
+        break;
+    }
   }
-
-let currentOrder = null;
-
-export function setCurrentOrder(order) {
-  currentOrder = order;
-  currentOrderId = order ? order.id : null;
-}
-
-export function getCurrentOrder() {
-  return currentOrder;
-}
+  
+  // ===== COMMANDE COURANTE =====
+  export function setCurrentOrder(order) {
+    state.currentOrderData = order;
+    state.currentOrderId = order ? order.id : null;
+  }
+  
+  export function getCurrentOrder() {
+    return state.currentOrderData;
+  }
