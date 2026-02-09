@@ -45,12 +45,15 @@ function fillOrderInfo(order) {
   document.getElementById('orderDate').textContent = Utils.formatDate(order.order_date);
   document.getElementById('orderStatusSelect').value = order.status;
   document.getElementById('orderTotalAmount').value = (order.total_amount || 0).toFixed(2);
-  document.getElementById('orderAmountPaid').value = (order.amount_paid || 0).toFixed(2);
-  
-  const remaining = Utils.calculateRemaining(order.total_amount, order.amount_paid);
-  document.getElementById('orderRemaining').value = remaining.toFixed(2);
-  
+
+  // Set default payment date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('paymentDate').value = today;
+
   document.getElementById('orderNotes').value = order.notes || '';
+
+  // Load payments history and update summaries
+  loadPayments();
 }
 
 /**
@@ -103,15 +106,10 @@ function attachEventListeners() {
   statusSelect.removeEventListener('change', handleStatusChange);
   statusSelect.addEventListener('change', handleStatusChange);
 
-  // Sauvegarde des montants
+  // Sauvegarde des paiements
   const saveBtn = document.getElementById('saveAmountsBtn');
-  saveBtn.removeEventListener('click', handleSaveAmounts);
-  saveBtn.addEventListener('click', handleSaveAmounts);
-
-  // Calcul automatique du reste à payer
-  const amountPaidInput = document.getElementById('orderAmountPaid');
-  amountPaidInput.removeEventListener('input', handleAmountPaidChange);
-  amountPaidInput.addEventListener('input', handleAmountPaidChange);
+  saveBtn.removeEventListener('click', handleSavePayment);
+  saveBtn.addEventListener('click', handleSavePayment);
 
   // Suppression commande
   const deleteBtn = document.getElementById('deleteOrderBtn');
@@ -139,32 +137,126 @@ async function handleStatusChange(event) {
 }
 
 /**
- * Gère la sauvegarde des montants
+ * Gère l'ajout d'un paiement
  */
-async function handleSaveAmounts() {
+async function handleSavePayment() {
   const orderId = State.getCurrentOrderId();
-  const totalAmount = parseFloat(document.getElementById('orderTotalAmount').value);
-  const amountPaid = parseFloat(document.getElementById('orderAmountPaid').value);
+  const amountUsd = parseFloat(document.getElementById('paymentAmountUsd').value) || 0;
+  const amountChf = parseFloat(document.getElementById('paymentAmountChf').value) || 0;
+  const paymentDate = document.getElementById('paymentDate').value;
+
+  if (!amountUsd && !amountChf) {
+    alert('Veuillez entrer un montant USD ou CHF');
+    return;
+  }
+  if (!paymentDate) {
+    alert('Veuillez sélectionner une date de paiement');
+    return;
+  }
 
   try {
-    await API.updateSupplierOrderAmounts(orderId, totalAmount, amountPaid);
-    
-    // Mettre à jour le champ "Reste à payer"
-    const remaining = Utils.calculateRemaining(totalAmount, amountPaid);
-    document.getElementById('orderRemaining').value = remaining.toFixed(2);
+    await API.addSupplierOrderPayment(orderId, amountUsd, amountChf, paymentDate);
+
+    // Reset input fields
+    document.getElementById('paymentAmountUsd').value = '';
+    document.getElementById('paymentAmountChf').value = '';
+
+    // Reload payments and order data
+    await loadPayments();
   } catch (error) {
-    console.error('Erreur mise à jour montants:', error);
+    console.error('Erreur ajout paiement:', error);
   }
 }
 
 /**
- * Gère le changement du montant payé
+ * Charge et affiche l'historique des paiements
  */
-function handleAmountPaidChange() {
-  const total = parseFloat(document.getElementById('orderTotalAmount').value) || 0;
-  const paid = parseFloat(document.getElementById('orderAmountPaid').value) || 0;
-  const remaining = Utils.calculateRemaining(total, paid);
-  document.getElementById('orderRemaining').value = remaining.toFixed(2);
+async function loadPayments() {
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    const payments = await API.getSupplierOrderPayments(orderId);
+    const totalAmount = parseFloat(document.getElementById('orderTotalAmount').value) || 0;
+
+    // Calculate totals from payments
+    let totalPaidUsd = 0;
+    let totalPaidChf = 0;
+    payments.forEach(p => {
+      totalPaidUsd += p.amount_usd || 0;
+      totalPaidChf += p.amount_chf || 0;
+    });
+
+    // Update summary fields
+    document.getElementById('orderTotalPaidUsd').value = totalPaidUsd.toFixed(2);
+    document.getElementById('orderTotalPaidChf').value = totalPaidChf.toFixed(2);
+    document.getElementById('orderRemaining').value = (totalAmount - totalPaidUsd).toFixed(2);
+
+    // Render payments table
+    renderPaymentsTable(payments);
+  } catch (error) {
+    console.error('Erreur chargement paiements:', error);
+  }
+}
+
+/**
+ * Affiche le tableau d'historique des paiements
+ */
+function renderPaymentsTable(payments) {
+  const container = document.getElementById('paymentsHistoryContainer');
+
+  if (!payments || payments.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const rows = payments.map(p => `
+    <tr>
+      <td>${Utils.formatDate(p.payment_date)}</td>
+      <td>${(p.amount_usd || 0).toFixed(2)} USD</td>
+      <td>${(p.amount_chf || 0).toFixed(2)} CHF</td>
+      <td>
+        <button class="btn btn-danger btn-sm delete-payment-btn" data-payment-id="${p.id}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <h4 style="margin: 24px 0 12px 0; color: #4a5568;">Historique des paiements</h4>
+    <table class="payments-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Montant USD</th>
+          <th>Montant CHF</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  // Attach delete listeners
+  container.querySelectorAll('.delete-payment-btn').forEach(btn => {
+    btn.addEventListener('click', () => handleDeletePayment(btn.dataset.paymentId));
+  });
+}
+
+/**
+ * Supprime un paiement
+ */
+async function handleDeletePayment(paymentId) {
+  if (!confirm('Supprimer ce paiement ?')) return;
+
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    await API.deleteSupplierOrderPayment(orderId, paymentId);
+    await loadPayments();
+  } catch (error) {
+    console.error('Erreur suppression paiement:', error);
+  }
 }
 
 /**

@@ -1729,6 +1729,64 @@ app.patch('/api/order-suppliers/:id/amounts', requireLogin, requireAdmin, (req, 
   }
 });
 
+// === PAIEMENTS FOURNISSEURS ===
+
+// Lister les paiements d'une commande
+app.get('/api/order-suppliers/:id/payments', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const payments = dbModule.orderSupplierPayments.getByOrderId.all(req.params.id);
+    res.json(payments);
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+// Ajouter un paiement
+app.post('/api/order-suppliers/:id/payments', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { amount_usd, amount_chf, payment_date } = req.body;
+    const orderId = req.params.id;
+
+    dbModule.orderSupplierPayments.insert.run(orderId, amount_usd || 0, amount_chf || 0, payment_date);
+
+    // Recalculer amount_paid sur la commande
+    const sums = dbModule.orderSupplierPayments.sumByOrderId.get(orderId);
+    dbModule.orderSupplier.updateAmounts.run(
+      dbModule.orderSupplier.getById.get(orderId).total_amount,
+      sums.total_paid_usd,
+      orderId
+    );
+
+    res.json({ success: true, message: 'Payment added successfully' });
+  } catch (error) {
+    console.error('Error adding payment:', error);
+    res.status(500).json({ error: 'Failed to add payment' });
+  }
+});
+
+// Supprimer un paiement
+app.delete('/api/order-suppliers/:id/payments/:paymentId', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { id: orderId, paymentId } = req.params;
+
+    dbModule.orderSupplierPayments.delete.run(paymentId);
+
+    // Recalculer amount_paid sur la commande
+    const sums = dbModule.orderSupplierPayments.sumByOrderId.get(orderId);
+    dbModule.orderSupplier.updateAmounts.run(
+      dbModule.orderSupplier.getById.get(orderId).total_amount,
+      sums.total_paid_usd,
+      orderId
+    );
+
+    res.json({ success: true, message: 'Payment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting payment:', error);
+    res.status(500).json({ error: 'Failed to delete payment' });
+  }
+});
+
 // Supprimer un item
 app.delete('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) => {
   try {

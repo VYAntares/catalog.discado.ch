@@ -335,6 +335,57 @@ async function updateSupplierOrderAmounts(orderId, total_amount, amount_paid) {
   }
 }
 
+// Récupère les paiements d'une commande fournisseur
+async function getSupplierOrderPayments(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/payments`, API_CONFIG);
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Ajoute un paiement à une commande fournisseur
+async function addSupplierOrderPayment(orderId, amount_usd, amount_chf, payment_date) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/payments`, {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify({ amount_usd, amount_chf, payment_date })
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification('Paiement enregistré avec succès', 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Supprime un paiement d'une commande fournisseur
+async function deleteSupplierOrderPayment(orderId, paymentId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/payments/${paymentId}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification('Paiement supprimé', 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Ajoute un item à une commande fournisseur
 async function addSupplierOrderItem(orderId, itemData) {
   try {
@@ -420,5 +471,8 @@ export {
   updateSupplierOrderAmounts,
   addSupplierOrderItem,
   deleteSupplierOrderItem,
-  deleteSupplierOrder
+  deleteSupplierOrder,
+  getSupplierOrderPayments,
+  addSupplierOrderPayment,
+  deleteSupplierOrderPayment
 };

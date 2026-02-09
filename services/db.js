@@ -19,7 +19,7 @@ db.pragma('foreign_keys = ON');
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -134,6 +134,26 @@ function initDatabase() {
         }
     }
 
+    // Ajouter la colonne stats si elle n'existe pas
+    if (!columnExists('user_permissions', 'stats')) {
+        try {
+            db.exec(`ALTER TABLE user_permissions ADD COLUMN stats INTEGER DEFAULT 0`);
+            console.log('✅ Colonne stats ajoutée à user_permissions');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne stats:', error.message);
+        }
+    }
+
+    // Ajouter la colonne commission_status si elle n'existe pas
+    if (!columnExists('invoices', 'commission_status')) {
+        try {
+            db.exec(`ALTER TABLE invoices ADD COLUMN commission_status TEXT DEFAULT 'not_received'`);
+            console.log('✅ Colonne commission_status ajoutée à invoices');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne commission_status:', error.message);
+        }
+    }
+
     // Création de la table suppliers
     db.exec(`
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -181,6 +201,19 @@ function initDatabase() {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (order_supplier_id) REFERENCES order_supplier(id) ON DELETE CASCADE,
           FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+        )
+      `);
+
+    // Table pour les paiements des commandes fournisseurs
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS order_supplier_payments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          order_supplier_id INTEGER NOT NULL,
+          amount_usd DECIMAL(10,2) NOT NULL DEFAULT 0,
+          amount_chf DECIMAL(10,2) DEFAULT 0,
+          payment_date DATE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (order_supplier_id) REFERENCES order_supplier(id) ON DELETE CASCADE
         )
       `);
 
@@ -390,6 +423,29 @@ module.exports = {
     },
 
     // Gestion des items des commandes fournisseurs
+    orderSupplierPayments: {
+        getByOrderId: db.prepare(`
+        SELECT * FROM order_supplier_payments
+        WHERE order_supplier_id = ?
+        ORDER BY payment_date DESC, created_at DESC
+        `),
+
+        insert: db.prepare(`
+        INSERT INTO order_supplier_payments (
+            order_supplier_id, amount_usd, amount_chf, payment_date
+        ) VALUES (?, ?, ?, ?)
+        `),
+
+        delete: db.prepare('DELETE FROM order_supplier_payments WHERE id = ?'),
+
+        sumByOrderId: db.prepare(`
+        SELECT COALESCE(SUM(amount_usd), 0) as total_paid_usd,
+               COALESCE(SUM(amount_chf), 0) as total_paid_chf
+        FROM order_supplier_payments
+        WHERE order_supplier_id = ?
+        `)
+    },
+
     orderSupplierItems: {
         getAll: db.prepare('SELECT * FROM order_supplier_items'),
         
