@@ -64,7 +64,7 @@ class ComptaClientTable {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement des factures', 'error');
             document.getElementById('invoicesTableBody').innerHTML = 
-                '<tr><td colspan="11" class="error-message">Impossible de charger les factures</td></tr>';
+                '<tr><td colspan="13" class="error-message">Impossible de charger les factures</td></tr>';
         }
     }
 
@@ -90,7 +90,7 @@ class ComptaClientTable {
         const tbody = document.getElementById('invoicesTableBody');
         
         if (!this.invoices || this.invoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="11" class="no-data">Aucune facture trouvée</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="13" class="no-data">Aucune facture trouvée</td></tr>';
             return;
         }
 
@@ -134,7 +134,9 @@ class ComptaClientTable {
 				<td class="editable-cell status-cell" data-field="payment_status" data-type="select">
 					<span class="status-badge ${statusClass}">${statusText}</span>
 				</td>
-				<!-- NOUVELLE COLONNE -->
+				<td class="editable-cell status-cell" data-field="commission_status" data-type="commission_select">
+					<span class="status-badge ${invoice.commission_status === 'received' ? 'status-paid' : 'status-unpaid'}">${invoice.commission_status === 'received' ? 'Reçu' : 'Non reçu'}</span>
+				</td>
 				<td class="text-center">
 					<a href="/api/admin/download-invoice/${invoice.order_id}/${this.clientId}" 
 					class="action-btn download-btn" 
@@ -186,6 +188,13 @@ class ComptaClientTable {
                 <option value="partial" ${invoice.payment_status === 'partial' ? 'selected' : ''}>Partiel</option>
                 <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
             `;
+        } else if (type === 'commission_select') {
+            input = document.createElement('select');
+            input.className = 'inline-edit-select';
+            input.innerHTML = `
+                <option value="not_received" ${invoice.commission_status !== 'received' ? 'selected' : ''}>Non reçu</option>
+                <option value="received" ${invoice.commission_status === 'received' ? 'selected' : ''}>Reçu</option>
+            `;
         } else if (type === 'date') {
             input = document.createElement('input');
             input.type = 'date';
@@ -221,7 +230,7 @@ class ComptaClientTable {
             this.editingCells.delete(cell);
         };
 
-        if (type === 'select') {
+        if (type === 'select' || type === 'commission_select') {
             input.addEventListener('change', save);
         } else {
             input.addEventListener('blur', save);
@@ -272,7 +281,7 @@ class ComptaClientTable {
             } else if (field === 'payment_status') {
                 let amountPaid = invoice.amount_paid;
                 let amountDue = invoice.amount_due;
-                
+
                 if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
                     amountPaid = invoice.total_ttc;
                     amountDue = 0;
@@ -280,12 +289,16 @@ class ComptaClientTable {
                     amountPaid = 0;
                     amountDue = invoice.total_ttc;
                 }
-                
+
                 updateData = {
                     amount_paid: amountPaid,
                     amount_due: amountDue,
                     payment_status: newValue,
                     paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            } else if (field === 'commission_status') {
+                updateData = {
+                    commission_status: newValue
                 };
             }
 
@@ -340,7 +353,8 @@ class ComptaClientTable {
 			'Montant encaissé',
 			'Solde dû',
 			'Date paiement',
-			'Statut'
+			'Statut',
+			'Commissions'
 		];
 
 		const sortedInvoices = [...this.invoices].sort((a, b) => {
@@ -380,7 +394,8 @@ class ComptaClientTable {
 				this.formatNumberForCSV(invoice.amount_paid),
 				this.formatNumberForCSV(invoice.amount_due),
 				invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
-				this.getStatusText(invoice.payment_status)
+				this.getStatusText(invoice.payment_status),
+				invoice.commission_status === 'received' ? 'Reçu' : 'Non reçu'
 			].join(',');
 		});
 
@@ -398,6 +413,7 @@ class ComptaClientTable {
 			'',
 			this.formatNumberForCSV(totals.amount_paid),
 			this.formatNumberForCSV(totals.amount_due),
+			'',
 			'',
 			''
 		].join(',');

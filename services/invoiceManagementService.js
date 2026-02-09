@@ -132,31 +132,43 @@ function getInvoiceDetails(invoiceId) {
  */
 function updatePaymentStatus(invoiceId, paymentData) {
     try {
-        const { amount_paid, amount_due, payment_status, paid_date } = paymentData;
-        
+        const { amount_paid, amount_due, payment_status, paid_date, commission_status } = paymentData;
+
         const invoice = db.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
         if (!invoice) {
             return { success: false, message: 'Facture non trouvée' };
         }
-        
-        const updateStmt = db.db.prepare(`
-            UPDATE invoices 
-            SET 
-                amount_paid = ?,
-                amount_due = ?,
-                payment_status = ?,
-                paid_date = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `);
-        
-        updateStmt.run(
-            amount_paid,
-            amount_due,
-            payment_status,
-            paid_date || null,
-            invoiceId
-        );
+
+        // If only commission_status is being updated
+        if (commission_status !== undefined && amount_paid === undefined) {
+            const updateCommissionStmt = db.db.prepare(`
+                UPDATE invoices
+                SET
+                    commission_status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `);
+            updateCommissionStmt.run(commission_status, invoiceId);
+        } else {
+            const updateStmt = db.db.prepare(`
+                UPDATE invoices
+                SET
+                    amount_paid = ?,
+                    amount_due = ?,
+                    payment_status = ?,
+                    paid_date = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `);
+
+            updateStmt.run(
+                amount_paid,
+                amount_due,
+                payment_status,
+                paid_date || null,
+                invoiceId
+            );
+        }
         
         return { 
             success: true, 
