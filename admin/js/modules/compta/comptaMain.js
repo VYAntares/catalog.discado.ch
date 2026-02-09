@@ -709,6 +709,8 @@ class ComptaMain {
                 const groupTotal = groupClients.reduce((sum, c) => sum + (c.total_amount || 0), 0);
                 const groupPaid = groupClients.reduce((sum, c) => sum + (c.total_paid || 0), 0);
                 const groupDue = groupClients.reduce((sum, c) => sum + (c.total_due || 0), 0);
+                const groupCommissionTotal = groupClients.reduce((sum, c) => sum + (c.commission_total || 0), 0);
+                const groupCommissionReceived = groupClients.reduce((sum, c) => sum + (c.commission_received || 0), 0);
 
                 // Ligne d'en-tête du groupe
                 html += `
@@ -716,7 +718,7 @@ class ComptaMain {
                         <td colspan="8" style="padding: 10px 15px; font-weight: bold;">
                             <i class="fas fa-users"></i> ${source}
                             <span style="float: right; font-size: 0.9em;">
-                                ${groupClients.length} client(s) | Total: ${formatCurrency(groupTotal)} | Payé: ${formatCurrency(groupPaid)} | Dû: ${formatCurrency(groupDue)}
+                                ${groupClients.length} client(s) | Total: ${formatCurrency(groupTotal)} | Payé: ${formatCurrency(groupPaid)} | Dû: ${formatCurrency(groupDue)} | Commissions: ${formatCurrency(groupCommissionReceived)} reçu sur ${formatCurrency(groupCommissionTotal)} à recevoir
                             </span>
                         </td>
                     </tr>
