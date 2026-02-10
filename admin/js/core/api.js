@@ -404,10 +404,14 @@ async function deleteSupplierOrderPayment(orderId, paymentId) {
 // Ajoute un item à une commande fournisseur
 async function addSupplierOrderItem(orderId, itemData) {
   try {
+    // itemData peut maintenant contenir batch_number
     const response = await fetch(`/api/order-suppliers/${orderId}/items`, {
       ...API_CONFIG,
       method: 'POST',
-      body: JSON.stringify(itemData)
+      body: JSON.stringify({
+        ...itemData,
+        batch_number: itemData.batch_number || 1 // Par défaut batch 1
+      })
     });
     
     const result = await handleApiResponse(response);
@@ -422,26 +426,29 @@ async function addSupplierOrderItem(orderId, itemData) {
   }
 }
 
+
 // Met à jour un item d'une commande fournisseur (prix, quantité)
-async function updateSupplierOrderItem(itemId, unitPrice, quantity) {
+async function updateSupplierOrderItem(itemId, itemData) {
   try {
-    const response = await fetch(`/api/order-supplier-items/${itemId}`, {
+    // itemData peut maintenant contenir batch_number
+    const response = await fetch(`/api/order-suppliers/items/${itemId}`, {
       ...API_CONFIG,
       method: 'PUT',
-      body: JSON.stringify({ unit_price: unitPrice, quantity })
+      body: JSON.stringify(itemData)
     });
-
+    
     const result = await handleApiResponse(response);
-
+    
     if (result.success) {
-      Notification.showNotification('Article mis à jour', 'success');
+      Notification.showNotification('Article mis à jour avec succès', 'success');
     }
-
+    
     return result;
   } catch (error) {
     throw error;
   }
 }
+
 
 // Supprime un item d'une commande fournisseur
 async function deleteSupplierOrderItem(itemId) {
@@ -483,6 +490,101 @@ async function deleteSupplierOrder(orderId) {
   }
 }
 
+// Récupère les statistiques des batch d'une commande
+async function getSupplierOrderBatchStats(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/batch-stats`, API_CONFIG);
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère les items d'un batch spécifique
+async function getSupplierOrderBatchItems(orderId, batchNumber) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/batches/${batchNumber}`, API_CONFIG);
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Crée un nouveau batch pour une commande
+async function createSupplierOrderBatch(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/batches/create`, {
+      ...API_CONFIG,
+      method: 'POST'
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification(`Batch ${result.batch_number} créé avec succès`, 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Déplace/divise un item vers un autre batch
+async function moveItemToBatch(orderId, itemId, targetBatch, quantityToMove) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/items/${itemId}/move-to-batch`, {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify({
+        target_batch: targetBatch,
+        quantity_to_move: quantityToMove
+      })
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      const action = result.action === 'split' ? 'divisé et déplacé' : 'déplacé';
+      Notification.showNotification(`Article ${action} avec succès`, 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Valide la cohérence des quantités d'un produit
+async function validateProductQuantities(orderId, productId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/validate-quantities/${productId}`, API_CONFIG);
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Supprime un batch vide
+async function deleteSupplierOrderBatch(orderId, batchNumber) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/batches/${batchNumber}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+    
+    const result = await handleApiResponse(response);
+    
+    if (result.success) {
+      Notification.showNotification(`Batch ${batchNumber} supprimé`, 'success');
+    }
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export {
   fetchPendingOrders,
   fetchTreatedOrders,
@@ -512,5 +614,11 @@ export {
   deleteSupplierOrder,
   getSupplierOrderPayments,
   addSupplierOrderPayment,
-  deleteSupplierOrderPayment
+  deleteSupplierOrderPayment,
+  getSupplierOrderBatchStats,
+  getSupplierOrderBatchItems,
+  createSupplierOrderBatch,
+  moveItemToBatch,
+  validateProductQuantities,
+  deleteSupplierOrderBatch
 };

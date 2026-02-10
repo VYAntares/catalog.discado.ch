@@ -1645,9 +1645,11 @@ app.post('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
 
     const orderId = result.lastInsertRowid;
 
-    // Ajouter les items si présents
+    // Ajouter les items si présents (tous dans batch 1 par défaut)
     if (items && items.length > 0) {
       items.forEach(item => {
+        const batchNumber = item.batch_number || 1; // Par défaut batch 1
+        
         dbModule.orderSupplierItems.add.run(
           orderId,
           item.product_id || null,
@@ -1656,7 +1658,8 @@ app.post('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
           item.quantity,
           item.total_price,
           item.category || null,
-          item.image_url || null
+          item.image_url || null,
+          batchNumber
         );
       });
     }
@@ -1803,34 +1806,39 @@ app.delete('/api/order-suppliers/:id/payments/:paymentId', requireLogin, require
 app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) => {
   try {
     const item = dbModule.orderSupplierItems.getById.get(req.params.id);
+    
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    const { unit_price, quantity } = req.body;
-    const newUnitPrice = parseFloat(unit_price);
-    const newQuantity = parseInt(quantity);
-
-    if (isNaN(newUnitPrice) || isNaN(newQuantity) || newQuantity < 1) {
-      return res.status(400).json({ error: 'Invalid price or quantity' });
-    }
-
-    const newTotalPrice = newUnitPrice * newQuantity;
-    const orderId = item.order_supplier_id;
+    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number } = req.body;
+    
+    const newQuantity = quantity !== undefined ? quantity : item.quantity;
+    const newUnitPrice = unit_price !== undefined ? unit_price : item.unit_price;
+    const newTotalPrice = newQuantity * newUnitPrice;
+    const newBatchNumber = batch_number !== undefined ? batch_number : item.batch_number;
 
     dbModule.orderSupplierItems.update.run(
-      item.product_id, item.product_name, newUnitPrice,
-      newQuantity, newTotalPrice, item.category, item.image_url,
+      product_id !== undefined ? product_id : item.product_id,
+      product_name || item.product_name,
+      newUnitPrice,
+      newQuantity,
+      newTotalPrice,
+      category !== undefined ? category : item.category,
+      image_url !== undefined ? image_url : item.image_url,
+      newBatchNumber,
       req.params.id
     );
 
     // Recalculer le total de la commande
-    const totalResult = dbModule.orderSupplierItems.getTotalByOrderId.get(orderId);
+    const totalResult = dbModule.orderSupplierItems.getTotalByOrderId.get(item.order_supplier_id);
     const newTotal = totalResult.total || 0;
-    const order = dbModule.orderSupplier.getById.get(orderId);
-    dbModule.orderSupplier.updateAmounts.run(newTotal, order.amount_paid, orderId);
+
+    const order = dbModule.orderSupplier.getById.get(item.order_supplier_id);
+    dbModule.orderSupplier.updateAmounts.run(newTotal, order.amount_paid, item.order_supplier_id);
 
     res.json({ success: true, message: 'Item updated successfully' });
+
   } catch (error) {
     console.error('Error updating item:', error);
     res.status(500).json({ error: 'Failed to update item' });
@@ -1879,13 +1887,14 @@ app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) =>
 app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req, res) => {
   try {
     const { orderId } = req.params;
-    const { product_id, product_name, unit_price, quantity, category, image_url } = req.body;
+    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number } = req.body;
 
     if (!product_name || !unit_price || !quantity) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const total_price = unit_price * quantity;
+    const batchNum = batch_number || 1; // Par défaut batch 1
 
     // Ajouter l'item
     dbModule.orderSupplierItems.add.run(
@@ -1896,7 +1905,8 @@ app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req
       quantity,
       total_price,
       category || null,
-      image_url || null
+      image_url || null,
+      batchNum
     );
 
     // Recalculer le total de la commande
@@ -1913,6 +1923,286 @@ app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req
     res.status(500).json({ error: 'Failed to add item' });
   }
 });
+
+
+// ============================================
+// 🆕 GESTION DES BATCH
+// ============================================
+
+// Récupérer les statistiques des batch d'une commande
+app.get('/api/order-suppliers/:orderId/batch-stats', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // Vérifier que la commande existe
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    // Récupérer les stats par batch
+    const batchStats = dbModule.orderSupplierItems.getBatchStatsByOrderId.all(orderId);
+    
+    // Récupérer le nombre total de batch
+    const batchCount = dbModule.orderSupplierItems.countBatchesByOrderId.get(orderId);
+    
+    res.json({
+      order_id: orderId,
+      batch_count: batchCount.batch_count,
+      batches: batchStats
+    });
+    
+  } catch (error) {
+    console.error('Error fetching batch stats:', error);
+    res.status(500).json({ error: 'Failed to fetch batch stats' });
+  }
+});
+
+// Récupérer les items d'un batch spécifique
+app.get('/api/order-suppliers/:orderId/batches/:batchNumber', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId, batchNumber } = req.params;
+    
+    const items = dbModule.orderSupplierItems.getByOrderIdAndBatch.all(
+      orderId, 
+      parseInt(batchNumber)
+    );
+    
+    res.json(items);
+    
+  } catch (error) {
+    console.error('Error fetching batch items:', error);
+    res.status(500).json({ error: 'Failed to fetch batch items' });
+  }
+});
+
+// Créer un nouveau batch (retourne le numéro du nouveau batch)
+app.post('/api/order-suppliers/:orderId/batches/create', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    const batches = dbModule.orderSupplierItems.getBatchNumbersByOrderId.all(orderId);
+    
+    let newBatchNumber = 1;
+    if (batches.length > 0) {
+      const maxBatch = Math.max(...batches.map(b => b.batch_number));
+      newBatchNumber = maxBatch + 1;
+    }
+    
+    // 🆕 Créer un item placeholder pour que le batch existe
+    dbModule.orderSupplierItems.add.run(
+      orderId,
+      null,  // product_id
+      `[Batch ${newBatchNumber} - Glissez des articles ici]`,  // product_name
+      0,     // unit_price
+      0,     // quantity
+      0,     // total_price
+      'placeholder',  // category
+      null,  // image_url
+      newBatchNumber  // batch_number
+    );
+    
+    res.json({
+      success: true,
+      message: `Batch ${newBatchNumber} créé`,
+      batch_number: newBatchNumber
+    });
+    
+  } catch (error) {
+    console.error('Error creating batch:', error);
+    res.status(500).json({ error: 'Failed to create batch' });
+  }
+});
+
+// Déplacer un item vers un autre batch (avec division de quantité)
+app.post('/api/order-suppliers/:orderId/items/:itemId/move-to-batch', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId, itemId } = req.params;
+    const { target_batch, quantity_to_move } = req.body;
+    
+    // Validation
+    if (!target_batch || !quantity_to_move) {
+      return res.status(400).json({ error: 'Missing required fields: target_batch, quantity_to_move' });
+    }
+    
+    if (quantity_to_move <= 0) {
+      return res.status(400).json({ error: 'Quantity must be greater than 0' });
+    }
+    
+    // Récupérer l'item source
+    const sourceItem = dbModule.orderSupplierItems.getById.get(itemId);
+    
+    if (!sourceItem) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    if (sourceItem.order_supplier_id !== parseInt(orderId)) {
+      return res.status(400).json({ error: 'Item does not belong to this order' });
+    }
+    
+    // Vérifier que la quantité à déplacer n'est pas supérieure à la quantité disponible
+    if (quantity_to_move > sourceItem.quantity) {
+      return res.status(400).json({ 
+        error: `Cannot move ${quantity_to_move} units. Only ${sourceItem.quantity} available.` 
+      });
+    }
+    
+    // Vérifier que le batch cible est différent du batch source
+    if (sourceItem.batch_number === parseInt(target_batch)) {
+      return res.status(400).json({ 
+        error: 'Target batch must be different from source batch' 
+      });
+    }
+    
+    // CAS 1 : Déplacer toute la quantité (simple UPDATE)
+    if (quantity_to_move === sourceItem.quantity) {
+      dbModule.orderSupplierItems.updateItemBatchNumber.run(target_batch, itemId);
+      
+      return res.json({
+        success: true,
+        message: 'Item moved successfully',
+        action: 'moved',
+        item_id: itemId,
+        from_batch: sourceItem.batch_number,
+        to_batch: target_batch,
+        quantity: quantity_to_move
+      });
+    }
+    
+    // CAS 2 : Division de l'item (UPDATE source + INSERT nouveau)
+    const remainingQuantity = sourceItem.quantity - quantity_to_move;
+    const pricePerUnit = sourceItem.unit_price;
+    
+    // Mettre à jour l'item source avec la quantité restante
+    const newSourceTotal = remainingQuantity * pricePerUnit;
+    dbModule.orderSupplierItems.update.run(
+      sourceItem.product_id,
+      sourceItem.product_name,
+      sourceItem.unit_price,
+      remainingQuantity,
+      newSourceTotal,
+      sourceItem.category,
+      sourceItem.image_url,
+      sourceItem.batch_number, // Garde le batch original
+      itemId
+    );
+    
+    // Créer un nouvel item dans le batch cible
+    const newItemTotal = quantity_to_move * pricePerUnit;
+    dbModule.orderSupplierItems.add.run(
+      sourceItem.order_supplier_id,
+      sourceItem.product_id,
+      sourceItem.product_name,
+      sourceItem.unit_price,
+      quantity_to_move,
+      newItemTotal,
+      sourceItem.category,
+      sourceItem.image_url,
+      target_batch
+    );
+    
+    // Recalculer le total de la commande (reste inchangé normalement)
+    const totalResult = dbModule.orderSupplierItems.getTotalByOrderId.get(orderId);
+    const newTotal = totalResult.total || 0;
+    
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    dbModule.orderSupplier.updateAmounts.run(newTotal, order.amount_paid, orderId);
+    
+    res.json({
+      success: true,
+      message: 'Item split and moved successfully',
+      action: 'split',
+      original_item_id: itemId,
+      from_batch: sourceItem.batch_number,
+      to_batch: target_batch,
+      quantity_moved: quantity_to_move,
+      quantity_remaining: remainingQuantity
+    });
+    
+  } catch (error) {
+    console.error('Error moving item to batch:', error);
+    res.status(500).json({ error: 'Failed to move item: ' + error.message });
+  }
+});
+
+// Valider la cohérence des quantités pour un produit
+app.get('/api/order-suppliers/:orderId/validate-quantities/:productId', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId, productId } = req.params;
+    
+    // Récupérer tous les items de ce produit dans tous les batch
+    const items = dbModule.orderSupplierItems.getByOrderId.all(orderId)
+      .filter(item => item.product_id === parseInt(productId));
+    
+    if (items.length === 0) {
+      return res.status(404).json({ error: 'Product not found in this order' });
+    }
+    
+    // Calculer le total
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Détail par batch
+    const batchDetails = items.map(item => ({
+      batch_number: item.batch_number,
+      quantity: item.quantity,
+      item_id: item.id
+    }));
+    
+    res.json({
+      product_id: productId,
+      product_name: items[0].product_name,
+      total_quantity: totalQuantity,
+      batch_count: items.length,
+      batches: batchDetails,
+      is_valid: true
+    });
+    
+  } catch (error) {
+    console.error('Error validating quantities:', error);
+    res.status(500).json({ error: 'Failed to validate quantities' });
+  }
+});
+
+// Supprimer un batch vide
+app.delete('/api/order-suppliers/:orderId/batches/:batchNumber', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { orderId, batchNumber } = req.params;
+    
+    // Vérifier que le batch est vide
+    const items = dbModule.orderSupplierItems.getByOrderIdAndBatch.all(
+      orderId, 
+      parseInt(batchNumber)
+    );
+    
+    if (items.length > 0) {
+      return res.status(400).json({ 
+        error: `Cannot delete batch ${batchNumber}. It contains ${items.length} item(s). Move items first.` 
+      });
+    }
+    
+    // Batch vide, on peut le supprimer (mais en fait il n'y a rien à supprimer)
+    // Les batch sont virtuels, définis par les items
+    
+    res.json({
+      success: true,
+      message: `Batch ${batchNumber} deleted (was empty)`,
+      batch_number: parseInt(batchNumber)
+    });
+    
+  } catch (error) {
+    console.error('Error deleting batch:', error);
+    res.status(500).json({ error: 'Failed to delete batch' });
+  }
+});
+
+// ============================================
+// FIN DES ROUTES BATCH
+// ============================================
 
 // ===== API ROUTES - COMPTABILITÉ =====
 app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {

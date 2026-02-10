@@ -7,6 +7,8 @@ import * as API from '../../core/api.js';
 import * as State from './state.js';
 import * as Utils from './utils.js';
 import * as SupplierDetails from './supplierDetails.js';
+import * as BatchManager from './batchManager.js';
+
 /**
  * Affiche les détails d'une commande
  */
@@ -25,7 +27,7 @@ export async function show(orderId) {
     State.setCurrentOrder(order);
 
     fillOrderInfo(order);
-    renderItemsList(items);
+    await BatchManager.initBatchView(orderId);
     attachEventListeners();
   
   } catch (error) {

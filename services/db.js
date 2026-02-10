@@ -204,6 +204,19 @@ function initDatabase() {
         )
       `);
 
+        // Ajouter la colonne batch_number si elle n'existe pas (pour les bases existantes)
+    if (!columnExists('order_supplier_items', 'batch_number')) {
+        try {
+            db.exec(`
+                ALTER TABLE order_supplier_items 
+                ADD COLUMN batch_number INTEGER DEFAULT 1
+            `);
+            console.log('✅ Colonne batch_number ajoutée à order_supplier_items');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout batch_number:', error.message);
+        }
+    }
+
     // Table pour les paiements des commandes fournisseurs
     db.exec(`
         CREATE TABLE IF NOT EXISTS order_supplier_payments (
@@ -458,34 +471,89 @@ module.exports = {
         getById: db.prepare('SELECT * FROM order_supplier_items WHERE id = ?'),
         
         getByOrderId: db.prepare(`
-        SELECT * FROM order_supplier_items 
-        WHERE order_supplier_id = ? 
-        ORDER BY created_at
+            SELECT * FROM order_supplier_items 
+            WHERE order_supplier_id = ? 
+            ORDER BY batch_number ASC, created_at ASC
         `),
         
         add: db.prepare(`
-        INSERT INTO order_supplier_items (
-            order_supplier_id, product_id, product_name, 
-            unit_price, quantity, total_price, category, image_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO order_supplier_items (
+                order_supplier_id, product_id, product_name, 
+                unit_price, quantity, total_price, category, image_url,
+                batch_number
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `),
         
         update: db.prepare(`
-        UPDATE order_supplier_items 
-        SET product_id = ?, product_name = ?, unit_price = ?, 
-            quantity = ?, total_price = ?, category = ?, image_url = ?
-        WHERE id = ?
+            UPDATE order_supplier_items 
+            SET product_id = ?, product_name = ?, unit_price = ?, 
+                quantity = ?, total_price = ?, category = ?, image_url = ?,
+                batch_number = ?
+            WHERE id = ?
         `),
         
         delete: db.prepare('DELETE FROM order_supplier_items WHERE id = ?'),
         
         deleteByOrderId: db.prepare('DELETE FROM order_supplier_items WHERE order_supplier_id = ?'),
         
-        // Calculer le total d'une commande
         getTotalByOrderId: db.prepare(`
-        SELECT SUM(total_price) as total 
-        FROM order_supplier_items 
-        WHERE order_supplier_id = ?
+            SELECT SUM(total_price) as total 
+            FROM order_supplier_items 
+            WHERE order_supplier_id = ?
+        `),
+        
+        getByOrderIdAndBatch: db.prepare(`
+            SELECT * FROM order_supplier_items 
+            WHERE order_supplier_id = ? AND batch_number = ?
+            ORDER BY created_at ASC
+        `),
+        
+        getBatchNumbersByOrderId: db.prepare(`
+            SELECT DISTINCT batch_number 
+            FROM order_supplier_items 
+            WHERE order_supplier_id = ?
+            ORDER BY batch_number ASC
+        `),
+        
+        countBatchesByOrderId: db.prepare(`
+            SELECT COUNT(DISTINCT batch_number) as batch_count
+            FROM order_supplier_items 
+            WHERE order_supplier_id = ?
+        `),
+        
+        updateItemBatchNumber: db.prepare(`
+            UPDATE order_supplier_items 
+            SET batch_number = ?
+            WHERE id = ?
+        `),
+        
+        getBatchStatsByOrderId: db.prepare(`
+            SELECT 
+                batch_number,
+                COUNT(*) as item_count,
+                SUM(quantity) as total_quantity,
+                SUM(total_price) as total_amount
+            FROM order_supplier_items 
+            WHERE order_supplier_id = ?
+            GROUP BY batch_number
+            ORDER BY batch_number ASC
+        `),
+        
+        findItemInBatch: db.prepare(`
+            SELECT * FROM order_supplier_items 
+            WHERE order_supplier_id = ? 
+            AND product_id = ? 
+            AND batch_number = ?
+        `),
+        
+        getTotalQuantityByProduct: db.prepare(`
+            SELECT 
+                product_id,
+                product_name,
+                SUM(quantity) as total_quantity
+            FROM order_supplier_items 
+            WHERE order_supplier_id = ? AND product_id = ?
+            GROUP BY product_id, product_name
         `)
     },
 
