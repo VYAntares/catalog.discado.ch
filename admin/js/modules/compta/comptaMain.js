@@ -30,6 +30,14 @@ class ComptaMain {
     populateYearSelect() {
         const yearSelect = document.getElementById('yearSelect');
         const currentYear = new Date().getFullYear();
+
+        // Ajouter l'option "Toutes les années"
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'Toutes les années';
+        yearSelect.appendChild(allOption);
+
+        // Ajouter les années individuelles
         for (let year = currentYear; year >= 2025; year--) {
             const option = document.createElement('option');
             option.value = year;
@@ -42,7 +50,7 @@ class ComptaMain {
     setupEventListeners() {
         // Changement d'année
         document.getElementById('yearSelect').addEventListener('change', (e) => {
-            this.selectedYear = parseInt(e.target.value);
+            this.selectedYear = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
             const activeTab = document.querySelector('.compta-tab-btn.active').dataset.tab;
             if (activeTab === 'clients') {
                 this.loadClientsData();
@@ -217,24 +225,28 @@ class ComptaMain {
 
     async loadClientsData() {
         try {
-            const response = await fetch(`/api/invoices/clients-summary?year=${this.selectedYear}`);
+            const yearParam = this.selectedYear === 'all' ? '' : `year=${this.selectedYear}`;
+            const separator = yearParam ? '?' : '';
+            const response = await fetch(`/api/invoices/clients-summary${separator}${yearParam}`);
             const data = await response.json();
             this.allClientsData = data.clients || [];
             this.displayClientsData(this.allClientsData);
         } catch (error) {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement des clients', 'error');
-            document.getElementById('clientsSummaryTableBody').innerHTML = 
+            document.getElementById('clientsSummaryTableBody').innerHTML =
                 '<tr><td colspan="7" class="error">Impossible de charger les données</td></tr>';
         }
     }
 
     async loadUnpaidInvoices() {
         try {
-            const response = await fetch(`/api/invoices/unpaid?year=${this.selectedYear}`, {
+            const yearParam = this.selectedYear === 'all' ? '' : `year=${this.selectedYear}`;
+            const separator = yearParam ? '?' : '';
+            const response = await fetch(`/api/invoices/unpaid${separator}${yearParam}`, {
                 credentials: 'include'
             });
-            
+
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des factures impayées');
             }
@@ -246,7 +258,7 @@ class ComptaMain {
         } catch (error) {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement des factures impayées', 'error');
-            document.getElementById('unpaidInvoicesTableBody').innerHTML = 
+            document.getElementById('unpaidInvoicesTableBody').innerHTML =
                 '<tr><td colspan="12" class="error-message">Impossible de charger les factures</td></tr>';
         }
     }

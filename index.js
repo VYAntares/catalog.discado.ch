@@ -638,14 +638,14 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
         SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
         SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_delivered_price,
         COUNT(DISTINCT o.order_id) as order_count,
-        ROUND(oi.product_price, 2) as unit_price,
+        ROUND(AVG(oi.product_price), 2) as unit_price,
         oi.category
       FROM order_items oi
       INNER JOIN orders o ON oi.order_id = o.order_id
       WHERE oi.product_name = ? ${whereClause}
-      GROUP BY oi.category, oi.product_price
+      GROUP BY oi.category
     `;
-    
+
     const deliveredStmt = dbModule.db.prepare(deliveredQuery);
     const deliveredResult = deliveredStmt.get(...params);
     
@@ -668,12 +668,26 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
 
     const remainingStmt = dbModule.db.prepare(remainingQuery);
     const remainingResult = remainingStmt.get(...remainingParams);
-    
+
+    // 🆕 Requête pour les quantités en commande fournisseur non livrée
+    const supplierOrderQuery = `
+      SELECT
+        SUM(osi.quantity) AS supplier_order_quantity
+      FROM order_supplier_items osi
+      INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
+      WHERE osi.product_name = ?
+        AND os.status != 'Livrée'
+    `;
+
+    const supplierOrderStmt = dbModule.db.prepare(supplierOrderQuery);
+    const supplierOrderResult = supplierOrderStmt.get(productName);
+
     const total_delivered = deliveredResult?.total_delivered || 0;
     const total_remaining = remainingResult?.total_remaining || 0;
     const sum_total_delivered_price = deliveredResult?.sum_total_delivered_price || 0;
     const sum_total_remaining_price = remainingResult?.sum_total_remaining_price || 0;
-    
+    const supplier_order_quantity = supplierOrderResult?.supplier_order_quantity || 0;
+
     const result = {
       product_name: productName,
       category: deliveredResult?.category || null,
@@ -684,7 +698,8 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
       sum_total_remaining_price: sum_total_remaining_price,
       sum_total_quantity_price: sum_total_delivered_price + sum_total_remaining_price,
       unit_price: deliveredResult?.unit_price || 0,
-      order_count: deliveredResult?.order_count || 0
+      order_count: deliveredResult?.order_count || 0,
+      supplier_order_quantity: supplier_order_quantity
     };
     
     res.json(result);

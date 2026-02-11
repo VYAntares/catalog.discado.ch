@@ -143,10 +143,13 @@ class ProductStatsModal {
 		}
 		
 		const stats = await response.json();
-  
+
+		// Debug: afficher les stats reçues
+		console.log('📊 Stats reçues pour', this.currentProduct, ':', stats);
+
 		// Mettre à jour le titre
 		document.getElementById('productStatsTitle').textContent = this.currentProduct;
-  
+
 		// Afficher les stats
 		this.renderStats(stats);
   
@@ -239,7 +242,7 @@ class ProductStatsModal {
 			  </tr>
   
 			  <!-- À livrer -->
-			  <tr>
+			  <tr style="border-bottom: 1px solid #e2e8f0;">
 				<td style="padding: 16px;">
 				  <div style="display: flex; align-items: center; gap: 12px;">
 					<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
@@ -263,6 +266,29 @@ class ProductStatsModal {
 					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 14px; color: ${remainingPercentage > 50 ? 'white' : '#2d3748'};">
 					  ${remainingPercentage}%
 					</div>
+				  </div>
+				</td>
+			  </tr>
+
+			  <!-- En commande fournisseur -->
+			  <tr>
+				<td style="padding: 16px;">
+				  <div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+					  <i class="fas fa-shopping-cart" style="color: white; font-size: 18px;"></i>
+					</div>
+					<div>
+					  <div style="font-weight: 600; color: #2d3748; font-size: 15px;">En commande fournisseur</div>
+					  <div style="font-size: 12px; color: #718096;">Déjà commandé au fournisseur</div>
+					</div>
+				  </div>
+				</td>
+				<td style="padding: 16px; text-align: center;">
+				  <div style="font-size: 28px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity || 0}</div>
+				</td>
+				<td style="padding: 16px; text-align: center;">
+				  <div style="font-size: 13px; color: #718096; font-style: italic;">
+					Non livré
 				  </div>
 				</td>
 			  </tr>
