@@ -27,7 +27,7 @@ class StatsManager {
         
         // Écouter les changements d'année
         document.getElementById('yearSelect')?.addEventListener('change', async (e) => {
-            this.currentYear = parseInt(e.target.value);
+            this.currentYear = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
             await this.loadAllStats();
         });
 
@@ -58,14 +58,26 @@ class StatsManager {
 
         yearSelect.innerHTML = '';
         
+        // Ajouter l'option "Toutes les années"
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'Toutes les années';
+        yearSelect.appendChild(allOption);
+        
+        // Ajouter les années individuelles
         for (let year = currentYear; year >= startYear; year--) {
             const option = document.createElement('option');
             option.value = year;
             option.textContent = year;
-            if (year === this.currentYear) {
+            if (year === this.currentYear && this.currentYear !== 'all') {
                 option.selected = true;
-            }
-            yearSelect.appendChild(option);
+        }
+        yearSelect.appendChild(option);
+        }
+        
+        // Sélectionner l'année actuelle par défaut
+        if (this.currentYear === 'all') {
+            allOption.selected = true;
         }
     }
 
@@ -100,13 +112,15 @@ class StatsManager {
         statsGrid.innerHTML = '<div class="loading">Chargement des statistiques...</div>';
 
         try {
-            const response = await fetch(`/api/stats/overview?year=${this.currentYear}`);
-            
+            const yearParam = this.currentYear === 'all' ? '' : `?year=${this.currentYear}`;
+            const response = await fetch(`/api/stats/overview${yearParam}`);
+
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des statistiques');
             }
 
             const stats = await response.json();
+            console.log('📊 Overview data:', stats);
             this.renderOverview(stats);
         } catch (error) {
             console.error('❌ Erreur:', error);
@@ -122,9 +136,20 @@ class StatsManager {
         container.innerHTML = '<div class="loading">Chargement...</div>';
 
         try {
-            const categoryParam = this.currentCategory !== 'all' ? `&category=${this.currentCategory}` : '';
-            const response = await fetch(`/api/stats/top-products?year=${this.currentYear}${categoryParam}&limit=50`);
-            
+            const params = new URLSearchParams();
+
+            if (this.currentYear !== 'all') {
+                params.append('year', this.currentYear);
+            }
+
+            if (this.currentCategory !== 'all') {
+                params.append('category', this.currentCategory);
+            }
+
+            params.append('limit', '50');
+
+            const response = await fetch(`/api/stats/top-products?${params.toString()}`);
+
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des produits');
             }
@@ -144,7 +169,8 @@ class StatsManager {
         container.innerHTML = '<div class="loading">Chargement...</div>';
 
         try {
-            const response = await fetch(`/api/stats/category-details?year=${this.currentYear}`);
+            const yearParam = this.currentYear === 'all' ? '' : `?year=${this.currentYear}`;
+            const response = await fetch(`/api/stats/category-details${yearParam}`);
             
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des catégories');
@@ -165,8 +191,16 @@ class StatsManager {
         container.innerHTML = '<div class="loading">Chargement...</div>';
 
         try {
-            const response = await fetch(`/api/stats/top-clients?year=${this.currentYear}&limit=20`);
-            
+            const params = new URLSearchParams();
+
+            if (this.currentYear !== 'all') {
+                params.append('year', this.currentYear);
+            }
+
+            params.append('limit', '20');
+
+            const response = await fetch(`/api/stats/top-clients?${params.toString()}`);
+
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des clients');
             }
@@ -184,16 +218,19 @@ class StatsManager {
         if (!container) return;
 
         try {
-            const response = await fetch(`/api/stats/monthly-evolution?year=${this.currentYear}`);
-            
+            const yearParam = this.currentYear === 'all' ? '' : `?year=${this.currentYear}`;
+            const response = await fetch(`/api/stats/monthly-evolution${yearParam}`);
+
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement de l\'évolution');
             }
 
             const data = await response.json();
+            console.log('📈 Monthly evolution data:', data);
             this.renderMonthlyEvolution(data);
         } catch (error) {
             console.error('❌ Erreur:', error);
+            container.innerHTML = '<div class="no-data">Erreur lors du chargement de l\'évolution mensuelle</div>';
         }
     }
 
@@ -253,219 +290,181 @@ class StatsManager {
         const container = document.getElementById('topProductsTable');
         if (!container) return;
 
-        if (products.length === 0) {
+        if (!products || products.length === 0) {
             container.innerHTML = '<div class="no-data">Aucun produit trouvé</div>';
             return;
         }
 
-        const table = `
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Produit</th>
+                        <th>Catégorie</th>
+                        <th>Quantité totale</th>
+                        <th>Livré</th>
+                        <th>Restant</th>
+                        <th>CA Total</th>
+                        <th>Prix unitaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${products.map((product, index) => `
                         <tr>
-                            <th>#</th>
-                            <th>Produit</th>
-                            <th>Catégorie</th>
-                            <th>Prix unitaire</th>
-                            <th>Qté livrée</th>
-                            <th>Qté à livrer</th>
-                            <th>Qté totale</th>
-                            <th>CA livré</th>
-                            <th>CA à livrer</th>
-                            <th>CA total</th>
+                            <td><strong>${index + 1}</strong></td>
+                            <td><strong>${this.escapeHtml(product.product_name)}</strong></td>
+                            <td><span class="category-badge">${this.escapeHtml(product.category)}</span></td>
+                            <td><strong>${product.total_quantity}</strong></td>
+                            <td>${product.total_delivered}</td>
+                            <td>${product.total_remaining}</td>
+                            <td><strong>${this.formatCurrency(product.sum_total_quantity_price)}</strong></td>
+                            <td>${this.formatCurrency(product.unit_price)}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${products.map((product, index) => `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td class="product-name">${product.product_name}</td>
-                                <td><span class="category-badge">${this.formatCategoryName(product.category)}</span></td>
-                                <td>${this.formatCurrency(product.unit_price)}</td>
-                                <td class="text-success"><strong>${product.total_delivered}</strong></td>
-                                <td class="text-warning"><strong>${product.total_remaining}</strong></td>
-                                <td class="text-primary"><strong>${product.total_quantity}</strong></td>
-                                <td class="text-success">${this.formatCurrency(product.sum_total_delivered_price)}</td>
-                                <td class="text-warning">${this.formatCurrency(product.sum_total_remaining_price)}</td>
-                                <td class="text-primary"><strong>${this.formatCurrency(product.sum_total_quantity_price)}</strong></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td colspan="4"><strong>TOTAL</strong></td>
-                            <td class="text-success"><strong>${this.sumField(products, 'total_delivered')}</strong></td>
-                            <td class="text-warning"><strong>${this.sumField(products, 'total_remaining')}</strong></td>
-                            <td class="text-primary"><strong>${this.sumField(products, 'total_quantity')}</strong></td>
-                            <td class="text-success"><strong>${this.formatCurrency(this.sumField(products, 'sum_total_delivered_price'))}</strong></td>
-                            <td class="text-warning"><strong>${this.formatCurrency(this.sumField(products, 'sum_total_remaining_price'))}</strong></td>
-                            <td class="text-primary"><strong>${this.formatCurrency(this.sumField(products, 'sum_total_quantity_price'))}</strong></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
         `;
 
-        container.innerHTML = table;
+        container.innerHTML = html;
     }
 
     renderCategoryStats(categories) {
         const container = document.getElementById('categoryStatsTable');
         if (!container) return;
 
-        if (categories.length === 0) {
+        if (!categories || categories.length === 0) {
             container.innerHTML = '<div class="no-data">Aucune catégorie trouvée</div>';
             return;
         }
 
-        const table = `
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Catégorie</th>
+                        <th>Quantité totale</th>
+                        <th>Livré</th>
+                        <th>Restant</th>
+                        <th>CA Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${categories.map(cat => `
                         <tr>
-                            <th>Catégorie</th>
-                            <th>Qté livrée</th>
-                            <th>Qté à livrer</th>
-                            <th>Qté totale</th>
-                            <th>CA livré</th>
-                            <th>CA à livrer</th>
-                            <th>CA total</th>
-                            <th>% à livrer</th>
+                            <td><span class="category-badge">${this.escapeHtml(cat.category)}</span></td>
+                            <td><strong>${cat.total_quantity}</strong></td>
+                            <td>${cat.total_delivered}</td>
+                            <td>${cat.total_remaining}</td>
+                            <td><strong>${this.formatCurrency(cat.sum_total_quantity_price)}</strong></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${categories.map(cat => `
-                            <tr>
-                                <td><span class="category-badge">${this.formatCategoryName(cat.category)}</span></td>
-                                <td class="text-success"><strong>${cat.total_delivered}</strong></td>
-                                <td class="text-warning"><strong>${cat.total_remaining}</strong></td>
-                                <td class="text-primary"><strong>${cat.total_quantity}</strong></td>
-                                <td class="text-success">${this.formatCurrency(cat.sum_total_delivered_price)}</td>
-                                <td class="text-warning">${this.formatCurrency(cat.sum_total_remaining_price)}</td>
-                                <td class="text-primary"><strong>${this.formatCurrency(cat.total_price)}</strong></td>
-                                <td>
-                                    <div class="progress-container">
-                                        <div class="progress-bar" style="width: ${cat.remaining_ratio}%"></div>
-                                        <span class="progress-text">${cat.remaining_ratio}%</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td><strong>TOTAL</strong></td>
-                            <td class="text-success"><strong>${this.sumField(categories, 'total_delivered')}</strong></td>
-                            <td class="text-warning"><strong>${this.sumField(categories, 'total_remaining')}</strong></td>
-                            <td class="text-primary"><strong>${this.sumField(categories, 'total_quantity')}</strong></td>
-                            <td class="text-success"><strong>${this.formatCurrency(this.sumField(categories, 'sum_total_delivered_price'))}</strong></td>
-                            <td class="text-warning"><strong>${this.formatCurrency(this.sumField(categories, 'sum_total_remaining_price'))}</strong></td>
-                            <td class="text-primary"><strong>${this.formatCurrency(this.sumField(categories, 'total_price'))}</strong></td>
-                            <td>-</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
         `;
 
-        container.innerHTML = table;
+        container.innerHTML = html;
     }
 
     renderTopClients(clients) {
         const container = document.getElementById('topClientsTable');
         if (!container) return;
 
-        if (clients.length === 0) {
+        if (!clients || clients.length === 0) {
             container.innerHTML = '<div class="no-data">Aucun client trouvé</div>';
             return;
         }
 
-        const table = `
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Client</th>
+                        <th>Boutique</th>
+                        <th>Commandes</th>
+                        <th>Total dépensé</th>
+                        <th>Payé</th>
+                        <th>En attente</th>
+                        <th>Panier moyen</th>
+                        <th>Dernière commande</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${clients.map((client, index) => `
                         <tr>
-                            <th>#</th>
-                            <th>Client</th>
-                            <th>Boutique</th>
-                            <th>Commandes</th>
-                            <th>CA total</th>
-                            <th>Payé</th>
-                            <th>Dû</th>
-                            <th>Panier moyen</th>
-                            <th>Dernière commande</th>
+                            <td><strong>${index + 1}</strong></td>
+                            <td>${this.escapeHtml(client.client_full_name || client.user_id)}</td>
+                            <td>${this.escapeHtml(client.shop_name || '-')}</td>
+                            <td>${client.total_orders}</td>
+                            <td><strong>${this.formatCurrency(client.total_spent)}</strong></td>
+                            <td>${this.formatCurrency(client.total_paid)}</td>
+                            <td>${this.formatCurrency(client.total_due)}</td>
+                            <td>${this.formatCurrency(client.average_order_value)}</td>
+                            <td>${this.formatDate(client.last_order_date)}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${clients.map((client, index) => `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td class="client-name">${client.client_full_name || client.user_id}</td>
-                                <td>${client.shop_name || '-'}</td>
-                                <td><strong>${client.total_orders}</strong></td>
-                                <td class="text-primary"><strong>${this.formatCurrency(client.total_spent)}</strong></td>
-                                <td class="text-success">${this.formatCurrency(client.total_paid)}</td>
-                                <td class="text-${client.total_due > 0 ? 'warning' : 'muted'}">${this.formatCurrency(client.total_due)}</td>
-                                <td>${this.formatCurrency(client.average_order_value)}</td>
-                                <td>${this.formatDate(client.last_order_date)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
         `;
 
-        container.innerHTML = table;
+        container.innerHTML = html;
     }
 
     renderMonthlyEvolution(data) {
         const container = document.getElementById('monthlyChart');
         if (!container) return;
 
-        const maxRevenue = Math.max(...data.map(d => d.totalRevenue));
-        
-        const chart = `
-            <div class="bar-chart">
-                ${data.map(month => {
-                    const percentage = maxRevenue > 0 ? (month.totalRevenue / maxRevenue) * 100 : 0;
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data">Aucune donnée disponible</div>';
+            return;
+        }
+
+        const maxRevenue = Math.max(...data.map(d => d.totalRevenue || 0));
+        const chartHeight = 300;
+
+        const html = `
+            <div class="chart-bars">
+                ${data.map(item => {
+                    const barHeight = maxRevenue > 0 ? ((item.totalRevenue || 0) / maxRevenue) * chartHeight : 0;
+                    const label = this.currentYear === 'all' ? item.yearMonth : item.month;
+
                     return `
-                        <div class="bar-item">
-                            <div class="bar-label">${month.month.substring(0, 3)}</div>
-                            <div class="bar-wrapper">
-                                <div class="bar" style="height: ${percentage}%" title="${this.formatCurrency(month.totalRevenue)}">
-                                    <span class="bar-value">${this.formatCurrency(month.totalRevenue)}</span>
-                                </div>
+                        <div class="chart-bar-container">
+                            <div class="chart-bar" style="height: ${barHeight}px;" title="${this.formatCurrency(item.totalRevenue || 0)}">
+                                <div class="chart-bar-value">${this.formatCurrency(item.totalRevenue || 0)}</div>
                             </div>
+                            <div class="chart-bar-label">${label || ''}</div>
                         </div>
                     `;
                 }).join('')}
             </div>
         `;
 
-        container.innerHTML = chart;
+        container.innerHTML = html;
     }
 
-    // Utilitaires
+    // Méthodes utilitaires
     formatCurrency(amount) {
         return new Intl.NumberFormat('fr-CH', {
             style: 'currency',
             currency: 'CHF'
-        }).format(amount);
+        }).format(amount || 0);
     }
 
     formatDate(dateString) {
         if (!dateString) return '-';
         const date = new Date(dateString);
-        return new Intl.DateTimeFormat('fr-CH', {
+        return date.toLocaleDateString('fr-FR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
-        }).format(date);
+        });
     }
 
     formatCategoryName(category) {
-        if (!category) return 'Non catégorisé';
-        return category.charAt(0).toUpperCase() + category.slice(1);
+        if (!category) return 'Sans catégorie';
+        return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
     }
 
     calculatePaymentRate(paid, total) {
@@ -480,14 +479,15 @@ class StatsManager {
         return 'danger';
     }
 
-    sumField(array, field) {
-        return array.reduce((sum, item) => sum + (item[field] || 0), 0);
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 
-// Initialiser au chargement de la page
+// Initialiser le gestionnaire
 document.addEventListener('DOMContentLoaded', () => {
     new StatsManager();
 });
-
-export default StatsManager;

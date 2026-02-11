@@ -6,24 +6,44 @@ class StatsService {
      * Récupère les statistiques générales pour une année
      */
     getYearlyOverview(year) {
-        const startDate = `${year}-01-01`;
-        const endDate = `${year}-12-31`;
+        let query;
+        let params = [];
 
-        const query = `
-            SELECT
-                COUNT(DISTINCT i.invoice_number) as invoice_count,
-                COUNT(DISTINCT i.user_id) as client_count,
-                COALESCE(SUM(i.total_ttc), 0) as total_revenue,
-                COALESCE(SUM(i.amount_paid), 0) as total_paid,
-                COALESCE(SUM(i.amount_due), 0) as total_due,
-                COUNT(DISTINCT CASE WHEN i.payment_status != 'paid' THEN i.invoice_number END) as unpaid_count,
-                COALESCE(AVG(i.total_ttc), 0) as average_order_value
-            FROM invoices i
-            WHERE DATE(i.invoice_date) BETWEEN ? AND ?
-        `;
+        if (year) {
+            // Pour une année spécifique
+            const startDate = `${year}-01-01`;
+            const endDate = `${year}-12-31`;
+
+            query = `
+                SELECT
+                    COUNT(DISTINCT i.invoice_number) as invoice_count,
+                    COUNT(DISTINCT i.user_id) as client_count,
+                    COALESCE(SUM(i.total_ttc), 0) as total_revenue,
+                    COALESCE(SUM(i.amount_paid), 0) as total_paid,
+                    COALESCE(SUM(i.amount_due), 0) as total_due,
+                    COUNT(DISTINCT CASE WHEN i.payment_status != 'paid' THEN i.invoice_number END) as unpaid_count,
+                    COALESCE(AVG(i.total_ttc), 0) as average_order_value
+                FROM invoices i
+                WHERE DATE(i.invoice_date) BETWEEN ? AND ?
+            `;
+            params = [startDate, endDate];
+        } else {
+            // Pour toutes les années
+            query = `
+                SELECT
+                    COUNT(DISTINCT i.invoice_number) as invoice_count,
+                    COUNT(DISTINCT i.user_id) as client_count,
+                    COALESCE(SUM(i.total_ttc), 0) as total_revenue,
+                    COALESCE(SUM(i.amount_paid), 0) as total_paid,
+                    COALESCE(SUM(i.amount_due), 0) as total_due,
+                    COUNT(DISTINCT CASE WHEN i.payment_status != 'paid' THEN i.invoice_number END) as unpaid_count,
+                    COALESCE(AVG(i.total_ttc), 0) as average_order_value
+                FROM invoices i
+            `;
+        }
 
         const stmt = dbModule.db.prepare(query);
-        const row = stmt.get(startDate, endDate);
+        const row = stmt.get(...params);
 
         return {
             invoiceCount: row.invoice_count || 0,
@@ -117,6 +137,33 @@ class StatsService {
      * Récupère l'évolution mensuelle du chiffre d'affaires
      */
     getMonthlyEvolution(year) {
+        // Si aucune année n'est fournie, retourner toutes les années
+        if (!year) {
+            const query = `
+                SELECT
+                    strftime('%Y-%m', invoice_date) as year_month,
+                    COUNT(invoice_number) as invoice_count,
+                    COALESCE(SUM(total_ttc), 0) as total_revenue,
+                    COALESCE(SUM(amount_paid), 0) as total_paid,
+                    COALESCE(SUM(amount_due), 0) as total_due
+                FROM invoices
+                GROUP BY strftime('%Y-%m', invoice_date)
+                ORDER BY year_month
+            `;
+
+            const stmt = dbModule.db.prepare(query);
+            const rows = stmt.all();
+
+            return rows.map(row => ({
+                yearMonth: row.year_month,
+                invoiceCount: row.invoice_count,
+                totalRevenue: row.total_revenue,
+                totalPaid: row.total_paid,
+                totalDue: row.total_due
+            }));
+        }
+
+        // Pour une année spécifique
         const query = `
             SELECT
                 strftime('%m', invoice_date) as month,
@@ -139,11 +186,11 @@ class StatsService {
             'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
             'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
         ];
-        
+
         const result = months.map((monthName, index) => {
             const monthNumber = (index + 1).toString().padStart(2, '0');
             const data = rows.find(r => r.month === monthNumber);
-            
+
             return {
                 month: monthName,
                 monthNumber: monthNumber,
@@ -153,7 +200,7 @@ class StatsService {
                 totalDue: data ? data.total_due : 0
             };
         });
-        
+
         return result;
     }
 

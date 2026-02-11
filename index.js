@@ -2412,7 +2412,7 @@ app.get('/api/invoices/unpaid', requireLogin, requireAdmin, requirePermission('c
  */
 app.get('/api/stats/overview', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
     try {
-        const year = req.query.year || new Date().getFullYear();
+        const year = req.query.year; // Ne pas mettre de valeur par défaut
         const stats = await statsService.getYearlyOverview(year);
         res.json(stats);
     } catch (error) {
@@ -2446,7 +2446,7 @@ app.get('/api/stats/top-products', requireLogin, requireAdmin, requirePermission
  */
 app.get('/api/stats/monthly-evolution', requireLogin, requireAdmin, requirePermission('stats'), async (req, res) => {
     try {
-        const year = req.query.year || new Date().getFullYear();
+        const year = req.query.year; // Ne pas mettre de valeur par défaut
         const evolution = await statsService.getMonthlyEvolution(year);
         res.json(evolution);
     } catch (error) {
