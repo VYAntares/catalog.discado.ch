@@ -618,6 +618,107 @@ app.get('/api/products/stats/stock', requireLogin, requireAdmin, async (req, res
   }
 });
 
+// Statistiques pour un produit spécifique (utilisé dans l'édition de batch)
+app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { productName } = req.params;
+    const { year } = req.query;
+    
+    let whereClause = '';
+    const params = [productName];
+    
+    if (year && year !== 'all') {
+      whereClause += ` AND strftime('%Y', o.date) = ?`;
+      params.push(year.toString());
+    }
+    
+    // 🆕 Requête pour les quantités livrées (order_items avec status='delivered')
+    const deliveredQuery = `
+      SELECT
+        SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
+        SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_delivered_price,
+        COUNT(DISTINCT o.order_id) as order_count,
+        ROUND(oi.product_price, 2) as unit_price,
+        oi.category
+      FROM order_items oi
+      INNER JOIN orders o ON oi.order_id = o.order_id
+      WHERE oi.product_name = ? ${whereClause}
+      GROUP BY oi.category, oi.product_price
+    `;
+    
+    const deliveredStmt = dbModule.db.prepare(deliveredQuery);
+    const deliveredResult = deliveredStmt.get(...params);
+    
+    // 🆕 Requête pour les quantités à livrer (pending_deliveries avec filtre année)
+    let remainingWhereClause = '';
+    const remainingParams = [productName];
+
+    if (year && year !== 'all') {
+        remainingWhereClause = ` AND strftime('%Y', created_at) = ?`;
+        remainingParams.push(year.toString());
+    }
+
+    const remainingQuery = `
+      SELECT
+        SUM(quantity) AS total_remaining,
+        SUM(product_price * quantity) AS sum_total_remaining_price
+      FROM pending_deliveries
+      WHERE product_name = ? ${remainingWhereClause}
+    `;
+
+    const remainingStmt = dbModule.db.prepare(remainingQuery);
+    const remainingResult = remainingStmt.get(...remainingParams);
+    
+    const total_delivered = deliveredResult?.total_delivered || 0;
+    const total_remaining = remainingResult?.total_remaining || 0;
+    const sum_total_delivered_price = deliveredResult?.sum_total_delivered_price || 0;
+    const sum_total_remaining_price = remainingResult?.sum_total_remaining_price || 0;
+    
+    const result = {
+      product_name: productName,
+      category: deliveredResult?.category || null,
+      total_delivered: total_delivered,
+      total_remaining: total_remaining,
+      total_quantity: total_delivered + total_remaining,
+      sum_total_delivered_price: sum_total_delivered_price,
+      sum_total_remaining_price: sum_total_remaining_price,
+      sum_total_quantity_price: sum_total_delivered_price + sum_total_remaining_price,
+      unit_price: deliveredResult?.unit_price || 0,
+      order_count: deliveredResult?.order_count || 0
+    };
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('Error fetching product stats:', error);
+    res.status(500).json({ error: 'Failed to fetch product stats' });
+  }
+});
+
+// Récupérer les années disponibles pour les stats produit
+app.get('/api/stats/product/:productName/years', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { productName } = req.params;
+    
+    const query = `
+      SELECT DISTINCT strftime('%Y', o.date) as year
+      FROM order_items oi
+      INNER JOIN orders o ON oi.order_id = o.order_id
+      WHERE oi.product_name = ?
+      ORDER BY year DESC
+    `;
+    
+    const stmt = dbModule.db.prepare(query);
+    const rows = stmt.all(productName);
+    
+    res.json(rows.map(r => r.year));
+    
+  } catch (error) {
+    console.error('Error fetching product years:', error);
+    res.status(500).json({ error: 'Failed to fetch years' });
+  }
+});
+
 // BULK UPDATE stock
 app.put('/api/products/bulk/stock', requireLogin, requireAdmin, async (req, res) => {
   try {

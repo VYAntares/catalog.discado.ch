@@ -431,7 +431,7 @@ async function addSupplierOrderItem(orderId, itemData) {
 async function updateSupplierOrderItem(itemId, itemData) {
   try {
     // itemData peut maintenant contenir batch_number
-    const response = await fetch(`/api/order-suppliers/items/${itemId}`, {
+    const response = await fetch(`/api/order-supplier-items/${itemId}`, {
       ...API_CONFIG,
       method: 'PUT',
       body: JSON.stringify(itemData)

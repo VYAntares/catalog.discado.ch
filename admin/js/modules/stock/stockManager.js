@@ -291,7 +291,22 @@ class StockManager {
         this.attachUpdateListeners();
         this.attachEditListeners();
 		this.attachAddToOrderListeners();
+		this.attachStatsListeners();
     }
+	
+	attachStatsListeners() {
+		document.querySelectorAll('.product-stats-btn').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const productName = btn.getAttribute('data-product-name');
+				if (window.ProductStatsModal) {
+					window.ProductStatsModal.open(productName);
+				} else {
+					console.error('ProductStatsModal not loaded');
+				}
+			});
+		});
+	}
 
 	createProductCard(product) {
 		const name = product.name ?? product.Nom ?? '—';
@@ -320,7 +335,20 @@ class StockManager {
 				</div>
 
 				<div class="product-info">
-					<h3 class="product-name">${name}</h3>
+					<div style="display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 8px;">
+						<h3 class="product-name" style="flex: 1; margin: 0;">
+							${name}
+						</h3>
+
+						<button class="product-stats-btn"
+								data-product-name="${this.escapeHtml(name)}"
+								data-product-id="${product.id}"
+								title="Voir les statistiques"
+								style="background: none; border: none; color: #4299e1; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; flex-shrink: 0; transition: all 0.2s ease;">
+							<i class="fas fa-question-circle"></i>
+						</button>
+					</div>
+
 					<span class="product-category">
 						${this.formatCategoryName(category)}
 					</span>
@@ -373,6 +401,8 @@ class StockManager {
 			</div>
 		`;
 	}
+
+	
 
     getStockStatus(stock) {
         if (stock === 0) {

@@ -6,6 +6,7 @@
 import * as API from '../../core/api.js';
 import * as State from './state.js';
 import * as Utils from './utils.js';
+import '../suppliers/productStatsModal.js';
 
 // État local pour les batch
 let currentBatches = [];
@@ -177,7 +178,7 @@ function createBatchItems(items, batchNumber) {
 }
 
 /**
- * Crée une carte d'article draggable
+ * Crée une carte d'article 
  */
 function createBatchItemCard(item, batchNumber) {
 	const imageUrl = item.image_url || '/images/placeholder.png';
@@ -190,7 +191,17 @@ function createBatchItemCard(item, batchNumber) {
       <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image">
       
       <div class="batch-item-info">
-        <h5>${item.product_name}</h5>
+        <!-- 🆕 Header avec titre + icône stats -->
+        <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 8px;">
+          <h5 style="flex: 1; margin: 0;">${item.product_name}</h5>
+          <button class="product-stats-btn" 
+                  data-product-name="${item.product_name}"
+                  title="Voir les statistiques"
+                  style="background: none; border: none; color: #4299e1; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; flex-shrink: 0; transition: all 0.2s ease;">
+            <i class="fas fa-question-circle"></i>
+          </button>
+        </div>
+        
         <p class="batch-item-details">
           <span class="quantity-badge">${item.quantity} unités</span>
           <span class="price-tag">${item.unit_price.toFixed(2)} USD/u</span>
@@ -370,6 +381,18 @@ function reattachBatchItemListeners() {
         await initBatchView(orderId);
       } catch (error) {
         console.error('Erreur:', error);
+      }
+    });
+  });
+   // Event listeners pour les boutons de stats
+   document.querySelectorAll('.product-stats-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Empêcher la propagation de l'événement
+      const productName = btn.getAttribute('data-product-name');
+      if (window.ProductStatsModal) {
+        window.ProductStatsModal.open(productName);
+      } else {
+        console.error('ProductStatsModal not loaded');
       }
     });
   });

@@ -42,44 +42,75 @@ class StatsService {
     getTopProducts({ year, category, limit = 10 }) {
         let whereClause = '';
         const params = [];
-
+    
         if (year) {
             whereClause += ` AND strftime('%Y', o.date) = ?`;
             params.push(year.toString());
         }
-
+    
         if (category) {
             whereClause += ` AND oi.category = ?`;
             params.push(category);
         }
-
+    
         params.push(limit);
-
+    
         const query = `
             SELECT
                 oi.product_name,
                 oi.category,
-                SUM(CASE WHEN oi.status = 'remaining' THEN oi.quantity ELSE 0 END) AS total_remaining,
+                -- Quantité livrée depuis order_items
                 SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
-                (SUM(CASE WHEN oi.status = 'remaining' THEN oi.quantity ELSE 0 END) +
-                 SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END)) AS total_quantity,
-                SUM(CASE WHEN oi.status = 'remaining' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_remaining_price,
+                -- Prix livré
                 SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_delivered_price,
-                (SUM(CASE WHEN oi.status = 'remaining' THEN oi.product_price * oi.quantity ELSE 0 END) +
-                 SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END)) AS sum_total_quantity_price,
                 ROUND(oi.product_price, 2) as unit_price
             FROM order_items oi
             INNER JOIN orders o ON oi.order_id = o.order_id
             WHERE 1=1 ${whereClause}
             GROUP BY oi.product_name, oi.category, oi.product_price
-            ORDER BY total_quantity DESC
-            LIMIT ?
         `;
-
-        const stmt = dbModule.db.prepare(query);
-        const rows = stmt.all(...params);
-
-        return rows || [];
+        
+        const deliveredStmt = dbModule.db.prepare(query);
+        const deliveredRows = deliveredStmt.all(...params.slice(0, -1)); // Sans le limit
+        
+        // Pour chaque produit, récupérer les pending_deliveries
+        const results = deliveredRows.map(row => {
+            let pendingWhereClause = '';
+            const pendingParams = [row.product_name];
+            
+            // 🆕 Ajouter le filtre année si nécessaire
+            if (year) {
+                pendingWhereClause = ` AND strftime('%Y', created_at) = ?`;
+                pendingParams.push(year.toString());
+            }
+            
+            const pendingQuery = `
+                SELECT 
+                    SUM(quantity) as total_remaining,
+                    SUM(product_price * quantity) as sum_total_remaining_price
+                FROM pending_deliveries
+                WHERE product_name = ? ${pendingWhereClause}
+            `;
+            
+            const pendingStmt = dbModule.db.prepare(pendingQuery);
+            const pendingResult = pendingStmt.get(...pendingParams);
+            
+            const total_remaining = pendingResult?.total_remaining || 0;
+            const sum_total_remaining_price = pendingResult?.sum_total_remaining_price || 0;
+            
+            return {
+                ...row,
+                total_remaining: total_remaining,
+                total_quantity: row.total_delivered + total_remaining,
+                sum_total_remaining_price: sum_total_remaining_price,
+                sum_total_quantity_price: row.sum_total_delivered_price + sum_total_remaining_price
+            };
+        });
+        
+        // Trier par quantité totale et limiter
+        return results
+            .sort((a, b) => b.total_quantity - a.total_quantity)
+            .slice(0, limit);
     }
 
     /**
@@ -251,52 +282,95 @@ class StatsService {
     getCategoryDetails(year) {
         let whereClause = '';
         const params = [];
-
+    
         if (year) {
             whereClause = ` WHERE strftime('%Y', o.date) = ?`;
             params.push(year.toString());
         }
-
-        const query = `
-            WITH category_stats AS (
-                SELECT
-                    oi.category,
-                    SUM(CASE WHEN oi.status = 'remaining' THEN oi.quantity ELSE 0 END) AS total_remaining,
-                    SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
-                    (SUM(CASE WHEN oi.status = 'remaining' THEN oi.quantity ELSE 0 END) +
-                     SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END)) AS total_quantity,
-                    SUM(CASE WHEN oi.status = 'remaining' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_remaining_price,
-                    SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_delivered_price,
-                    (SUM(CASE WHEN oi.status = 'remaining' THEN oi.product_price * oi.quantity ELSE 0 END) +
-                     SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END)) AS total_price
-                FROM order_items oi
-                INNER JOIN orders o ON oi.order_id = o.order_id
-                ${whereClause}
-                GROUP BY oi.category
-            )
+    
+        // D'abord récupérer les stats livrées par catégorie
+        const deliveredQuery = `
+            SELECT
+                oi.category,
+                SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
+                SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_delivered_price
+            FROM order_items oi
+            INNER JOIN orders o ON oi.order_id = o.order_id
+            ${whereClause}
+            GROUP BY oi.category
+        `;
+    
+        const deliveredStmt = dbModule.db.prepare(deliveredQuery);
+        const deliveredRows = deliveredStmt.all(...params);
+        
+        // 🆕 Récupérer les pending_deliveries par catégorie AVEC filtre année
+        let pendingWhereClause = '';
+        const pendingParams = [];
+    
+        if (year) {
+            pendingWhereClause = ` WHERE strftime('%Y', created_at) = ?`;
+            pendingParams.push(year.toString());
+        }
+    
+        const pendingQuery = `
             SELECT
                 category,
-                total_remaining,
-                total_delivered,
-                total_quantity,
-                sum_total_remaining_price,
-                sum_total_delivered_price,
-                total_price,
-                ROUND(
-                    CASE 
-                        WHEN total_price > 0 THEN (sum_total_remaining_price / total_price) * 100
-                        ELSE 0
-                    END,
-                    2
-                ) AS remaining_ratio
-            FROM category_stats
-            ORDER BY total_remaining DESC
+                SUM(quantity) AS total_remaining,
+                SUM(product_price * quantity) AS sum_total_remaining_price
+            FROM pending_deliveries
+            ${pendingWhereClause}
+            GROUP BY category
         `;
-
-        const stmt = dbModule.db.prepare(query);
-        const rows = stmt.all(...params);
-
-        return rows || [];
+        
+        const pendingStmt = dbModule.db.prepare(pendingQuery);
+        const pendingRows = pendingStmt.all(...pendingParams);
+        
+        // Fusionner les résultats
+        const categoryMap = {};
+        
+        // Ajouter les données livrées
+        deliveredRows.forEach(row => {
+            categoryMap[row.category] = {
+                category: row.category,
+                total_delivered: row.total_delivered,
+                total_remaining: 0,
+                sum_total_delivered_price: row.sum_total_delivered_price,
+                sum_total_remaining_price: 0
+            };
+        });
+        
+        // Ajouter les données en attente
+        pendingRows.forEach(row => {
+            if (!categoryMap[row.category]) {
+                categoryMap[row.category] = {
+                    category: row.category,
+                    total_delivered: 0,
+                    total_remaining: 0,
+                    sum_total_delivered_price: 0,
+                    sum_total_remaining_price: 0
+                };
+            }
+            categoryMap[row.category].total_remaining = row.total_remaining;
+            categoryMap[row.category].sum_total_remaining_price = row.sum_total_remaining_price;
+        });
+        
+        // Calculer les totaux et pourcentages
+        const results = Object.values(categoryMap).map(cat => {
+            const total_quantity = cat.total_delivered + cat.total_remaining;
+            const total_price = cat.sum_total_delivered_price + cat.sum_total_remaining_price;
+            const remaining_ratio = total_price > 0 
+                ? Math.round((cat.sum_total_remaining_price / total_price) * 100 * 100) / 100
+                : 0;
+            
+            return {
+                ...cat,
+                total_quantity,
+                total_price,
+                remaining_ratio
+            };
+        });
+        
+        return results.sort((a, b) => b.total_remaining - a.total_remaining);
     }
 }
 
