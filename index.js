@@ -1799,7 +1799,8 @@ app.post('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
           item.total_price,
           item.category || null,
           item.image_url || null,
-          batchNumber
+          batchNumber,
+          item.item_status || 'commandé'
         );
       });
     }
@@ -1951,12 +1952,13 @@ app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) 
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number } = req.body;
-    
+    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status } = req.body;
+
     const newQuantity = quantity !== undefined ? quantity : item.quantity;
     const newUnitPrice = unit_price !== undefined ? unit_price : item.unit_price;
     const newTotalPrice = newQuantity * newUnitPrice;
     const newBatchNumber = batch_number !== undefined ? batch_number : item.batch_number;
+    const newItemStatus = item_status !== undefined ? item_status : (item.item_status || 'commandé');
 
     dbModule.orderSupplierItems.update.run(
       product_id !== undefined ? product_id : item.product_id,
@@ -1967,6 +1969,7 @@ app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) 
       category !== undefined ? category : item.category,
       image_url !== undefined ? image_url : item.image_url,
       newBatchNumber,
+      newItemStatus,
       req.params.id
     );
 
@@ -2011,6 +2014,28 @@ app.delete('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, re
   }
 });
 
+// Modifier le statut d'un item (commandé / livré)
+app.patch('/api/order-supplier-items/:id/status', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const item = dbModule.orderSupplierItems.getById.get(req.params.id);
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const { item_status } = req.body;
+    if (!item_status || !['commandé', 'livré'].includes(item_status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be "commandé" or "livré"' });
+    }
+
+    dbModule.orderSupplierItems.updateItemStatus.run(item_status, req.params.id);
+    res.json({ success: true, message: 'Status updated successfully' });
+
+  } catch (error) {
+    console.error('Error updating item status:', error);
+    res.status(500).json({ error: 'Failed to update item status' });
+  }
+});
+
 // Supprimer une commande fournisseur
 app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
   try {
@@ -2027,7 +2052,7 @@ app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) =>
 app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req, res) => {
   try {
     const { orderId } = req.params;
-    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number } = req.body;
+    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status } = req.body;
 
     if (!product_name || !unit_price || !quantity) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -2046,7 +2071,8 @@ app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req
       total_price,
       category || null,
       image_url || null,
-      batchNum
+      batchNum,
+      item_status || 'commandé'
     );
 
     // Recalculer le total de la commande
@@ -2144,7 +2170,8 @@ app.post('/api/order-suppliers/:orderId/batches/create', requireLogin, requireAd
       0,     // total_price
       'placeholder',  // category
       null,  // image_url
-      newBatchNumber  // batch_number
+      newBatchNumber,  // batch_number
+      'pending'  // item_status
     );
     
     res.json({
@@ -2229,6 +2256,7 @@ app.post('/api/order-suppliers/:orderId/items/:itemId/move-to-batch', requireLog
       sourceItem.category,
       sourceItem.image_url,
       sourceItem.batch_number, // Garde le batch original
+      sourceItem.item_status || 'pending', // item_status
       itemId
     );
     
@@ -2243,7 +2271,8 @@ app.post('/api/order-suppliers/:orderId/items/:itemId/move-to-batch', requireLog
       newItemTotal,
       sourceItem.category,
       sourceItem.image_url,
-      target_batch
+      target_batch,
+      sourceItem.item_status || 'pending' // item_status
     );
     
     // Recalculer le total de la commande (reste inchangé normalement)

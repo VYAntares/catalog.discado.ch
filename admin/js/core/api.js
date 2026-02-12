@@ -470,6 +470,27 @@ async function deleteSupplierOrderItem(itemId) {
   }
 }
 
+// Met à jour le statut d'un item (commandé / livré)
+async function updateSupplierOrderItemStatus(itemId, itemStatus) {
+  try {
+    const response = await fetch(`/api/order-supplier-items/${itemId}/status`, {
+      ...API_CONFIG,
+      method: 'PATCH',
+      body: JSON.stringify({ item_status: itemStatus })
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification(`Statut mis à jour: ${itemStatus}`, 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Supprime une commande fournisseur
 async function deleteSupplierOrder(orderId) {
   try {
@@ -611,6 +632,7 @@ export {
   addSupplierOrderItem,
   updateSupplierOrderItem,
   deleteSupplierOrderItem,
+  updateSupplierOrderItemStatus,
   deleteSupplierOrder,
   getSupplierOrderPayments,
   addSupplierOrderPayment,

@@ -198,26 +198,28 @@ function createBatchItems(items, batchNumber) {
  */
 function createBatchItemCard(item, batchNumber) {
 	const imageUrl = item.image_url || '/images/placeholder.png';
-	
+	const itemStatus = item.item_status || 'commandé';
+	const isLivre = itemStatus === 'livré';
+
 	return `
-	  <div class="batch-item-card" 
+	  <div class="batch-item-card"
 		   data-item-id="${item.id}"
 		   data-batch-number="${batchNumber}">
-      
+
       <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image">
-      
+
       <div class="batch-item-info">
-        <!-- 🆕 Header avec titre + icône stats -->
+        <!-- Header avec titre + icône stats -->
         <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 8px;">
           <h5 style="flex: 1; margin: 0;">${item.product_name}</h5>
-          <button class="product-stats-btn" 
+          <button class="product-stats-btn"
                   data-product-name="${item.product_name}"
                   title="Voir les statistiques"
                   style="background: none; border: none; color: #4299e1; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; flex-shrink: 0; transition: all 0.2s ease;">
             <i class="fas fa-question-circle"></i>
           </button>
         </div>
-        
+
         <p class="batch-item-details">
           <span class="quantity-badge">${item.quantity} unités</span>
           <span class="price-tag">${item.unit_price.toFixed(2)} USD/u</span>
@@ -225,6 +227,15 @@ function createBatchItemCard(item, batchNumber) {
         <p class="batch-item-total">
           Total: <strong>${(item.quantity * item.unit_price).toFixed(2)} USD</strong>
         </p>
+        <div style="margin-top: 6px;">
+          <select class="item-status-select" data-item-id="${item.id}"
+                  style="padding: 3px 8px; border-radius: 12px; border: 1px solid ${isLivre ? '#48bb78' : '#ed8936'};
+                         background: ${isLivre ? '#f0fff4' : '#fffaf0'}; color: ${isLivre ? '#276749' : '#9c4221'};
+                         font-size: 12px; font-weight: 600; cursor: pointer; outline: none;">
+            <option value="commandé" ${!isLivre ? 'selected' : ''}>Commandé</option>
+            <option value="livré" ${isLivre ? 'selected' : ''}>Livré</option>
+          </select>
+        </div>
       </div>
       
       <div class="batch-item-actions">
@@ -410,6 +421,29 @@ function reattachBatchItemListeners() {
       }
     });
   });
+   // Event listeners pour le changement de statut item
+   document.querySelectorAll('.item-status-select').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const itemId = e.target.dataset.itemId;
+      const newStatus = e.target.value;
+
+      try {
+        await API.updateSupplierOrderItemStatus(itemId, newStatus);
+        // Mettre à jour le style du select
+        const isLivre = newStatus === 'livré';
+        e.target.style.borderColor = isLivre ? '#48bb78' : '#ed8936';
+        e.target.style.background = isLivre ? '#f0fff4' : '#fffaf0';
+        e.target.style.color = isLivre ? '#276749' : '#9c4221';
+        // Mettre à jour l'item dans le state
+        const items = State.getCurrentOrderItems();
+        const item = items.find(i => i.id == itemId);
+        if (item) item.item_status = newStatus;
+      } catch (error) {
+        console.error('Erreur mise à jour statut item:', error);
+      }
+    });
+  });
+
    // Event listeners pour les boutons de stats
    document.querySelectorAll('.product-stats-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {

@@ -217,6 +217,19 @@ function initDatabase() {
         }
     }
 
+    // Ajouter la colonne item_status si elle n'existe pas
+    if (!columnExists('order_supplier_items', 'item_status')) {
+        try {
+            db.exec(`
+                ALTER TABLE order_supplier_items
+                ADD COLUMN item_status TEXT DEFAULT 'commandé'
+            `);
+            console.log('✅ Colonne item_status ajoutée à order_supplier_items');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout item_status:', error.message);
+        }
+    }
+
     // Table pour les paiements des commandes fournisseurs
     db.exec(`
         CREATE TABLE IF NOT EXISTS order_supplier_payments (
@@ -478,17 +491,23 @@ module.exports = {
         
         add: db.prepare(`
             INSERT INTO order_supplier_items (
-                order_supplier_id, product_id, product_name, 
+                order_supplier_id, product_id, product_name,
                 unit_price, quantity, total_price, category, image_url,
-                batch_number
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                batch_number, item_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `),
-        
+
         update: db.prepare(`
-            UPDATE order_supplier_items 
-            SET product_id = ?, product_name = ?, unit_price = ?, 
+            UPDATE order_supplier_items
+            SET product_id = ?, product_name = ?, unit_price = ?,
                 quantity = ?, total_price = ?, category = ?, image_url = ?,
-                batch_number = ?
+                batch_number = ?, item_status = ?
+            WHERE id = ?
+        `),
+
+        updateItemStatus: db.prepare(`
+            UPDATE order_supplier_items
+            SET item_status = ?
             WHERE id = ?
         `),
         
