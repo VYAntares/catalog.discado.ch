@@ -650,9 +650,8 @@ async function addItemToCurrentOrder(productId, productName, price, quantity, ca
     if (result.success) {
       // Recharger la commande
       await show(orderId);
-      
-      // Fermer le modal
-      document.getElementById('addItemToOrderModal').style.display = 'none';
+
+      // La modale reste ouverte pour permettre l'ajout de plusieurs produits
     }
   } catch (error) {
     console.error('Erreur ajout article:', error);

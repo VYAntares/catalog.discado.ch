@@ -172,13 +172,85 @@ class ProductStatsModal {
 	  const container = document.getElementById('productStatsContent');
   
 	  if (stats.total_quantity === 0) {
-		container.innerHTML = `
-		  <div style="text-align: center; padding: 40px; color: #718096;">
-			<i class="fas fa-inbox" style="font-size: 64px; margin-bottom: 16px; opacity: 0.3;"></i>
-			<p style="margin: 0; font-size: 16px; font-weight: 600;">Aucune donnée</p>
-			<p style="margin: 8px 0 0 0; font-size: 14px;">Aucune commande pour ce produit ${this.currentYear !== 'all' ? 'en ' + this.currentYear : ''}</p>
+		let html = `
+		  <div style="text-align: center; padding: 30px; color: #718096;">
+			<i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 12px; opacity: 0.3;"></i>
+			<p style="margin: 0; font-size: 16px; font-weight: 600;">Aucune commande client</p>
+			<p style="margin: 8px 0 0 0; font-size: 14px;">Aucune commande client pour ce produit ${this.currentYear !== 'all' ? 'en ' + this.currentYear : ''}</p>
 		  </div>
 		`;
+
+		// Afficher quand même les commandes fournisseur si elles existent
+		if (stats.supplier_order_quantity > 0 && stats.supplier_order_details && stats.supplier_order_details.length > 0) {
+		  html += `
+			<div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-top: 16px;">
+			  <table style="width: 100%; border-collapse: collapse;">
+				<tbody>
+				  <tr id="supplier-order-row-empty" style="cursor: pointer;">
+					<td style="padding: 16px;">
+					  <div style="display: flex; align-items: center; gap: 12px;">
+						<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+						  <i class="fas fa-shopping-cart" style="color: white; font-size: 18px;"></i>
+						</div>
+						<div>
+						  <div style="font-weight: 600; color: #2d3748; font-size: 15px;">En commande fournisseur</div>
+						  <div style="font-size: 12px; color: #718096;">Déjà commandé au fournisseur</div>
+						</div>
+					  </div>
+					</td>
+					<td style="padding: 16px; text-align: center;">
+					  <div style="font-size: 28px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity}</div>
+					</td>
+					<td style="padding: 16px; text-align: center;">
+					  <div style="font-size: 13px; color: #3182ce; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+						<i class="fas fa-chevron-down" id="supplier-order-toggle-empty" style="transition: transform 0.3s;"></i>
+						Voir détail
+					  </div>
+					</td>
+				  </tr>
+				  <tr id="supplier-order-details-empty" style="display: none;">
+					<td colspan="3" style="padding: 0 16px 16px 16px;">
+					  <div style="background: #f7fafc; border-radius: 8px; padding: 12px; margin-left: 52px;">
+						<div style="font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 8px;">
+						  Détail par commande :
+						</div>
+						${stats.supplier_order_details.map(order => `
+						  <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
+							<div style="color: #4a5568;">
+							  <strong>Commande ${order.invoice_number}</strong>
+							  <span style="color: #718096; font-size: 12px; margin-left: 8px;">
+								(${new Date(order.order_date).toLocaleDateString('fr-FR')})
+							  </span>
+							</div>
+							<div style="font-weight: 600; color: #3182ce;">
+							  ${order.quantity} pcs
+							</div>
+						  </div>
+						`).join('')}
+					  </div>
+					</td>
+				  </tr>
+				</tbody>
+			  </table>
+			</div>
+		  `;
+		}
+
+		container.innerHTML = html;
+
+		// Ajouter l'event listener pour le toggle (cas 0 commandes client)
+		const supplierRowEmpty = document.getElementById('supplier-order-row-empty');
+		const supplierDetailsEmpty = document.getElementById('supplier-order-details-empty');
+		const toggleIconEmpty = document.getElementById('supplier-order-toggle-empty');
+
+		if (supplierRowEmpty && supplierDetailsEmpty && toggleIconEmpty) {
+		  supplierRowEmpty.addEventListener('click', () => {
+			const isHidden = supplierDetailsEmpty.style.display === 'none';
+			supplierDetailsEmpty.style.display = isHidden ? 'table-row' : 'none';
+			toggleIconEmpty.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+		  });
+		}
+
 		return;
 	  }
   
@@ -271,7 +343,7 @@ class ProductStatsModal {
 			  </tr>
 
 			  <!-- En commande fournisseur -->
-			  <tr>
+			  <tr id="supplier-order-row" style="cursor: ${stats.supplier_order_details && stats.supplier_order_details.length > 0 ? 'pointer' : 'default'};">
 				<td style="padding: 16px;">
 				  <div style="display: flex; align-items: center; gap: 12px;">
 					<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
@@ -287,11 +359,44 @@ class ProductStatsModal {
 				  <div style="font-size: 28px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity || 0}</div>
 				</td>
 				<td style="padding: 16px; text-align: center;">
-				  <div style="font-size: 13px; color: #718096; font-style: italic;">
-					Non livré
-				  </div>
+				  ${stats.supplier_order_details && stats.supplier_order_details.length > 0 ? `
+					<div style="font-size: 13px; color: #3182ce; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+					  <i class="fas fa-chevron-down" id="supplier-order-toggle" style="transition: transform 0.3s;"></i>
+					  Voir détail
+					</div>
+				  ` : `
+					<div style="font-size: 13px; color: #718096; font-style: italic;">
+					  Non livré
+					</div>
+				  `}
 				</td>
 			  </tr>
+
+			  <!-- Détail des commandes fournisseurs (caché par défaut) -->
+			  ${stats.supplier_order_details && stats.supplier_order_details.length > 0 ? `
+				<tr id="supplier-order-details" style="display: none;">
+				  <td colspan="3" style="padding: 0 16px 16px 16px;">
+					<div style="background: #f7fafc; border-radius: 8px; padding: 12px; margin-left: 52px;">
+					  <div style="font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 8px;">
+						Détail par commande :
+					  </div>
+					  ${stats.supplier_order_details.map(order => `
+						<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
+						  <div style="color: #4a5568;">
+							<strong>Commande ${order.invoice_number}</strong>
+							<span style="color: #718096; font-size: 12px; margin-left: 8px;">
+							  (${new Date(order.order_date).toLocaleDateString('fr-FR')})
+							</span>
+						  </div>
+						  <div style="font-weight: 600; color: #3182ce;">
+							${order.quantity} pcs
+						  </div>
+						</div>
+					  `).join('')}
+					</div>
+				  </td>
+				</tr>
+			  ` : ''}
 			</tbody>
 		  </table>
 		</div>
@@ -303,10 +408,23 @@ class ProductStatsModal {
 		  </div>
 		` : ''}
 	  `;
-  
+
 	  container.innerHTML = html;
+
+	  // Ajouter l'event listener pour le toggle du détail des commandes fournisseurs
+	  const supplierOrderRow = document.getElementById('supplier-order-row');
+	  const supplierOrderDetails = document.getElementById('supplier-order-details');
+	  const toggleIcon = document.getElementById('supplier-order-toggle');
+
+	  if (supplierOrderRow && supplierOrderDetails && toggleIcon) {
+		supplierOrderRow.addEventListener('click', () => {
+		  const isHidden = supplierOrderDetails.style.display === 'none';
+		  supplierOrderDetails.style.display = isHidden ? 'table-row' : 'none';
+		  toggleIcon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+		});
+	  }
 	}
-  
+
 	/**
 	 * Formate le nom de catégorie
 	 */

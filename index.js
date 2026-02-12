@@ -682,6 +682,25 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
     const supplierOrderStmt = dbModule.db.prepare(supplierOrderQuery);
     const supplierOrderResult = supplierOrderStmt.get(productName);
 
+    // 🆕 Requête pour le détail des commandes fournisseurs non livrées
+    const supplierOrderDetailsQuery = `
+      SELECT
+        os.id,
+        os.invoice_number,
+        os.order_date,
+        os.status,
+        SUM(osi.quantity) as quantity
+      FROM order_supplier_items osi
+      INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
+      WHERE osi.product_name = ?
+        AND os.status != 'Livrée'
+      GROUP BY os.id, os.invoice_number, os.order_date, os.status
+      ORDER BY os.order_date DESC
+    `;
+
+    const supplierOrderDetailsStmt = dbModule.db.prepare(supplierOrderDetailsQuery);
+    const supplierOrderDetails = supplierOrderDetailsStmt.all(productName);
+
     const total_delivered = deliveredResult?.total_delivered || 0;
     const total_remaining = remainingResult?.total_remaining || 0;
     const sum_total_delivered_price = deliveredResult?.sum_total_delivered_price || 0;
@@ -699,7 +718,8 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
       sum_total_quantity_price: sum_total_delivered_price + sum_total_remaining_price,
       unit_price: deliveredResult?.unit_price || 0,
       order_count: deliveredResult?.order_count || 0,
-      supplier_order_quantity: supplier_order_quantity
+      supplier_order_quantity: supplier_order_quantity,
+      supplier_order_details: supplierOrderDetails
     };
     
     res.json(result);
@@ -1085,14 +1105,18 @@ app.post('/api/products/upload-image', requireLogin, requireAdmin, requirePermis
       fs.mkdirSync(uploadPath, { recursive: true });
     }
     
-    // Générer un nom de fichier unique
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // Garder le nom original du fichier
     const ext = path.extname(req.file.originalname);
     const nameWithoutExt = path.basename(req.file.originalname, ext);
     const sanitizedName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = sanitizedName + '-' + uniqueSuffix + ext;
-    
+    const filename = sanitizedName + ext;
+
     const fullPath = path.join(uploadPath, filename);
+
+    // Vérifier si une image avec ce nom existe déjà
+    if (fs.existsSync(fullPath)) {
+      return res.status(409).json({ error: `Une image nommée "${req.file.originalname}" existe déjà dans la catégorie "${category}". Veuillez renommer votre fichier.` });
+    }
     const imagePath = `/images/products/${category}/${filename}`;
     
     console.log('💾 Sauvegarde dans:', fullPath);

@@ -6,7 +6,7 @@
 import * as API from '../../core/api.js';
 import * as State from './state.js';
 import * as Utils from './utils.js';
-import '../suppliers/productStatsModal.js?v=2';
+import '../suppliers/productStatsModal.js?v=3';
 
 // État local pour les batch
 let currentBatches = [];
@@ -16,20 +16,36 @@ let currentView = 'list'; // 'list' ou 'grid'
 
 /**
  * Initialise la vue batch dans la page orderDetails
+ * @param {boolean} resetPosition - Si true, revient à "Tous les batch" (défaut: true)
  */
-export async function initBatchView(orderId) {
+export async function initBatchView(orderId, resetPosition = true) {
   try {
+    // Sauvegarder la position de scroll et le batch actuel avant re-rendu
+    const savedBatch = currentVisibleBatch;
+    const savedView = currentView;
+    const scrollY = window.scrollY;
+
     // Charger les stats des batch
     const batchStats = await API.getSupplierOrderBatchStats(orderId);
     currentBatches = batchStats.batches || [];
-    
+
     // Afficher la section batch
     renderBatchSection(orderId, batchStats);
 
-	// Initialiser sur "Tous les batch"
-	currentVisibleBatch = 0;
-	navigateToBatch(0);
-    
+    if (resetPosition) {
+      // Premier chargement : initialiser sur "Tous les batch"
+      currentVisibleBatch = 0;
+      navigateToBatch(0);
+    } else {
+      // Restaurer la position précédente
+      currentView = savedView;
+      const targetBatch = savedBatch <= currentBatches.length ? savedBatch : 0;
+      currentVisibleBatch = targetBatch;
+      navigateToBatch(targetBatch);
+      // Restaurer le scroll après re-rendu
+      requestAnimationFrame(() => window.scrollTo(0, scrollY));
+    }
+
     // Initialiser les event listeners
     initBatchEventListeners(orderId);
     // Attacher les listeners des boutons items
@@ -334,13 +350,17 @@ function reattachBatchItemListeners() {
       
       // Cacher l'affichage normal, montrer l'édition
       const itemInfo = itemCard.querySelector('.batch-item-info');
+      const currentItem = State.getCurrentOrderItems().find(i => i.id == itemId);
       itemInfo.innerHTML = `
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <label style="font-size:13px; flex-basis:100%;">Nom:
+            <input type="text" class="edit-name-${itemId}" value="${currentItem.product_name}" style="width:100%; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
+          </label>
           <label style="font-size:13px;">Qté:
-            <input type="number" class="edit-quantity-${itemId}" value="${State.getCurrentOrderItems().find(i => i.id == itemId).quantity}" min="1" style="width:70px; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
+            <input type="number" class="edit-quantity-${itemId}" value="${currentItem.quantity}" min="1" style="width:70px; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
           </label>
           <label style="font-size:13px;">Prix unit. (USD):
-            <input type="number" class="edit-price-${itemId}" value="${State.getCurrentOrderItems().find(i => i.id == itemId).unit_price}" min="0" step="0.01" style="width:90px; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
+            <input type="number" class="edit-price-${itemId}" value="${currentItem.unit_price}" min="0" step="0.01" style="width:90px; padding:4px 6px; border:1px solid #cbd5e0; border-radius:4px;">
           </label>
           <button class="btn btn-primary btn-sm save-edit-${itemId}">Enregistrer</button>
           <button class="btn btn-sm cancel-edit-${itemId}" style="background:#e2e8f0; color:#4a5568;">Annuler</button>
@@ -349,21 +369,27 @@ function reattachBatchItemListeners() {
       
       // Listeners pour save/cancel
       document.querySelector(`.save-edit-${itemId}`).onclick = async () => {
+        const productName = document.querySelector(`.edit-name-${itemId}`).value.trim();
         const quantity = parseInt(document.querySelector(`.edit-quantity-${itemId}`).value);
         const unitPrice = parseFloat(document.querySelector(`.edit-price-${itemId}`).value);
-        
+
+        if (!productName) {
+          alert('Le nom du produit ne peut pas être vide');
+          return;
+        }
+
         try {
-          await API.updateSupplierOrderItem(itemId, { quantity, unit_price: unitPrice });
+          await API.updateSupplierOrderItem(itemId, { product_name: productName, quantity, unit_price: unitPrice });
           const items = await API.fetchSupplierOrderItems(orderId);
           State.setCurrentOrderItems(items);
-          await initBatchView(orderId);
+          await initBatchView(orderId, false);
         } catch (error) {
           console.error('Erreur:', error);
         }
       };
-      
+
       document.querySelector(`.cancel-edit-${itemId}`).onclick = async () => {
-        await initBatchView(orderId);
+        await initBatchView(orderId, false);
       };
     });
   });
@@ -378,7 +404,7 @@ function reattachBatchItemListeners() {
         await API.deleteSupplierOrderItem(itemId);
         const items = await API.fetchSupplierOrderItems(orderId);
         State.setCurrentOrderItems(items);
-        await initBatchView(orderId);
+        await initBatchView(orderId, false);
       } catch (error) {
         console.error('Erreur:', error);
       }
@@ -522,7 +548,7 @@ async function handleCreateNewBatch(orderId) {
 		// Recharger la vue
 		const items = await API.fetchSupplierOrderItems(orderId);
 		State.setCurrentOrderItems(items);
-		await initBatchView(orderId);
+		await initBatchView(orderId, false);
 	  }
   } catch (error) {
     console.error('Erreur création batch:', error);
@@ -543,7 +569,7 @@ async function handleDeleteEmptyBatch(orderId, batchNumber) {
       // Recharger la vue
       const items = await API.fetchSupplierOrderItems(orderId);
       State.setCurrentOrderItems(items);
-      await initBatchView(orderId);
+      await initBatchView(orderId, false);
     }
   } catch (error) {
     console.error('Erreur suppression batch:', error);
@@ -659,11 +685,11 @@ async function handleConfirmMoveItem(itemId, orderId) {
     if (result.success) {
       // Fermer le modal
       document.getElementById('moveItemModal').remove();
-      
+
       // Recharger la vue
       const items = await API.fetchSupplierOrderItems(orderId);
       State.setCurrentOrderItems(items);
-      await initBatchView(orderId);
+      await initBatchView(orderId, false);
     }
   } catch (error) {
     console.error('Erreur déplacement item:', error);
