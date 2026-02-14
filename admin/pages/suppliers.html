@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="icon" type="image/png" href="/favicon.png">
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <title>Gestion Fournisseurs - Discado</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/admin/css/main.css">
@@ -62,6 +64,9 @@
                     <h1 class="page-title">
                         <i class="fas fa-truck"></i> Gestion des Fournisseurs
                     </h1>
+                    <button class="btn btn-primary" id="addSupplierBtn">
+                        <i class="fas fa-plus"></i> Ajouter un fournisseur
+                    </button>
                 </div>
 
                 <div class="suppliers-grid" id="suppliersGrid">
@@ -211,6 +216,65 @@
         </div>
     </main>
 
+    <!-- Modal création fournisseur -->
+    <div class="modal-overlay" id="createSupplierModal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-truck"></i> Nouveau Fournisseur</h2>
+                <button class="modal-close" id="closeCreateSupplierModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createSupplierForm">
+                    <div class="form-group">
+                        <label>Nom du fournisseur *</label>
+                        <input type="text" id="supplierFormName" required placeholder="Nom du fournisseur">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Emails</label>
+                        <div id="supplierEmailsContainer" class="dynamic-fields-container">
+                            <div class="dynamic-field-row">
+                                <input type="email" placeholder="email@exemple.com" class="supplier-email-input">
+                                <button type="button" class="btn-add-field" data-target="emails"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>WeChat</label>
+                        <div id="supplierWechatsContainer" class="dynamic-fields-container">
+                            <div class="dynamic-field-row">
+                                <input type="text" placeholder="ID WeChat" class="supplier-wechat-input">
+                                <button type="button" class="btn-add-field" data-target="wechats"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Téléphones</label>
+                        <div id="supplierPhonesContainer" class="dynamic-fields-container">
+                            <div class="dynamic-field-row">
+                                <input type="tel" placeholder="+XX XXX XXX XXXX" class="supplier-phone-input">
+                                <button type="button" class="btn-add-field" data-target="phones"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="supplierFormNotes" rows="3" placeholder="Notes sur ce fournisseur..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-secondary" id="cancelCreateSupplierBtn">Annuler</button>
+                <button type="button" class="modal-btn modal-btn-primary" id="submitCreateSupplierBtn">
+                    <i class="fas fa-check"></i> Créer le fournisseur
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal création commande -->
     <div class="modal-overlay" id="createOrderModal" style="display: none;">
         <div class="modal-content" style="max-width: 500px;">
@@ -311,7 +375,7 @@
     <!-- Scripts -->
     <script type="module" src="/admin/js/utils/tabsPermissions.js"></script>
     <script type="module">
-        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js?v=3';
+        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js?v=4';
 
         document.addEventListener('DOMContentLoaded', () => {
           SuppliersModule.init();

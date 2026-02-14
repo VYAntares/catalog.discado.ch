@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="icon" type="image/png" href="/favicon.png">
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <title>Comptabilité - Discado</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/admin/css/main.css">
     <link rel="stylesheet" href="/admin/css/compta.css">
     <link rel="stylesheet" href="/admin/css/compta-chart.css">
+    <link rel="stylesheet" href="/admin/css/compta-client-styles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 </head>
 <body>
@@ -75,6 +78,9 @@
             </button>
             <button class="compta-tab-btn" data-tab="clients">
                 <i class="fas fa-users"></i> Par client
+            </button>
+            <button class="compta-tab-btn" data-tab="all_invoices">
+                <i class="fas fa-file-invoice"></i> Toutes les factures
             </button>
             <button class="compta-tab-btn" data-tab="unpaid">
                 <i class="fas fa-exclamation-triangle"></i> Factures impayées
@@ -168,6 +174,63 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Tab: Toutes les factures -->
+        <div id="all_invoices-tab" class="compta-tab-content">
+            <div class="search-container">
+                <input type="text" id="allInvoicesSearchInput" class="search-input"
+                    placeholder="Rechercher par client, numéro de facture...">
+                <button id="allInvoicesSearchBtn" class="search-btn">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+
+                <select id="allInvoicesSortSelect" class="search-input" style="max-width: 220px;">
+                    <option value="date_desc">Date ↓ (récente)</option>
+                    <option value="date_asc">Date ↑ (ancienne)</option>
+                    <option value="total_desc">Montant TTC ↓</option>
+                    <option value="total_asc">Montant TTC ↑</option>
+                    <option value="paid_desc">Montant payé ↓</option>
+                    <option value="paid_asc">Montant payé ↑</option>
+                    <option value="due_desc">Montant dû ↓</option>
+                    <option value="due_asc">Montant dû ↑</option>
+                    <option value="name_asc">Client (A-Z)</option>
+                    <option value="name_desc">Client (Z-A)</option>
+                </select>
+
+                <button id="exportAllInvoicesCSVBtn" class="export-btn">
+                    <i class="fas fa-file-csv"></i>
+                    Exporter en CSV
+                </button>
+            </div>
+
+            <div class="client-invoices-container">
+                <div class="invoices-table-wrapper">
+                    <table class="invoices-table" id="allInvoicesTable">
+                        <thead>
+                            <tr>
+                                <th>Num facture</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Montant HT</th>
+                                <th>TVA</th>
+                                <th>Montant TTC</th>
+                                <th>Date échéance</th>
+                                <th>Montant encaissé</th>
+                                <th>Solde dû</th>
+                                <th>Date paiement</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allInvoicesTableBody">
+                            <tr>
+                                <td colspan="12" class="loading">Chargement des factures...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

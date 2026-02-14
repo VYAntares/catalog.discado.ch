@@ -95,20 +95,34 @@ function renderOrdersList(orders) {
 function createOrderCard(order) {
   const unpaid = Utils.calculateRemaining(order.total_amount, order.amount_paid);
   const statusClass = Utils.getStatusClass(order.status);
+  const itemCount = order.item_count || 0;
+  const categories = order.categories ? order.categories.split(',').filter(c => c.trim()) : [];
+
+  const categoriesHtml = categories.length > 0
+    ? categories.map(c => `<span class="order-card-category">${c.trim()}</span>`).join('')
+    : '<span class="order-card-category order-card-category--empty">Aucune catégorie</span>';
 
   return `
     <div class="order-card" data-order-id="${order.id}">
-      <div class="order-card-header">
-        <h3>Facture ${order.invoice_number}</h3>
-        <span class="order-status-badge ${statusClass}">${order.status}</span>
+      <div class="order-card-top">
+        <div class="order-card-hero">
+          <span class="order-card-total">${Utils.formatAmount(order.total_amount)}</span>
+          <span class="order-card-item-count">${itemCount} article${itemCount !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="order-card-meta">
+          <div class="order-card-header">
+            <h4>Facture ${order.invoice_number}</h4>
+            <span class="status-badge ${statusClass}">${order.status}</span>
+          </div>
+          <div class="order-card-date">${Utils.formatDate(order.order_date)}</div>
+          <div class="order-card-amounts">
+            <span class="order-card-amount"><strong>Payé</strong> ${Utils.formatAmount(order.amount_paid)}</span>
+            <span class="order-card-amount order-card-amount--remaining"><strong>Reste</strong> ${Utils.formatAmount(unpaid)}</span>
+          </div>
+        </div>
       </div>
-      <div class="order-card-info">
-        <span>📅 ${Utils.formatDate(order.order_date)}</span>
-      </div>
-      <div class="order-card-amounts">
-        <span><strong>Total:</strong> ${Utils.formatAmount(order.total_amount)}</span>
-        <span><strong>Payé:</strong> ${Utils.formatAmount(order.amount_paid)}</span>
-        <span><strong>Reste:</strong> ${Utils.formatAmount(unpaid)}</span>
+      <div class="order-card-categories">
+        ${categoriesHtml}
       </div>
     </div>
   `;

@@ -272,6 +272,8 @@ app.get('/pages/login.html', (req, res) => {
 });
 
 // ===== RESSOURCES STATIQUES =====
+app.use('/favicon.png', express.static(path.join(__dirname, 'public/favicon.png')));
+app.use('/apple-touch-icon.png', express.static(path.join(__dirname, 'public/apple-touch-icon.png')));
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/fonts', express.static(path.join(__dirname, 'public/fonts')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
@@ -1723,7 +1725,14 @@ app.get('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
 // Récupérer toutes les commandes d'un fournisseur spécifique
 app.get('/api/suppliers/:supplierId/orders', requireLogin, requireAdmin, (req, res) => {
   try {
-    const orders = dbModule.orderSupplier.getBySupplierId.all(req.params.supplierId);
+    const orders = dbModule.db.prepare(`
+      SELECT os.*,
+        COALESCE((SELECT SUM(osi.quantity) FROM order_supplier_items osi WHERE osi.order_supplier_id = os.id), 0) as item_count,
+        (SELECT GROUP_CONCAT(DISTINCT osi.category) FROM order_supplier_items osi WHERE osi.order_supplier_id = os.id AND osi.category IS NOT NULL AND osi.category != '') as categories
+      FROM order_supplier os
+      WHERE os.supplier_id = ?
+      ORDER BY os.order_date DESC
+    `).all(req.params.supplierId);
     res.json(orders);
   } catch (error) {
     console.error('Error fetching supplier orders:', error);
@@ -2457,6 +2466,18 @@ app.get('/api/invoices/month-details', requireLogin, requireAdmin, requirePermis
   } catch (error) {
     console.error('Error getting month invoices:', error);
     res.status(500).json({ error: 'Error getting month invoices' });
+  }
+});
+
+app.get('/api/invoices/all', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
+  const year = req.query.year && req.query.year !== 'all' ? parseInt(req.query.year) : null;
+
+  try {
+    const invoices = invoiceManagementService.getAllInvoices(year);
+    res.json({ invoices });
+  } catch (error) {
+    console.error('Error getting all invoices:', error);
+    res.status(500).json({ error: 'Error getting all invoices' });
   }
 });
 

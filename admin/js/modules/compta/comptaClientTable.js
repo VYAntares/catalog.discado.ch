@@ -23,6 +23,12 @@ class ComptaClientTable {
             return;
         }
 
+        // Mettre à jour le bouton retour avec l'année
+        const backBtn = document.querySelector('.back-btn');
+        if (backBtn) {
+            backBtn.href = `/admin/compta?tab=clients&year=${this.year}`;
+        }
+
         this.setupEventListeners();
         this.loadClientInvoices();
     }

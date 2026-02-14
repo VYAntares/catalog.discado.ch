@@ -8,10 +8,13 @@ class ComptaMain {
     constructor() {
         this.allClientsData = [];
         this.unpaidInvoices = [];
+        this.allInvoicesData = [];
+        this.allInvoicesFiltered = [];
         this.unpaidSortOrder = 'desc';
 		this.unpaidSortType = 'date';
         this.selectedYear = new Date().getFullYear();
         this.currentSortOption = 'total_desc';
+        this.allInvoicesSortOption = 'date_desc';
         this.viewMode = 'all';
         this.editingCells = new Map();
 		this.chart = null;
@@ -56,6 +59,8 @@ class ComptaMain {
                 this.loadClientsData();
             } else if (activeTab === 'unpaid') {
                 this.loadUnpaidInvoices();
+            } else if (activeTab === 'all_invoices') {
+                this.loadAllInvoices();
             } else {
                 this.loadOverviewData();
 				this.loadAndRenderChart();
@@ -104,15 +109,57 @@ class ComptaMain {
         if (exportUnpaidBtn) {
             exportUnpaidBtn.addEventListener('click', () => this.exportUnpaidToCSV());
         }
+
+        // === Toutes les factures ===
+        const allInvoicesSearchBtn = document.getElementById('allInvoicesSearchBtn');
+        if (allInvoicesSearchBtn) {
+            allInvoicesSearchBtn.addEventListener('click', () => this.searchAllInvoices());
+        }
+        const allInvoicesSearchInput = document.getElementById('allInvoicesSearchInput');
+        if (allInvoicesSearchInput) {
+            allInvoicesSearchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') this.searchAllInvoices();
+            });
+        }
+        const allInvoicesSortSelect = document.getElementById('allInvoicesSortSelect');
+        if (allInvoicesSortSelect) {
+            allInvoicesSortSelect.addEventListener('change', (e) => {
+                this.allInvoicesSortOption = e.target.value;
+                this.displayAllInvoices();
+            });
+        }
+        const exportAllInvoicesBtn = document.getElementById('exportAllInvoicesCSVBtn');
+        if (exportAllInvoicesBtn) {
+            exportAllInvoicesBtn.addEventListener('click', () => this.exportAllInvoicesToCSV());
+        }
     }
 
     checkUrlParams() {
         const urlParams = new URLSearchParams(window.location.search);
+
+        // Restaurer l'année si passée en paramètre
+        const yearParam = urlParams.get('year');
+        if (yearParam) {
+            const yearSelect = document.getElementById('yearSelect');
+            if (yearParam === 'all') {
+                this.selectedYear = 'all';
+                yearSelect.value = 'all';
+            } else {
+                const yearNum = parseInt(yearParam);
+                if (!isNaN(yearNum)) {
+                    this.selectedYear = yearNum;
+                    yearSelect.value = yearNum;
+                }
+            }
+        }
+
         const tab = urlParams.get('tab');
         if (tab === 'clients') {
             document.querySelector('[data-tab="clients"]').click();
         } else if (tab === 'unpaid') {
             document.querySelector('[data-tab="unpaid"]').click();
+        } else if (tab === 'all_invoices') {
+            document.querySelector('[data-tab="all_invoices"]').click();
         }
     }
 
@@ -133,7 +180,9 @@ class ComptaMain {
         } else if (targetTab === 'overview') {
 			this.loadOverviewData();
 			this.loadAndRenderChart();
-		} else if (targetTab === 'unpaid') {
+		} else if (targetTab === 'all_invoices') {
+            this.loadAllInvoices();
+        } else if (targetTab === 'unpaid') {
             this.loadUnpaidInvoices();
         }
     }
@@ -796,6 +845,369 @@ class ComptaMain {
         });
 
         this.displayClientsData(filtered);
+    }
+
+    // ===== TOUTES LES FACTURES =====
+
+    async loadAllInvoices() {
+        try {
+            const response = await fetch(`/api/invoices/all?year=${this.selectedYear}`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors du chargement des factures');
+            }
+
+            const data = await response.json();
+            this.allInvoicesData = data.invoices || [];
+            this.allInvoicesFiltered = [...this.allInvoicesData];
+            this.displayAllInvoices();
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors du chargement des factures', 'error');
+            document.getElementById('allInvoicesTableBody').innerHTML =
+                '<tr><td colspan="12" class="error-message">Impossible de charger les factures</td></tr>';
+        }
+    }
+
+    sortAllInvoices(invoices) {
+        const sorted = [...invoices];
+        switch (this.allInvoicesSortOption) {
+            case 'date_desc':
+                return sorted.sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date));
+            case 'date_asc':
+                return sorted.sort((a, b) => new Date(a.invoice_date) - new Date(b.invoice_date));
+            case 'total_desc':
+                return sorted.sort((a, b) => (b.total_ttc || 0) - (a.total_ttc || 0));
+            case 'total_asc':
+                return sorted.sort((a, b) => (a.total_ttc || 0) - (b.total_ttc || 0));
+            case 'paid_desc':
+                return sorted.sort((a, b) => (b.amount_paid || 0) - (a.amount_paid || 0));
+            case 'paid_asc':
+                return sorted.sort((a, b) => (a.amount_paid || 0) - (b.amount_paid || 0));
+            case 'due_desc':
+                return sorted.sort((a, b) => (b.amount_due || 0) - (a.amount_due || 0));
+            case 'due_asc':
+                return sorted.sort((a, b) => (a.amount_due || 0) - (b.amount_due || 0));
+            case 'name_asc':
+                return sorted.sort((a, b) => (a.client_full_name || '').localeCompare(b.client_full_name || ''));
+            case 'name_desc':
+                return sorted.sort((a, b) => (b.client_full_name || '').localeCompare(a.client_full_name || ''));
+            default:
+                return sorted;
+        }
+    }
+
+    displayAllInvoices() {
+        const tbody = document.getElementById('allInvoicesTableBody');
+
+        if (!this.allInvoicesFiltered || this.allInvoicesFiltered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="12" class="no-data">Aucune facture trouvée</td></tr>';
+            return;
+        }
+
+        const sorted = this.sortAllInvoices(this.allInvoicesFiltered);
+        tbody.innerHTML = sorted.map(invoice => this.createAllInvoiceRow(invoice)).join('');
+        this.attachAllInvoicesEventListeners();
+    }
+
+    createAllInvoiceRow(invoice) {
+        const statusClass = this.getInvoiceStatusClass(invoice.payment_status);
+        const statusText = this.getInvoiceStatusText(invoice.payment_status);
+
+        const paidDateValue = invoice.paid_date ?
+            new Date(invoice.paid_date).toISOString().split('T')[0] : '';
+        const dueDateValue = invoice.due_date ?
+            new Date(invoice.due_date).toISOString().split('T')[0] : '';
+
+        return `
+            <tr data-invoice-id="${invoice.id}" data-source="all_invoices">
+                <td class="invoice-number"><strong>${invoice.order_id}</strong></td>
+                <td>${this.formatDateShort(invoice.invoice_date)}</td>
+                <td>${invoice.client_full_name || 'N/A'}</td>
+                <td class="text-right">${formatCurrency(invoice.subtotal_ht)}</td>
+                <td class="text-right">${formatCurrency(invoice.vat_amount)}</td>
+                <td class="text-right"><strong>${formatCurrency(invoice.total_ttc)}</strong></td>
+                <td>${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
+                <td class="all-inv-editable text-right" data-field="amount_paid" data-type="number">
+                    ${formatCurrency(invoice.amount_paid)}
+                </td>
+                <td class="text-right ${invoice.amount_due > 0 ? 'text-danger' : 'text-success'}">
+                    ${formatCurrency(invoice.amount_due)}
+                </td>
+                <td class="all-inv-editable" data-field="paid_date" data-type="date">
+                    ${paidDateValue ? this.formatDateShort(invoice.paid_date) : 'Non payée'}
+                </td>
+                <td class="all-inv-editable status-cell" data-field="payment_status" data-type="select">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </td>
+                <td class="text-center">
+                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                    class="action-btn download-btn"
+                    target="_blank"
+                    title="Télécharger la facture">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                </td>
+            </tr>
+        `;
+    }
+
+    getInvoiceStatusClass(status) {
+        const map = { 'paid': 'status-paid', 'partial': 'status-partial', 'unpaid': 'status-unpaid' };
+        return map[status] || 'status-unpaid';
+    }
+
+    getInvoiceStatusText(status) {
+        const map = { 'paid': 'Payé', 'partial': 'Partiel', 'unpaid': 'Non payé' };
+        return map[status] || 'Non payé';
+    }
+
+    attachAllInvoicesEventListeners() {
+        document.querySelectorAll('.all-inv-editable').forEach(cell => {
+            cell.addEventListener('click', (e) => this.startEditAllInvoice(e.currentTarget));
+        });
+    }
+
+    startEditAllInvoice(cell) {
+        const row = cell.closest('tr');
+        const invoiceId = row.dataset.invoiceId;
+        const field = cell.dataset.field;
+        const type = cell.dataset.type;
+
+        const invoice = this.allInvoicesData.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        if (this.editingCells.has(cell)) return;
+
+        const currentValue = invoice[field];
+        let input;
+
+        if (type === 'select') {
+            input = document.createElement('select');
+            input.className = 'inline-edit-select';
+            input.innerHTML = `
+                <option value="unpaid" ${invoice.payment_status === 'unpaid' ? 'selected' : ''}>Non payé</option>
+                <option value="partial" ${invoice.payment_status === 'partial' ? 'selected' : ''}>Partiel</option>
+                <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
+            `;
+        } else if (type === 'date') {
+            input = document.createElement('input');
+            input.type = 'date';
+            input.className = 'inline-edit-input';
+            input.value = currentValue ? new Date(currentValue).toISOString().split('T')[0] : '';
+        } else if (type === 'number') {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.01';
+            input.className = 'inline-edit-input';
+            input.value = currentValue || 0;
+        }
+
+        const originalContent = cell.innerHTML;
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+
+        if (type === 'number') {
+            input.select();
+        }
+
+        this.editingCells.set(cell, originalContent);
+
+        const save = async () => {
+            const newValue = input.value;
+            await this.saveEditAllInvoice(invoiceId, field, newValue, cell, originalContent);
+        };
+
+        const cancel = () => {
+            cell.innerHTML = originalContent;
+            this.editingCells.delete(cell);
+        };
+
+        if (type === 'select') {
+            input.addEventListener('change', save);
+        } else {
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    save();
+                } else if (e.key === 'Escape') {
+                    cancel();
+                }
+            });
+        }
+    }
+
+    async saveEditAllInvoice(invoiceId, field, newValue, cell, originalContent) {
+        const invoice = this.allInvoicesData.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        try {
+            let updateData = {};
+
+            if (field === 'amount_paid') {
+                const amountPaid = parseFloat(newValue) || 0;
+                const amountDue = invoice.total_ttc - amountPaid;
+
+                let paymentStatus;
+                if (amountPaid >= invoice.total_ttc) {
+                    paymentStatus = 'paid';
+                } else if (amountPaid > 0) {
+                    paymentStatus = 'partial';
+                } else {
+                    paymentStatus = 'unpaid';
+                }
+
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: paymentStatus,
+                    paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            } else if (field === 'paid_date') {
+                updateData = {
+                    amount_paid: invoice.amount_paid,
+                    amount_due: invoice.amount_due,
+                    payment_status: invoice.payment_status,
+                    paid_date: newValue || null
+                };
+            } else if (field === 'payment_status') {
+                let amountPaid = invoice.amount_paid;
+                let amountDue = invoice.amount_due;
+
+                if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+                    amountPaid = invoice.total_ttc;
+                    amountDue = 0;
+                } else if (newValue === 'unpaid') {
+                    amountPaid = 0;
+                    amountDue = invoice.total_ttc;
+                }
+
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: newValue,
+                    paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            }
+
+            const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(updateData)
+            });
+
+            const responseText = await response.text();
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Cannot parse as JSON:', e);
+                throw new Error('Le serveur a retourné une réponse invalide');
+            }
+
+            if (!response.ok) {
+                throw new Error(responseData.error || responseData.message || 'Erreur lors de la mise à jour');
+            }
+
+            showNotification('Facture mise à jour avec succès', 'success');
+            await this.loadAllInvoices();
+
+        } catch (error) {
+            console.error('Erreur complète:', error);
+            showNotification('Erreur: ' + error.message, 'error');
+            cell.innerHTML = originalContent;
+        }
+
+        this.editingCells.delete(cell);
+    }
+
+    searchAllInvoices() {
+        const searchTerm = document.getElementById('allInvoicesSearchInput').value.toLowerCase().trim();
+
+        if (!searchTerm) {
+            this.allInvoicesFiltered = [...this.allInvoicesData];
+        } else {
+            this.allInvoicesFiltered = this.allInvoicesData.filter(inv => {
+                const name = (inv.client_full_name || '').toLowerCase();
+                const orderId = (inv.order_id || '').toLowerCase();
+                const userId = (inv.user_id || '').toLowerCase();
+                return name.includes(searchTerm) || orderId.includes(searchTerm) || userId.includes(searchTerm);
+            });
+        }
+
+        this.displayAllInvoices();
+    }
+
+    exportAllInvoicesToCSV() {
+        if (!this.allInvoicesFiltered || this.allInvoicesFiltered.length === 0) {
+            showNotification('Aucune facture à exporter', 'warning');
+            return;
+        }
+
+        const sorted = this.sortAllInvoices(this.allInvoicesFiltered);
+
+        const headers = [
+            'Numéro facture', 'Date facture', 'Client',
+            'Montant HT', 'TVA', 'Montant TTC',
+            'Date échéance', 'Montant encaissé', 'Solde dû',
+            'Date paiement', 'Statut'
+        ];
+
+        const totals = sorted.reduce((acc, inv) => {
+            acc.count += 1;
+            acc.subtotal_ht += parseFloat(inv.subtotal_ht) || 0;
+            acc.vat_amount += parseFloat(inv.vat_amount) || 0;
+            acc.total_ttc += parseFloat(inv.total_ttc) || 0;
+            acc.amount_paid += parseFloat(inv.amount_paid) || 0;
+            acc.amount_due += parseFloat(inv.amount_due) || 0;
+            return acc;
+        }, { count: 0, subtotal_ht: 0, vat_amount: 0, total_ttc: 0, amount_paid: 0, amount_due: 0 });
+
+        const rows = sorted.map(inv => [
+            inv.order_id || '',
+            this.formatDateShort(inv.invoice_date),
+            `"${(inv.client_full_name || '').replace(/"/g, '""')}"`,
+            this.formatNumberForCSV(inv.subtotal_ht),
+            this.formatNumberForCSV(inv.vat_amount),
+            this.formatNumberForCSV(inv.total_ttc),
+            inv.due_date ? this.formatDateShort(inv.due_date) : '',
+            this.formatNumberForCSV(inv.amount_paid),
+            this.formatNumberForCSV(inv.amount_due),
+            inv.paid_date ? this.formatDateShort(inv.paid_date) : '',
+            this.getInvoiceStatusText(inv.payment_status)
+        ].join(','));
+
+        rows.push('');
+        rows.push([
+            `"TOTAL (${totals.count} factures)"`, '', '',
+            this.formatNumberForCSV(totals.subtotal_ht),
+            this.formatNumberForCSV(totals.vat_amount),
+            this.formatNumberForCSV(totals.total_ttc),
+            '',
+            this.formatNumberForCSV(totals.amount_paid),
+            this.formatNumberForCSV(totals.amount_due),
+            '', ''
+        ].join(','));
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        const fileName = `toutes_factures_${this.selectedYear}.csv`;
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showNotification(`Export CSV réussi : ${fileName}`, 'success');
     }
 
     exportClientsToCSV() {

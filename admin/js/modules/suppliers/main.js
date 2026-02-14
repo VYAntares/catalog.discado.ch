@@ -9,6 +9,7 @@ import * as SuppliersList from './suppliersList.js';
 import * as SupplierDetails from './supplierDetails.js';
 import * as OrderDetails from './orderDetails.js';
 import * as CreateOrderModal from './createOrderModal.js';
+import * as CreateSupplierModal from './createSupplierModal.js';
 
 /**
  * Initialisation du module
@@ -21,7 +22,8 @@ export async function init() {
     initNavigation();
     initLogout();
     CreateOrderModal.init();
-    
+    CreateSupplierModal.init();
+
     // Afficher la vue initiale
     SuppliersList.show();
     

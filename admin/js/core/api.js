@@ -201,6 +201,20 @@ async function fetchSuppliers() {
   }
 }
 
+// Crée un nouveau fournisseur
+async function createSupplier(supplierData) {
+  try {
+    const response = await fetch('/api/suppliers', {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify(supplierData)
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Récupère les commandes d'un fournisseur spécifique
 async function fetchSupplierOrders(supplierId) {
   try {
@@ -619,6 +633,7 @@ export {
   getInvoiceDownloadLink,
   saveUserPassword,
   fetchSuppliers,
+  createSupplier,
   fetchSupplierOrders,
   fetchSupplierStats,
   fetchAllSupplierOrders,

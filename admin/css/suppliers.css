@@ -205,31 +205,81 @@
 
 .order-card {
     background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
-    border-left: 4px solid #4299e1;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
 }
 
 .order-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(66, 153, 225, 0.18);
+    border-color: #4299e1;
+}
+
+.order-card-top {
+    display: flex;
+    align-items: stretch;
+}
+
+.order-card-hero {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 160px;
+    gap: 6px;
+}
+
+.order-card-total {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+
+.order-card-item-count {
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 3px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.order-card-meta {
+    flex: 1;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
 }
 
 .order-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
 }
 
 .order-card-header h4 {
     margin: 0;
     font-size: 18px;
     color: #2d3748;
-    font-weight: 600;
+    font-weight: 700;
+}
+
+.order-card-date {
+    font-size: 14px;
+    color: #718096;
+    font-weight: 500;
 }
 
 /* ===== BADGES STATUT ===== */
@@ -272,31 +322,52 @@
     color: #757575;
 }
 
-.order-card-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #718096;
-    font-size: 14px;
-}
-
 .order-card-amounts {
     display: flex;
-    gap: 24px;
-    margin-top: 12px;
-    font-size: 14px;
+    gap: 20px;
 }
 
-.order-card-amounts span {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+.order-card-amount {
+    font-size: 15px;
+    color: #4a5568;
 }
 
-.order-card-amounts strong {
+.order-card-amount strong {
     font-weight: 600;
-    color: #2d3748;
-    font-size: 16px;
+    color: #718096;
+    font-size: 13px;
+    margin-right: 4px;
+}
+
+.order-card-amount--remaining {
+    color: #ed8936;
+    font-weight: 600;
+}
+
+.order-card-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 24px;
+    border-top: 1px solid #f0f4f8;
+    background: #f9fafb;
+}
+
+.order-card-category {
+    display: inline-block;
+    padding: 3px 12px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.order-card-category--empty {
+    background: #f5f5f5;
+    color: #a0aec0;
 }
 
 /* ===== DÉTAILS COMMANDE ===== */
@@ -795,6 +866,79 @@
     box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
+/* ===== MODAL CRÉATION FOURNISSEUR ===== */
+#createSupplierModal {
+    z-index: 99999 !important;
+}
+
+#createSupplierModal .modal-content {
+    z-index: 100000 !important;
+}
+
+.dynamic-fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dynamic-field-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dynamic-field-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #2d3748;
+    font-family: 'Inter', Arial, sans-serif;
+    transition: border-color 0.2s;
+}
+
+.dynamic-field-row input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.btn-add-field,
+.btn-remove-field {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-add-field {
+    background: #ebf8ff;
+    color: #4299e1;
+}
+
+.btn-add-field:hover {
+    background: #bee3f8;
+    color: #2b6cb0;
+}
+
+.btn-remove-field {
+    background: #fff5f5;
+    color: #f56565;
+}
+
+.btn-remove-field:hover {
+    background: #fed7d7;
+    color: #e53e3e;
+}
+
 /* ===== MODAL ITEMS ===== */
 .modal-item {
     margin-bottom: 16px;
@@ -837,15 +981,30 @@
         grid-template-columns: 1fr;
     }
 
+    .order-card-top {
+        flex-direction: column;
+    }
+
+    .order-card-hero {
+        flex-direction: row;
+        min-width: auto;
+        padding: 16px 20px;
+        gap: 12px;
+    }
+
     .order-card-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
+        gap: 8px;
     }
 
     .order-card-amounts {
         flex-direction: column;
-        gap: 12px;
+        gap: 6px;
+    }
+
+    .order-card-categories {
+        padding: 10px 16px;
     }
 
     .item-card {
