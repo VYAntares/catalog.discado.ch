@@ -1,5 +1,11 @@
 /* admin/css/compta.css - Styles pour la page comptabilité */
 
+/* Page compta : utilise toute la largeur disponible */
+main {
+    max-width: 1700px !important;
+    padding: 30px 30px 50px !important;
+}
+
 /* ===== TABS DE NAVIGATION ===== */
 .compta-tabs {
     display: flex;
@@ -233,11 +239,15 @@
 }
 
 /* ===== TABLES STYLES ===== */
-.clients-summary-table,
+.clients-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 100%;
+}
+
 .invoices-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 100%; /* S'adapte à la largeur disponible */
 }
 
 .clients-summary-table thead,
@@ -462,10 +472,10 @@
     border-color: #667eea;
 }
 
-/* ===== OPTIMISATION COLONNES FACTURES IMPAYÉES ===== */
-/* Utiliser le même style que la vue client-invoices */
+/* ===== OPTIMISATION COLONNES FACTURES ===== */
 .invoices-table {
     table-layout: auto;
+    width: 100%;
     font-size: 13px;
 }
 
@@ -548,10 +558,13 @@
         grid-template-columns: 1fr;
     }
     
-    .clients-summary-table,
-    .invoices-table {
+    .clients-summary-table {
         font-size: 13px;
         min-width: 1000px; /* Assure le scroll sur mobile */
+    }
+
+    .invoices-table {
+        font-size: 12px;
     }
     
     .clients-summary-table th,
