@@ -1329,7 +1329,7 @@ class StockManager {
 			const quantity = parseInt(document.getElementById('addOrderQuantity').value);
 			const price = parseFloat(document.getElementById('addOrderPrice').value);
 			
-			if (!orderId || !quantity || !price) {
+			if (!orderId || !quantity || price == null || isNaN(price)) {
 				alert('Veuillez remplir tous les champs obligatoires');
 				return;
 			}

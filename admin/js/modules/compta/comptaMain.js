@@ -18,16 +18,158 @@ class ComptaMain {
         this.viewMode = 'all';
         this.editingCells = new Map();
 		this.chart = null;
+        this._savedScrollY = null;
         this.init();
     }
 
     init() {
         this.populateYearSelect();
+        this.restoreState();
         this.setupEventListeners();
         this.checkUrlParams();
-        this.loadOverviewData();
-		this.loadAndRenderChart();
-        this.loadClientsData();
+
+        // Charger les données selon l'onglet actif
+        const activeTab = document.querySelector('.compta-tab-btn.active');
+        const tab = activeTab ? activeTab.dataset.tab : 'overview';
+        if (tab === 'overview') {
+            this.loadOverviewData();
+            this.loadAndRenderChart();
+        } else if (tab === 'clients') {
+            this.loadClientsData();
+        } else if (tab === 'all_invoices') {
+            this.loadAllInvoices();
+        } else if (tab === 'unpaid') {
+            this.loadUnpaidInvoices();
+        }
+    }
+
+    // === Sauvegarde / Restauration de l'état (tri, onglet, scroll, recherche) ===
+
+    saveState() {
+        const activeTab = document.querySelector('.compta-tab-btn.active');
+        const state = {
+            tab: activeTab ? activeTab.dataset.tab : 'overview',
+            year: this.selectedYear,
+            viewMode: this.viewMode,
+            currentSortOption: this.currentSortOption,
+            allInvoicesSortOption: this.allInvoicesSortOption,
+            unpaidSortOrder: this.unpaidSortOrder,
+            unpaidSortType: this.unpaidSortType,
+            clientSearch: document.getElementById('clientSearchInput')?.value || '',
+            allInvoicesSearch: document.getElementById('allInvoicesSearchInput')?.value || '',
+            scrollY: window.scrollY
+        };
+        sessionStorage.setItem('comptaState', JSON.stringify(state));
+    }
+
+    restoreState() {
+        const saved = sessionStorage.getItem('comptaState');
+        if (!saved) return;
+
+        try {
+            const state = JSON.parse(saved);
+
+            // Restaurer l'année
+            if (state.year !== undefined) {
+                this.selectedYear = state.year;
+                const yearSelect = document.getElementById('yearSelect');
+                if (yearSelect) yearSelect.value = state.year;
+            }
+
+            // Restaurer le mode de vue
+            if (state.viewMode) {
+                this.viewMode = state.viewMode;
+                const viewModeSelect = document.getElementById('viewModeSelect');
+                if (viewModeSelect) viewModeSelect.value = state.viewMode;
+            }
+
+            // Restaurer les options de tri
+            if (state.currentSortOption) {
+                this.currentSortOption = state.currentSortOption;
+                const sortSelect = document.getElementById('sortSelect');
+                if (sortSelect) sortSelect.value = state.currentSortOption;
+            }
+
+            if (state.allInvoicesSortOption) {
+                this.allInvoicesSortOption = state.allInvoicesSortOption;
+                const allInvSort = document.getElementById('allInvoicesSortSelect');
+                if (allInvSort) allInvSort.value = state.allInvoicesSortOption;
+            }
+
+            if (state.unpaidSortOrder) {
+                this.unpaidSortOrder = state.unpaidSortOrder;
+            }
+
+            if (state.unpaidSortType) {
+                this.unpaidSortType = state.unpaidSortType;
+                // Mettre à jour les boutons visuellement
+                this.updateUnpaidSortButtons();
+            }
+
+            // Restaurer les recherches
+            if (state.clientSearch) {
+                const input = document.getElementById('clientSearchInput');
+                if (input) input.value = state.clientSearch;
+            }
+            if (state.allInvoicesSearch) {
+                const input = document.getElementById('allInvoicesSearchInput');
+                if (input) input.value = state.allInvoicesSearch;
+            }
+
+            // Restaurer l'onglet actif (sans déclencher le chargement des données)
+            if (state.tab && state.tab !== 'overview') {
+                document.querySelectorAll('.compta-tab-btn').forEach(b => b.classList.remove('active'));
+                const tabBtn = document.querySelector(`[data-tab="${state.tab}"]`);
+                if (tabBtn) tabBtn.classList.add('active');
+                document.querySelectorAll('.compta-tab-content').forEach(c => c.classList.remove('active'));
+                const tabContent = document.getElementById(`${state.tab}-tab`);
+                if (tabContent) tabContent.classList.add('active');
+            }
+
+            // Restaurer la position de scroll après le chargement des données
+            if (state.scrollY) {
+                this._savedScrollY = state.scrollY;
+            }
+
+        } catch (e) {
+            console.error('Erreur restauration état compta:', e);
+        }
+    }
+
+    updateUnpaidSortButtons() {
+        const sortBtn = document.getElementById('unpaidSortBtn');
+        const sortText = document.getElementById('unpaidSortText');
+        const sortClientBtn = document.getElementById('unpaidSortClientBtn');
+        const sortClientText = document.getElementById('unpaidSortClientText');
+
+        if (sortBtn && sortText) {
+            const icon = sortBtn.querySelector('i');
+            if (this.unpaidSortOrder === 'desc') {
+                if (icon) icon.className = 'fas fa-sort-amount-down';
+                sortText.textContent = 'Plus récente à plus ancienne';
+            } else {
+                if (icon) icon.className = 'fas fa-sort-amount-up';
+                sortText.textContent = 'Plus ancienne à plus récente';
+            }
+        }
+
+        if (sortClientBtn && sortClientText) {
+            const icon = sortClientBtn.querySelector('i');
+            if (this.unpaidSortType === 'client') {
+                if (icon) icon.className = 'fas fa-sort-alpha-down';
+                sortClientText.textContent = 'Trié par client (A-Z)';
+            } else {
+                if (icon) icon.className = 'fas fa-calendar-alt';
+                sortClientText.textContent = 'Trié par date';
+            }
+        }
+    }
+
+    restoreScrollPosition() {
+        if (this._savedScrollY) {
+            window.scrollTo(0, this._savedScrollY);
+            this._savedScrollY = null;
+        }
     }
 
     populateYearSelect() {
@@ -54,6 +196,7 @@ class ComptaMain {
         // Changement d'année
         document.getElementById('yearSelect').addEventListener('change', (e) => {
             this.selectedYear = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
+            this.saveState();
             const activeTab = document.querySelector('.compta-tab-btn.active').dataset.tab;
             if (activeTab === 'clients') {
                 this.loadClientsData();
@@ -70,18 +213,23 @@ class ComptaMain {
         // Mode de vue (tous / par source)
         document.getElementById('viewModeSelect').addEventListener('change', (e) => {
             this.viewMode = e.target.value;
+            this.saveState();
             this.displayClientsData(this.allClientsData);
         });
 
         // Tri des clients
         document.getElementById('sortSelect').addEventListener('change', (e) => {
             this.currentSortOption = e.target.value;
+            this.saveState();
             this.displayClientsData(this.allClientsData);
         });
 
         // Onglets
         document.querySelectorAll('.compta-tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+            btn.addEventListener('click', () => {
+                this.switchTab(btn.dataset.tab);
+                this.saveState();
+            });
         });
 
         // Recherche
@@ -125,6 +273,7 @@ class ComptaMain {
         if (allInvoicesSortSelect) {
             allInvoicesSortSelect.addEventListener('change', (e) => {
                 this.allInvoicesSortOption = e.target.value;
+                this.saveState();
                 this.displayAllInvoices();
             });
         }
@@ -132,6 +281,9 @@ class ComptaMain {
         if (exportAllInvoicesBtn) {
             exportAllInvoicesBtn.addEventListener('click', () => this.exportAllInvoicesToCSV());
         }
+
+        // Sauvegarder l'état au moment de quitter la page (scroll inclus)
+        window.addEventListener('beforeunload', () => this.saveState());
     }
 
     checkUrlParams() {
@@ -279,7 +431,14 @@ class ComptaMain {
             const response = await fetch(`/api/invoices/clients-summary${separator}${yearParam}`);
             const data = await response.json();
             this.allClientsData = data.clients || [];
-            this.displayClientsData(this.allClientsData);
+            // Appliquer la recherche sauvegardée si elle existe
+            const searchInput = document.getElementById('clientSearchInput');
+            if (searchInput && searchInput.value.trim()) {
+                this.searchClients();
+            } else {
+                this.displayClientsData(this.allClientsData);
+            }
+            this.restoreScrollPosition();
         } catch (error) {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement des clients', 'error');
@@ -304,6 +463,7 @@ class ComptaMain {
             this.unpaidInvoices = data.invoices || [];
 
             this.displayUnpaidInvoices();
+            this.restoreScrollPosition();
         } catch (error) {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement des factures impayées', 'error');
@@ -314,7 +474,7 @@ class ComptaMain {
 
     toggleUnpaidSort() {
         this.unpaidSortOrder = this.unpaidSortOrder === 'desc' ? 'asc' : 'desc';
-        
+
         const sortBtn = document.getElementById('unpaidSortBtn');
         const sortText = document.getElementById('unpaidSortText');
         const icon = sortBtn.querySelector('i');
@@ -327,12 +487,13 @@ class ComptaMain {
             sortText.textContent = 'Plus ancienne à plus récente';
         }
 
+        this.saveState();
         this.displayUnpaidInvoices();
     }
 
 	toggleUnpaidClientSort() {
 		this.unpaidSortType = this.unpaidSortType === 'date' ? 'client' : 'date';
-		
+
 		const sortBtn = document.getElementById('unpaidSortClientBtn');
 		const sortText = document.getElementById('unpaidSortClientText');
 		const icon = sortBtn.querySelector('i');
@@ -346,6 +507,7 @@ class ComptaMain {
 			sortText.textContent = 'Trié par date';
 		}
 
+		this.saveState();
 		this.displayUnpaidInvoices();
 	}
 
@@ -862,7 +1024,14 @@ class ComptaMain {
             const data = await response.json();
             this.allInvoicesData = data.invoices || [];
             this.allInvoicesFiltered = [...this.allInvoicesData];
-            this.displayAllInvoices();
+            // Appliquer la recherche sauvegardée si elle existe
+            const searchInput = document.getElementById('allInvoicesSearchInput');
+            if (searchInput && searchInput.value.trim()) {
+                this.searchAllInvoices();
+            } else {
+                this.displayAllInvoices();
+            }
+            this.restoreScrollPosition();
         } catch (error) {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement des factures', 'error');

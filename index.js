@@ -119,6 +119,25 @@ const upload = multer({
     }
   }
 });
+// ===== CONFIGURATION UPLOAD DE DOCUMENTS (PDF, CSV) =====
+const documentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // Limite de 10MB
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedExtensions = /pdf|csv/;
+    const allowedMimetypes = /application\/pdf|text\/csv|application\/vnd\.ms-excel/;
+    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedMimetypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Seuls les fichiers PDF et CSV sont autorisés'));
+    }
+  }
+});
 // ===== FIN CONFIGURATION UPLOAD =====
 
 // ===== SYSTÈME DE SÉCURITÉ =====
@@ -1762,6 +1781,206 @@ app.get('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req,
   }
 });
 
+// Export PDF d'une commande fournisseur
+app.get('/api/order-suppliers/:id/export-pdf', requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const supplier = dbModule.suppliers.getById.get(order.supplier_id);
+    const items = dbModule.orderSupplierItems.getByOrderId.all(orderId);
+
+    // Récupérer les barcodes depuis la table products
+    const getProductBarcode = dbModule.db.prepare('SELECT barcode FROM products WHERE id = ?');
+    items.forEach(item => {
+      if (item.product_id) {
+        const product = getProductBarcode.get(item.product_id);
+        item.barcode = product ? product.barcode : '';
+      } else {
+        item.barcode = '';
+      }
+    });
+
+    // Grouper les items par batch
+    const batches = {};
+    items.forEach(item => {
+      const batch = item.batch_number || 1;
+      if (!batches[batch]) batches[batch] = [];
+      batches[batch].push(item);
+    });
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    const invoiceNum = order.invoice_number || `CMD-${orderId}`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Commande_${invoiceNum}.pdf`);
+    doc.pipe(res);
+
+    // ===== EN-TÊTE =====
+    const rootDir = path.resolve(__dirname);
+    const logoPath = path.join(rootDir, 'public', 'images', 'logo', 'logo_discado_noir.png');
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 40, 30, { width: 80 });
+    }
+
+    doc.font('Helvetica-Bold').fontSize(18).text('COMMANDE FOURNISSEUR', 140, 35);
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`N° ${invoiceNum}`, 140, 58);
+    const orderDate = order.order_date ? new Date(order.order_date).toLocaleDateString('fr-CH') : 'N/A';
+    doc.text(`Date: ${orderDate}`, 140, 72);
+    doc.text(`Fournisseur: ${supplier ? supplier.name : 'N/A'}`, 140, 86);
+    doc.text(`Statut: ${order.status || 'N/A'}`, 140, 100);
+
+    // Ligne séparatrice
+    doc.moveTo(40, 120).lineTo(555, 120).lineWidth(1).stroke('#e2e8f0');
+
+    // ===== TABLEAU =====
+    const colX = { img: 40, name: 95, qty: 310, price: 370, total: 440, batch: 510 };
+    const colW = { img: 50, name: 210, qty: 55, price: 65, total: 65, batch: 45 };
+    const pageBottom = doc.page.height - 60;
+    let y = 130;
+
+    // Fonction pour dessiner l'en-tête du tableau
+    const drawTableHeader = () => {
+      doc.rect(40, y, 515, 22).fill('#4299e1');
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('white');
+      doc.text('Image', colX.img + 4, y + 6, { width: colW.img });
+      doc.text('Produit', colX.name + 4, y + 6, { width: colW.name });
+      doc.text('Qté', colX.qty + 4, y + 6, { width: colW.qty, align: 'center' });
+      doc.text('Prix unit.', colX.price + 4, y + 6, { width: colW.price, align: 'right' });
+      doc.text('Total', colX.total + 4, y + 6, { width: colW.total, align: 'right' });
+      doc.text('Batch', colX.batch + 4, y + 6, { width: colW.batch, align: 'center' });
+      doc.fillColor('black');
+      y += 22;
+    };
+
+    const sortedBatches = Object.keys(batches).sort((a, b) => a - b);
+    let grandTotal = 0;
+
+    for (const batchNum of sortedBatches) {
+      const batchItems = batches[batchNum];
+
+      // Titre du batch si plusieurs batches
+      if (sortedBatches.length > 1) {
+        if (y + 70 > pageBottom) {
+          doc.addPage();
+          y = 40;
+        }
+        doc.rect(40, y, 515, 20).fill('#f7fafc');
+        doc.font('Helvetica-Bold').fontSize(10).fillColor('#4a5568');
+        doc.text(`Batch ${batchNum}`, 48, y + 5);
+        doc.fillColor('black');
+        y += 20;
+      }
+
+      drawTableHeader();
+
+      for (let i = 0; i < batchItems.length; i++) {
+        const item = batchItems[i];
+        const rowHeight = 50;
+
+        // Vérifier si on a besoin d'une nouvelle page
+        if (y + rowHeight > pageBottom) {
+          doc.addPage();
+          y = 40;
+          drawTableHeader();
+        }
+
+        // Fond alterné
+        if (i % 2 === 0) {
+          doc.rect(40, y, 515, rowHeight).fill('#fafbfc');
+          doc.fillColor('black');
+        }
+
+        // Bordure basse
+        doc.moveTo(40, y + rowHeight).lineTo(555, y + rowHeight).lineWidth(0.5).stroke('#e2e8f0');
+
+        // Image
+        if (item.image_url) {
+          try {
+            let imagePath = item.image_url;
+            if (imagePath.startsWith('/')) {
+              imagePath = path.join(rootDir, 'public', imagePath);
+            }
+            if (fs.existsSync(imagePath)) {
+              doc.image(imagePath, colX.img + 4, y + 3, { width: 42, height: 42, fit: [42, 42] });
+            }
+          } catch (imgErr) {
+            // Image non disponible, on continue
+          }
+        }
+
+        // Nom du produit
+        doc.font('Helvetica-Bold').fontSize(9).fillColor('black');
+        doc.text(item.product_name || 'N/A', colX.name + 4, y + 6, { width: colW.name - 8 });
+
+        // Code-barres sous le nom
+        if (item.barcode) {
+          doc.font('Helvetica').fontSize(7).fillColor('#718096');
+          doc.text(`CB: ${item.barcode}`, colX.name + 4, y + 20, { width: colW.name - 8 });
+          doc.fillColor('black');
+        }
+
+        // Catégorie
+        if (item.category) {
+          doc.font('Helvetica').fontSize(7).fillColor('#a0aec0');
+          doc.text(item.category, colX.name + 4, y + 32, { width: colW.name - 8 });
+          doc.fillColor('black');
+        }
+
+        // Quantité
+        doc.font('Helvetica-Bold').fontSize(10).fillColor('black');
+        doc.text(String(item.quantity || 0), colX.qty + 4, y + 16, { width: colW.qty - 8, align: 'center' });
+
+        // Prix unitaire
+        doc.font('Helvetica').fontSize(9);
+        doc.text(`${(item.unit_price || 0).toFixed(2)}`, colX.price + 4, y + 16, { width: colW.price - 8, align: 'right' });
+
+        // Total
+        const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
+        grandTotal += itemTotal;
+        doc.font('Helvetica-Bold').fontSize(9);
+        doc.text(`${itemTotal.toFixed(2)}`, colX.total + 4, y + 16, { width: colW.total - 8, align: 'right' });
+
+        // Batch
+        doc.font('Helvetica').fontSize(9);
+        doc.text(String(item.batch_number || 1), colX.batch + 4, y + 16, { width: colW.batch - 8, align: 'center' });
+
+        y += rowHeight;
+      }
+    }
+
+    // ===== TOTAL GÉNÉRAL =====
+    if (y + 40 > pageBottom) {
+      doc.addPage();
+      y = 40;
+    }
+    y += 10;
+    doc.rect(370, y, 185, 30).fill('#2d3748');
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('white');
+    doc.text(`TOTAL: ${grandTotal.toFixed(2)} USD`, 378, y + 8, { width: 170, align: 'right' });
+    doc.fillColor('black');
+
+    // ===== INFOS SUPPLÉMENTAIRES =====
+    y += 50;
+    if (order.notes) {
+      doc.font('Helvetica-Bold').fontSize(10).text('Notes:', 40, y);
+      y += 14;
+      doc.font('Helvetica').fontSize(9).text(order.notes, 40, y, { width: 515 });
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error('Error generating supplier order PDF:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+  }
+});
+
 // Créer une nouvelle commande fournisseur avec ses items
 app.post('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
   try {
@@ -1952,6 +2171,143 @@ app.delete('/api/order-suppliers/:id/payments/:paymentId', requireLogin, require
   }
 });
 
+// ===== PIÈCES JOINTES COMMANDES FOURNISSEUR =====
+
+// Lister les pièces jointes d'une commande
+app.get('/api/order-suppliers/:id/attachments', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const attachments = dbModule.orderSupplierAttachments.getByOrderId.all(req.params.id);
+    res.json(attachments);
+  } catch (error) {
+    console.error('Error fetching attachments:', error);
+    res.status(500).json({ error: 'Erreur lors du chargement des pièces jointes' });
+  }
+});
+
+// Uploader une pièce jointe
+app.post('/api/order-suppliers/:id/attachments', requireLogin, requireAdmin, documentUpload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni' });
+    }
+
+    const orderId = req.params.id;
+
+    // Vérifier que la commande existe
+    const order = dbModule.orderSupplier.getById.get(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Commande non trouvée' });
+    }
+
+    // Créer le dossier de destination
+    const uploadDir = path.join(__dirname, 'uploads', 'order_supplier', String(orderId));
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Générer un nom de fichier unique
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const timestamp = Date.now();
+    const storedName = `${timestamp}${ext}`;
+    const fullPath = path.join(uploadDir, storedName);
+
+    // Sauvegarder le fichier sur le disque
+    fs.writeFileSync(fullPath, req.file.buffer);
+
+    // Enregistrer en base de données
+    const result = dbModule.orderSupplierAttachments.insert.run(
+      orderId,
+      req.file.originalname,
+      storedName,
+      ext.replace('.', ''),
+      req.file.size
+    );
+
+    res.json({
+      success: true,
+      message: 'Fichier uploadé avec succès',
+      attachment: {
+        id: result.lastInsertRowid,
+        original_name: req.file.originalname,
+        stored_name: storedName,
+        file_type: ext.replace('.', ''),
+        file_size: req.file.size
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading attachment:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'upload du fichier' });
+  }
+});
+
+// Télécharger / afficher une pièce jointe
+app.get('/api/order-suppliers/:id/attachments/:attachmentId/download', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const attachment = dbModule.orderSupplierAttachments.getById.get(req.params.attachmentId);
+    if (!attachment) {
+      return res.status(404).json({ error: 'Pièce jointe non trouvée' });
+    }
+
+    const filePath = path.join(__dirname, 'uploads', 'order_supplier', String(req.params.id), attachment.stored_name);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Fichier introuvable sur le disque' });
+    }
+
+    const contentType = attachment.file_type === 'pdf' ? 'application/pdf' : 'text/csv';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${attachment.original_name}"`);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Error downloading attachment:', error);
+    res.status(500).json({ error: 'Erreur lors du téléchargement' });
+  }
+});
+
+// Renommer une pièce jointe
+app.patch('/api/order-suppliers/:id/attachments/:attachmentId', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { original_name } = req.body;
+    if (!original_name || !original_name.trim()) {
+      return res.status(400).json({ error: 'Le nom ne peut pas être vide' });
+    }
+
+    const attachment = dbModule.orderSupplierAttachments.getById.get(req.params.attachmentId);
+    if (!attachment) {
+      return res.status(404).json({ error: 'Pièce jointe non trouvée' });
+    }
+
+    dbModule.orderSupplierAttachments.updateName.run(original_name.trim(), req.params.attachmentId);
+    res.json({ success: true, message: 'Nom mis à jour' });
+  } catch (error) {
+    console.error('Error renaming attachment:', error);
+    res.status(500).json({ error: 'Erreur lors du renommage' });
+  }
+});
+
+// Supprimer une pièce jointe
+app.delete('/api/order-suppliers/:id/attachments/:attachmentId', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const attachment = dbModule.orderSupplierAttachments.getById.get(req.params.attachmentId);
+    if (!attachment) {
+      return res.status(404).json({ error: 'Pièce jointe non trouvée' });
+    }
+
+    // Supprimer le fichier du disque
+    const filePath = path.join(__dirname, 'uploads', 'order_supplier', String(req.params.id), attachment.stored_name);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Supprimer de la base de données
+    dbModule.orderSupplierAttachments.delete.run(req.params.attachmentId);
+
+    res.json({ success: true, message: 'Pièce jointe supprimée avec succès' });
+  } catch (error) {
+    console.error('Error deleting attachment:', error);
+    res.status(500).json({ error: 'Erreur lors de la suppression' });
+  }
+});
+
 // Modifier un item (prix, quantité)
 app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) => {
   try {
@@ -2048,7 +2404,15 @@ app.patch('/api/order-supplier-items/:id/status', requireLogin, requireAdmin, (r
 // Supprimer une commande fournisseur
 app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
   try {
-    dbModule.orderSupplier.delete.run(req.params.id);
+    const orderId = req.params.id;
+
+    // Supprimer le dossier des pièces jointes sur le disque
+    const attachmentsDir = path.join(__dirname, 'uploads', 'order_supplier', String(orderId));
+    if (fs.existsSync(attachmentsDir)) {
+      fs.rmSync(attachmentsDir, { recursive: true, force: true });
+    }
+
+    dbModule.orderSupplier.delete.run(orderId);
     res.json({ success: true, message: 'Order deleted successfully' });
 
   } catch (error) {
@@ -2063,7 +2427,7 @@ app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req
     const { orderId } = req.params;
     const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status } = req.body;
 
-    if (!product_name || !unit_price || !quantity) {
+    if (!product_name || unit_price == null || !quantity) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

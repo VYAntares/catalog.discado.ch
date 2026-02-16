@@ -620,6 +620,79 @@ async function deleteSupplierOrderBatch(orderId, batchNumber) {
   }
 }
 
+// ===== PIÈCES JOINTES COMMANDES FOURNISSEUR =====
+
+async function fetchOrderAttachments(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/attachments`, API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function uploadOrderAttachment(orderId, file) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`/api/order-suppliers/${orderId}/attachments`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification('Fichier uploadé avec succès', 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function renameOrderAttachment(orderId, attachmentId, newName) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/attachments/${attachmentId}`, {
+      ...API_CONFIG,
+      method: 'PATCH',
+      body: JSON.stringify({ original_name: newName })
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification('Nom mis à jour', 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function deleteOrderAttachment(orderId, attachmentId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/attachments/${attachmentId}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      Notification.showNotification('Pièce jointe supprimée', 'success');
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export {
   fetchPendingOrders,
   fetchTreatedOrders,
@@ -657,5 +730,9 @@ export {
   createSupplierOrderBatch,
   moveItemToBatch,
   validateProductQuantities,
-  deleteSupplierOrderBatch
+  deleteSupplierOrderBatch,
+  fetchOrderAttachments,
+  uploadOrderAttachment,
+  renameOrderAttachment,
+  deleteOrderAttachment
 };

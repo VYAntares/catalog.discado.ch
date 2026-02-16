@@ -577,6 +577,61 @@
     box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
+/* ===== PIÈCES JOINTES ===== */
+.order-attachments {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-attachments h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.attachment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.attachment-item:last-child {
+    margin-bottom: 0;
+}
+
+.attachment-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.attachment-name {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.attachment-meta {
+    display: block;
+    font-size: 12px;
+    color: #a0aec0;
+}
+
+.attachment-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
 /* ===== ARTICLES ===== */
 .items-section {
     background: white;

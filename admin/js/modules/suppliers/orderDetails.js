@@ -27,6 +27,7 @@ export async function show(orderId) {
     State.setCurrentOrder(order);
 
     fillOrderInfo(order);
+    await loadAttachments();
     await BatchManager.initBatchView(orderId);
     attachEventListeners();
   
@@ -137,6 +138,35 @@ function attachEventListeners() {
   const notesField = document.getElementById('orderNotes');
   notesField.removeEventListener('input', handleNotesInput);
   notesField.addEventListener('input', handleNotesInput);
+
+  // Export PDF
+  const exportPdfBtn = document.getElementById('exportOrderPdfBtn');
+  if (exportPdfBtn) {
+    exportPdfBtn.onclick = () => {
+      const orderId = State.getCurrentOrderId();
+      window.open(`/api/order-suppliers/${orderId}/export-pdf`, '_blank');
+    };
+  }
+
+  // Upload pièce jointe
+  const uploadBtn = document.getElementById('uploadAttachmentBtn');
+  const attachmentInput = document.getElementById('attachmentInput');
+  if (uploadBtn) {
+    uploadBtn.removeEventListener('click', handleUploadClick);
+    uploadBtn.addEventListener('click', handleUploadClick);
+  }
+  if (attachmentInput) {
+    attachmentInput.removeEventListener('change', handleAttachmentChange);
+    attachmentInput.addEventListener('change', handleAttachmentChange);
+  }
+
+  // Boutons pièces jointes
+  document.querySelectorAll('.rename-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', handleRenameAttachment);
+  });
+  document.querySelectorAll('.delete-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', handleDeleteAttachment);
+  });
 
   // Boutons items
   document.querySelectorAll('.delete-item-btn').forEach(btn => {
@@ -386,6 +416,132 @@ async function handleDeleteItem(event) {
     await show(orderId);
   } catch (error) {
     console.error('Erreur suppression item:', error);
+  }
+}
+
+// ===== PIÈCES JOINTES =====
+
+/**
+ * Charge et affiche les pièces jointes
+ */
+async function loadAttachments() {
+  const orderId = State.getCurrentOrderId();
+  const container = document.getElementById('orderAttachmentsList');
+
+  try {
+    const attachments = await API.fetchOrderAttachments(orderId);
+    renderAttachmentsList(attachments, container);
+  } catch (error) {
+    console.error('Erreur chargement pièces jointes:', error);
+  }
+}
+
+/**
+ * Affiche la liste des pièces jointes
+ */
+function renderAttachmentsList(attachments, container) {
+  if (!attachments || attachments.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #a0aec0; font-size: 13px;">Aucune pièce jointe.</p>';
+    return;
+  }
+
+  container.innerHTML = attachments.map(att => {
+    const icon = att.file_type === 'pdf' ? 'fa-file-pdf' : 'fa-file-csv';
+    const iconColor = att.file_type === 'pdf' ? '#e53e3e' : '#38a169';
+    const sizeKB = (att.file_size / 1024).toFixed(1);
+    const date = Utils.formatDate(att.created_at);
+
+    return `
+      <div class="attachment-item" data-attachment-id="${att.id}">
+        <div class="attachment-info">
+          <i class="fas ${icon}" style="color: ${iconColor}; font-size: 20px;"></i>
+          <div>
+            <span class="attachment-name">${att.original_name}</span>
+            <span class="attachment-meta">${sizeKB} KB - ${date}</span>
+          </div>
+        </div>
+        <div class="attachment-actions">
+          <a href="/api/order-suppliers/${State.getCurrentOrderId()}/attachments/${att.id}/download"
+             target="_blank" class="btn btn-sm" style="background:#edf2f7; color:#4a5568;">
+            <i class="fas fa-eye"></i> Voir
+          </a>
+          <button class="btn btn-sm rename-attachment-btn" data-attachment-id="${att.id}" data-attachment-name="${att.original_name}" style="background:#edf2f7; color:#4a5568;">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button class="btn btn-danger btn-sm delete-attachment-btn" data-attachment-id="${att.id}">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Ouvre le sélecteur de fichier
+ */
+function handleUploadClick() {
+  document.getElementById('attachmentInput').click();
+}
+
+/**
+ * Gère l'upload après sélection du fichier
+ */
+async function handleAttachmentChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    await API.uploadOrderAttachment(orderId, file);
+    await loadAttachments();
+    attachEventListeners();
+  } catch (error) {
+    console.error('Erreur upload pièce jointe:', error);
+  }
+
+  // Reset l'input pour permettre de re-sélectionner le même fichier
+  event.target.value = '';
+}
+
+/**
+ * Gère le renommage d'une pièce jointe
+ */
+async function handleRenameAttachment(event) {
+  const btn = event.currentTarget;
+  const attachmentId = btn.dataset.attachmentId;
+  const currentName = btn.dataset.attachmentName;
+
+  const newName = prompt('Nouveau nom :', currentName);
+  if (!newName || newName.trim() === '' || newName === currentName) return;
+
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    await API.renameOrderAttachment(orderId, attachmentId, newName.trim());
+    await loadAttachments();
+    attachEventListeners();
+  } catch (error) {
+    console.error('Erreur renommage pièce jointe:', error);
+  }
+}
+
+/**
+ * Gère la suppression d'une pièce jointe
+ */
+async function handleDeleteAttachment(event) {
+  if (!confirm('Supprimer cette pièce jointe ?')) return;
+
+  const attachmentId = event.currentTarget.dataset.attachmentId;
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    await API.deleteOrderAttachment(orderId, attachmentId);
+    await loadAttachments();
+    attachEventListeners();
+  } catch (error) {
+    console.error('Erreur suppression pièce jointe:', error);
   }
 }
 

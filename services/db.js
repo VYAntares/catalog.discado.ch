@@ -243,6 +243,20 @@ function initDatabase() {
         )
       `);
 
+    // Table pour les pièces jointes des commandes fournisseurs
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS order_supplier_attachments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          order_supplier_id INTEGER NOT NULL,
+          original_name TEXT NOT NULL,
+          stored_name TEXT NOT NULL,
+          file_type TEXT NOT NULL,
+          file_size INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (order_supplier_id) REFERENCES order_supplier(id) ON DELETE CASCADE
+        )
+      `);
+
     // Création de la table orders
     db.exec(`
     CREATE TABLE IF NOT EXISTS orders (
@@ -476,6 +490,28 @@ module.exports = {
         FROM order_supplier_payments
         WHERE order_supplier_id = ?
         `)
+    },
+
+    orderSupplierAttachments: {
+        getByOrderId: db.prepare(`
+        SELECT * FROM order_supplier_attachments
+        WHERE order_supplier_id = ?
+        ORDER BY created_at DESC
+        `),
+
+        getById: db.prepare('SELECT * FROM order_supplier_attachments WHERE id = ?'),
+
+        insert: db.prepare(`
+        INSERT INTO order_supplier_attachments (
+            order_supplier_id, original_name, stored_name, file_type, file_size
+        ) VALUES (?, ?, ?, ?, ?)
+        `),
+
+        updateName: db.prepare('UPDATE order_supplier_attachments SET original_name = ? WHERE id = ?'),
+
+        delete: db.prepare('DELETE FROM order_supplier_attachments WHERE id = ?'),
+
+        deleteByOrderId: db.prepare('DELETE FROM order_supplier_attachments WHERE order_supplier_id = ?')
     },
 
     orderSupplierItems: {
