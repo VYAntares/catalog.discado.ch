@@ -1,0 +1,624 @@
+Claude’s Plan
+AUDIT COMPLET & PLAN DE REFONTE — catalog.discado.ch
+Date : 2026-02-17
+Racine projet : /sites/catalog.discado.ch/
+Stack : Node.js + Express.js + SQLite3 + Vanilla JavaScript
+Score global : 3.5/10
+
+CONTEXTE
+catalog.discado.ch est un catalogue B2B de produits (gadgets, accessoires) construit sur Node.js + Express + SQLite. Il gère un catalogue client, un système de commandes, la facturation PDF avec QR suisse, la gestion des fournisseurs, et une comptabilité intégrée. L'application fonctionne mais souffre de vulnérabilités de sécurité critiques, d'un fichier monolithique de 3 087 lignes (index.js) contenant les 119 routes, de fichiers JS frontend dépassant 700 lignes, de code dupliqué entre les panneaux public et admin, d'aucun test, et de dettes techniques accumulées. Ce plan vise à sécuriser, restructurer et moderniser le site sans interruption de service.
+
+PARTIE 1 — RAPPORT D'AUDIT
+1.1 — Scores par domaine
+Domaine	Score	Verdict
+Structure & Architecture	3/10	Monolithe index.js (3 087 lignes, 119 routes). Services dupliqués (invoiceService.js + InvoiceService2.js). Compteur de commandes dans un fichier JSON séparé de la DB. dotenv commenté.
+HTML (sémantique, accessibilité, SEO)	3/10	Pas de <meta description>, pas d'Open Graph, lang incohérent (en/fr), user-scalable=no bloque le zoom, aucun ARIA, aucun skip-nav.
+CSS (architecture, responsive, perf)	4/10	.category-item dupliqué dans 5 fichiers CSS. Deux versions Font Awesome (5.15.4 + 6.4.0). Palette incohérente (#2575fc vs #f44336). z-index anarchiques (999-1060). Pas de minification.
+JavaScript (organisation, sécurité, perf)	4/10	Architecture modulaire propre (core/modules/utils) — bon point. Mais 14 fichiers dépassent 200 lignes (jusqu'à 744). 35+ innerHTML sans sanitization (XSS). Code dupliqué entre public/ et admin/ (formatter, modal, notification, storage, validation). csurf importé mais jamais activé. Winston importé mais jamais utilisé.
+Base de données	4/10	Requêtes paramétrées à 99%. Mais compteur de commandes hors DB (race condition). JSON dans colonnes TEXT (fournisseurs non normalisés). N+1 dans orderService.js. 3 fichiers DB dont 2 vides.
+Sécurité	2/10	Path traversal exploitable, CSRF absent, mots de passe en clair supportés, clés de chiffrement regénérées au redémarrage et loggées en console, pas de régénération de session.
+Performance	5/10	Pas de lazy loading images, pas de minification CSS/JS, pas de cache HTTP, pas de pagination sur les listes.
+Maintenabilité & Qualité	3/10	Zéro test. Pas de linter. Pas de TypeScript. Code mort non nettoyé. Package nommé "mon-projet". Pas de README.
+1.2 — Inventaire JavaScript détaillé (55 fichiers analysés)
+Fichiers publics (22 fichiers)
+Fichier	Lignes	Responsabilités	Problèmes identifiés
+public/js/core/api.js	161	Appels API centralisés (produits, commandes, profil)	handleApiResponse() complexe (45 lignes) avec branches multiples
+public/js/core/app.js	128	Init app, auth check, détection de page, thème	Responsabilités multiples (auth, thème, détection de page)
+public/js/core/config.js	45	Constantes de configuration	OK — bien structuré
+public/js/core/storage.js	138	Wrapper localStorage/sessionStorage + fonctions panier	Fonctions panier mélangées avec storage générique. 95% identique à utils/storage.js
+public/js/components/CartIntegration.js	160	Intégration modal panier	XSS ligne 19 : cartModalContainer.innerHTML = data sans sanitization
+public/js/components/DiscadoHeader.js	239	Header : menu utilisateur + badge panier + catalogue PDF	3 responsabilités mélangées. innerHTML ligne 20 sans sanitization
+public/js/modules/cart/cartManager.js	346	Affichage panier + état + soumission commande	Trop long. submitOrder() fait 73 lignes. displayCart() fait 51 lignes. 3 responsabilités
+public/js/modules/cart/checkout.js	126	Processus de commande	showOrderConfirmation() mélange état + UI
+public/js/modules/catalog/imagePreview.js	93	Modal aperçu image produit	OK — bien focalisé
+public/js/modules/catalog/productFilter.js	178	Filtrage par catégorie	setupCategoryButtons() fait 47 lignes. Données catégorie dupliquées
+public/js/modules/catalog/productList.js	387	Chargement + filtrage + affichage + intégration panier	Trop long. createProductElement() génère 5 fonctions helper. displayProducts() fait 42 lignes
+public/js/modules/catalog/productSearch.js	98	Recherche produits	Logique de filtrage dupliquée avec productList.js
+public/js/modules/orders/orderList.js	314	Affichage historique commandes	generateOrderTableHTML() fait 55 lignes. createDeliveredItemRow() et createPendingItemRow() similaires. Génération HTML dupliquée avec pendingItems.js
+public/js/modules/orders/pendingItems.js	245	Gestion items en attente de livraison	createPendingItemsContent() fait 46 lignes. Création de tables dupliquée avec orderList.js
+public/js/modules/profile/passwordManager.js	569	Validation mot de passe + changement MDP	Critique. 15+ fonctions de validation dispersées. validatePasswordStrength() fait 65 lignes. validatePasswordInputs() fait 58 lignes. handlePasswordChange() fait 57 lignes
+public/js/modules/profile/profileManager.js	693	Gestion profil utilisateur	Critique. handleProfileSubmit() fait 149 lignes. validateForm() fait 98 lignes. Validation dupliquée depuis passwordManager.js
+public/js/modules/ui/header.js	150	Événements header	Chevauche DiscadoHeader.js — duplication
+public/js/utils/formatter.js	127	Formatage données (prix, dates)	Quasi-identique à admin/js/utils/formatter.js
+public/js/utils/modal.js	250	Gestion dialogues modales	showConfirmModal() fait 89 lignes. Quasi-identique à admin/js/utils/modal.js
+public/js/utils/notification.js	129	Système de notifications toast	Quasi-identique à admin/js/utils/notification.js
+public/js/utils/storage.js	118	Wrapper storage	95% identique à core/storage.js
+public/js/utils/validation.js	113	Validation formulaires	Validation dupliquée dans passwordManager.js, profileManager.js, clientCreate.js
+Fichiers admin (33 fichiers)
+Fichier	Lignes	Responsabilités	Problèmes identifiés
+admin/js/core/api.js	738	50+ fonctions API pour toutes les opérations admin	Critique. Fournisseurs seuls = 431 lignes. Aucun groupement par domaine
+admin/js/core/app.js	153	Init admin, détection de page, imports dynamiques	Chaîne if/else pour détection de page
+admin/js/modules/clients/clientList.js	198	Liste des clients	OK — bien structuré
+admin/js/modules/clients/clientCreate.js	175	Modal création client	handleFormSubmit() fait 53 lignes. Validation dupliquée
+admin/js/modules/clients/clientView.js	455	Vue détaillée client : infos + commandes + items en attente	Trop long. displayClientDetails() fait 102 lignes. setupPendingDeliveryEvents() fait 52 lignes. 3 responsabilités mélangées
+admin/js/modules/clients/clientOrderEdit.js	334	Édition commandes depuis vue client	Trop long. makeEditable() fait 88 lignes. saveOrderChanges() fait 90 lignes. État complexe (Maps/Sets)
+admin/js/modules/orders/orderList.js	128	Liste commandes en attente	OK — bien structuré
+admin/js/modules/orders/orderProcess.js	460	Traitement et livraison de commandes	Trop long. showProcessOrderModal() fait 130 lignes. generateItemsByCategory() fait 78 lignes
+admin/js/modules/history/historyList.js	436	Historique commandes avec vue calendrier	Trop long. displayCalendar() fait 64 lignes. createOrderElement() fait 54 lignes. Calendrier + liste dans un seul fichier
+admin/js/modules/history/historyView.js	744	Vue détaillée historique commande	Le plus critique. displayOrderDetails() fait 170 lignes. 330 lignes de CSS inline dans le JavaScript
+admin/js/modules/compta/comptaMain.js	~200	Page principale comptabilité	À auditer en détail pendant la phase 4
+admin/js/modules/compta/comptaClient.js	~180	Comptabilité par client	À auditer
+admin/js/modules/compta/comptaClientTable.js	~150	Table comptabilité client	À auditer
+admin/js/modules/compta/comptaDetails.js	~200	Détails comptabilité	À auditer
+admin/js/modules/compta/comptaMonth.js	~180	Comptabilité mensuelle	À auditer
+admin/js/modules/compta/comptaChart.js	~150	Graphiques comptabilité	À auditer
+admin/js/modules/stock/stockManager.js	~200	Gestion stock	À auditer
+admin/js/modules/stock/stockUtils.js	~100	Utilitaires stock	À auditer
+admin/js/modules/stats/statsManager.js	~200	Statistiques	À auditer
+admin/js/modules/suppliers/state.js	~80	État module fournisseurs	OK — fichier d'état
+admin/js/modules/suppliers/suppliersList.js	~150	Liste fournisseurs	OK
+admin/js/modules/suppliers/utils.js	~100	Utilitaires fournisseurs	OK
+admin/js/modules/suppliers/supplierDetails.js	~200	Détails fournisseur	À auditer
+admin/js/modules/suppliers/orderDetails.js	~250	Détails commande fournisseur	À auditer
+admin/js/modules/suppliers/createOrderModal.js	~180	Modal création commande fournisseur	À auditer
+admin/js/modules/suppliers/createSupplierModal.js	~150	Modal création fournisseur	OK
+admin/js/modules/suppliers/batchManager.js	~200	Gestion lots	À auditer
+admin/js/modules/suppliers/productStatsModal.js	~150	Modal stats produit	OK
+admin/js/utils/formatter.js	127	Formatage données	Quasi-identique à public/js/utils/formatter.js
+admin/js/utils/modal.js	~200	Gestion modales	Quasi-identique à public/js/utils/modal.js
+admin/js/utils/notification.js	~130	Notifications	Quasi-identique à public/js/utils/notification.js
+admin/js/utils/tabsPermissions.js	~80	Gestion permissions onglets	OK
+admin/js/utils/ui.js	~100	Utilitaires UI	OK
+1.3 — Duplications identifiées entre public/ et admin/
+Code dupliqué	Fichiers concernés	Action
+formatter.js (formatage prix, dates)	public/js/utils/formatter.js ≈ admin/js/utils/formatter.js	Fusionner dans shared/formatter.js
+modal.js (dialogues modales)	public/js/utils/modal.js ≈ admin/js/utils/modal.js	Fusionner dans shared/modal.js
+notification.js (toasts)	public/js/utils/notification.js ≈ admin/js/utils/notification.js	Fusionner dans shared/notification.js
+storage.js (localStorage)	public/js/core/storage.js ≈ public/js/utils/storage.js (95% identiques)	Fusionner dans shared/storage.js
+Validation email/phone/zip	validation.js, passwordManager.js, profileManager.js, clientCreate.js	Centraliser dans shared/validation.js
+Génération tables produits/commandes	orderList.js, pendingItems.js, historyList.js, clientView.js	Extraire dans shared/tableGenerator.js
+Groupement par catégorie	Répété dans 4+ modules (public et admin)	Extraire dans shared/categoryGrouping.js
+PARTIE 2 — ARCHITECTURE CIBLE
+2.1 — Couches applicatives
+
+Requête HTTP → Middleware (auth, CSRF, sanitize, validation) → Routes → Controllers → Services → DB (SQLite)
+2.2 — Arborescence cible COMPLÈTE
+
+catalog.discado.ch/
+│
+├── .env                                    ← Variables d'environnement (NOUVEAU)
+├── .env.example                            ← Template documenté (NOUVEAU)
+├── .gitignore                              ← Mis à jour (node_modules, .env, *.db, uploads/, logs/)
+├── .htaccess                               ← Existant (proxy Apache → localhost:3000)
+├── .eslintrc.json                          ← Configuration ESLint (NOUVEAU)
+├── package.json                            ← Mis à jour (scripts test, lint)
+├── package-lock.json                       ← Existant
+├── ecosystem.config.js                     ← Config PM2 (NOUVEAU dans le projet)
+│
+├── index.js                                ← Point d'entrée allégé (~50 lignes)
+├── app.js                                  ← Fabrique Express (NOUVEAU)
+│
+├── config/
+│   ├── keys.js                             ← Refactorisé : lecture .env uniquement, erreur si absent
+│   ├── database.js                         ← Config connexion DB (NOUVEAU)
+│   └── session.js                          ← Config session (NOUVEAU)
+│
+├── middleware/
+│   ├── auth.js                             ← requireLogin, requireAdmin, requirePermission (extrait de index.js:168-189)
+│   ├── csrf.js                             ← Protection CSRF via csurf (NOUVEAU — package déjà installé)
+│   ├── sanitize.js                         ← DOMPurify middleware (extrait de index.js:26-46)
+│   ├── validation.js                       ← Schémas express-validator par route (NOUVEAU)
+│   ├── upload.js                           ← Config multer (extrait de index.js:102-140)
+│   ├── throttle.js                         ← Rate limiting login (extrait de index.js:144-165)
+│   └── errorHandler.js                     ← Gestion centralisée des erreurs (NOUVEAU)
+│
+├── routes/
+│   ├── index.js                            ← Agrégateur de routes (NOUVEAU)
+│   ├── auth.routes.js                      ← POST /login, GET /logout, GET /api/check-auth
+│   ├── catalog.routes.js                   ← GET /api/products, /api/products/:id, /api/products/category/:category
+│   ├── orders.routes.js                    ← GET /api/user-orders, POST /api/save-order, GET /api/download-invoice/:orderId
+│   ├── profile.routes.js                   ← GET /api/user-profile, POST /api/save-profile, POST /api/change-password
+│   └── admin/
+│       ├── index.js                        ← Agrégateur routes admin
+│       ├── stock.routes.js                 ← /api/products (CRUD), /api/products/upload-image, /api/products/delete-image
+│       ├── orders.routes.js                ← /api/admin/pending-orders, /api/admin/process-order, /api/admin/update-order-items
+│       ├── clients.routes.js               ← /api/admin/client-profiles, /api/admin/create-client
+│       ├── compta.routes.js                ← /api/invoices/*, /api/admin/download-invoice/:orderId/:userId
+│       ├── suppliers.routes.js             ← /api/suppliers/*, /api/order-suppliers/*
+│       ├── stats.routes.js                 ← /api/stats/*
+│       ├── history.routes.js               ← /api/admin/treated-orders, /api/admin/order-details/:orderId/:userId
+│       └── permissions.routes.js           ← /api/accessible-pages
+│
+├── controllers/
+│   ├── authController.js                   ← Logique login/logout (NOUVEAU)
+│   ├── catalogController.js                ← Logique produits (NOUVEAU)
+│   ├── orderController.js                  ← Logique commandes client (NOUVEAU)
+│   ├── profileController.js                ← Logique profil (NOUVEAU)
+│   └── admin/
+│       ├── stockController.js              ← Logique stock admin (NOUVEAU)
+│       ├── orderController.js              ← Logique commandes admin (NOUVEAU)
+│       ├── clientController.js             ← Logique clients admin (NOUVEAU)
+│       ├── comptaController.js             ← Logique comptabilité (NOUVEAU)
+│       ├── supplierController.js           ← Logique fournisseurs (NOUVEAU)
+│       └── statsController.js              ← Logique statistiques (NOUVEAU)
+│
+├── services/
+│   ├── db.js                               ← Allégé : connexion + prepared statements uniquement
+│   ├── userService.js                      ← Gestion utilisateurs (existant, nettoyé)
+│   ├── orderService.js                     ← Gestion commandes (compteur migré en DB)
+│   ├── productService.js                   ← Gestion produits (existant)
+│   ├── invoiceService.js                   ← Génération factures PDF (fusion avec InvoiceService2.js)
+│   ├── invoiceManagementService.js         ← Gestion comptable factures (existant)
+│   ├── cryptoService.js                    ← Hash/chiffrement (suppression fallback plaintext)
+│   ├── permissionService.js                ← Permissions (fix injection SQL)
+│   ├── navigationService.js                ← Navigation admin (existant)
+│   ├── deliveryNoteService.js              ← Génération bons de livraison PDF (existant)
+│   └── statsServices.js                    ← Calculs statistiques (existant)
+│
+├── database/
+│   ├── discado.db                          ← Base de données principale (3.4 Mo)
+│   ├── .htaccess                           ← Protection accès direct (existant)
+│   ├── .htdigest                           ← Auth digest (existant)
+│   └── migrations/                         ← Migrations numérotées (NOUVEAU)
+│       ├── 001_initial_schema.sql
+│       ├── 002_add_sequences_table.sql
+│       ├── 003_normalize_supplier_contacts.sql
+│       ├── 004_add_performance_indexes.sql
+│       └── ...
+│
+├── data/
+│   ├── bags.csv                            ← Données produits (existant)
+│   ├── bells.csv
+│   ├── caps.csv
+│   ├── cloths.csv
+│   ├── farceattrape.csv
+│   ├── gadget.csv
+│   ├── hats.csv
+│   ├── keyring.csv
+│   ├── lifestyle.csv
+│   ├── lighter.csv
+│   ├── magnet.csv
+│   ├── patches.csv
+│   ├── pens.csv
+│   ├── plates.csv
+│   ├── softtoy.csv
+│   ├── tshirt.csv
+│   └── .gitignore
+│
+├── uploads/
+│   └── order_supplier/                     ← Documents fournisseurs uploadés
+│       ├── 5/
+│       ├── 9/
+│       ├── 14/
+│       └── 15/
+│
+├── logs/                                   ← NOUVEAU (Winston file transport)
+│   ├── app.log
+│   ├── error.log
+│   └── access.log
+│
+├── tests/                                  ← NOUVEAU
+│   ├── unit/
+│   │   ├── cryptoService.test.js
+│   │   ├── orderService.test.js
+│   │   ├── permissionService.test.js
+│   │   └── userService.test.js
+│   ├── integration/
+│   │   ├── auth.test.js
+│   │   ├── orders.test.js
+│   │   ├── security.test.js
+│   │   └── csrf.test.js
+│   └── fixtures/
+│       └── testData.js
+│
+├── public/
+│   ├── index.html                          ← Page d'accueil / landing
+│   ├── favicon.png                         ← Favicon
+│   ├── apple-touch-icon.png                ← Icône iOS
+│   │
+│   ├── pages/
+│   │   ├── login.html                      ← Formulaire de connexion
+│   │   ├── catalog.html                    ← Catalogue produits (auth requise)
+│   │   ├── orders.html                     ← Historique commandes (auth requise)
+│   │   └── profile.html                    ← Gestion profil (auth requise)
+│   │
+│   ├── components/
+│   │   ├── cart-modal.html                 ← Template modal panier
+│   │   └── footer.html                     ← Template footer
+│   │
+│   ├── images/
+│   │   ├── placeholder.png                 ← Image placeholder produit
+│   │   ├── logo/
+│   │   │   ├── logo_discado_noir.png
+│   │   │   └── recepisse.png
+│   │   └── products/                       ← Images produits par catégorie
+│   │       ├── bags/
+│   │       ├── bells/
+│   │       ├── caps/
+│   │       ├── cloths/
+│   │       ├── farceattrape/
+│   │       ├── gadget/
+│   │       ├── hats/
+│   │       ├── keyring/
+│   │       ├── lifestyle/
+│   │       ├── lighter/
+│   │       ├── magnet/
+│   │       ├── patches/
+│   │       ├── pens/
+│   │       ├── plates/
+│   │       ├── softtoy/
+│   │       └── tshirt/
+│   │
+│   ├── css/
+│   │   ├── main.css                        ← Styles globaux (1 087 lignes — à dédupliquer)
+│   │   ├── login.css                       ← NOUVEAU (extraction du <style> inline de login.html)
+│   │   ├── catalog.css                     ← Styles catalogue (478 lignes)
+│   │   ├── cart.css                        ← Styles panier (380 lignes)
+│   │   ├── orders.css                      ← Styles commandes (454 lignes)
+│   │   └── profile.css                     ← Styles profil (546 lignes)
+│   │
+│   └── js/
+│       ├── shared/                         ← Modules partagés public + admin (NOUVEAU)
+│       │   ├── formatter.js                ← Fusion de public/utils/formatter.js + admin/utils/formatter.js
+│       │   ├── modal.js                    ← Fusion de public/utils/modal.js + admin/utils/modal.js
+│       │   ├── notification.js             ← Fusion de public/utils/notification.js + admin/utils/notification.js
+│       │   ├── validation.js               ← Validation centralisée : email, phone, zip, password (NOUVEAU)
+│       │   ├── storage.js                  ← Fusion de core/storage.js + utils/storage.js
+│       │   ├── tableGenerator.js           ← Génération tables produits/commandes partagée (NOUVEAU)
+│       │   └── categoryGrouping.js         ← Groupement items par catégorie partagé (NOUVEAU)
+│       │
+│       ├── core/
+│       │   ├── api.js                      ← Appels API centralisés (existant, 161 lignes — OK)
+│       │   ├── app.js                      ← Init app (existant, 128 lignes — refactorisé)
+│       │   └── config.js                   ← Constantes config (existant, 45 lignes — OK)
+│       │
+│       ├── components/
+│       │   ├── CartIntegration.js           ← Intégration modal panier (existant, fix XSS ligne 19)
+│       │   ├── DiscadoHeader.js             ← Header principal — réduit à ~60 lignes, orchestre les sous-modules
+│       │   ├── headerMenu.js               ← NOUVEAU : gestion menu utilisateur (extrait de DiscadoHeader)
+│       │   ├── headerCart.js               ← NOUVEAU : badge panier et intégration (extrait de DiscadoHeader)
+│       │   └── headerPdf.js                ← NOUVEAU : bouton catalogue PDF (extrait de DiscadoHeader)
+│       │
+│       └── modules/
+│           ├── cart/
+│           │   ├── cartDisplay.js          ← NOUVEAU : affichage panier, table, totaux (extrait de cartManager)
+│           │   ├── cartState.js            ← NOUVEAU : état panier, add/remove/update qty (extrait de cartManager)
+│           │   ├── cartApi.js              ← NOUVEAU : soumission commande, appels API (extrait de cartManager)
+│           │   └── checkout.js             ← Processus commande (existant, 126 lignes — OK)
+│           │
+│           ├── catalog/
+│           │   ├── productDisplay.js       ← NOUVEAU : rendu liste et filtrage (extrait de productList)
+│           │   ├── productCard.js          ← NOUVEAU : création carte produit individuelle (extrait de productList)
+│           │   ├── productLoading.js       ← NOUVEAU : chargement API et état loading (extrait de productList)
+│           │   ├── productFilter.js        ← Filtrage catégories (existant, 178 lignes — refactorisé)
+│           │   ├── productSearch.js        ← Recherche produits (existant, 98 lignes — OK)
+│           │   └── imagePreview.js         ← Aperçu image (existant, 93 lignes — OK)
+│           │
+│           ├── orders/
+│           │   ├── orderList.js            ← Historique commandes (existant, réduit à ~150 lignes via shared/tableGenerator)
+│           │   └── pendingItems.js         ← Items en attente (existant, réduit à ~150 lignes via shared/tableGenerator)
+│           │
+│           └── profile/
+│               ├── profileForm.js          ← NOUVEAU : chargement et soumission formulaire (extrait de profileManager)
+│               ├── profileValidation.js    ← NOUVEAU : validation champs profil (extrait de profileManager)
+│               ├── profileUI.js            ← NOUVEAU : affichage messages/états (extrait de profileManager)
+│               ├── passwordValidation.js   ← NOUVEAU : règles validation MDP (extrait de passwordManager)
+│               └── passwordUI.js           ← NOUVEAU : indicateurs visuels force MDP (extrait de passwordManager)
+│
+├── admin/
+│   ├── pages/
+│   │   ├── orders.html                     ← Gestion commandes
+│   │   ├── order-history.html              ← Historique commandes
+│   │   ├── clients.html                    ← Base clients
+│   │   ├── client-invoices.html            ← Factures client
+│   │   ├── compta.html                     ← Comptabilité
+│   │   ├── compta-details.html             ← Détails comptabilité
+│   │   ├── compta-month.html               ← Comptabilité mensuelle
+│   │   ├── stock.html                      ← Gestion stock
+│   │   ├── suppliers.html                  ← Gestion fournisseurs
+│   │   ├── stats.html                      ← Statistiques
+│   │   └── qrcode.html                     ← Génération QR code
+│   │
+│   ├── css/
+│   │   ├── main.css                        ← Styles admin globaux
+│   │   ├── calendar.css                    ← Styles calendrier
+│   │   ├── clients.css                     ← Styles clients
+│   │   ├── compta.css                      ← Styles comptabilité
+│   │   ├── compta-chart.css                ← Styles graphiques compta
+│   │   ├── compta-client-styles.css        ← Styles compta client
+│   │   ├── compta-details.css              ← Styles détails compta
+│   │   ├── history.css                     ← Styles historique
+│   │   ├── history-details.css             ← NOUVEAU (extraction des 330 lignes CSS inline de historyView.js)
+│   │   ├── orders.css                      ← Styles commandes
+│   │   ├── stats.css                       ← Styles statistiques
+│   │   ├── stock.css                       ← Styles stock
+│   │   └── suppliers.css                   ← Styles fournisseurs
+│   │
+│   └── js/
+│       ├── core/
+│       │   ├── app.js                      ← Init admin (existant, 153 lignes — refactorisé)
+│       │   ├── orderApi.js                 ← NOUVEAU : endpoints commandes (~80 lignes, extrait de api.js)
+│       │   ├── clientApi.js                ← NOUVEAU : endpoints clients (~60 lignes, extrait de api.js)
+│       │   ├── supplierApi.js              ← NOUVEAU : endpoints fournisseurs (~200 lignes, extrait de api.js)
+│       │   ├── comptaApi.js                ← NOUVEAU : endpoints comptabilité (~80 lignes, extrait de api.js)
+│       │   ├── stockApi.js                 ← NOUVEAU : endpoints stock (~60 lignes, extrait de api.js)
+│       │   ├── statsApi.js                 ← NOUVEAU : endpoints statistiques (~40 lignes, extrait de api.js)
+│       │   └── attachmentApi.js            ← NOUVEAU : endpoints pièces jointes (~60 lignes, extrait de api.js)
+│       │
+│       ├── modules/
+│       │   ├── clients/
+│       │   │   ├── clientList.js           ← Liste clients (existant, 198 lignes — OK)
+│       │   │   ├── clientCreate.js         ← Création client (existant, 175 lignes — refactorisé validation)
+│       │   │   ├── clientDisplay.js        ← NOUVEAU : affichage infos client (extrait de clientView)
+│       │   │   ├── clientOrders.js         ← NOUVEAU : commandes du client (extrait de clientView)
+│       │   │   ├── clientPending.js        ← NOUVEAU : items en attente (extrait de clientView)
+│       │   │   ├── orderEditing.js         ← NOUVEAU : édition inline commandes (extrait de clientOrderEdit)
+│       │   │   └── orderEditValidation.js  ← NOUVEAU : validation édition (extrait de clientOrderEdit)
+│       │   │
+│       │   ├── orders/
+│       │   │   ├── orderList.js            ← Liste commandes en attente (existant, 128 lignes — OK)
+│       │   │   ├── orderDisplay.js         ← NOUVEAU : affichage modal traitement (extrait de orderProcess)
+│       │   │   ├── orderQuantity.js        ← NOUVEAU : gestion quantités (extrait de orderProcess)
+│       │   │   └── orderValidation.js      ← NOUVEAU : validation traitement (extrait de orderProcess)
+│       │   │
+│       │   ├── history/
+│       │   │   ├── historyCalendar.js      ← NOUVEAU : vue calendrier (extrait de historyList)
+│       │   │   ├── historyDisplay.js       ← NOUVEAU : liste commandes historiques (extrait de historyList)
+│       │   │   ├── historyOrderView.js     ← NOUVEAU : détails commande (extrait de historyView)
+│       │   │   └── historyHelpers.js       ← NOUVEAU : fonctions utilitaires (extrait de historyView)
+│       │   │
+│       │   ├── compta/
+│       │   │   ├── comptaMain.js           ← Page principale comptabilité (existant)
+│       │   │   ├── comptaClient.js         ← Comptabilité par client (existant)
+│       │   │   ├── comptaClientTable.js    ← Table compta client (existant)
+│       │   │   ├── comptaDetails.js        ← Détails comptabilité (existant)
+│       │   │   ├── comptaMonth.js          ← Comptabilité mensuelle (existant)
+│       │   │   └── comptaChart.js          ← Graphiques comptabilité (existant)
+│       │   │
+│       │   ├── stock/
+│       │   │   ├── stockManager.js         ← Gestion stock (existant)
+│       │   │   └── stockUtils.js           ← Utilitaires stock (existant)
+│       │   │
+│       │   ├── stats/
+│       │   │   └── statsManager.js         ← Statistiques (existant)
+│       │   │
+│       │   └── suppliers/
+│       │       ├── state.js                ← État module fournisseurs (existant)
+│       │       ├── suppliersList.js        ← Liste fournisseurs (existant)
+│       │       ├── utils.js                ← Utilitaires fournisseurs (existant)
+│       │       ├── supplierDetails.js      ← Détails fournisseur (existant)
+│       │       ├── orderDetails.js         ← Détails commande fournisseur (existant)
+│       │       ├── createOrderModal.js     ← Modal création commande (existant)
+│       │       ├── createSupplierModal.js  ← Modal création fournisseur (existant)
+│       │       ├── batchManager.js         ← Gestion lots (existant)
+│       │       └── productStatsModal.js    ← Modal stats produit (existant)
+│       │
+│       └── utils/                          ← SUPPRIMÉ — remplacé par imports depuis public/js/shared/
+│           └── tabsPermissions.js          ← Seul fichier conservé (spécifique admin)
+│
+└── node_modules/                           ← Dépendances npm (354 répertoires)
+2.3 — Recommandation framework
+Rester sur Express.js + JavaScript vanilla. Le problème n'est pas le framework mais l'organisation. Le frontend modulaire existant (core/modules/utils) est propre. Migrer vers React/Vue apporterait zéro valeur métier pour un catalogue B2B à audience limitée. L'ajout progressif de TypeScript (backend d'abord) est recommandé à terme.
+
+PARTIE 3 — ROADMAP DE MISE EN ŒUVRE
+Phase 1 — Corrections de sécurité critiques (IMMÉDIAT — Semaine 1)
+Complexité : Moyenne | Dépendances : Aucune
+#	Tâche	Fichier	Lignes
+1.1	Fix path traversal suppression d'image — Valider que le chemin résolu reste dans /public/images/ avec path.resolve(), rejeter tout ..	index.js	1190-1213
+1.2	Fix path traversal attachments — Valider que orderId est numérique, chemin résolu dans uploads/	index.js	2213-2261
+1.3	Activer CSRF — Appliquer csurf middleware sur toutes les routes POST/PUT/DELETE, ajouter token dans les formulaires et appels AJAX frontend	index.js + tous les JS frontend	—
+1.4	Fix gestion des clés — Décommenter dotenv, créer .env, supprimer console.log des clés, refuser de démarrer si clés manquantes	index.js:2, config/keys.js:20-38	—
+1.5	Régénération de session au login — Appeler req.session.regenerate() après authentification	index.js	324-378
+1.6	Fix injection SQL permissionService — Whitelist des noms de colonnes autorisés : ['stock','compta','orders','clients','order_history','suppliers','stats']	services/permissionService.js	7-11
+1.7	Vérification propriétaire factures — Vérifier que order.user_id === session.user.username avant téléchargement	index.js	1291-1327
+1.8	Migration mots de passe plaintext — Script one-shot pour hasher tous les mots de passe en clair, puis supprimer le fallback	services/cryptoService.js	50-52
+1.9	Renforcer CSP — Supprimer unsafe-inline, déplacer scripts inline vers fichiers externes	index.js	77-87
+Critères de validation : Test manuel de chaque vecteur d'attaque corrigé. Aucune régression fonctionnelle.
+
+Phase 2 — Restructuration architecturale backend (Semaines 2-3)
+Complexité : Élevée | Dépendances : Phase 1
+#	Tâche
+2.1	Extraire les middlewares de index.js vers /middleware/ (auth lignes 168-189, sanitize lignes 26-46, multer lignes 102-140, throttle lignes 144-165)
+2.2	Créer les modules de routes avec express.Router() — un fichier par domaine (auth, catalog, orders, profile, admin/*)
+2.3	Créer la couche contrôleurs — extraction de la logique req/res hors des handlers de routes
+2.4	Réduire index.js à ~50 lignes (import app, mount middleware, mount routes, listen)
+2.5	Supprimer le code mort : InvoiceService2.js (fusionner dans invoiceService.js), lignes commentées 3050-3083, bases vides catalog.db et data/database.db
+2.6	Configurer Winston : remplacer tous les console.log/console.error, transport fichier vers /logs/
+Critères de validation : Les 119 routes répondent identiquement. index.js ≤ 50 lignes. Smoke test de chaque page.
+
+Phase 3 — Nettoyage frontend HTML/CSS (Semaine 4)
+Complexité : Moyenne | Dépendances : Aucune (parallélisable avec Phase 2)
+#	Tâche
+3.1	Unifier Font Awesome → v6.4.0 sur toutes les pages (mettre à jour login.html qui utilise v5.15.4)
+3.2	Corriger sémantique HTML : lang="fr" partout, ajouter <meta description>, Open Graph, supprimer user-scalable=no
+3.3	Dédupliquer CSS : extraire .category-item et styles communs dans main.css, définir CSS custom properties pour la palette de couleurs (résoudre #2575fc vs #f44336)
+3.4	Créer une échelle z-index : --z-header: 100, --z-modal: 200, --z-notification: 300 (remplacer les valeurs 999, 1000, 1050, 1060)
+3.5	Déplacer styles inline : extraire le <style> de login.html vers css/login.css, extraire le HTML "accès refusé" de index.js (lignes 195-250) vers un template statique
+3.6	Accessibilité : ARIA labels sur tous les éléments interactifs, focus trap sur les modals, skip-nav links, clavier navigation
+Critères de validation : Score Lighthouse accessibilité > 80. Aucune duplication CSS inter-fichiers. Une seule version Font Awesome.
+
+Phase 4 — Refonte et compartimentalisation JavaScript frontend (Semaines 5-7)
+Complexité : Élevée | Dépendances : Phase 2 (backend restructuré) + Phase 3 (HTML nettoyé)
+Objectif : Aucun fichier JS ne dépasse ~150 lignes. Chaque fichier a une seule responsabilité. Le code partagé entre public et admin est mutualisé. Les vecteurs XSS sont éliminés.
+Étape 4.1 — Créer la couche partagée public/js/shared/ (Semaine 5)
+#	Tâche	Détail
+4.1.1	Fusionner formatter.js	Créer shared/formatter.js unique. Mettre à jour les imports dans tous les modules public/ et admin/
+4.1.2	Fusionner modal.js	Créer shared/modal.js. Éclater showConfirmModal() (89 lignes) en fonctions plus petites : createModalDOM(), bindModalEvents(), showModal()
+4.1.3	Fusionner notification.js	Créer shared/notification.js unique
+4.1.4	Fusionner storage.js	Fusionner core/storage.js + utils/storage.js en shared/storage.js. Séparer les fonctions cart-specific dans modules/cart/cartState.js
+4.1.5	Centraliser la validation	Créer shared/validation.js avec toutes les règles : isValidEmail(), isValidPhone(), isValidZipCode(), validatePasswordStrength(). Supprimer les copies dans passwordManager.js, profileManager.js, clientCreate.js
+4.1.6	Créer shared/tableGenerator.js	Extraire la logique commune de génération de tables (lignes produit, totaux, headers) utilisée dans orderList.js, pendingItems.js, historyList.js, clientView.js
+4.1.7	Créer shared/categoryGrouping.js	Extraire le groupement d'items par catégorie, dupliqué dans 4+ modules
+4.1.8	Supprimer admin/js/utils/	Remplacer tous les imports admin par des imports depuis shared/. Conserver uniquement tabsPermissions.js (spécifique admin)
+Étape 4.2 — Éclater les fichiers publics critiques (Semaines 5-6)
+#	Fichier source	Découpe cible	Règle de découpe
+4.2.1	profileManager.js (693 lignes)	→ profileForm.js (~120 lignes) : chargement et soumission du formulaire<br>→ profileValidation.js (~100 lignes) : validation des champs profil<br>→ profileUI.js (~80 lignes) : mise à jour de l'affichage (messages, états)	handleProfileSubmit() (149 lignes) découpée en : collectFormData(), validateFormData(), submitProfile(), handleSubmitResult()
+4.2.2	passwordManager.js (569 lignes)	→ passwordValidation.js (~120 lignes) : validatePasswordStrength() + règles<br>→ passwordUI.js (~100 lignes) : indicateurs visuels force MDP, messages	Les 15 fonctions de validation doivent utiliser shared/validation.js
+4.2.3	productList.js (387 lignes)	→ productDisplay.js (~100 lignes) : rendu de la liste et filtrage<br>→ productCard.js (~80 lignes) : création d'un élément produit individuel<br>→ productLoading.js (~60 lignes) : chargement API et état loading	createProductElement() et ses 5 helpers déplacés dans productCard.js
+4.2.4	cartManager.js (346 lignes)	→ cartDisplay.js (~100 lignes) : affichage du panier (table, totaux)<br>→ cartState.js (~80 lignes) : gestion de l'état (add, remove, update qty)<br>→ cartApi.js (~60 lignes) : soumission de commande et appels API	submitOrder() (73 lignes) découpée en : prepareOrderPayload(), sendOrder(), handleOrderResult()
+4.2.5	DiscadoHeader.js (239 lignes)	→ headerMenu.js (~60 lignes) : gestion du menu utilisateur<br>→ headerCart.js (~60 lignes) : badge panier et intégration<br>→ headerPdf.js (~40 lignes) : bouton catalogue PDF	Chaque sous-module exporte une fonction init() appelée par le header principal réduit à ~60 lignes
+4.2.6	orderList.js (314 lignes) + pendingItems.js (245 lignes)	Mutualiser la génération de tables via shared/tableGenerator.js. Chaque fichier réduit à ~150 lignes	generateOrderTableHTML() (55 lignes) et createDeliveredItemRow()/createPendingItemRow() extraits dans shared/tableGenerator.js
+Étape 4.3 — Éclater les fichiers admin critiques (Semaine 6)
+#	Fichier source	Découpe cible
+4.3.1	admin/js/core/api.js (738 lignes)	→ core/orderApi.js (~80 lignes) : endpoints commandes admin<br>→ core/clientApi.js (~60 lignes) : endpoints clients<br>→ core/supplierApi.js (~200 lignes) : endpoints fournisseurs (le plus gros bloc : 431 lignes actuellement)<br>→ core/comptaApi.js (~80 lignes) : endpoints comptabilité et factures<br>→ core/stockApi.js (~60 lignes) : endpoints stock et produits<br>→ core/statsApi.js (~40 lignes) : endpoints statistiques<br>→ core/attachmentApi.js (~60 lignes) : endpoints pièces jointes fournisseurs
+4.3.2	historyView.js (744 lignes)	→ historyOrderView.js (~150 lignes) : affichage détails commande (displayOrderDetails() découpé)<br>→ historyHelpers.js (~60 lignes) : fonctions utilitaires<br>→ admin/css/history-details.css : les 330 lignes de CSS inline extraites du JS vers un fichier CSS externe
+4.3.3	orderProcess.js (460 lignes)	→ orderDisplay.js (~120 lignes) : affichage du modal de traitement<br>→ orderQuantity.js (~80 lignes) : gestion des quantités<br>→ orderValidation.js (~60 lignes) : validation avant traitement<br>showProcessOrderModal() (130 lignes) découpée en : buildModalContent(), populateItems(), bindEvents()
+4.3.4	clientView.js (455 lignes)	→ clientDisplay.js (~100 lignes) : affichage infos client<br>→ clientOrders.js (~100 lignes) : liste commandes du client<br>→ clientPending.js (~80 lignes) : gestion items en attente<br>displayClientDetails() (102 lignes) découpée en : renderClientInfo(), renderClientOrders(), renderPendingItems()
+4.3.5	historyList.js (436 lignes)	→ historyCalendar.js (~100 lignes) : vue calendrier (displayCalendar() isolée)<br>→ historyDisplay.js (~120 lignes) : liste des commandes historiques
+4.3.6	clientOrderEdit.js (334 lignes)	→ orderEditing.js (~120 lignes) : logique d'édition inline<br>→ orderEditValidation.js (~80 lignes) : validation des modifications<br>makeEditable() (88 lignes) et saveOrderChanges() (90 lignes) découpées
+Étape 4.4 — Sécurité et qualité JS (Semaine 7)
+#	Tâche	Détail
+4.4.1	Éliminer tous les innerHTML non sanitisés (35+ occurrences)	Remplacer par textContent pour le texte simple, ou créer un helper sanitizedHTML(template) utilisant DOMPurify côté client pour les templates complexes
+4.4.2	Supprimer les assignations window.*	Remplacer window.CartIntegration, window.DiscadoHeader, window.showModal par des imports/exports ES6 propres
+4.4.3	Ajouter des schémas express-validator côté backend pour tous les endpoints POST/PUT/DELETE	Fichier middleware/validation.js avec un schéma par route
+4.4.4	Standardiser la gestion d'erreurs	Middleware centralisé errorHandler.js, classes d'erreur typées (NotFoundError, ForbiddenError, ValidationError)
+4.4.5	Nettoyer les event listeners	Ajouter removeEventListener ou utiliser AbortController pour éviter les fuites mémoire lors de la navigation
+Règles de compartimentalisation à respecter
+1. Règle des 150 lignes : aucun fichier JS ne doit dépasser ~150 lignes (tolérance 200 max)
+2. Responsabilité unique : un fichier = une responsabilité (affichage OU état OU API OU validation)
+3. Pas de duplication : tout code identique entre public/ et admin/ va dans shared/
+4. Fonctions courtes : aucune fonction ne dépasse 50 lignes
+5. Imports explicites : utiliser les imports ES6, pas de window.*
+6. Pas de CSS dans le JS : tout style inline dans le JS doit être extrait vers un fichier CSS
+Critères de validation :
+* Zéro fichier JS > 200 lignes
+* Zéro innerHTML avec données non sanitisées
+* Zéro duplication entre public/js/utils/ et admin/js/utils/ (remplacés par shared/)
+* Zéro fonction > 50 lignes
+* Format de réponse d'erreur API consistant
+* Aucune régression fonctionnelle (smoke test toutes les pages)
+
+Phase 5 — Optimisation base de données (Semaine 8)
+Complexité : Élevée | Dépendances : Phase 2
+#	Tâche
+5.1	Migrer le compteur de commandes dans la DB (table sequences : CREATE TABLE sequences (name TEXT PRIMARY KEY, value INTEGER)), supprimer /data/orderCounter.json. Encapsuler création commande + incrément compteur dans une seule transaction
+5.2	Créer un système de migrations numérotées avec table _migrations dans la DB. Déplacer toute la logique ALTER TABLE de db.js dans des fichiers de migration dans /database/migrations/
+5.3	Normaliser les colonnes JSON fournisseurs → créer les tables de liaison supplier_emails, supplier_phones, supplier_wechats. Migrer les données existantes. Mettre à jour les requêtes dans les services
+5.4	Corriger les requêtes N+1 dans orderService.js — remplacer les boucles qui exécutent SELECT ... FROM products WHERE name = ? par des JOINs ou des requêtes batch. Utiliser GROUP_CONCAT pour récupérer les items de plusieurs commandes en une requête
+5.5	Ajouter les index manquants : CREATE INDEX idx_orders_user_status ON orders(user_id, status), CREATE INDEX idx_order_items_order ON order_items(order_id), CREATE INDEX idx_invoices_order ON invoices(order_id), CREATE INDEX idx_user_permissions_username ON user_permissions(username)
+5.6	Activer le mode WAL pour de meilleures performances en lecture concurrente : db.pragma('journal_mode = WAL')
+5.7	Supprimer les fichiers de bases de données vides : database/catalog.db, data/database.db
+Critères de validation : Création de commande 100% transactionnelle. Zéro requête N+1. EXPLAIN QUERY PLAN confirme l'utilisation des index.
+
+Phase 6 — Optimisation des performances (Semaine 9)
+Complexité : Moyenne | Dépendances : Phases 3 + 5
+#	Tâche
+6.1	Lazy loading images produits : ajouter loading="lazy" à tous les <img> dans le rendu de la liste produits + utiliser IntersectionObserver pour les images dynamiques
+6.2	Conversion images en WebP via sharp : script batch pour convertir toutes les images de /public/images/products/, servir avec élément <picture> et fallback PNG/JPG
+6.3	Minification CSS/JS avec esbuild ou un script npm dédié. Concaténer les CSS par page
+6.4	Headers HTTP cache : Cache-Control: public, max-age=31536000 pour assets statiques (images, CSS, JS) avec content hashing dans les noms de fichiers. Cache-Control: no-cache pour HTML et API
+6.5	Pagination des listes de commandes : ajouter limit et offset aux endpoints API (/api/user-orders, /api/admin/pending-orders, /api/admin/treated-orders) + UI de pagination côté frontend
+Critères de validation : Score Lighthouse performance > 80. Page catalogue chargée en < 2s sur 3G. Payload images réduit de 50%+.
+
+Phase 7 — Infrastructure de tests (Semaine 10)
+Complexité : Élevée | Dépendances : Phases 2 + 4
+#	Tâche
+7.1	Setup framework de tests : installer Jest ou Vitest + supertest. Configurer scripts test et test:watch dans package.json. Créer les répertoires /tests/unit/ et /tests/integration/
+7.2	Tests unitaires services : cryptoService (hash, verify, encrypt, decrypt), orderService (création, compteur, items en attente), permissionService (vérification, whitelist), userService (profil CRUD, changement MDP)
+7.3	Tests d'intégration API avec supertest : flow d'authentification (login, session, logout), autorisations (routes admin-only, permissions), validation CSRF, prévention path traversal
+7.4	Tests de régression sécurité : un test dédié pour chaque correction de la Phase 1 (path traversal, CSRF, injection SQL, plaintext password, session fixation)
+7.5	Pre-commit hooks : installer husky + lint-staged. Exécuter linting et tests avant chaque commit
+Critères de validation : Couverture ≥ 70% sur les services. Tous les fixes sécurité de la Phase 1 ont un test de régression dédié. Tests exécutables en CI.
+
+Phase 8 — DevOps & Déploiement (Semaine 11)
+Complexité : Moyenne | Dépendances : Phase 7
+#	Tâche
+8.1	Finaliser configuration environnement : .env avec toutes les variables requises (PORT, ENCRYPTION_KEY, ENCRYPTION_IV, SECRET_KEY, NODE_ENV). Créer .env.example documenté avec des placeholders
+8.2	Configurer PM2 : créer ecosystem.config.js dans le répertoire du projet (pas au niveau parent). Configurer cluster mode, politique de redémarrage, rotation des logs, variables d'environnement
+8.3	Initialiser dépôt Git : git init, créer .gitignore complet (node_modules, .env, *.db, uploads/, logs/), commit initial
+8.4	Vérifier intégrité des backups existants (/database_discado/). Ajouter un test de restauration automatisé. Documenter la procédure de backup/restore
+8.5	Endpoint health check : GET /health retournant status DB, uptime, version. Utile pour monitoring et load balancer
+8.6	Configuration ESLint : installer avec configuration recommandée. Corriger les erreurs de lint de manière incrémentale. Intégrer dans les pre-commit hooks
+
+Critères de validation : Démarrage serveur uniquement via .env. PM2 gère les redémarrages gracieusement. Dépôt Git initialisé avec .gitignore propre.
+
+PARTIE 4 — CHECKLIST SÉCURITÉ
+#	Sévérité	Problème	Localisation	Phase	Statut
+1	CRITIQUE	Path traversal : suppression de fichiers arbitraires via imagePath dans req.body	index.js:1190-1213	1	☐
+2	CRITIQUE	CSRF absent sur tous les POST/PUT/DELETE — csurf importé mais jamais activé	index.js (global)	1	☐
+3	CRITIQUE	Clés de chiffrement regénérées au redémarrage si env vars manquantes	config/keys.js:20-22	1	☐
+4	CRITIQUE	Clés de chiffrement loggées en console au démarrage	config/keys.js:26-38	1	☐
+5	ÉLEVÉ	Path traversal dans les attachments fournisseurs via orderId	index.js:2213-2261	1	☐
+6	ÉLEVÉ	Support mots de passe en clair (backward compatibility)	cryptoService.js:50-52	1	☐
+7	ÉLEVÉ	Pas de régénération de session au login (session fixation)	index.js (login handler)	1	☐
+8	ÉLEVÉ	XSS via innerHTML (35+ occurrences sans sanitization)	CartIntegration.js:19, DiscadoHeader.js:20, etc.	4	☐
+9	ÉLEVÉ	Pattern injection SQL via interpolation de nom de colonne	permissionService.js:8	1	☐
+10	ÉLEVÉ	Vérification propriétaire manquante sur téléchargement factures	index.js:1291	1	☐
+11	MOYEN	CSP faible : unsafe-inline autorisé pour les scripts	index.js:77-87	1	☐
+12	MOYEN	dotenv désactivé (commenté ligne 2)	index.js:2	1	☐
+13	MOYEN	Throttling login stocké en mémoire uniquement (reset au redémarrage)	index.js:144-165	2	☐
+14	MOYEN	Permissions manquantes sur certains endpoints admin	Divers routes index.js	2	☐
+15	FAIBLE	Pas de rate limiting sur les endpoints API (seul login est protégé)	Toutes les routes	6	☐
+16	FAIBLE	Race condition compteur de commandes (fichier JSON hors transaction DB)	orderService.js + data/orderCounter.json	5	☐
+
+PARTIE 5 — RISQUES ET MITIGATIONS
+Risque	Impact	Probabilité	Mitigation
+Casser la production pendant la refonte	Critique	Élevée	Initialiser Git avant toute modification. Chaque phase = branche séparée. Garder index.js original en backup. Smoke tests manuels systématiques après chaque phase.
+Perte de données lors des migrations DB	Critique	Moyenne	Backups quotidiens déjà en place (/database_discado/). Backup manuel supplémentaire avant Phase 5. Tester chaque migration sur une copie de la DB. Écrire des scripts de rollback pour chaque migration.
+Invalidation des sessions lors du changement de clés	Moyen	Élevée	Planifier Phase 1.4 en heures creuses. Une fois les clés persistées dans .env, c'est un événement unique. Communiquer aux utilisateurs qu'une reconnexion sera nécessaire.
+CSRF casse les formulaires frontend	Moyen	Moyenne	Implémenter le token CSRF via meta tag + endpoint /api/csrf-token. Mettre à jour tous les fetch() du frontend pour inclure le token. Tester chaque formulaire et chaque appel AJAX.
+Migration mots de passe bloque les utilisateurs	Élevé	Faible	Identifier les comptes avec mots de passe en clair avant migration. Vérifier le login de chaque compte affecté après migration. Garder le fallback plaintext 48h avec monitoring, puis supprimer.
+Scope creep Phase 2 (restructuration backend)	Moyen	Élevée	Phase 2 = déplacer le code, PAS réécrire la logique. Les contrôleurs doivent initialement juste wrapper les appels aux services existants. Deadline dure : si > 2 semaines, livrer l'état actuel.
+Régression lors de la compartimentalisation JS (Phase 4)	Moyen	Élevée	Éclater un fichier à la fois, tester après chaque éclatement. Les imports ES6 sont vérifiables statiquement. Garder les anciens fichiers jusqu'à validation complète.
+Absence de filet de sécurité (zéro test)	Élevé	Certaine	Écrire 4-5 smoke tests basiques (serveur démarre, login fonctionne, produits chargent, commande crée) AVANT de commencer la Phase 2. Ce filet minimal protège contre les régressions majeures.
+
+PARTIE 6 — DÉCISIONS TECHNIQUES CLÉS
+Décision	Justification
+Rester sur Express.js	Le problème est organisationnel, pas lié au framework. Express convient parfaitement à un catalogue B2B. Migrer vers Fastify ou NestJS n'apporterait pas de valeur proportionnelle à l'effort.
+Rester en vanilla JS côté frontend	L'architecture modulaire existante (core/modules/utils) est propre et bien pensée. React/Vue n'apporterait aucune valeur métier pour un catalogue B2B à audience limitée. Le coût de migration serait disproportionné.
+Rester sur SQLite	Base de données < 4 Mo, usage mono-serveur, pas de requêtes concurrentes intensives. SQLite en mode WAL est largement suffisant. Migration vers PostgreSQL non justifiée à cette échelle.
+Pas de TypeScript immédiat	Priorité aux corrections de sécurité et à la restructuration. TypeScript pourra être ajouté progressivement après Phase 8, en commençant par le backend (services + controllers).
+Couche shared/ dans public/js/	Plutôt qu'un dossier séparé à la racine, placer shared/ dans public/js/ permet aux modules admin d'y accéder via des chemins relatifs (../../public/js/shared/) tout en gardant les assets statiques servis par Express.
+csurf pour le CSRF	Déjà installé dans les dépendances npm. Solution éprouvée avec Express. Pas besoin d'ajouter une nouvelle dépendance.
+Winston pour le logging	Déjà installé dans les dépendances npm. Support fichier, rotation, niveaux de log. Remplace les console.log éparpillés.
+Jest pour les tests	Standard de facto pour Node.js. Supertest pour les tests d'intégration HTTP. Large écosystème et documentation abondante.
+
+FICHIERS CRITIQUES À MODIFIER
+Backend (Phases 1-2)
+* index.js — Monolithe à décomposer (3 087 lignes, 119 routes, vulnérabilités lignes 1190-1213, 1291, 2213-2261)
+* config/keys.js — Gestion des clés vulnérable (lignes 20-38 : console.log + regénération)
+* services/permissionService.js — Injection SQL (ligne 8 : interpolation directe du nom de colonne)
+* services/cryptoService.js — Fallback plaintext (lignes 50-52 : comparaison en clair si pas de :)
+* services/db.js — Initialisation DB et migrations à refactoriser (logique ALTER TABLE inline)
+* services/orderService.js — Compteur de commandes fichier JSON + requêtes N+1 dans les boucles
+Frontend JS — Public (Phase 4)
+* public/js/modules/profile/profileManager.js (693 lignes) → éclater en 3 fichiers (profileForm, profileValidation, profileUI)
+* public/js/modules/profile/passwordManager.js (569 lignes) → éclater en 2 fichiers (passwordValidation, passwordUI)
+* public/js/modules/catalog/productList.js (387 lignes) → éclater en 3 fichiers (productDisplay, productCard, productLoading)
+* public/js/modules/cart/cartManager.js (346 lignes) → éclater en 3 fichiers (cartDisplay, cartState, cartApi)
+* public/js/modules/orders/orderList.js (314 lignes) → mutualiser génération tables via shared/tableGenerator
+* public/js/modules/orders/pendingItems.js (245 lignes) → mutualiser génération tables via shared/tableGenerator
+* public/js/components/DiscadoHeader.js (239 lignes) → éclater en 3 sous-modules (headerMenu, headerCart, headerPdf)
+* public/js/components/CartIntegration.js (160 lignes) — Fix XSS innerHTML ligne 19
+* public/js/utils/storage.js + public/js/core/storage.js → fusionner dans shared/storage.js
+* public/js/utils/formatter.js → fusionner dans shared/formatter.js
+* public/js/utils/modal.js → fusionner dans shared/modal.js
+* public/js/utils/notification.js → fusionner dans shared/notification.js
+* public/js/utils/validation.js → fusionner dans shared/validation.js
+Frontend JS — Admin (Phase 4)
+* admin/js/core/api.js (738 lignes) → éclater en 7 fichiers (orderApi, clientApi, supplierApi, comptaApi, stockApi, statsApi, attachmentApi)
+* admin/js/modules/history/historyView.js (744 lignes) → éclater en 2 fichiers JS + extraction CSS (historyOrderView, historyHelpers + history-details.css)
+* admin/js/modules/orders/orderProcess.js (460 lignes) → éclater en 3 fichiers (orderDisplay, orderQuantity, orderValidation)
+* admin/js/modules/clients/clientView.js (455 lignes) → éclater en 3 fichiers (clientDisplay, clientOrders, clientPending)
+* admin/js/modules/history/historyList.js (436 lignes) → éclater en 2 fichiers (historyCalendar, historyDisplay)
+* admin/js/modules/clients/clientOrderEdit.js (334 lignes) → éclater en 2 fichiers (orderEditing, orderEditValidation)
+* admin/js/utils/formatter.js, modal.js, notification.js → supprimer et remplacer par imports depuis shared/
+
+VÉRIFICATION
+Pour valider l'ensemble de la refonte :
+1. Sécurité : Tester manuellement chaque vecteur d'attaque (path traversal avec ../../, CSRF sans token, XSS via innerHTML, injection SQL dans permission) sur les endpoints corrigés
+2. Fonctionnel : Parcours complet client (login → catalogue → recherche → panier → commande → téléchargement facture → profil → changement MDP) et admin (toutes les 11 pages : commandes, historique, clients, comptabilité, stock, fournisseurs, statistiques)
+3. JavaScript : Vérifier qu'aucun fichier JS ne dépasse 200 lignes (find . -name "*.js" -not -path "*/node_modules/*" | xargs wc -l | sort -rn). Vérifier qu'aucune fonction ne dépasse 50 lignes. Vérifier qu'aucun innerHTML n'utilise de données non sanitisées
+4. Performance : Audit Lighthouse avant/après (cibles : accessibilité > 80, performance > 80)
+5. Régression : Suite de tests automatisés (Phase 7) couvrant tous les endpoints API critiques
+6. DB : Vérifier intégrité des données après chaque migration avec PRAGMA integrity_check. Vérifier les index avec EXPLAIN QUERY PLAN sur les requêtes principales

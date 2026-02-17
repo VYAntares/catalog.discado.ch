@@ -19,7 +19,7 @@ db.pragma('foreign_keys = ON');
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -47,7 +47,7 @@ function initDatabase() {
     if (!hasReferralSource) {
         try {
             db.exec(`
-            ALTER TABLE user_profiles 
+            ALTER TABLE user_profiles
             ADD COLUMN referral_source TEXT
             `);
         } catch (error) {
@@ -63,10 +63,21 @@ function initDatabase() {
                 shop_city TEXT,
                 shop_zip_code TEXT,
                 referral_source TEXT,
+                notes TEXT,
                 last_updated TIMESTAMP,
                 FOREIGN KEY (username) REFERENCES users(username)
             )
             `);
+        }
+    }
+
+    // Ajouter la colonne notes à user_profiles si elle n'existe pas
+    if (!columnExists('user_profiles', 'notes')) {
+        try {
+            db.exec(`ALTER TABLE user_profiles ADD COLUMN notes TEXT`);
+            console.log('✅ Colonne notes ajoutée à user_profiles');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne notes:', error.message);
         }
     }
 
@@ -95,7 +106,9 @@ function initDatabase() {
         supplier TEXT,
         image_url TEXT,
         stock INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        origin_price REAL DEFAULT 0,
+        barcode TEXT
     )
     `);
 
@@ -199,6 +212,8 @@ function initDatabase() {
           category TEXT,
           image_url TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          batch_number INTEGER DEFAULT 1,
+          item_status TEXT DEFAULT 'commandé',
           FOREIGN KEY (order_supplier_id) REFERENCES order_supplier(id) ON DELETE CASCADE,
           FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
         )
@@ -265,6 +280,7 @@ function initDatabase() {
         status TEXT NOT NULL,
         date TIMESTAMP NOT NULL,
         last_processed TIMESTAMP,
+        reference TEXT,
         FOREIGN KEY (user_id) REFERENCES users(username)
     )
     `);
@@ -305,23 +321,24 @@ function initDatabase() {
         order_id TEXT NOT NULL,
         user_id TEXT NOT NULL,
         client_full_name TEXT,
-        
+
         invoice_date TIMESTAMP NOT NULL,
-        
+
         subtotal_ht REAL NOT NULL,
         vat_amount REAL NOT NULL,
         total_ttc REAL NOT NULL,
-        
+
         payment_status TEXT DEFAULT 'unpaid',
         amount_paid REAL DEFAULT 0,
         amount_due REAL NOT NULL,
-        
+
         due_date TIMESTAMP,
         paid_date TIMESTAMP,
-        
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        
+        commission_status TEXT DEFAULT 'not_received',
+
         FOREIGN KEY (order_id) REFERENCES orders(order_id),
         FOREIGN KEY (user_id) REFERENCES users(username)
     )
@@ -335,6 +352,7 @@ function initDatabase() {
         orders INTEGER DEFAULT 1,
         clients INTEGER DEFAULT 0,
         order_history INTEGER DEFAULT 1,
+        stats INTEGER DEFAULT 0,
         suppliers INTEGER DEFAULT 0,
         FOREIGN KEY (username) REFERENCES users(username)
     )
@@ -390,7 +408,9 @@ module.exports = {
                 shop_name = ?, shop_address = ?, shop_city = ?, shop_zip_code = ?, last_updated = ?
             WHERE username = ?
         `),
-        getAll: db.prepare('SELECT * FROM user_profiles')
+        getAll: db.prepare('SELECT * FROM user_profiles'),
+        getNotes: db.prepare('SELECT notes FROM user_profiles WHERE username = ?'),
+        updateNotes: db.prepare('UPDATE user_profiles SET notes = ?, last_updated = ? WHERE username = ?')
     },
     
     // Requêtes liées aux fournisseurs

@@ -1,5 +1,85 @@
 /* admin/css/compta-client-styles.css - Styles pour la vue tableau des factures */
 
+/* ===== NOTES CLIENT ===== */
+.client-notes-section {
+    margin: 15px 20px;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #667eea;
+}
+
+.client-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.client-notes-header i {
+    color: #667eea;
+}
+
+.notes-save-status {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 400;
+    transition: opacity 0.3s;
+}
+
+.notes-save-status.saving {
+    color: #f0ad4e;
+}
+
+.notes-save-status.saved {
+    color: #28a745;
+}
+
+.notes-save-status.error {
+    color: #dc3545;
+}
+
+.client-notes-textarea {
+    width: 100%;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    color: #333;
+}
+
+.client-notes-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.client-notes-textarea::placeholder {
+    color: #aaa;
+}
+
+@media (max-width: 768px) {
+    .client-notes-section {
+        margin: 10px 10px;
+        padding: 12px 14px;
+    }
+
+    .client-notes-textarea {
+        font-size: 14px;
+        min-height: 60px;
+    }
+}
+
 /* Container principal */
 .client-invoices-container {
     padding: 20px;

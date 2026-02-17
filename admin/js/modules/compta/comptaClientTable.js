@@ -16,6 +16,7 @@ class ComptaClientTable {
         const urlParams = new URLSearchParams(window.location.search);
         this.clientId = urlParams.get('client_id');
         this.year = urlParams.get('year') || new Date().getFullYear();
+        this.notesTimeout = null;
 
         if (!this.clientId) {
             showNotification('Aucun client spécifié', 'error');
@@ -31,6 +32,7 @@ class ComptaClientTable {
 
         this.setupEventListeners();
         this.loadClientInvoices();
+        this.loadClientNotes();
     }
 
     setupEventListeners() {
@@ -521,6 +523,65 @@ class ComptaClientTable {
         }
 
         this.editingCells.delete(cell);
+    }
+
+    // ===== NOTES CLIENT =====
+
+    async loadClientNotes() {
+        try {
+            const response = await fetch(`/api/clients/${encodeURIComponent(this.clientId)}/notes`, {
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Erreur chargement notes');
+            const data = await response.json();
+            const textarea = document.getElementById('clientNotes');
+            if (textarea) {
+                textarea.value = data.notes || '';
+                textarea.addEventListener('input', () => this.handleNotesInput());
+            }
+        } catch (error) {
+            console.error('Erreur chargement notes client:', error);
+        }
+    }
+
+    handleNotesInput() {
+        const statusEl = document.getElementById('notesSaveStatus');
+        if (statusEl) {
+            statusEl.textContent = 'Modification...';
+            statusEl.className = 'notes-save-status saving';
+        }
+        clearTimeout(this.notesTimeout);
+        this.notesTimeout = setTimeout(() => this.saveClientNotes(), 800);
+    }
+
+    async saveClientNotes() {
+        const textarea = document.getElementById('clientNotes');
+        const statusEl = document.getElementById('notesSaveStatus');
+        if (!textarea) return;
+
+        try {
+            const response = await fetch(`/api/clients/${encodeURIComponent(this.clientId)}/notes`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ notes: textarea.value })
+            });
+            if (!response.ok) throw new Error('Erreur sauvegarde');
+            if (statusEl) {
+                statusEl.textContent = 'Sauvegardé';
+                statusEl.className = 'notes-save-status saved';
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                    statusEl.className = 'notes-save-status';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Erreur sauvegarde notes:', error);
+            if (statusEl) {
+                statusEl.textContent = 'Erreur de sauvegarde';
+                statusEl.className = 'notes-save-status error';
+            }
+        }
     }
 
 	exportToCSV() {

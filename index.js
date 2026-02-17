@@ -2867,6 +2867,29 @@ app.get('/api/invoices/unpaid', requireLogin, requireAdmin, requirePermission('c
   }
 });
 
+// ===== API ROUTES - NOTES CLIENT =====
+
+app.get('/api/clients/:username/notes', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const result = dbModule.profiles.getNotes.get(req.params.username);
+    res.json({ notes: result ? result.notes || '' : '' });
+  } catch (error) {
+    console.error('Error getting client notes:', error);
+    res.status(500).json({ error: 'Failed to get client notes' });
+  }
+});
+
+app.patch('/api/clients/:username/notes', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { notes } = req.body;
+    const now = new Date().toISOString();
+    dbModule.profiles.updateNotes.run(notes || '', now, req.params.username);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating client notes:', error);
+    res.status(500).json({ error: 'Failed to update client notes' });
+  }
+});
 
 // ===== API ROUTES - STATISTIQUES =====
 /**
