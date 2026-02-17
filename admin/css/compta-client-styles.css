@@ -15,39 +15,34 @@
     margin-top: 20px;
 }
 
-/* Style tableau type Excel */
-.invoices-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    background: #fff;
-}
-
+/* ===== QUADRILLAGE ET EN-TÊTE BLEU-VIOLET (vue client) ===== */
 .invoices-table thead {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
 }
 
 .invoices-table th {
-    padding: 12px 8px;
-    text-align: left;
-    font-weight: 600;
-    border: 1px solid #ddd;
-    white-space: nowrap;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-bottom: none !important;
+}
+
+.invoices-table th,
+.invoices-table td {
+    border: 1px solid #e0e0e0 !important;
+    padding: 12px 10px;
 }
 
 .invoices-table td {
-    padding: 10px 8px;
-    border: 1px solid #e0e0e0;
     background: #fff;
-    transition: background-color 0.2s;
+}
+
+.invoices-table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
 }
 
 .invoices-table tbody tr:hover td {
-    background-color: #f5f7fa;
+    background-color: #eef2ff !important;
 }
 
 /* Alignements */

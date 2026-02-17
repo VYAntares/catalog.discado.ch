@@ -618,24 +618,147 @@
     gap: 8px;
 }
 
+/* Bouton de statistiques */
+.product-stats-btn {
+    background: none;
+    border: none;
+    color: #4299e1;
+    cursor: pointer;
+    padding: 8px;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    -webkit-tap-highlight-color: rgba(66, 153, 225, 0.3);
+    touch-action: manipulation;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.product-stats-btn:hover,
+.product-stats-btn:active {
+    background-color: rgba(66, 153, 225, 0.1);
+    transform: scale(1.1);
+}
+
+.product-stats-btn:active {
+    background-color: rgba(66, 153, 225, 0.2);
+}
+
+/* Icône dans le bouton stats - ne doit pas bloquer les clics */
+.product-stats-btn i {
+    pointer-events: none;
+}
+
+/* Modale Statistiques - Responsive */
+.modal-stats {
+    max-width: 600px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .modal-content {
         max-width: 100%;
         margin: 10px;
+        max-height: 95vh;
+        overflow-y: auto;
     }
-    
+
+    .modal-stats {
+        max-width: 100%;
+        margin: 5px;
+        width: calc(100vw - 10px);
+    }
+
+    .modal-header h2 {
+        font-size: 16px !important;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
     .form-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .modal-footer {
         flex-direction: column-reverse;
     }
-    
+
     .modal-btn {
         width: 100%;
         justify-content: center;
+    }
+
+    /* Bouton stats plus visible sur mobile */
+    .product-stats-btn {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 20px;
+    }
+
+    /* Contenu de la modale stats sur mobile */
+    .modal-stats .modal-body table {
+        font-size: 13px;
+    }
+
+    .modal-stats .modal-body table th,
+    .modal-stats .modal-body table td {
+        padding: 10px 8px;
+    }
+
+    /* Barres de progression dans les stats */
+    .modal-stats .progress-container {
+        max-width: 120px;
+    }
+
+    /* Textes et valeurs dans les stats */
+    .modal-stats .modal-body > div[style*="font-size: 48px"] {
+        font-size: 36px !important;
+    }
+
+    .modal-stats .modal-body > div[style*="font-size: 28px"] {
+        font-size: 22px !important;
+    }
+
+    /* Assurer que le contenu ne déborde pas */
+    .modal-stats .modal-body {
+        overflow-x: auto;
+    }
+}
+
+/* Media query pour les très petits écrans */
+@media (max-width: 480px) {
+    .modal-stats {
+        margin: 2px;
+        width: calc(100vw - 4px);
+    }
+
+    .modal-stats .modal-header h2 {
+        font-size: 14px !important;
+    }
+
+    .modal-stats .modal-body {
+        padding: 10px;
+    }
+
+    .modal-stats .modal-body table {
+        font-size: 12px;
+    }
+
+    .modal-stats .modal-body table th,
+    .modal-stats .modal-body table td {
+        padding: 8px 6px;
     }
 }
 

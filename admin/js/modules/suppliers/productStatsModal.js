@@ -8,26 +8,28 @@ class ProductStatsModal {
 	  this.modal = null;
 	  this.currentProduct = null;
 	  this.currentYear = 'all';
+	  // 💾 Cache pour stocker les stats et années déjà chargées
+	  this.statsCache = new Map();
+	  this.yearsCache = new Map();
 	}
-  
+
 	/**
 	 * Ouvre la modale de stats pour un produit
+	 * ⚡ Optimisé : Affiche la modale immédiatement, charge les données après
 	 */
 	async open(productName) {
 	  this.currentProduct = productName;
 	  this.currentYear = 'all';
-	  
-	  // Créer la structure de la modale
+
+	  // ⚡ SOLUTION 1 : Créer et afficher la modale IMMÉDIATEMENT avec le loader
 	  this.createModal();
-	  
-	  // Charger les années disponibles
-	  await this.loadAvailableYears();
-	  
-	  // Charger les stats
-	  await this.loadStats();
-	  
-	  // Afficher la modale
 	  this.modal.style.display = 'flex';
+
+	  // 🚀 SOLUTION 5 : Charger les années ET les stats EN PARALLÈLE (une seule attente)
+	  await Promise.all([
+		this.loadAvailableYears(),
+		this.loadStats()
+	  ]);
 	}
   
 	/**
@@ -42,24 +44,24 @@ class ProductStatsModal {
   
 	  const modalHTML = `
 		<div id="productStatsModal" class="modal-overlay" style="display: none;">
-		  <div class="modal-content" style="max-width: 600px;">
+		  <div class="modal-content modal-stats">
 			<div class="modal-header">
 			  <h2 style="margin: 0; font-size: 20px;">
-				<i class="fas fa-chart-line"></i> 
+				<i class="fas fa-chart-line"></i>
 				Statistiques : <span id="productStatsTitle" style="color: #4299e1;"></span>
 			  </h2>
 			  <button class="modal-close" id="closeProductStatsModal">&times;</button>
 			</div>
-			
+
 			<div class="modal-body">
 			  <!-- Filtre année -->
-			  <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-				<label for="productStatsYearSelect" style="font-weight: 600; color: #2d3748;">Année :</label>
-				<select id="productStatsYearSelect" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px;">
+			  <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+				<label for="productStatsYearSelect" style="font-weight: 600; color: #2d3748; white-space: nowrap;">Année :</label>
+				<select id="productStatsYearSelect" style="flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px;">
 				  <option value="all">Toutes les années</option>
 				</select>
 			  </div>
-  
+
 			  <!-- Statistiques -->
 			  <div id="productStatsContent" style="text-align: center; padding: 20px; color: #718096;">
 				<i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
@@ -90,22 +92,35 @@ class ProductStatsModal {
   
 	/**
 	 * Charge les années disponibles
+	 * 💾 SOLUTION 2 : Avec cache - ne charge qu'une seule fois par produit
 	 */
 	async loadAvailableYears() {
 	  try {
-		const response = await fetch(`/api/stats/product/${encodeURIComponent(this.currentProduct)}/years`);
-		
-		if (!response.ok) {
-		  throw new Error('Failed to load years');
+		let years;
+
+		// 💾 Vérifier si les années sont en cache
+		if (this.yearsCache.has(this.currentProduct)) {
+		  years = this.yearsCache.get(this.currentProduct);
+		  console.log('✅ Années chargées depuis le cache');
+		} else {
+		  // Sinon, charger depuis l'API
+		  const response = await fetch(`/api/stats/product/${encodeURIComponent(this.currentProduct)}/years`);
+
+		  if (!response.ok) {
+			throw new Error('Failed to load years');
+		  }
+
+		  years = await response.json();
+		  // 💾 Stocker en cache
+		  this.yearsCache.set(this.currentProduct, years);
+		  console.log('📥 Années chargées depuis l\'API et mises en cache');
 		}
-		
-		const years = await response.json();
-  
+
 		const select = document.getElementById('productStatsYearSelect');
-		
+
 		// Garder l'option "Toutes les années"
 		select.innerHTML = '<option value="all">Toutes les années</option>';
-		
+
 		// Ajouter les années (triées du plus récent au plus ancien)
 		years.forEach(year => {
 		  const option = document.createElement('option');
@@ -113,7 +128,7 @@ class ProductStatsModal {
 		  option.textContent = year;
 		  select.appendChild(option);
 		});
-  
+
 	  } catch (error) {
 		console.error('Error loading years:', error);
 	  }
@@ -121,6 +136,7 @@ class ProductStatsModal {
   
 	/**
 	 * Charge les statistiques du produit
+	 * 💾 SOLUTION 2 : Avec cache - ne charge qu'une seule fois par produit/année
 	 */
 	async loadStats() {
 	  const container = document.getElementById('productStatsContent');
@@ -130,29 +146,39 @@ class ProductStatsModal {
 		  <p style="margin-top: 12px;">Chargement...</p>
 		</div>
 	  `;
-  
-	  try {
-		const url = this.currentYear === 'all' 
-		  ? `/api/stats/product/${encodeURIComponent(this.currentProduct)}`
-		  : `/api/stats/product/${encodeURIComponent(this.currentProduct)}?year=${this.currentYear}`;
-  
-		const response = await fetch(url);
-		
-		if (!response.ok) {
-		  throw new Error('Failed to load stats');
-		}
-		
-		const stats = await response.json();
 
-		// Debug: afficher les stats reçues
-		console.log('📊 Stats reçues pour', this.currentProduct, ':', stats);
+	  try {
+		const cacheKey = `${this.currentProduct}_${this.currentYear}`;
+		let stats;
+
+		// 💾 Vérifier si les stats sont en cache
+		if (this.statsCache.has(cacheKey)) {
+		  stats = this.statsCache.get(cacheKey);
+		  console.log('✅ Stats chargées depuis le cache');
+		} else {
+		  // Sinon, charger depuis l'API
+		  const url = this.currentYear === 'all'
+			? `/api/stats/product/${encodeURIComponent(this.currentProduct)}`
+			: `/api/stats/product/${encodeURIComponent(this.currentProduct)}?year=${this.currentYear}`;
+
+		  const response = await fetch(url);
+
+		  if (!response.ok) {
+			throw new Error('Failed to load stats');
+		  }
+
+		  stats = await response.json();
+		  // 💾 Stocker en cache
+		  this.statsCache.set(cacheKey, stats);
+		  console.log('📥 Stats chargées depuis l\'API et mises en cache');
+		}
 
 		// Mettre à jour le titre
 		document.getElementById('productStatsTitle').textContent = this.currentProduct;
 
 		// Afficher les stats
 		this.renderStats(stats);
-  
+
 	  } catch (error) {
 		console.error('Error loading product stats:', error);
 		container.innerHTML = `

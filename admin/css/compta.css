@@ -472,27 +472,82 @@ main {
     border-color: #667eea;
 }
 
-/* ===== OPTIMISATION COLONNES FACTURES ===== */
+/* ===== BARRE DE RESUME FACTURES ===== */
+.invoices-summary-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.summary-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.summary-pill i {
+    font-size: 15px;
+}
+
+.summary-pill .pill-value {
+    font-weight: 700;
+}
+
+.summary-pill.pill-count i { color: #667eea; }
+.summary-pill.pill-total i { color: #8b5cf6; }
+.summary-pill.pill-paid i { color: #10b981; }
+.summary-pill.pill-paid .pill-value { color: #059669; }
+.summary-pill.pill-due i { color: #ef4444; }
+.summary-pill.pill-due .pill-value { color: #dc2626; }
+
+/* ===== TABLEAU FACTURES ===== */
 .invoices-table {
     table-layout: auto;
     width: 100%;
-    font-size: 13px;
+    font-size: 14px;
+    border-spacing: 0;
+    border: none;
 }
 
 .invoices-table th,
 .invoices-table td {
-    padding: 10px 8px;
-    border: 1px solid #e0e0e0;
+    padding: 12px 10px;
     white-space: nowrap;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.invoices-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
 }
 
 .invoices-table th {
-    padding: 12px 8px;
+    padding: 14px 10px;
     font-size: 12px;
+    font-weight: 600;
+    color: white !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: none !important;
 }
 
+/* Lignes alternées */
+.invoices-table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+/* Hover plus visible */
 .invoices-table tbody tr:hover td {
-    background-color: #f5f7fa;
+    background-color: #eef2ff !important;
 }
 
 /* Alignements spécifiques */
@@ -527,6 +582,385 @@ main {
     font-size: 14px;
 }
 
+/* Container arrondi */
+.client-invoices-container,
+.unpaid-invoices-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+/* ===== MODE BADGE MOBILE ===== */
+/* Masquer le tableau sur mobile et afficher des badges compacts */
+@media (max-width: 768px) {
+    /* Cacher le tableau classique */
+    .clients-summary-table,
+    .invoices-table {
+        display: none;
+    }
+
+    /* Container pour les badges */
+    .clients-summary-list::after,
+    .invoices-table-wrapper::after,
+    .client-invoices-container::after,
+    .unpaid-invoices-container .invoices-table-wrapper::after {
+        content: attr(data-mobile-content);
+        display: block;
+    }
+}
+
+/* ===== MODAL EDIT MOBILE ===== */
+.mobile-edit-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.mobile-edit-sheet {
+    background: white;
+    border-radius: 16px 16px 0 0;
+    padding: 20px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.mobile-edit-sheet h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 4px 0;
+}
+
+.mobile-edit-subtitle {
+    font-size: 12px;
+    color: #667eea;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.mobile-edit-field {
+    margin-bottom: 14px;
+}
+
+.mobile-edit-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.mobile-edit-field input,
+.mobile-edit-field select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+}
+
+.mobile-edit-field input:focus,
+.mobile-edit-field select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+}
+
+.mobile-edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.mobile-edit-save {
+    flex: 1;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.mobile-edit-cancel {
+    padding: 14px 20px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.invoice-badge-edit-btn {
+    padding: 4px 10px;
+    background: #f1f5f9;
+    color: #667eea;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Style des badges clients (mode compact) */
+.client-badge {
+    background: white;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.client-badge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.client-badge-id {
+    font-size: 11px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.client-badge-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.client-badge-company {
+    font-size: 12px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.client-badge-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
+    gap: 8px;
+}
+
+.client-badge-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.client-badge-stat-label {
+    font-size: 9px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+}
+
+.client-badge-stat-value {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.client-badge-stat-value.success {
+    color: #10b981;
+}
+
+.client-badge-stat-value.danger {
+    color: #ef4444;
+}
+
+.client-badge-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.badge-action-btn {
+    flex: 1;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+/* Style des badges factures (mode compact) */
+.invoice-badge {
+    background: white;
+    border-left: 4px solid #8b5cf6;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.invoice-badge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.invoice-badge-number {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b5cf6;
+}
+
+.invoice-badge-date {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.invoice-badge-client {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.invoice-badge-amounts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.invoice-badge-amount {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.invoice-badge-amount-label {
+    font-size: 9px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.invoice-badge-amount-value {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.invoice-badge-amount-value.total {
+    color: #8b5cf6;
+}
+
+.invoice-badge-amount-value.paid {
+    color: #10b981;
+}
+
+.invoice-badge-amount-value.due {
+    color: #ef4444;
+}
+
+.invoice-badge-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.invoice-badge-status {
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.invoice-badge-status.status-paid {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.invoice-badge-status.status-partial {
+    background: #fed7aa;
+    color: #92400e;
+}
+
+.invoice-badge-status.status-unpaid {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.invoice-badge-action {
+    padding: 4px 10px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Container mobile pour les badges */
+.mobile-badges-container {
+    display: none;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
     .stats-grid {
@@ -535,42 +969,70 @@ main {
 }
 
 @media (max-width: 768px) {
+    /* Afficher le container de badges sur mobile */
+    .mobile-badges-container {
+        display: block;
+        padding: 10px;
+    }
+
+    /* Cacher les tableaux ET leurs containers sur mobile */
+    .clients-summary-table,
+    .invoices-table {
+        display: none !important;
+    }
+
+    /* Cacher les containers des tableaux sur mobile (évite l'espace vide) */
+    .client-invoices-container,
+    .unpaid-invoices-container,
+    .clients-summary-list {
+        display: none !important;
+    }
+
     .compta-tabs {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         flex-direction: row;
+        padding: 10px;
+        gap: 6px;
     }
-    
+
     .compta-tab-btn {
         white-space: nowrap;
         flex: 0 0 auto;
+        padding: 10px 16px;
+        font-size: 13px;
     }
-    
+
     .search-container {
         flex-direction: column;
+        padding: 10px;
     }
-    
+
     .search-input {
         width: 100%;
     }
-    
+
     .stats-grid {
         grid-template-columns: 1fr;
-    }
-    
-    .clients-summary-table {
-        font-size: 13px;
-        min-width: 1000px; /* Assure le scroll sur mobile */
+        gap: 12px;
+        padding: 10px;
     }
 
-    .invoices-table {
-        font-size: 12px;
+    .stat-card {
+        padding: 16px;
     }
-    
-    .clients-summary-table th,
-    .clients-summary-table td,
-    .invoices-table th,
-    .invoices-table td {
-        padding: 10px 8px;
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    main {
+        padding: 15px 10px 30px !important;
     }
 }

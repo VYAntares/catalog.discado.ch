@@ -295,17 +295,8 @@ class StockManager {
     }
 	
 	attachStatsListeners() {
-		document.querySelectorAll('.product-stats-btn').forEach(btn => {
-			btn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				const productName = btn.getAttribute('data-product-name');
-				if (window.ProductStatsModal) {
-					window.ProductStatsModal.open(productName);
-				} else {
-					console.error('ProductStatsModal not loaded');
-				}
-			});
-		});
+		// Plus besoin d'attacher des listeners - on utilise onclick inline pour iOS
+		console.log('✅ Stats: Using inline onclick handlers for better mobile support');
 	}
 
 	createProductCard(product) {
@@ -324,7 +315,7 @@ class StockManager {
 					${imageUrl
 						? `<img src="${imageUrl}" alt="${name}" class="product-image"
 							style="cursor: pointer;"
-							onclick="window.stockManagerInstance.openImageViewer('${imageUrl}', '${this.escapeHtml(name)}')"
+							ontouchstart="window.stockManagerInstance.openImageViewer('${imageUrl}', '${this.escapeHtml(name)}')" onclick="window.stockManagerInstance.openImageViewer('${imageUrl}', '${this.escapeHtml(name)}')"
 							onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
 						<i class="fas fa-image no-image" style="display:none;"></i>`
 						: `<i class="fas fa-image no-image"></i>`
@@ -341,10 +332,9 @@ class StockManager {
 						</h3>
 
 						<button class="product-stats-btn"
-								data-product-name="${this.escapeHtml(name)}"
-								data-product-id="${product.id}"
+								ontouchstart="if(window.ProductStatsModal) window.ProductStatsModal.open('${this.escapeHtml(name)}'); return false;" onclick="if(window.ProductStatsModal) window.ProductStatsModal.open('${this.escapeHtml(name)}'); return false;"
 								title="Voir les statistiques"
-								style="background: none; border: none; color: #4299e1; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; flex-shrink: 0; transition: all 0.2s ease;">
+								aria-label="Voir les statistiques">
 							<i class="fas fa-question-circle"></i>
 						</button>
 					</div>
@@ -391,7 +381,6 @@ class StockManager {
         						<i class="fas fa-edit"></i> Modifier le produit
     						</button>
     						<button class="stock-btn primary add-to-order-btn"
-            						data-product-id="${product.id}"
             						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         						<i class="fas fa-truck-loading"></i> Ajouter à commande
    							</button>
@@ -557,7 +546,7 @@ class StockManager {
 												alt="Image actuelle" 
 												id="current-product-image"
 												style="max-width: 200px; max-height: 200px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer;"
-												onclick="window.stockManagerInstance.openImageViewer('${product.image_url}', '${this.escapeHtml(product.name)}')">
+												ontouchstart="window.stockManagerInstance.openImageViewer('${product.image_url}', '${this.escapeHtml(product.name)}')" onclick="window.stockManagerInstance.openImageViewer('${product.image_url}', '${this.escapeHtml(product.name)}')">
 											<div style="margin-top: 5px;">
 												<small style="color: #666;">Cliquez sur l'image pour l'agrandir</small>
 											</div>
@@ -578,7 +567,7 @@ class StockManager {
 										
 										<button type="button" 
 												class="stock-btn secondary" 
-												onclick="document.getElementById('product-image-upload').click()"
+												ontouchstart="document.getElementById('product-image-upload').click()" onclick="document.getElementById('product-image-upload').click()"
 												style="width: 100%; margin-bottom: 10px;">
 											<i class="fas fa-upload"></i> Télécharger une nouvelle image
 										</button>
@@ -711,10 +700,10 @@ class StockManager {
 							<i class="fas fa-image"></i> ${this.escapeHtml(productName)}
 						</h3>
 						<div>
-							<button class="stock-btn primary" onclick="window.stockManagerInstance.downloadImage('${imagePath}', '${this.escapeHtml(productName)}')" style="margin-right: 10px;">
+							<button class="stock-btn primary" ontouchstart="window.stockManagerInstance.downloadImage('${imagePath}', '${this.escapeHtml(productName)}')" onclick="window.stockManagerInstance.downloadImage('${imagePath}', '${this.escapeHtml(productName)}')" style="margin-right: 10px;">
 								<i class="fas fa-download"></i> Télécharger
 							</button>
-							<button class="modal-close" onclick="document.getElementById('image-viewer-modal').remove()" style="background: white; color: #333; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
+							<button class="modal-close" ontouchstart="document.getElementById('image-viewer-modal').remove()" onclick="document.getElementById('image-viewer-modal').remove()" style="background: white; color: #333; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
 								<i class="fas fa-times"></i>
 							</button>
 						</div>
@@ -980,7 +969,7 @@ class StockManager {
 				<div class="modal-content" style="max-width: 600px;">
 					<div class="modal-header">
 						<h3><i class="fas fa-plus"></i> Ajouter un nouveau produit</h3>
-						<button class="modal-close" onclick="document.getElementById('add-product-modal').remove()">
+						<button class="modal-close" ontouchstart="document.getElementById('add-product-modal').remove()" onclick="document.getElementById('add-product-modal').remove()">
 							<i class="fas fa-times"></i>
 						</button>
 					</div>
@@ -998,10 +987,17 @@ class StockManager {
 
 							<div class="form-row">
 								<div class="form-group">
-									<label for="add-price">Prix (CHF) *</label>
+									<label for="add-price">Prix de vente (CHF) *</label>
 									<input type="number" id="add-price" step="0.01" required placeholder="19.90">
 								</div>
 
+								<div class="form-group">
+									<label for="add-origin-price"><i class="fas fa-dollar-sign"></i> Prix d'achat (USD)</label>
+									<input type="number" id="add-origin-price" step="0.01" min="0" placeholder="0.00">
+								</div>
+							</div>
+
+							<div class="form-row">
 								<div class="form-group">
 									<label for="add-stock">Stock initial *</label>
 									<input type="number" id="add-stock" value="10000" required>
@@ -1043,7 +1039,7 @@ class StockManager {
 									
 									<button type="button" 
 											class="stock-btn secondary" 
-											onclick="document.getElementById('add-product-image-upload').click()"
+											ontouchstart="document.getElementById('add-product-image-upload').click()" onclick="document.getElementById('add-product-image-upload').click()"
 											style="width: 100%; margin-bottom: 10px;">
 										<i class="fas fa-upload"></i> Sélectionner une image
 									</button>
@@ -1057,7 +1053,7 @@ class StockManager {
 										</div>
 										<button type="button" 
 												class="stock-btn secondary" 
-												onclick="document.getElementById('add-product-image-upload').value=''; document.getElementById('add-upload-preview').style.display='none';"
+												ontouchstart="document.getElementById('add-product-image-upload').value=''; document.getElementById('add-upload-preview').style.display='none';" onclick="document.getElementById('add-product-image-upload').value=''; document.getElementById('add-upload-preview').style.display='none';"
 												style="margin-top: 10px;">
 											<i class="fas fa-times"></i> Supprimer l'image
 										</button>
@@ -1066,7 +1062,7 @@ class StockManager {
 							</div>
 
 							<div class="modal-actions" style="margin-top: 20px;">
-								<button type="button" class="modal-btn secondary" onclick="document.getElementById('add-product-modal').remove()">
+								<button type="button" class="modal-btn secondary" ontouchstart="document.getElementById('add-product-modal').remove()" onclick="document.getElementById('add-product-modal').remove()">
 									<i class="fas fa-times"></i> Annuler
 								</button>
 								<button type="submit" class="modal-btn primary">
@@ -1173,6 +1169,7 @@ class StockManager {
 		const productData = {
 			name: document.getElementById('add-name').value,
 			price: parseFloat(document.getElementById('add-price').value),
+			origin_price: parseFloat(document.getElementById('add-origin-price').value) || 0,
 			stock: parseInt(document.getElementById('add-stock').value),
 			category: category,
 			supplier: document.getElementById('add-supplier').value || 'Non défini',

@@ -691,19 +691,29 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
     const remainingResult = remainingStmt.get(...remainingParams);
 
     // 🆕 Requête pour les quantités en commande fournisseur non livrée
+    // ⚡ OPTIMISATION : Ajout du filtre année
+    let supplierWhereClause = '';
+    const supplierParams = [productName];
+
+    if (year && year !== 'all') {
+      supplierWhereClause = ` AND strftime('%Y', os.order_date) = ?`;
+      supplierParams.push(year.toString());
+    }
+
     const supplierOrderQuery = `
       SELECT
         SUM(osi.quantity) AS supplier_order_quantity
       FROM order_supplier_items osi
       INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
       WHERE osi.product_name = ?
-        AND os.status != 'Livrée'
+        AND os.status != 'Livrée'${supplierWhereClause}
     `;
 
     const supplierOrderStmt = dbModule.db.prepare(supplierOrderQuery);
-    const supplierOrderResult = supplierOrderStmt.get(productName);
+    const supplierOrderResult = supplierOrderStmt.get(...supplierParams);
 
     // 🆕 Requête pour le détail des commandes fournisseurs non livrées
+    // ⚡ OPTIMISATION : Ajout du filtre année
     const supplierOrderDetailsQuery = `
       SELECT
         os.id,
@@ -714,13 +724,13 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
       FROM order_supplier_items osi
       INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
       WHERE osi.product_name = ?
-        AND os.status != 'Livrée'
+        AND os.status != 'Livrée'${supplierWhereClause}
       GROUP BY os.id, os.invoice_number, os.order_date, os.status
       ORDER BY os.order_date DESC
     `;
 
     const supplierOrderDetailsStmt = dbModule.db.prepare(supplierOrderDetailsQuery);
-    const supplierOrderDetails = supplierOrderDetailsStmt.all(productName);
+    const supplierOrderDetails = supplierOrderDetailsStmt.all(...supplierParams);
 
     const total_delivered = deliveredResult?.total_delivered || 0;
     const total_remaining = remainingResult?.total_remaining || 0;

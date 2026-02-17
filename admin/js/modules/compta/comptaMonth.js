@@ -114,6 +114,157 @@ class ComptaMonth {
 
         tbody.innerHTML = sortedInvoices.map(invoice => this.createTableRow(invoice)).join('');
         this.attachEventListeners();
+
+        // Badges mobiles
+        this.renderInvoicesBadges(sortedInvoices);
+    }
+
+    renderInvoicesBadges(invoices) {
+        const container = document.getElementById('invoicesBadgesContainer');
+        if (!container) return;
+
+        if (!invoices || invoices.length === 0) {
+            container.innerHTML = '<p class="no-data">Aucune facture trouvée</p>';
+            return;
+        }
+
+        container.innerHTML = invoices.map(invoice => {
+            const statusClass = this.getStatusClass(invoice.payment_status);
+            const statusText = this.getStatusText(invoice.payment_status);
+            return `
+            <div class="invoice-badge" data-invoice-id="${invoice.id}">
+                <div class="invoice-badge-header">
+                    <span class="invoice-badge-number">${invoice.order_id}</span>
+                    <span class="invoice-badge-date">${this.formatDateShort(invoice.invoice_date)}</span>
+                </div>
+                <div class="invoice-badge-client">${invoice.client_full_name || 'N/A'}</div>
+                <div class="invoice-badge-amounts">
+                    <div class="invoice-badge-amount">
+                        <span class="invoice-badge-amount-label">TTC</span>
+                        <span class="invoice-badge-amount-value total">${formatCurrency(invoice.total_ttc)}</span>
+                    </div>
+                    <div class="invoice-badge-amount">
+                        <span class="invoice-badge-amount-label">Payé</span>
+                        <span class="invoice-badge-amount-value paid">${formatCurrency(invoice.amount_paid)}</span>
+                    </div>
+                    <div class="invoice-badge-amount">
+                        <span class="invoice-badge-amount-label">Dû</span>
+                        <span class="invoice-badge-amount-value due">${formatCurrency(invoice.amount_due)}</span>
+                    </div>
+                </div>
+                <div class="invoice-badge-footer">
+                    <span class="invoice-badge-status ${statusClass}">${statusText}</span>
+                    <button class="invoice-badge-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthEditBadge(${invoice.id})">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                       class="invoice-badge-action" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        window._monthEditBadge = (invoiceId) => this.openMobileEditModal(invoiceId);
+    }
+
+    openMobileEditModal(invoiceId) {
+        const invoice = this.invoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        document.getElementById('mobileEditOverlay')?.remove();
+
+        const paidDateValue = invoice.paid_date ? new Date(invoice.paid_date).toISOString().split('T')[0] : '';
+        const dueDateValue = invoice.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'mobileEditOverlay';
+        overlay.className = 'mobile-edit-overlay';
+        overlay.innerHTML = `
+            <div class="mobile-edit-sheet">
+                <h3><i class="fas fa-file-invoice" style="color:#667eea;margin-right:6px;"></i>${invoice.order_id}</h3>
+                <span class="mobile-edit-subtitle">${invoice.client_full_name || ''} — TTC: ${formatCurrency(invoice.total_ttc)}</span>
+
+                <div class="mobile-edit-field">
+                    <label>Montant encaissé (CHF)</label>
+                    <input type="number" id="meAmountPaid" step="0.01" min="0" value="${parseFloat(invoice.amount_paid || 0).toFixed(2)}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Date d'échéance</label>
+                    <input type="date" id="meDueDate" value="${dueDateValue}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Date de paiement</label>
+                    <input type="date" id="mePaidDate" value="${paidDateValue}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Statut paiement</label>
+                    <select id="mePaymentStatus">
+                        <option value="unpaid" ${invoice.payment_status === 'unpaid' ? 'selected' : ''}>Non payé</option>
+                        <option value="partial" ${invoice.payment_status === 'partial' ? 'selected' : ''}>Partiel</option>
+                        <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
+                    </select>
+                </div>
+                <div class="mobile-edit-actions">
+                    <button class="mobile-edit-cancel" id="meCancel">Annuler</button>
+                    <button class="mobile-edit-save" id="meSave"><i class="fas fa-check"></i> Enregistrer</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+        document.getElementById('meCancel').addEventListener('click', () => overlay.remove());
+
+        // Auto-remplir les champs selon le statut choisi
+        document.getElementById('mePaymentStatus').addEventListener('change', (e) => {
+            const status = e.target.value;
+            const today = new Date().toISOString().split('T')[0];
+            if (status === 'paid') {
+                document.getElementById('meAmountPaid').value = parseFloat(invoice.total_ttc).toFixed(2);
+                if (!document.getElementById('mePaidDate').value) {
+                    document.getElementById('mePaidDate').value = today;
+                }
+            } else if (status === 'unpaid') {
+                document.getElementById('meAmountPaid').value = '0.00';
+                document.getElementById('mePaidDate').value = '';
+            }
+        });
+
+        document.getElementById('meSave').addEventListener('click', async () => {
+            const amountPaid = parseFloat(document.getElementById('meAmountPaid').value) || 0;
+            const dueDate = document.getElementById('meDueDate').value;
+            const paidDate = document.getElementById('mePaidDate').value;
+            const paymentStatus = document.getElementById('mePaymentStatus').value;
+
+            const amountDue = Math.max(0, invoice.total_ttc - amountPaid);
+            const updateData = {
+                amount_paid: amountPaid,
+                amount_due: amountDue,
+                payment_status: paymentStatus,
+                paid_date: paidDate || null,
+                due_date: dueDate || null
+            };
+
+            try {
+                const resp = await fetch(`/api/invoices/${invoiceId}/payment`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(updateData)
+                });
+                if (!resp.ok) throw new Error('Erreur mise à jour');
+                showNotification('Facture mise à jour', 'success');
+                overlay.remove();
+                await this.loadMonthInvoices();
+            } catch (err) {
+                showNotification('Erreur: ' + err.message, 'error');
+            }
+        });
     }
 
     createTableRow(invoice) {
@@ -284,20 +435,23 @@ class ComptaMonth {
             } else if (field === 'payment_status') {
                 let amountPaid = invoice.amount_paid;
                 let amountDue = invoice.amount_due;
-                
-                if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+                let paidDate = invoice.paid_date;
+
+                if (newValue === 'paid') {
                     amountPaid = invoice.total_ttc;
                     amountDue = 0;
+                    if (!paidDate) paidDate = new Date().toISOString();
                 } else if (newValue === 'unpaid') {
                     amountPaid = 0;
                     amountDue = invoice.total_ttc;
+                    paidDate = null;
                 }
-                
+
                 updateData = {
                     amount_paid: amountPaid,
                     amount_due: amountDue,
                     payment_status: newValue,
-                    paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                    paid_date: paidDate
                 };
             }
 

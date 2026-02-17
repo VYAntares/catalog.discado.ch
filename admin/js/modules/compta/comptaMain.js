@@ -536,6 +536,9 @@ class ComptaMain {
 
 		tbody.innerHTML = sortedInvoices.map(invoice => this.createUnpaidInvoiceRow(invoice)).join('');
 		this.attachUnpaidEventListeners();
+
+		// Badges mobiles
+		this.renderInvoicesBadges(sortedInvoices, 'unpaidBadgesContainer');
 	}
 
     createUnpaidInvoiceRow(invoice) {
@@ -587,6 +590,240 @@ class ComptaMain {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
+        });
+    }
+
+    // ===== BADGES MOBILES =====
+
+    createClientBadgeHtml(client) {
+        return `
+            <div class="client-badge">
+                <div class="client-badge-header">
+                    <span class="client-badge-id">${client.user_id}</span>
+                    <span class="client-badge-name">${client.client_full_name || 'N/A'}</span>
+                </div>
+                ${client.referral_source ? `<div class="client-badge-company"><i class="fas fa-tag" style="font-size:9px;margin-right:3px;color:#667eea;"></i>${client.referral_source}</div>` : ''}
+                <div class="client-badge-stats">
+                    <div class="client-badge-stat">
+                        <span class="client-badge-stat-label">Fact.</span>
+                        <span class="client-badge-stat-value">${client.invoice_count}</span>
+                    </div>
+                    <div class="client-badge-stat">
+                        <span class="client-badge-stat-label">Total</span>
+                        <span class="client-badge-stat-value">${formatCurrency(client.total_amount)}</span>
+                    </div>
+                    <div class="client-badge-stat">
+                        <span class="client-badge-stat-label">Payé</span>
+                        <span class="client-badge-stat-value success">${formatCurrency(client.total_paid)}</span>
+                    </div>
+                    <div class="client-badge-stat">
+                        <span class="client-badge-stat-label">Dû</span>
+                        <span class="client-badge-stat-value danger">${formatCurrency(client.total_due)}</span>
+                    </div>
+                    <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.user_id)}&year=${this.selectedYear}"
+                       class="badge-action-btn">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+
+    renderClientsBadges(clients, isGroupBySource = false) {
+        const container = document.getElementById('clientsBadgesContainer');
+        if (!container) return;
+
+        if (!clients || clients.length === 0) {
+            container.innerHTML = '<p class="no-data">Aucun client trouvé</p>';
+            return;
+        }
+
+        if (isGroupBySource) {
+            // Grouper par source
+            const groups = {};
+            clients.forEach(c => {
+                const src = c.referral_source || 'Non défini';
+                if (!groups[src]) groups[src] = [];
+                groups[src].push(c);
+            });
+            const sources = Object.keys(groups).sort((a, b) => {
+                if (a === 'Non défini') return 1;
+                if (b === 'Non défini') return -1;
+                return a.localeCompare(b);
+            });
+            let html = '';
+            sources.forEach(source => {
+                const groupClients = groups[source];
+                const groupTotal = groupClients.reduce((s, c) => s + (c.total_amount || 0), 0);
+                html += `<div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12px;font-weight:700;">
+                    <i class="fas fa-users"></i> ${source} — ${groupClients.length} client(s) · ${formatCurrency(groupTotal)}
+                </div>`;
+                groupClients.forEach(client => {
+                    html += this.createClientBadgeHtml(client);
+                });
+            });
+            container.innerHTML = html;
+            return;
+        }
+
+        container.innerHTML = clients.map(client => this.createClientBadgeHtml(client)).join('');
+    }
+
+    renderInvoicesBadges(invoices, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!invoices || invoices.length === 0) {
+            container.innerHTML = '<p class="no-data">Aucune facture trouvée</p>';
+            return;
+        }
+
+        // Source des données selon le container
+        const dataSource = containerId === 'unpaidBadgesContainer' ? 'unpaid' : 'all';
+
+        container.innerHTML = invoices.map(invoice => {
+            const statusClass = this.getInvoiceStatusClass(invoice.payment_status);
+            const statusText = this.getInvoiceStatusText(invoice.payment_status);
+            return `
+            <div class="invoice-badge" data-invoice-id="${invoice.id}">
+                <div class="invoice-badge-header">
+                    <span class="invoice-badge-number">${invoice.order_id}</span>
+                    <span class="invoice-badge-date">${this.formatDateShort(invoice.invoice_date)}</span>
+                </div>
+                <div class="invoice-badge-client">${invoice.client_full_name || 'N/A'}</div>
+                <div class="invoice-badge-amounts">
+                    <div class="invoice-badge-amount">
+                        <span class="invoice-badge-amount-label">TTC</span>
+                        <span class="invoice-badge-amount-value total">${formatCurrency(invoice.total_ttc)}</span>
+                    </div>
+                    <div class="invoice-badge-amount">
+                        <span class="invoice-badge-amount-label">Payé</span>
+                        <span class="invoice-badge-amount-value paid">${formatCurrency(invoice.amount_paid)}</span>
+                    </div>
+                    <div class="invoice-badge-amount">
+                        <span class="invoice-badge-amount-label">Dû</span>
+                        <span class="invoice-badge-amount-value due">${formatCurrency(invoice.amount_due)}</span>
+                    </div>
+                </div>
+                <div class="invoice-badge-footer">
+                    <span class="invoice-badge-status ${statusClass}">${statusText}</span>
+                    <button class="invoice-badge-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._comptaEditBadge(${invoice.id},'${dataSource}')">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                       class="invoice-badge-action" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        window._comptaEditBadge = (invoiceId, source) => this.openMobileEditModal(invoiceId, source);
+    }
+
+    openMobileEditModal(invoiceId, source) {
+        // Chercher la facture dans la bonne source
+        const list = source === 'unpaid' ? this.unpaidInvoices : this.allInvoicesData;
+        const invoice = list.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        document.getElementById('mobileEditOverlay')?.remove();
+
+        const paidDateValue = invoice.paid_date ? new Date(invoice.paid_date).toISOString().split('T')[0] : '';
+        const dueDateValue = invoice.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'mobileEditOverlay';
+        overlay.className = 'mobile-edit-overlay';
+        overlay.innerHTML = `
+            <div class="mobile-edit-sheet">
+                <h3><i class="fas fa-file-invoice" style="color:#667eea;margin-right:6px;"></i>${invoice.order_id}</h3>
+                <span class="mobile-edit-subtitle">${invoice.client_full_name || ''} — TTC: ${formatCurrency(invoice.total_ttc)}</span>
+
+                <div class="mobile-edit-field">
+                    <label>Montant encaissé (CHF)</label>
+                    <input type="number" id="meAmountPaid" step="0.01" min="0" value="${parseFloat(invoice.amount_paid || 0).toFixed(2)}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Date d'échéance</label>
+                    <input type="date" id="meDueDate" value="${dueDateValue}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Date de paiement</label>
+                    <input type="date" id="mePaidDate" value="${paidDateValue}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Statut paiement</label>
+                    <select id="mePaymentStatus">
+                        <option value="unpaid" ${invoice.payment_status === 'unpaid' ? 'selected' : ''}>Non payé</option>
+                        <option value="partial" ${invoice.payment_status === 'partial' ? 'selected' : ''}>Partiel</option>
+                        <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
+                    </select>
+                </div>
+                <div class="mobile-edit-actions">
+                    <button class="mobile-edit-cancel" id="meCancel">Annuler</button>
+                    <button class="mobile-edit-save" id="meSave"><i class="fas fa-check"></i> Enregistrer</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+        document.getElementById('meCancel').addEventListener('click', () => overlay.remove());
+
+        // Auto-remplir les champs selon le statut choisi
+        document.getElementById('mePaymentStatus').addEventListener('change', (e) => {
+            const status = e.target.value;
+            const today = new Date().toISOString().split('T')[0];
+            if (status === 'paid') {
+                document.getElementById('meAmountPaid').value = parseFloat(invoice.total_ttc).toFixed(2);
+                if (!document.getElementById('mePaidDate').value) {
+                    document.getElementById('mePaidDate').value = today;
+                }
+            } else if (status === 'unpaid') {
+                document.getElementById('meAmountPaid').value = '0.00';
+                document.getElementById('mePaidDate').value = '';
+            }
+        });
+
+        document.getElementById('meSave').addEventListener('click', async () => {
+            const amountPaid = parseFloat(document.getElementById('meAmountPaid').value) || 0;
+            const dueDate = document.getElementById('meDueDate').value;
+            const paidDate = document.getElementById('mePaidDate').value;
+            const paymentStatus = document.getElementById('mePaymentStatus').value;
+
+            const amountDue = Math.max(0, invoice.total_ttc - amountPaid);
+            const updateData = {
+                amount_paid: amountPaid,
+                amount_due: amountDue,
+                payment_status: paymentStatus,
+                paid_date: paidDate || null,
+                due_date: dueDate || null
+            };
+
+            try {
+                const resp = await fetch(`/api/invoices/${invoiceId}/payment`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(updateData)
+                });
+                if (!resp.ok) throw new Error('Erreur mise à jour');
+                showNotification('Facture mise à jour', 'success');
+                overlay.remove();
+                // Recharger selon la source
+                if (source === 'unpaid') {
+                    await this.loadUnpaidInvoices();
+                } else {
+                    await this.loadAllInvoices();
+                }
+            } catch (err) {
+                showNotification('Erreur: ' + err.message, 'error');
+            }
         });
     }
 
@@ -704,20 +941,23 @@ class ComptaMain {
             } else if (field === 'payment_status') {
                 let amountPaid = invoice.amount_paid;
                 let amountDue = invoice.amount_due;
-                
-                if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+                let paidDate = invoice.paid_date;
+
+                if (newValue === 'paid') {
                     amountPaid = invoice.total_ttc;
                     amountDue = 0;
+                    if (!paidDate) paidDate = new Date().toISOString();
                 } else if (newValue === 'unpaid') {
                     amountPaid = 0;
                     amountDue = invoice.total_ttc;
+                    paidDate = null;
                 }
-                
+
                 updateData = {
                     amount_paid: amountPaid,
                     amount_due: amountDue,
                     payment_status: newValue,
-                    paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                    paid_date: paidDate
                 };
             }
 
@@ -990,6 +1230,9 @@ class ComptaMain {
         }
 
         tbody.innerHTML = html;
+
+        // Badges mobiles
+        this.renderClientsBadges(sortedClients, isGroupBySource);
     }
 
     searchClients() {
@@ -1073,12 +1316,59 @@ class ComptaMain {
 
         if (!this.allInvoicesFiltered || this.allInvoicesFiltered.length === 0) {
             tbody.innerHTML = '<tr><td colspan="12" class="no-data">Aucune facture trouvée</td></tr>';
+            this.updateAllInvoicesSummaryBar([]);
             return;
         }
 
         const sorted = this.sortAllInvoices(this.allInvoicesFiltered);
         tbody.innerHTML = sorted.map(invoice => this.createAllInvoiceRow(invoice)).join('');
         this.attachAllInvoicesEventListeners();
+        this.updateAllInvoicesSummaryBar(this.allInvoicesFiltered);
+
+        // Badges mobiles
+        this.renderInvoicesBadges(sorted, 'allInvoicesBadgesContainer');
+    }
+
+    updateAllInvoicesSummaryBar(invoices) {
+        let bar = document.getElementById('allInvoicesSummaryBar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'allInvoicesSummaryBar';
+            bar.className = 'invoices-summary-bar';
+            const container = document.querySelector('#all_invoices-tab .client-invoices-container');
+            if (container) container.parentNode.insertBefore(bar, container);
+        }
+
+        if (!invoices || invoices.length === 0) {
+            bar.innerHTML = '';
+            return;
+        }
+
+        const totals = invoices.reduce((acc, inv) => {
+            acc.ttc += parseFloat(inv.total_ttc) || 0;
+            acc.paid += parseFloat(inv.amount_paid) || 0;
+            acc.due += parseFloat(inv.amount_due) || 0;
+            return acc;
+        }, { ttc: 0, paid: 0, due: 0 });
+
+        bar.innerHTML = `
+            <div class="summary-pill pill-count">
+                <i class="fas fa-file-invoice"></i>
+                <span><span class="pill-value">${invoices.length}</span> factures</span>
+            </div>
+            <div class="summary-pill pill-total">
+                <i class="fas fa-coins"></i>
+                <span>Total: <span class="pill-value">${formatCurrency(totals.ttc)}</span></span>
+            </div>
+            <div class="summary-pill pill-paid">
+                <i class="fas fa-check-circle"></i>
+                <span>Payé: <span class="pill-value">${formatCurrency(totals.paid)}</span></span>
+            </div>
+            <div class="summary-pill pill-due">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Dû: <span class="pill-value">${formatCurrency(totals.due)}</span></span>
+            </div>
+        `;
     }
 
     createAllInvoiceRow(invoice) {
@@ -1246,20 +1536,23 @@ class ComptaMain {
             } else if (field === 'payment_status') {
                 let amountPaid = invoice.amount_paid;
                 let amountDue = invoice.amount_due;
+                let paidDate = invoice.paid_date;
 
-                if (newValue === 'paid' && amountPaid < invoice.total_ttc) {
+                if (newValue === 'paid') {
                     amountPaid = invoice.total_ttc;
                     amountDue = 0;
+                    if (!paidDate) paidDate = new Date().toISOString();
                 } else if (newValue === 'unpaid') {
                     amountPaid = 0;
                     amountDue = invoice.total_ttc;
+                    paidDate = null;
                 }
 
                 updateData = {
                     amount_paid: amountPaid,
                     amount_due: amountDue,
                     payment_status: newValue,
-                    paid_date: newValue === 'paid' && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                    paid_date: paidDate
                 };
             }
 
