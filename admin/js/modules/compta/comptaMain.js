@@ -596,6 +596,8 @@ class ComptaMain {
     // ===== BADGES MOBILES =====
 
     createClientBadgeHtml(client) {
+        const commissionTotal = client.commission_total || 0;
+        const commissionReceived = client.commission_received || 0;
         return `
             <div class="client-badge">
                 <div class="client-badge-header">
@@ -624,6 +626,10 @@ class ComptaMain {
                        class="badge-action-btn">
                         <i class="fas fa-eye"></i>
                     </a>
+                </div>
+                <div class="client-badge-commission">
+                    <i class="fas fa-coins"></i>
+                    <span class="commission-received">${formatCurrency(commissionReceived)}</span> reçu sur <span class="commission-total">${formatCurrency(commissionTotal)}</span> à recevoir
                 </div>
             </div>
         `;
@@ -655,8 +661,20 @@ class ComptaMain {
             sources.forEach(source => {
                 const groupClients = groups[source];
                 const groupTotal = groupClients.reduce((s, c) => s + (c.total_amount || 0), 0);
-                html += `<div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12px;font-weight:700;">
-                    <i class="fas fa-users"></i> ${source} — ${groupClients.length} client(s) · ${formatCurrency(groupTotal)}
+                const groupPaid = groupClients.reduce((s, c) => s + (c.total_paid || 0), 0);
+                const groupDue = groupClients.reduce((s, c) => s + (c.total_due || 0), 0);
+                const groupCommissionTotal = groupClients.reduce((s, c) => s + (c.commission_total || 0), 0);
+                const groupCommissionReceived = groupClients.reduce((s, c) => s + (c.commission_received || 0), 0);
+                html += `<div class="client-badge-group-header">
+                    <div class="group-header-title"><i class="fas fa-users"></i> ${source} — ${groupClients.length} client(s)</div>
+                    <div class="group-header-stats">
+                        <span>Total: ${formatCurrency(groupTotal)}</span>
+                        <span class="success">Payé: ${formatCurrency(groupPaid)}</span>
+                        <span class="danger">Dû: ${formatCurrency(groupDue)}</span>
+                    </div>
+                    <div class="group-header-commission">
+                        <i class="fas fa-coins"></i> Comm: ${formatCurrency(groupCommissionReceived)} reçu / ${formatCurrency(groupCommissionTotal)}
+                    </div>
                 </div>`;
                 groupClients.forEach(client => {
                     html += this.createClientBadgeHtml(client);

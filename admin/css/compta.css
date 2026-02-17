@@ -813,6 +813,76 @@ main {
     color: #ef4444;
 }
 
+/* Commission line in client badge */
+.client-badge-commission {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: #64748b;
+    padding-top: 5px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.client-badge-commission i {
+    color: #f59e0b;
+    font-size: 10px;
+}
+
+.client-badge-commission .commission-received {
+    font-weight: 700;
+    color: #10b981;
+}
+
+.client-badge-commission .commission-total {
+    font-weight: 700;
+    color: #8b5cf6;
+}
+
+/* Group header for mobile badges */
+.client-badge-group-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.group-header-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.group-header-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: 11px;
+    opacity: 0.95;
+}
+
+.group-header-stats .success {
+    color: #86efac;
+}
+
+.group-header-stats .danger {
+    color: #fca5a5;
+}
+
+.group-header-commission {
+    font-size: 10px;
+    opacity: 0.9;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.group-header-commission i {
+    color: #fcd34d;
+}
+
 .client-badge-actions {
     display: flex;
     gap: 6px;
