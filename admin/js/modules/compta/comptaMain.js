@@ -1015,22 +1015,22 @@ class ComptaMain {
 
     exportUnpaidToCSV() {
         if (!this.unpaidInvoices || this.unpaidInvoices.length === 0) {
-            showNotification('Aucune facture impayée à exporter', 'warning');
+            showNotification('No unpaid invoices to export', 'warning');
             return;
         }
 
         const headers = [
-            'Numéro facture',
-            'Date facture',
+            'Invoice Number',
+            'Invoice Date',
             'Client',
-            'Montant HT',
-            'TVA',
-            'Montant TTC',
-            'Date échéance',
-            'Montant encaissé',
-            'Solde dû',
-            'Date paiement',
-            'Statut'
+            'Amount excl. VAT',
+            'VAT',
+            'Amount incl. VAT',
+            'Due Date',
+            'Amount Paid',
+            'Balance Due',
+            'Payment Date',
+            'Status'
         ];
 
         const sortedInvoices = [...this.unpaidInvoices].sort((a, b) => {
@@ -1070,7 +1070,7 @@ class ComptaMain {
                 this.formatNumberForCSV(invoice.amount_paid),
                 this.formatNumberForCSV(invoice.amount_due),
                 invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
-                'Non payé'
+                'Unpaid'
             ].join(',');
         });
 
@@ -1079,7 +1079,7 @@ class ComptaMain {
 
         // Ajouter la ligne de totaux
         const totalsRow = [
-            `"TOTAL (${totals.count} factures impayées)"`,
+            `"TOTAL (${totals.count} unpaid invoices)"`,
             '',
             '',
             this.formatNumberForCSV(totals.subtotal_ht),
@@ -1100,8 +1100,8 @@ class ComptaMain {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
-        const fileName = `factures_impayees_${this.selectedYear}.csv`;
-        
+        const fileName = `unpaid_invoices_${this.selectedYear}.csv`;
+
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
@@ -1109,7 +1109,7 @@ class ComptaMain {
         link.click();
         document.body.removeChild(link);
 
-        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+        showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
     formatNumberForCSV(number) {
@@ -1437,8 +1437,8 @@ class ComptaMain {
     }
 
     getInvoiceStatusText(status) {
-        const map = { 'paid': 'Payé', 'partial': 'Partiel', 'unpaid': 'Non payé' };
-        return map[status] || 'Non payé';
+        const map = { 'paid': 'Paid', 'partial': 'Partial', 'unpaid': 'Unpaid' };
+        return map[status] || 'Unpaid';
     }
 
     attachAllInvoicesEventListeners() {
@@ -1625,17 +1625,17 @@ class ComptaMain {
 
     exportAllInvoicesToCSV() {
         if (!this.allInvoicesFiltered || this.allInvoicesFiltered.length === 0) {
-            showNotification('Aucune facture à exporter', 'warning');
+            showNotification('No invoices to export', 'warning');
             return;
         }
 
         const sorted = this.sortAllInvoices(this.allInvoicesFiltered);
 
         const headers = [
-            'Numéro facture', 'Date facture', 'Client',
-            'Montant HT', 'TVA', 'Montant TTC',
-            'Date échéance', 'Montant encaissé', 'Solde dû',
-            'Date paiement', 'Statut'
+            'Invoice Number', 'Invoice Date', 'Client',
+            'Amount excl. VAT', 'VAT', 'Amount incl. VAT',
+            'Due Date', 'Amount Paid', 'Balance Due',
+            'Payment Date', 'Status'
         ];
 
         const totals = sorted.reduce((acc, inv) => {
@@ -1664,7 +1664,7 @@ class ComptaMain {
 
         rows.push('');
         rows.push([
-            `"TOTAL (${totals.count} factures)"`, '', '',
+            `"TOTAL (${totals.count} invoices)"`, '', '',
             this.formatNumberForCSV(totals.subtotal_ht),
             this.formatNumberForCSV(totals.vat_amount),
             this.formatNumberForCSV(totals.total_ttc),
@@ -1679,7 +1679,7 @@ class ComptaMain {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
 
-        const fileName = `toutes_factures_${this.selectedYear}.csv`;
+        const fileName = `all_invoices_${this.selectedYear}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
@@ -1687,25 +1687,25 @@ class ComptaMain {
         link.click();
         document.body.removeChild(link);
 
-        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+        showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
     exportClientsToCSV() {
         if (!this.allClientsData || this.allClientsData.length === 0) {
-            showNotification('Aucun client à exporter', 'warning');
+            showNotification('No clients to export', 'warning');
             return;
         }
 
         const sortedData = this.sortClients(this.allClientsData, this.currentSortOption);
 
         const headers = [
-            'ID Client',
-            'Nom complet',
-            'Nombre de factures',
-            'Total TTC',
-            'Total payé',
-            'Total dû',
-            'Taux de paiement (%)'
+            'Client ID',
+            'Full Name',
+            'Invoice Count',
+            'Total incl. VAT',
+            'Total Paid',
+            'Total Due',
+            'Payment Rate (%)'
         ];
 
         const grandTotals = sortedData.reduce((acc, client) => {
@@ -1752,16 +1752,16 @@ class ComptaMain {
             grandTotals.total_due.toFixed(2),
             grandPaymentRate
         ].join(',');
-        
+
         rows.push(totalsRow);
 
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
-        const fileName = `clients_factures_${this.selectedYear}.csv`;
-        
+
+        const fileName = `clients_invoices_${this.selectedYear}.csv`;
+
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
@@ -1769,7 +1769,7 @@ class ComptaMain {
         link.click();
         document.body.removeChild(link);
 
-        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+        showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 }
 

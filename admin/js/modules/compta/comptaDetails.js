@@ -218,13 +218,13 @@ class ComptaDetails {
 
     exportToCSV() {
         if (!this.monthlyData || this.monthlyData.length === 0) {
-            showNotification('Aucune donnée à exporter', 'warning');
+            showNotification('No data to export', 'warning');
             return;
         }
 
         const monthNames = [
-            'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
         ];
 
         const isMonetary = this.type !== 'total_invoices';
@@ -243,7 +243,7 @@ class ComptaDetails {
         }, { invoice_count: 0, total_ht: 0, total_vat: 0, total_ttc: 0, total_paid: 0, total_due: 0 });
 
         if (this.type === 'total_amount') {
-            headers = ['Mois', 'Nombre de factures', 'Total HT', 'TVA', 'Total TTC'];
+            headers = ['Month', 'Invoice Count', 'Total excl. VAT', 'VAT', 'Total incl. VAT'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
@@ -251,11 +251,10 @@ class ComptaDetails {
                 formatSwissNumber(month.total_vat),
                 formatSwissNumber(month.total_ttc)
             ].join(','));
-            // Ajouter ligne vide puis ligne de totaux
             rows.push('');
-            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ht), formatSwissNumber(totals.total_vat), formatSwissNumber(totals.total_ttc)].join(','));
+            rows.push(['ANNUAL TOTAL', totals.invoice_count, formatSwissNumber(totals.total_ht), formatSwissNumber(totals.total_vat), formatSwissNumber(totals.total_ttc)].join(','));
         } else if (this.type === 'total_paid') {
-            headers = ['Mois', 'Nombre de factures', 'Total Facturé', 'Total Payé', 'Taux de paiement (%)'];
+            headers = ['Month', 'Invoice Count', 'Total Invoiced', 'Total Paid', 'Payment Rate (%)'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
@@ -263,11 +262,10 @@ class ComptaDetails {
                 formatSwissNumber(month.total_paid),
                 this.calculatePaymentRate(month.total_paid, month.total_ttc)
             ].join(','));
-            // Ajouter ligne vide puis ligne de totaux
             rows.push('');
-            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_paid), this.calculatePaymentRate(totals.total_paid, totals.total_ttc)].join(','));
+            rows.push(['ANNUAL TOTAL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_paid), this.calculatePaymentRate(totals.total_paid, totals.total_ttc)].join(','));
         } else if (this.type === 'total_due') {
-            headers = ['Mois', 'Nombre de factures', 'Total Facturé', 'Total Dû', 'Taux impayé (%)'];
+            headers = ['Month', 'Invoice Count', 'Total Invoiced', 'Total Due', 'Unpaid Rate (%)'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
@@ -275,20 +273,18 @@ class ComptaDetails {
                 formatSwissNumber(month.total_due),
                 this.calculatePaymentRate(month.total_due, month.total_ttc)
             ].join(','));
-            // Ajouter ligne vide puis ligne de totaux
             rows.push('');
-            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_due), this.calculatePaymentRate(totals.total_due, totals.total_ttc)].join(','));
+            rows.push(['ANNUAL TOTAL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_due), this.calculatePaymentRate(totals.total_due, totals.total_ttc)].join(','));
         } else { // total_invoices
-            headers = ['Mois', 'Nombre de factures', 'Total TTC', 'Montant moyen'];
+            headers = ['Month', 'Invoice Count', 'Total incl. VAT', 'Average Amount'];
             rows = this.monthlyData.map(month => [
                 monthNames[month.month - 1],
                 month.invoice_count,
                 formatSwissNumber(month.total_ttc),
                 formatSwissNumber(month.total_ttc / month.invoice_count)
             ].join(','));
-            // Ajouter ligne vide puis ligne de totaux
             rows.push('');
-            rows.push(['TOTAL ANNUEL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_ttc / totals.invoice_count)].join(','));
+            rows.push(['ANNUAL TOTAL', totals.invoice_count, formatSwissNumber(totals.total_ttc), formatSwissNumber(totals.total_ttc / totals.invoice_count)].join(','));
         }
 
         const csvContent = [headers.join(','), ...rows].join('\n');
@@ -297,14 +293,14 @@ class ComptaDetails {
         const url = URL.createObjectURL(blob);
         
         const typeNames = {
-            'total_amount': 'total_ttc',
-            'total_paid': 'total_paye',
-            'total_due': 'total_du',
-            'total_invoices': 'nb_factures'
+            'total_amount': 'total_incl_vat',
+            'total_paid': 'total_paid',
+            'total_due': 'total_due',
+            'total_invoices': 'invoice_count'
         };
-        
-        const fileName = `details_mensuels_${typeNames[this.type]}_${this.year}.csv`;
-        
+
+        const fileName = `monthly_details_${typeNames[this.type]}_${this.year}.csv`;
+
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
@@ -312,7 +308,7 @@ class ComptaDetails {
         link.click();
         document.body.removeChild(link);
 
-        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+        showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 }
 

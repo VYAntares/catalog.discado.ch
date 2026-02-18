@@ -491,27 +491,27 @@ class ComptaMonth {
 
     exportToCSV() {
         if (!this.invoices || this.invoices.length === 0) {
-            showNotification('Aucune facture à exporter', 'warning');
+            showNotification('No invoices to export', 'warning');
             return;
         }
 
         const monthNames = [
-            'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
         ];
 
         const headers = [
-            'Numéro facture',
-            'Date facture',
+            'Invoice Number',
+            'Invoice Date',
             'Client',
-            'Montant HT',
-            'TVA',
-            'Montant TTC',
-            'Date échéance',
-            'Montant encaissé',
-            'Solde dû',
-            'Date paiement',
-            'Statut'
+            'Amount excl. VAT',
+            'VAT',
+            'Amount incl. VAT',
+            'Due Date',
+            'Amount Paid',
+            'Balance Due',
+            'Payment Date',
+            'Status'
         ];
 
         const sortedInvoices = [...this.invoices].sort((a, b) => {
@@ -560,7 +560,7 @@ class ComptaMonth {
 
         // Ajouter la ligne de totaux
         const totalsRow = [
-            `"TOTAL (${totals.count} factures)"`,
+            `"TOTAL (${totals.count} invoices)"`,
             '',
             '',
             this.formatNumberForCSV(totals.subtotal_ht),
@@ -582,8 +582,8 @@ class ComptaMonth {
         const url = URL.createObjectURL(blob);
         
         const monthName = monthNames[this.month - 1];
-        const fileName = `factures_${monthName}_${this.year}.csv`;
-        
+        const fileName = `invoices_${monthName}_${this.year}.csv`;
+
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
         link.style.visibility = 'hidden';
@@ -591,7 +591,7 @@ class ComptaMonth {
         link.click();
         document.body.removeChild(link);
 
-        showNotification(`Export CSV réussi : ${fileName}`, 'success');
+        showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
     formatNumberForCSV(number) {
@@ -610,11 +610,11 @@ class ComptaMonth {
 
     getStatusText(status) {
         const textMap = {
-            'paid': 'Payé',
-            'partial': 'Partiel',
-            'unpaid': 'Non payé'
+            'paid': 'Paid',
+            'partial': 'Partial',
+            'unpaid': 'Unpaid'
         };
-        return textMap[status] || 'Non payé';
+        return textMap[status] || 'Unpaid';
     }
 }
 
