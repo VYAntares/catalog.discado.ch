@@ -1,69 +1,206 @@
 /* =========================================
-   Cart Modal Styles
+   Cart Modal — modern redesign
    ========================================= */
-   #cart-modal .modal-content {
-    padding: 25px;
+
+/* ── Override modal size for cart ── */
+#cart-modal {
+    z-index: 2500; /* above floating buttons (z-index:1000) and product panels (z-index:2000) */
+    align-items: center;
 }
 
-.cart-title {
-    margin-bottom: 20px;
-    color: #333;
-    font-size: 22px;
-    font-weight: 600;
-    text-align: center;
+#cart-modal .modal-content,
+.cart-modal-content {
+    max-width: 720px;
+    width: 92%;
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+    /* Flex column so the items list grows/shrinks and buttons stay pinned */
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
 }
 
+/* ── Header ── */
+.cart-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 26px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.cart-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cart-modal-title i {
+    font-size: 20px;
+    color: #60a5fa;
+}
+
+.cart-modal-title h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
+/* close button override for dark header */
+.cart-modal-content .close-modal {
+    top: 18px;
+    right: 22px;
+    color: rgba(255,255,255,0.6);
+    font-size: 24px;
+    transition: color 0.2s;
+}
+
+.cart-modal-content .close-modal:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+
+/* ── Items list — flex-grows to fill, scrolls when overflowing ── */
+.cart-items-list,
 #cart-items {
-    margin: 20px 0;
-    max-height: 400px;
+    padding: 0 26px;
+    flex: 1;           /* take all available space between header and buttons */
+    min-height: 0;     /* critical: allows flex child to shrink below content size */
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
 }
 
+.cart-items-list::-webkit-scrollbar { width: 5px; }
+.cart-items-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+/* Empty state */
 .empty-cart {
     text-align: center;
-    color: #777;
-    padding: 30px;
+    color: #999;
+    padding: 40px 20px;
     font-size: 15px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
+    line-height: 2;
 }
 
+.empty-cart i {
+    font-size: 36px;
+    color: #ccc;
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* ── Cart item row ── */
 .cart-item {
     display: grid;
-    grid-template-columns: 80px 1fr 100px 30px;
-    gap: 16px;
+    grid-template-columns: 60px 1fr auto 36px;
+    gap: 14px;
     align-items: center;
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .cart-item:last-child {
     border-bottom: none;
 }
 
-.cart-item-quantity {
-    text-align: left;
-    font-weight: bold;
-    color: #2575fc;
+/* Photo wrapper */
+.cart-item-photo-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.cart-item-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cart-item-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    border-radius: 10px;
+    letter-spacing: 0;
+}
+
+/* Info column */
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
 }
 
 .cart-item-name {
-    padding-left: 10px;
-    text-align: left;
-    line-height: 1.4;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a2e;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cart-item-category {
+    font-size: 11px;
+    color: #fff;
+    background: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-top: 2px;
+}
+
+/* Qty + price column */
+.cart-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    min-width: 80px;
+}
+
+.cart-item-qty {
+    font-size: 13px;
+    color: #60a5fa;
+    font-weight: 700;
+    background: #eff6ff;
+    padding: 2px 8px;
+    border-radius: 20px;
 }
 
 .cart-item-price {
-    text-align: right;
-    font-weight: bold;
-    color: #28a745;
+    font-size: 14px;
+    font-weight: 700;
+    color: #16a34a;
 }
 
+/* Remove button */
 .remove-item-btn {
     background: none;
     border: none;
-    color: #ff6b6b;
-    font-size: 18px;
+    color: #ccc;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -71,121 +208,241 @@
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, color 0.2s;
+    padding: 0;
 }
 
 .remove-item-btn:hover {
-    background-color: #f8f9fa;
+    background-color: #fff0f0;
+    color: #ef4444;
 }
 
+/* ── Total bar ── */
 .cart-total {
-    padding: 15px;
-    text-align: right;
-    font-size: 18px;
-    border-top: 2px solid #eee;
-    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 26px;
+    border-top: 2px solid #f0f0f0;
+    margin: 0;
+    flex-shrink: 0;
 }
 
-.cart-total strong {
-    color: #2575fc;
+.cart-total-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
+.cart-total-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a1a2e;
+}
+
+/* ── Action buttons ── */
 .cart-actions {
     display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-    gap: 15px;
+    gap: 12px;
+    padding: 0 26px 22px;
+    flex-shrink: 0;
 }
 
-#clear-cart-btn {
-    background-color: #6c757d;
+.cart-actions .secondary-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    background: #f3f4f6;
+    color: #555;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
 }
 
+.cart-actions .secondary-btn:hover {
+    background: #e5e7eb;
+}
+
+.cart-actions .primary-btn,
 #checkout-btn {
-    background-color: #28a745;
-    flex-grow: 1;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    letter-spacing: 0.3px;
 }
 
+.cart-actions .primary-btn:hover,
 #checkout-btn:hover {
-    background-color: #218838;
+    opacity: 0.92;
+    transform: translateY(-1px);
 }
 
-/* =========================================
-   Cart Confirmation Message
-   ========================================= */
+#checkout-btn:disabled {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── Confirmation screen ── */
 .cart-confirmation {
     display: none;
     text-align: center;
-    padding: 30px 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    margin-top: 20px;
+    padding: 36px 30px 32px;
 }
 
 .cart-confirmation.visible {
     display: block;
-    animation: fadeIn 0.5s ease;
+    animation: cartConfirmFadeIn 0.4s ease;
 }
 
-.cart-confirmation i {
-    font-size: 48px;
-    color: #28a745;
-    margin-bottom: 15px;
+@keyframes cartConfirmFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.cart-confirmation-icon {
+    margin-bottom: 16px;
+}
+
+.cart-confirmation-icon i {
+    font-size: 56px;
+    color: #10b981;
+}
+
+.cart-confirmation h3 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a1a2e;
 }
 
 .cart-confirmation p {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 10px;
+    font-size: 15px;
+    color: #555;
+    margin: 0 0 6px;
 }
 
 .cart-confirmation-note {
-    font-size: 14px !important;
-    color: #666 !important;
-    font-weight: normal !important;
-    margin-bottom: 20px !important;
+    font-size: 13px !important;
+    color: #999 !important;
+    margin-bottom: 24px !important;
 }
 
-#view-orders-btn {
-    display: inline-block;
-    background-color: #6c757d;
+.view-orders-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+.view-orders-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    /* Bottom-sheet: modal snaps to the bottom of the overlay */
+    #cart-modal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    #cart-modal .modal-content,
+    .cart-modal-content {
+        width: 100%;
+        max-width: 100%;
+        max-height: 82vh; /* leaves room for safe-area; flex handles inner sizing */
+        border-radius: 18px 18px 0 0;
+        margin: 0;
+    }
+
+    /* Items list: flex:1 already set above, just adjust padding */
+    .cart-items-list,
+    #cart-items {
+        padding: 0 16px;
+    }
+
+    .cart-modal-header {
+        padding: 16px 20px;
+        border-radius: 18px 18px 0 0;
+        flex-shrink: 0; /* never compress the header */
+    }
+
+    .cart-total {
+        padding: 13px 18px;
+        flex-shrink: 0; /* never compress the total bar */
+    }
+
+    .cart-actions {
+        padding: 0 16px 20px;
+        flex-direction: column;
+        gap: 10px;
+        flex-shrink: 0; /* never compress the buttons */
+    }
+
+    .cart-actions .secondary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .cart-actions .primary-btn,
+    #checkout-btn {
+        width: 100%;
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+
+    .cart-item {
+        grid-template-columns: 52px 1fr auto 32px;
+        gap: 10px;
+        padding: 11px 0;
+    }
+
+    .cart-item-photo-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 8px;
+    }
+
+    .cart-item-name {
+        font-size: 13px;
+    }
+
+    .cart-total-value {
+        font-size: 20px;
+    }
 }
 
 /* =========================================
-   Responsive Adjustments
+   Category items (used in catalog nav)
    ========================================= */
-@media (max-width: 768px) {
-    .cart-item {
-        grid-template-columns: 60px 1fr 80px 30px;
-        gap: 10px;
-        padding: 12px 0;
-    }
-    
-    .cart-item-name {
-        padding-left: 0;
-        font-size: 14px;
-    }
-    
-    .cart-total {
-        font-size: 16px;
-    }
-    
-    .cart-actions {
-        flex-direction: column;
-    }
-    
-    #clear-cart-btn, #checkout-btn {
-        width: 100%;
-    }
-}
-
-/* Assurer une bonne visibilité des éléments de catégorie */
 .category-item {
     padding: 8px 10px;
     background-color: #f5f5f5;
@@ -204,121 +461,61 @@
     color: white;
 }
 
-/* Styles pour la modal de confirmation */
+/* =========================================
+   Confirm modal (clear cart dialog)
+   ========================================= */
 .modal.confirm-modal {
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
-  }
-  
-  .confirm-modal .modal-content {
-    max-width: 450px;
-    border-radius: 12px;
+    z-index: 3000; /* must be above cart modal (2500) */
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+}
+
+.confirm-modal .modal-content {
+    max-width: 400px;
+    width: 90%;
+    border-radius: 18px;
     overflow: hidden;
     padding: 0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
     border: none;
-    animation: confirmScale 0.3s ease;
-  }
-  
-  @keyframes confirmScale {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  
-  .confirm-modal .modal-content h3 {
+    animation: confirmPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes confirmPop {
+    from { transform: scale(0.82); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+/* Header — red gradient */
+.confirm-modal .confirm-title {
     margin: 0;
-    padding: 20px 25px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #eee;
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
-  }
-  
-  .confirm-modal .modal-content p {
-    padding: 25px;
-    text-align: center;
-    margin: 0;
-    font-size: 16px;
-  }
-  
-  .confirm-modal .modal-content p:before {
-    content: "\f07a"; /* Icône panier FontAwesome */
-    font-family: "Font Awesome 5 Free";
-    font-weight: 900;
-    display: block;
-    font-size: 32px;
-    color: #f44336;
-    margin-bottom: 15px;
-  }
-  
-  .confirm-modal .modal-actions {
+    padding: 22px 52px 20px 24px; /* right padding for close button */
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
     display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    padding: 15px 25px;
-    background-color: #f8f9fa;
-    border-top: 1px solid #eee;
-  }
-  
-  /* Boutons */
-  .confirm-modal .secondary-btn,
-  .confirm-modal .cancel-btn {
-    background-color: #f1f1f1;
-    color: #333;
-    border: 1px solid #ddd;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-  
-  .confirm-modal .secondary-btn:hover,
-  .confirm-modal .cancel-btn:hover {
-    background-color: #e5e5e5;
-  }
-  
-  .confirm-modal .primary-btn,
-  .confirm-modal .confirm-btn {
-    background-color: #2575fc;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-  
-  .confirm-modal .primary-btn:hover,
-  .confirm-modal .confirm-btn:hover {
-    background-color: #1a5cb8;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(37, 117, 252, 0.2);
-  }
-  
-  /* Style pour le bouton danger */
-  .confirm-modal .danger-btn {
-    background-color: #f44336;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-  }
-  
-  .confirm-modal .danger-btn:hover {
-    background-color: #e53935;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.2);
-  }
-  
-  /* Bouton de fermeture */
-  .confirm-modal .close-modal {
+    align-items: center;
+    gap: 10px;
+    line-height: 1.3;
+}
+
+.confirm-modal .confirm-title::before {
+    content: "\f1f8"; /* trash icon */
+    font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* Close button — over the red header */
+.confirm-modal .close-modal {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 24px;
-    color: #666;
-    background: none;
+    top: 14px;
+    right: 14px;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     cursor: pointer;
     width: 30px;
@@ -327,30 +524,114 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.2s ease;
-  }
-  
-  .confirm-modal .close-modal:hover {
-    background-color: #f1f1f1;
-    color: #333;
-  }
-  
-  /* Version responsive */
-  @media (max-width: 576px) {
+    transition: background 0.2s, color 0.2s;
+    line-height: 1;
+}
+
+.confirm-modal .close-modal:hover {
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+/* Message */
+.confirm-modal .confirm-message {
+    padding: 26px 24px 20px;
+    text-align: center;
+    margin: 0;
+    font-size: 15px;
+    color: #444;
+    line-height: 1.55;
+}
+
+/* Remove old ::before icon hack */
+.confirm-modal .modal-content p:before {
+    display: none;
+}
+
+/* Actions */
+.confirm-modal .modal-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px 22px;
+}
+
+/* Cancel */
+.confirm-modal .secondary-btn,
+.confirm-modal .cancel-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: #f3f4f6;
+    color: #555;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.confirm-modal .secondary-btn:hover,
+.confirm-modal .cancel-btn:hover {
+    background: #e5e7eb;
+}
+
+/* Primary confirm */
+.confirm-modal .primary-btn,
+.confirm-modal .confirm-btn {
+    flex: 2;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #2575fc 0%, #1a5cb8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.confirm-modal .primary-btn:hover,
+.confirm-modal .confirm-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Danger confirm (used for clear cart) */
+.confirm-modal .danger-btn {
+    flex: 2;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.confirm-modal .danger-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
     .confirm-modal .modal-actions {
-      flex-direction: column;
+        flex-direction: column;
     }
-    
+
     .confirm-modal .secondary-btn,
     .confirm-modal .cancel-btn,
     .confirm-modal .primary-btn,
     .confirm-modal .confirm-btn,
     .confirm-modal .danger-btn {
-      width: 100%;
+        flex: unset;
+        width: 100%;
     }
-  }
+}
 
-  .order-reference-container {
+/* Order reference field (kept for compatibility if re-enabled) */
+.order-reference-container {
     margin: 15px 0;
     padding: 10px 0;
     border-top: 1px solid #eee;

@@ -1,35 +1,49 @@
 <!-- Cart Modal -->
 <div id="cart-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h2 class="cart-title">Your Cart</h2>
-        
-        <!-- Cart items will be added here dynamically -->
-        <div id="cart-items">
-            <p class="empty-cart">Your cart is empty</p>
+    <div class="modal-content cart-modal-content">
+
+        <!-- Header -->
+        <div class="cart-modal-header">
+            <div class="cart-modal-title">
+                <i class="fas fa-shopping-cart"></i>
+                <h2>Your Cart</h2>
+            </div>
+            <span class="close-modal" aria-label="Close">&times;</span>
         </div>
-        
+
+        <!-- Items list -->
+        <div id="cart-items" class="cart-items-list">
+            <p class="empty-cart"><i class="fas fa-shopping-basket"></i><br>Your cart is empty</p>
+        </div>
+
+        <!-- Total -->
         <div class="cart-total">
-            <strong>Total:</strong> <span id="cart-total-amount">0.00</span> CHF
+            <span class="cart-total-label">Total</span>
+            <span class="cart-total-value"><span id="cart-total-amount">0.00</span> CHF</span>
         </div>
-        
-        <!-- Order Reference Field (New Addition) -->
-        <!-- <div class="order-reference-container">
-            <label for="order-reference">Order Reference (Optional)</label>
-            <input type="text" id="order-reference" placeholder="Add your reference number or PO">
-        </div> -->
-        
+
+        <!-- Actions -->
         <div class="cart-actions">
-            <button id="clear-cart-btn" class="secondary-btn">Clear Cart</button>
-            <button id="checkout-btn" class="primary-btn">Order Now</button>
+            <button id="clear-cart-btn" class="secondary-btn">
+                <i class="fas fa-trash-alt"></i> Clear Cart
+            </button>
+            <button id="checkout-btn" class="primary-btn">
+                <i class="fas fa-check"></i> Order Now
+            </button>
         </div>
-        
-        <!-- Cart confirmation message (initially hidden) -->
+
+        <!-- Confirmation (shown after successful order) -->
         <div id="cart-confirmation" class="cart-confirmation">
-            <i class="fas fa-check-circle"></i>
+            <div class="cart-confirmation-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Order Placed!</h3>
             <p>Your order has been placed successfully!</p>
-            <p class="cart-confirmation-note">You can check your order status in "My Orders" section</p>
-            <button id="view-orders-btn" class="secondary-btn">View My Orders</button>
+            <p class="cart-confirmation-note">You can track your order status in "My Orders"</p>
+            <button id="view-orders-btn" class="view-orders-btn">
+                <i class="fas fa-receipt"></i> View My Orders
+            </button>
         </div>
+
     </div>
 </div>

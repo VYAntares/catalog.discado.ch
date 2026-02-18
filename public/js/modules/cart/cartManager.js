@@ -13,6 +13,15 @@ import { formatPrice } from '../../utils/formatter.js';
 import { showModal, hideModal, showConfirmModal } from '../../utils/modal.js';
 import { initCheckout } from './checkout.js';
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function avatarColor(str) {
+    const palette = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#0ea5e9','#14b8a6','#ef4444'];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+}
+
 // ===== INITIALISATION =====
 
 /**
@@ -89,32 +98,58 @@ function setupEventListeners() {
 export function displayCart() {
     const cartItemsContainer = document.getElementById('cart-items');
     if (!cartItemsContainer) return;
-    
+
+    // Reset modal state — fix bug where items were hidden after a successful order
+    cartItemsContainer.style.display = '';
+    const cartTotalEl  = document.querySelector('.cart-total');
+    const cartActionsEl = document.querySelector('.cart-actions');
+    const cartConfirmEl = document.getElementById('cart-confirmation');
+    if (cartTotalEl)   cartTotalEl.style.display   = '';
+    if (cartActionsEl) cartActionsEl.style.display  = '';
+    if (cartConfirmEl) cartConfirmEl.classList.remove('visible');
+
     const cart = getCart();
-    
+
     cartItemsContainer.innerHTML = '';
-    
+
     let totalAmount = 0;
-    
+
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
+        cartItemsContainer.innerHTML = '<p class="empty-cart"><i class="fas fa-shopping-basket"></i><br>Your cart is empty</p>';
     } else {
         cart.forEach((item, index) => {
             const itemTotal = parseFloat(item.prix) * item.quantity;
             totalAmount += itemTotal;
-            
+
             const cartItemElement = document.createElement('div');
             cartItemElement.className = 'cart-item';
+
+            const initial  = (item.Nom || '?').charAt(0).toUpperCase();
+            const color    = avatarColor(item.Nom || '');
+            const imgHTML  = item.imageUrl
+                ? `<img src="${item.imageUrl}" alt="${item.Nom}" class="cart-item-photo"
+                       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                   <div class="cart-item-avatar" style="background:${color};display:none;">${initial}</div>`
+                : `<div class="cart-item-avatar" style="background:${color};">${initial}</div>`;
+
             cartItemElement.innerHTML = `
-                <div class="cart-item-quantity">${item.quantity}×</div>
-                <div class="cart-item-name">${item.Nom}</div>
-                <div class="cart-item-price">${formatPrice(itemTotal)} CHF</div>
-                <button class="remove-item-btn" data-index="${index}">×</button>
+                <div class="cart-item-photo-wrap">${imgHTML}</div>
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${item.Nom}</div>
+                    ${item.categorie ? `<div class="cart-item-category">${item.categorie}</div>` : ''}
+                </div>
+                <div class="cart-item-right">
+                    <div class="cart-item-qty">${item.quantity}×</div>
+                    <div class="cart-item-price">${formatPrice(itemTotal)} CHF</div>
+                </div>
+                <button class="remove-item-btn" data-index="${index}" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
-            
+
             cartItemsContainer.appendChild(cartItemElement);
         });
-        
+
         // Ajouter des écouteurs d'événements pour les boutons de suppression
         document.querySelectorAll('.remove-item-btn').forEach(button => {
             button.addEventListener('click', function() {
