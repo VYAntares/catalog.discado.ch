@@ -128,38 +128,100 @@ class ComptaMonth {
             return;
         }
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         container.innerHTML = invoices.map(invoice => {
-            const statusClass = this.getStatusClass(invoice.payment_status);
             const statusText = this.getStatusText(invoice.payment_status);
+            const cardClass = invoice.payment_status === 'paid' ? 'inv-paid'
+                : invoice.payment_status === 'partial' ? 'inv-partial' : 'inv-unpaid';
+            const tagClass = invoice.payment_status === 'paid' ? 'inv-tag-paid'
+                : invoice.payment_status === 'partial' ? 'inv-tag-partial' : 'inv-tag-unpaid';
+
+            let dueDateHtml = '';
+            if (invoice.due_date) {
+                const dueDate = new Date(invoice.due_date);
+                dueDate.setHours(0, 0, 0, 0);
+                const isOverdue = dueDate < today && invoice.payment_status !== 'paid';
+                dueDateHtml = `
+                <div class="inv-date-block inv-date-due ${isOverdue ? 'inv-overdue' : ''}">
+                    <span class="inv-date-icon"><i class="fas fa-calendar-times"></i></span>
+                    <div>
+                        <span class="inv-date-label">Due date</span>
+                        <span class="inv-date-value">${this.formatDateShort(invoice.due_date)}</span>
+                    </div>
+                </div>`;
+            }
+
+            let paidDateHtml = '';
+            if (invoice.paid_date) {
+                paidDateHtml = `
+                <div class="inv-date-block inv-date-paid-on">
+                    <span class="inv-date-icon"><i class="fas fa-check-circle"></i></span>
+                    <div>
+                        <span class="inv-date-label">Paid on</span>
+                        <span class="inv-date-value">${this.formatDateShort(invoice.paid_date)}</span>
+                    </div>
+                </div>`;
+            }
+
             return `
-            <div class="invoice-badge" data-invoice-id="${invoice.id}">
-                <div class="invoice-badge-header">
-                    <span class="invoice-badge-number">${invoice.order_id}</span>
-                    <span class="invoice-badge-date">${this.formatDateShort(invoice.invoice_date)}</span>
+            <div class="inv-card ${cardClass}" data-invoice-id="${invoice.id}">
+                <div class="inv-card-body">
+                    <div class="inv-card-identity">
+                        <span class="inv-card-number"><i class="fas fa-file-invoice"></i> ${invoice.order_id}</span>
+                        <div class="inv-card-client">${invoice.client_full_name || 'N/A'}</div>
+                        <div class="inv-card-dates">
+                            <div class="inv-date-block inv-date-invoice">
+                                <span class="inv-date-icon"><i class="fas fa-calendar-alt"></i></span>
+                                <div>
+                                    <span class="inv-date-label">Invoice date</span>
+                                    <span class="inv-date-value">${this.formatDateShort(invoice.invoice_date)}</span>
+                                </div>
+                            </div>
+                            ${dueDateHtml}
+                            ${paidDateHtml}
+                        </div>
+                    </div>
+                    <div class="inv-card-summary">
+                        <div class="inv-card-tags">
+                            <span class="inv-tag ${tagClass}">${statusText}</span>
+                        </div>
+                        <div class="inv-card-amounts">
+                            <div class="inv-amounts-left">
+                                <div class="inv-amount-item">
+                                    <span class="inv-amount-label">Excl. VAT</span>
+                                    <span class="inv-amount-value">${formatCurrency(invoice.subtotal_ht)}</span>
+                                </div>
+                                <div class="inv-amount-item">
+                                    <span class="inv-amount-label">VAT</span>
+                                    <span class="inv-amount-value">${formatCurrency(invoice.vat_amount)}</span>
+                                </div>
+                            </div>
+                            <div class="inv-amounts-right">
+                                <div class="inv-amount-item inv-amount-total">
+                                    <span class="inv-amount-label">Total</span>
+                                    <span class="inv-amount-value">${formatCurrency(invoice.total_ttc)}</span>
+                                </div>
+                                <div class="inv-amount-item inv-amount-paid">
+                                    <span class="inv-amount-label">Paid</span>
+                                    <span class="inv-amount-value">${formatCurrency(invoice.amount_paid)}</span>
+                                </div>
+                                <div class="inv-amount-item ${invoice.amount_due > 0 ? 'inv-amount-due' : 'inv-amount-clear'}">
+                                    <span class="inv-amount-label">Balance</span>
+                                    <span class="inv-amount-value">${formatCurrency(invoice.amount_due)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="invoice-badge-client">${invoice.client_full_name || 'N/A'}</div>
-                <div class="invoice-badge-amounts">
-                    <div class="invoice-badge-amount">
-                        <span class="invoice-badge-amount-label">TTC</span>
-                        <span class="invoice-badge-amount-value total">${formatCurrency(invoice.total_ttc)}</span>
-                    </div>
-                    <div class="invoice-badge-amount">
-                        <span class="invoice-badge-amount-label">Payé</span>
-                        <span class="invoice-badge-amount-value paid">${formatCurrency(invoice.amount_paid)}</span>
-                    </div>
-                    <div class="invoice-badge-amount">
-                        <span class="invoice-badge-amount-label">Dû</span>
-                        <span class="invoice-badge-amount-value due">${formatCurrency(invoice.amount_due)}</span>
-                    </div>
-                </div>
-                <div class="invoice-badge-footer">
-                    <span class="invoice-badge-status ${statusClass}">${statusText}</span>
-                    <button class="invoice-badge-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthEditBadge(${invoice.id})">
-                        <i class="fas fa-pen"></i>
+                <div class="inv-card-actions">
+                    <button class="inv-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthEditBadge(${invoice.id})">
+                        <i class="fas fa-pen"></i> Edit
                     </button>
                     <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                       class="invoice-badge-action" target="_blank">
-                        <i class="fas fa-file-pdf"></i>
+                       class="inv-pdf-btn" target="_blank">
+                        <i class="fas fa-file-pdf"></i> PDF
                     </a>
                 </div>
             </div>

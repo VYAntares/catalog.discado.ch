@@ -1,9 +1,9 @@
 /* admin/css/compta.css - Styles pour la page comptabilité */
 
-/* Page compta : utilise toute la largeur disponible */
+/* Page compta : marges standard admin */
 main {
-    max-width: 1700px !important;
-    padding: 30px 30px 50px !important;
+    max-width: 1400px;
+    padding: 30px 20px 50px;
 }
 
 /* ===== TABS DE NAVIGATION ===== */
@@ -1026,9 +1026,278 @@ main {
     gap: 4px;
 }
 
-/* Container mobile pour les badges */
+/* ===== LISTE DE CARTES FACTURES (desktop + mobile, une par ligne) ===== */
 .mobile-badges-container {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 0 16px;
+}
+
+/* Cacher les tableaux sur tous les écrans — on utilise les cartes */
+.invoices-table-wrapper,
+.client-invoices-container,
+.unpaid-invoices-container,
+.clients-summary-list {
+    display: none !important;
+}
+
+/* ===== NOUVELLE CARTE FACTURE - LAYOUT 2 COLONNES ===== */
+.inv-card {
+    background: white;
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    border-left: 5px solid #8b5cf6;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.inv-card:hover {
+    box-shadow: 0 6px 22px rgba(0,0,0,0.13);
+    transform: translateY(-2px);
+}
+
+.inv-card.inv-paid    { border-left-color: #10b981; }
+.inv-card.inv-partial { border-left-color: #f59e0b; }
+.inv-card.inv-unpaid  { border-left-color: #ef4444; }
+
+/* Corps de la carte : identité gauche / résumé financier droite */
+.inv-card-body {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+/* Colonne gauche : numéro, client, dates */
+.inv-card-identity {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Colonne droite : badge + montants */
+.inv-card-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.inv-card-number {
+    font-size: 15px;
+    font-weight: 700;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.inv-card-tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.inv-tag {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.inv-tag.inv-tag-paid    { background: #d1fae5; color: #065f46; }
+.inv-tag.inv-tag-partial { background: #fef3c7; color: #92400e; }
+.inv-tag.inv-tag-unpaid  { background: #fee2e2; color: #991b1b; }
+.inv-tag.inv-tag-comm-ok { background: #dbeafe; color: #1e40af; font-size: 10px; }
+.inv-tag.inv-tag-comm-no { background: #fce7f3; color: #9d174d; font-size: 10px; }
+
+/* Nom du client */
+.inv-card-client {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Bloc des dates */
+.inv-card-dates {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 8px 14px 8px 8px;
+    background: #f8fafc;
+    border-radius: 10px;
+}
+
+.inv-date-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.inv-date-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.inv-date-invoice .inv-date-icon  { color: #667eea; }
+.inv-date-due     .inv-date-icon  { color: #f59e0b; }
+.inv-date-due.inv-overdue .inv-date-icon { color: #ef4444; }
+.inv-date-paid-on .inv-date-icon  { color: #10b981; }
+
+.inv-date-label {
+    display: block;
+    font-size: 9px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 2px;
+    letter-spacing: 0.4px;
+}
+
+.inv-date-value {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    color: #334155;
+}
+
+.inv-date-invoice .inv-date-value  { color: #667eea; }
+.inv-date-due     .inv-date-value  { color: #f59e0b; }
+.inv-date-due.inv-overdue .inv-date-value { color: #ef4444; }
+.inv-date-paid-on .inv-date-value  { color: #10b981; }
+
+/* Montants : excl/vat légèrement à gauche de total/paid/balance */
+.inv-card-amounts {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-top: 10px;
+}
+
+.inv-amounts-left {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding-right: 14px;
+    border-right: 1px solid #e2e8f0;
+}
+
+.inv-amounts-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+    padding-left: 14px;
+}
+
+.inv-amount-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.inv-amount-label {
+    font-size: 9px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 1px;
+    letter-spacing: 0.4px;
+}
+
+.inv-amount-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.inv-amount-total .inv-amount-label { color: #8b5cf6; }
+.inv-amount-total .inv-amount-value  { font-size: 20px; font-weight: 800; color: #8b5cf6; }
+.inv-amount-paid  .inv-amount-value  { font-size: 14px; font-weight: 700; color: #10b981; }
+.inv-amount-due   .inv-amount-value  { font-size: 13px; font-weight: 700; color: #ef4444; }
+.inv-amount-clear .inv-amount-value  { font-size: 13px; font-weight: 700; color: #10b981; }
+
+/* Excl.VAT et VAT centrés dans leur colonne, valeurs légèrement réduites */
+.inv-amounts-left .inv-amount-item {
+    align-items: center;
+    text-align: center;
+}
+
+.inv-amounts-left .inv-amount-value {
+    font-size: 11px;
+}
+
+/* Boutons d'action */
+.inv-card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+}
+
+.inv-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: #f1f5f9;
+    color: #667eea;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+}
+
+.inv-edit-btn:hover { background: #e0e7ff; color: #4f46e5; }
+
+.inv-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.inv-pdf-btn:hover { opacity: 0.85; color: white; }
+
+/* Modal d'édition — centré sur desktop */
+@media (min-width: 769px) {
+    .mobile-edit-overlay {
+        align-items: center;
+    }
+    .mobile-edit-sheet {
+        border-radius: 16px;
+        max-width: 480px;
+    }
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1039,24 +1308,61 @@ main {
 }
 
 @media (max-width: 768px) {
-    /* Afficher le container de badges sur mobile */
     .mobile-badges-container {
-        display: block;
         padding: 10px;
+        gap: 10px;
     }
 
-    /* Cacher les tableaux ET leurs containers sur mobile */
-    .clients-summary-table,
-    .invoices-table {
-        display: none !important;
+    /* Mobile card: layout empilé verticalement */
+    .inv-card-body {
+        flex-direction: column;
+        gap: 6px;
     }
 
-    /* Cacher les containers des tableaux sur mobile (évite l'espace vide) */
-    .client-invoices-container,
-    .unpaid-invoices-container,
-    .clients-summary-list {
-        display: none !important;
+    /* Sur mobile: badge à gauche, montants à droite dans une rangée */
+    .inv-card-summary {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        align-self: stretch;
     }
+
+    .inv-card-tags {
+        justify-content: flex-start;
+        padding-top: 2px;
+    }
+
+    .inv-card-amounts {
+        margin-top: 0;
+    }
+
+    .inv-amounts-left {
+        gap: 10px;
+        padding-right: 10px;
+    }
+
+    .inv-amounts-right {
+        padding-left: 10px;
+        min-width: 0;
+    }
+
+    .inv-amount-total .inv-amount-value { font-size: 16px; }
+    .inv-amount-paid  .inv-amount-value { font-size: 12px; }
+    .inv-amount-due   .inv-amount-value,
+    .inv-amount-clear .inv-amount-value { font-size: 12px; }
+
+    /* Dates plus compactes */
+    .inv-card-dates {
+        gap: 10px;
+        padding: 6px 8px;
+    }
+
+    .inv-date-value { font-size: 11px; }
+    .inv-date-label { font-size: 8px; }
+    .inv-date-icon  { font-size: 12px; }
 
     .compta-tabs {
         overflow-x: auto;
