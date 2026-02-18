@@ -1,291 +1,327 @@
 // public/js/modules/orders/orderList.js
 
-import { fetchUserOrders, getInvoiceDownloadLink } from '../../core/api.js';
+import { fetchUserOrders, getInvoiceDownloadLink, fetchProducts } from '../../core/api.js';
 import { showNotification } from '../../utils/notification.js';
 import { formatDate, formatPrice } from '../../utils/formatter.js';
 
 const VAT_RATE = 0.081;
 
-export function initOrdersList() {
-    loadOrders();
-}
+// Product name → image_url cache
+const productImageCache = new Map();
 
-async function loadOrders() {
-    const ordersContainer = document.getElementById('ordersList');
-    if (!ordersContainer) return;
+export async function initOrdersList() {
+    const container = document.getElementById('ordersList');
+    if (!container) return;
 
-    ordersContainer.innerHTML = `
+    container.innerHTML = `
         <div class="loading-container">
             <div class="loading-spinner"></div>
-            <p>Chargement de vos commandes…</p>
+            <p>Loading your orders…</p>
         </div>
     `;
 
     try {
-        const orders = await fetchUserOrders();
-        displayOrders(orders, ordersContainer);
+        const [orders] = await Promise.all([
+            fetchUserOrders(),
+            loadProductImages()
+        ]);
+        displayOrders(orders, container);
     } catch (error) {
-        handleOrderLoadError(ordersContainer);
+        handleOrderLoadError(container);
     }
+}
+
+async function loadProductImages() {
+    try {
+        const products = await fetchProducts();
+        // /api/products returns { Nom, imageUrl } via productService
+        (Array.isArray(products) ? products : []).forEach(p => {
+            const name     = p.Nom || p.name;
+            const imageUrl = p.imageUrl || p.image_url;
+            if (name && imageUrl) {
+                productImageCache.set(name.toLowerCase().trim(), imageUrl);
+            }
+        });
+    } catch (e) {
+        // Non-critical — letter avatars used as fallback
+    }
+}
+
+function getProductImage(productName) {
+    if (!productName) return null;
+    return productImageCache.get(productName.toLowerCase().trim()) || null;
+}
+
+function avatarColor(str) {
+    const palette = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#0ea5e9','#14b8a6','#ef4444'];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return palette[Math.abs(hash) % palette.length];
 }
 
 function handleOrderLoadError(container) {
     container.innerHTML = `
         <div class="empty-state">
             <div class="empty-state-icon"><i class="fas fa-exclamation-circle"></i></div>
-            <h3>Impossible de charger vos commandes</h3>
-            <p>Une erreur est survenue. Veuillez réessayer.</p>
-            <button id="retry-orders-btn" class="primary-btn">Réessayer</button>
+            <h3>Unable to load your orders</h3>
+            <p>An error occurred. Please try again.</p>
+            <button id="retry-orders-btn" class="primary-btn">Retry</button>
         </div>
     `;
-    const retryBtn = document.getElementById('retry-orders-btn');
-    if (retryBtn) retryBtn.addEventListener('click', loadOrders);
+    document.getElementById('retry-orders-btn')?.addEventListener('click', () => initOrdersList());
 }
 
 function displayOrders(orders, container) {
-    if (!orders || orders.length === 0) {
+    container.innerHTML = '';
+
+    const standardOrders = (orders || []).filter(o => !o.isToDeliverItems);
+
+    if (standardOrders.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-box-open"></i></div>
-                <h3>Aucune commande pour l'instant</h3>
-                <p>Vos commandes apparaîtront ici dès que vous aurez passé une commande.</p>
-                <a href="/pages/catalog.html" class="primary-btn">Parcourir le catalogue</a>
+                <h3>No orders yet</h3>
+                <p>Your orders will appear here once you have placed an order.</p>
+                <a href="/pages/catalog.html" class="primary-btn">Browse catalog</a>
             </div>
         `;
         return;
     }
 
-    container.innerHTML = '';
-
-    orders
-        .filter(order => !order.isToDeliverItems)
+    standardOrders
         .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .forEach((order, index) => createOrderCard(order, index, container));
+        .forEach((order, index) => {
+            container.appendChild(createOrderCard(order, index));
+        });
 }
 
-function createOrderCard(order, index, container) {
-    const orderCard = document.createElement('div');
-    orderCard.className = 'order-card';
+// ─── Order Card ─────────────────────────────────────────────────────────────
+
+function createOrderCard(order, index) {
+    const card = document.createElement('div');
+    card.className = 'order-card';
 
     const { statusText, statusClass, barClass } = determineOrderStatus(order);
+    const totalHT   = calculateOrderTotal(order);
+    const tva       = totalHT * VAT_RATE;
+    const totalTTC  = totalHT + tva;
+    const itemCount = countItems(order);
 
-    // Barre colorée statut
     const topBar = document.createElement('div');
     topBar.className = `order-card-top-bar ${barClass}`;
-    orderCard.appendChild(topBar);
+    card.appendChild(topBar);
 
-    // Corps header
-    const cardBody = document.createElement('div');
-    cardBody.className = 'order-card-body';
-    cardBody.innerHTML = createOrderCardHeader(order, index, statusText, statusClass);
-    orderCard.appendChild(cardBody);
+    const header = document.createElement('div');
+    header.className = 'order-card-header';
+    header.innerHTML = buildHeaderHTML(order, index, statusText, statusClass, totalHT, tva, totalTTC, itemCount);
+    card.appendChild(header);
 
-    // Tableau articles
-    const tableWrapper = document.createElement('div');
-    tableWrapper.className = 'order-table-wrapper';
-    tableWrapper.appendChild(createOrderItemsTable(order));
-    orderCard.appendChild(tableWrapper);
+    const detailPanel = createDetailPanel(order);
+    card.appendChild(detailPanel);
 
-    // Résumé / totaux
-    orderCard.appendChild(createOrderSummary(order));
+    header.querySelector('.btn-detail')?.addEventListener('click', () => {
+        const isOpen = detailPanel.classList.contains('open');
+        detailPanel.classList.toggle('open', !isOpen);
+        header.classList.toggle('detail-open', !isOpen);
+    });
 
-    container.appendChild(orderCard);
+    return card;
 }
 
 function determineOrderStatus(order) {
     if (['completed', 'shipped', 'partial'].includes(order.status)) {
-        return { statusText: 'Livré', statusClass: 'status-shipped', barClass: 'bar-success' };
+        return { statusText: 'Delivered', statusClass: 'status-shipped', barClass: 'bar-success' };
     }
-    return { statusText: 'En traitement', statusClass: 'status-processing', barClass: 'bar-processing' };
+    return { statusText: 'Processing', statusClass: 'status-processing', barClass: 'bar-processing' };
 }
 
-function createOrderCardHeader(order, index, statusText, statusClass) {
-    const orderDate = formatDate(order.date);
-    const processDate = order.lastProcessed ? formatDate(order.lastProcessed) : '';
-    const orderId = order.orderId || `#${index + 1}`;
+function calculateOrderTotal(order) {
+    if (order.status === 'partial' && order.deliveredItems?.length) {
+        return order.deliveredItems.reduce((s, i) => s + parseFloat(i.prix) * i.quantity, 0);
+    }
+    return order.total || (order.items || []).reduce((s, i) => s + parseFloat(i.prix) * i.quantity, 0);
+}
+
+function countItems(order) {
+    const src = (order.status === 'partial' && order.deliveredItems?.length)
+        ? [...(order.deliveredItems || []), ...(order.remainingItems || [])]
+        : (order.items || []);
+    return src.reduce((s, i) => s + i.quantity, 0);
+}
+
+function buildHeaderHTML(order, index, statusText, statusClass, totalHT, tva, totalTTC, itemCount) {
+    const date      = formatDate(order.date);
+    const processed = order.lastProcessed ? formatDate(order.lastProcessed) : '';
+    const orderId   = order.orderId || `#${index + 1}`;
 
     return `
-        <div class="order-card-header">
-            <div class="order-card-header-left">
-                <h3>Commande <span class="order-id-highlight">#${orderId}</span></h3>
-                <div class="order-date">
-                    <i class="fas fa-calendar-alt" style="font-size:.72rem;margin-right:4px;"></i>${orderDate}
-                    ${processDate ? `&nbsp;·&nbsp;<i class="fas fa-check" style="font-size:.72rem;margin-right:3px;"></i>Traité le ${processDate}` : ''}
-                    ${order.reference ? `<br><span class="order-reference"><i class="fas fa-tag"></i> ${order.reference}</span>` : ''}
-                </div>
+        <div class="order-header-info">
+            <div class="order-header-id">
+                <span class="order-num">#${orderId}</span>
+                <span class="order-status ${statusClass}">${statusText}</span>
             </div>
-            <span class="order-status ${statusClass}">${statusText}</span>
+            <div class="order-header-meta">
+                <span><i class="fas fa-calendar-alt"></i> ${date}</span>
+                <span><i class="fas fa-box"></i> ${itemCount} item${itemCount > 1 ? 's' : ''}</span>
+                ${processed ? `<span><i class="fas fa-check-circle"></i> Processed on ${processed}</span>` : ''}
+                ${order.reference ? `<span><i class="fas fa-tag"></i> ${order.reference}</span>` : ''}
+            </div>
+        </div>
+
+        <div class="order-header-totals">
+            <div class="total-pill">
+                <span class="total-pill-label">Excl. VAT</span>
+                <span class="total-pill-value">${formatPrice(totalHT)} CHF</span>
+            </div>
+            <span class="total-pill-sep">+</span>
+            <div class="total-pill">
+                <span class="total-pill-label">VAT 8.1%</span>
+                <span class="total-pill-value">${formatPrice(tva)} CHF</span>
+            </div>
+            <span class="total-pill-sep">=</span>
+            <div class="total-pill total-pill-ttc">
+                <span class="total-pill-label">Total incl. VAT</span>
+                <span class="total-pill-value">${formatPrice(totalTTC)} CHF</span>
+            </div>
+        </div>
+
+        <div class="order-header-actions">
+            <button class="btn-detail">
+                <i class="fas fa-list-ul"></i>
+                <span>View details</span>
+                <i class="fas fa-chevron-down btn-detail-chevron"></i>
+            </button>
         </div>
     `;
 }
 
-function createOrderItemsTable(order) {
-    const tableContainer = document.createElement('div');
-    const { itemsToDisplay, pendingItems } = processOrderItems(order);
-    tableContainer.innerHTML = generateOrderTableHTML(itemsToDisplay, pendingItems);
-    return tableContainer;
-}
+// ─── Detail Panel ───────────────────────────────────────────────────────────
 
-function processOrderItems(order) {
-    if (order.status === 'partial' && order.deliveredItems) {
-        return {
-            itemsToDisplay: order.deliveredItems || [],
-            pendingItems: order.remainingItems || []
-        };
+function createDetailPanel(order) {
+    const panel = document.createElement('div');
+    panel.className = 'order-detail-panel';
+
+    const inner = document.createElement('div');
+    inner.className = 'order-detail-inner';
+
+    let deliveredItems = [];
+    let pendingItems   = [];
+
+    if (order.status === 'partial' && order.deliveredItems?.length) {
+        deliveredItems = order.deliveredItems;
+        pendingItems   = order.remainingItems || [];
+    } else {
+        deliveredItems = order.items || [];
+        pendingItems   = [];
     }
-    return { itemsToDisplay: order.items || [], pendingItems: [] };
-}
 
-function generateOrderTableHTML(itemsToDisplay, pendingItems) {
-    const groupedItems = groupItemsByCategory(itemsToDisplay);
-    const groupedPendingItems = groupItemsByCategory(pendingItems);
+    if (deliveredItems.length > 0) {
+        inner.appendChild(buildItemsSection(deliveredItems, false));
+    }
 
-    let html = `
-        <table class="order-details-table">
-            <thead>
-                <tr>
-                    <th class="qty-column">Qté</th>
-                    <th class="product-name-column">Produit</th>
-                    <th class="unit-price-column">P.U.</th>
-                    <th class="total-price-column">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    html += addItemsByCategory(groupedItems, 'delivered-item');
-
-    if (Object.keys(groupedPendingItems).length > 0) {
-        html += `
-            <tr class="order-section-header">
-                <td colspan="4" class="pending-section">
-                    <i class="fas fa-clock" style="margin-right:6px;"></i>Articles en attente — livraison dès disponibilité
-                </td>
-            </tr>
+    if (pendingItems.length > 0) {
+        const pendingBanner = document.createElement('div');
+        pendingBanner.className = 'detail-pending-banner';
+        pendingBanner.innerHTML = `
+            <i class="fas fa-clock"></i>
+            <span>Pending items — will be delivered as soon as stock is available</span>
         `;
-        html += addItemsByCategory(groupedPendingItems, 'pending-item', true);
+        inner.appendChild(pendingBanner);
+        inner.appendChild(buildItemsSection(pendingItems, true));
     }
 
-    html += `</tbody></table>`;
-    return html;
+    inner.appendChild(buildDetailFooter(order));
+    panel.appendChild(inner);
+    return panel;
 }
 
-function groupItemsByCategory(items) {
+function buildItemsSection(items, isPending) {
+    const section = document.createElement('div');
+    section.className = 'detail-items-section';
+
+    const grouped = groupByCategory(items);
+
+    Object.keys(grouped).sort().forEach(category => {
+        const catTitle = document.createElement('div');
+        catTitle.className = `detail-category-title ${isPending ? 'pending-cat' : ''}`;
+        catTitle.innerHTML = `<i class="fas fa-tag"></i> ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        section.appendChild(catTitle);
+
+        grouped[category].forEach(item => {
+            section.appendChild(buildItemRow(item, isPending));
+        });
+    });
+
+    return section;
+}
+
+function buildItemRow(item, isPending) {
+    const row = document.createElement('div');
+    row.className = `detail-item-row ${isPending ? 'detail-item-pending' : ''}`;
+
+    const imageUrl = getProductImage(item.Nom);
+    const initial  = (item.Nom || '?').charAt(0).toUpperCase();
+    const color    = avatarColor(item.Nom || '');
+    const total    = parseFloat(item.prix) * item.quantity;
+
+    const imgHTML = imageUrl
+        ? `<img src="${imageUrl}" alt="${item.Nom}" class="item-photo"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+           <div class="item-photo-placeholder" style="background:${color};display:none;">${initial}</div>`
+        : `<div class="item-photo-placeholder" style="background:${color};">${initial}</div>`;
+
+    row.innerHTML = `
+        <div class="item-img-wrap">${imgHTML}</div>
+        <div class="item-info">
+            <div class="item-name">${item.Nom}</div>
+            <div class="item-unit-price">${isPending ? 'Awaiting delivery' : `${formatPrice(item.prix)} CHF / unit`}</div>
+        </div>
+        <div class="item-qty">× ${item.quantity}</div>
+        <div class="item-total-price ${isPending ? 'item-total-pending' : ''}">
+            ${isPending ? '—' : `${formatPrice(total)} CHF`}
+        </div>
+    `;
+    return row;
+}
+
+function buildDetailFooter(order) {
+    const footer = document.createElement('div');
+    footer.className = 'detail-footer';
+
+    const isInvoiceAvailable = !['pending', 'in progress'].includes(order.status);
+
+    if (isInvoiceAvailable) {
+        const btn = document.createElement('button');
+        btn.className = 'download-invoice-btn';
+        btn.innerHTML = `<i class="fas fa-file-pdf"></i><span>Download invoice PDF</span>`;
+        btn.addEventListener('click', () => window.open(getInvoiceDownloadLink(order.orderId), '_blank'));
+        footer.appendChild(btn);
+    } else {
+        footer.innerHTML = `
+            <div class="invoice-not-available">
+                <i class="fas fa-clock"></i>
+                <span>Invoice available once the order has been processed</span>
+            </div>
+        `;
+    }
+
+    return footer;
+}
+
+// ─── Utilities ──────────────────────────────────────────────────────────────
+
+function groupByCategory(items) {
     const grouped = {};
     items.forEach(item => {
-        const cat = item.categorie || 'Divers';
+        const cat = item.categorie || 'Other';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(item);
     });
     return grouped;
 }
 
-function addItemsByCategory(groupedItems, itemClass, isPending = false) {
-    let html = '';
-    Object.keys(groupedItems).sort().forEach(category => {
-        html += `
-            <tr class="category-header">
-                <td colspan="4" class="category-section ${isPending ? 'pending-category' : ''}">
-                    ${category.charAt(0).toUpperCase() + category.slice(1)}
-                </td>
-            </tr>
-        `;
-        groupedItems[category].forEach(item => {
-            html += isPending ? createPendingItemRow(item) : createDeliveredItemRow(item);
-        });
-    });
-    return html;
-}
-
-function createDeliveredItemRow(item) {
-    const itemTotal = parseFloat(item.prix) * item.quantity;
-    return `
-        <tr class="delivered-item">
-            <td class="qty-column">${item.quantity}</td>
-            <td class="product-name-column">${item.Nom}</td>
-            <td class="unit-price-column">${formatPrice(item.prix)} CHF</td>
-            <td class="total-price-column">${formatPrice(itemTotal)} CHF</td>
-        </tr>
-    `;
-}
-
-function createPendingItemRow(item) {
-    return `
-        <tr class="pending-item">
-            <td class="qty-column">${item.quantity}</td>
-            <td class="product-name-column">${item.Nom}</td>
-            <td class="unit-price-column">—</td>
-            <td class="total-price-column">—</td>
-        </tr>
-    `;
-}
-
-// ─── Résumé / Totaux ───────────────────────────────────────────────────────
-
-function createOrderSummary(order) {
-    const summaryContainer = document.createElement('div');
-    summaryContainer.className = 'order-summary';
-
-    const totalHT = calculateOrderTotal(order);
-    const tva = totalHT * VAT_RATE;
-    const totalTTC = totalHT + tva;
-
-    summaryContainer.innerHTML = createOrderSummaryHTML(order, totalHT, tva, totalTTC);
-    setupInvoiceDownload(summaryContainer, order);
-    return summaryContainer;
-}
-
-function calculateOrderTotal(order) {
-    if (order.status === 'partial' && order.deliveredItems) {
-        return order.deliveredItems.reduce((sum, item) =>
-            sum + parseFloat(item.prix) * item.quantity, 0);
-    }
-    return order.total || (order.items || []).reduce((sum, item) =>
-        sum + parseFloat(item.prix) * item.quantity, 0);
-}
-
-function createOrderSummaryHTML(order, totalHT, tva, totalTTC) {
-    const isInvoiceAvailable = order.status !== 'pending' && order.status !== 'in progress';
-
-    return `
-        <div class="summary-amounts">
-            <div class="summary-block">
-                <div class="summary-block-label">Sous-total HT</div>
-                <div class="summary-block-value">${formatPrice(totalHT)} CHF</div>
-            </div>
-            <div class="summary-block">
-                <div class="summary-block-label">TVA 8.1%</div>
-                <div class="summary-block-value">${formatPrice(tva)} CHF</div>
-            </div>
-            <div class="summary-block">
-                <div class="summary-block-label">Total TTC</div>
-                <div class="summary-block-value ttc">${formatPrice(totalTTC)} CHF</div>
-            </div>
-        </div>
-        <div class="summary-actions">
-            ${isInvoiceAvailable
-                ? `<button class="download-invoice-btn" data-order-id="${order.orderId}">
-                        <i class="fas fa-file-pdf"></i>
-                        <span>Télécharger la facture</span>
-                   </button>`
-                : `<div class="invoice-not-available">
-                        <i class="fas fa-clock"></i>
-                        <span>Facture disponible après traitement</span>
-                   </div>`
-            }
-        </div>
-    `;
-}
-
-function setupInvoiceDownload(summaryContainer, order) {
-    const invoiceBtn = summaryContainer.querySelector('.download-invoice-btn');
-    if (invoiceBtn) {
-        invoiceBtn.addEventListener('click', () => {
-            window.open(getInvoiceDownloadLink(order.orderId), '_blank');
-        });
-    }
-}
-
 export function searchOrders(searchTerm) {
-    // À implémenter si nécessaire
+    // To be implemented if needed
 }

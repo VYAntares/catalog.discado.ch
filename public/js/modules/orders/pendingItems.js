@@ -1,13 +1,45 @@
 // public/js/modules/orders/pendingItems.js
 
-import { fetchUserOrders } from '../../core/api.js';
-import { formatDate } from '../../utils/formatter.js';
+import { fetchUserOrders, fetchProducts } from '../../core/api.js';
+
+// Product image cache (built independently — browser caches the HTTP request)
+const productImageCache = new Map();
 
 let pendingDeliveryOrder = null;
 
-function initPendingItems() {
-    loadPendingItems();
+async function initPendingItems() {
+    // Load images and orders in parallel
+    await Promise.all([loadProductImages(), loadPendingItems()]);
     setupPendingItemsToggle();
+}
+
+async function loadProductImages() {
+    try {
+        const products = await fetchProducts();
+        (Array.isArray(products) ? products : []).forEach(p => {
+            const name     = p.Nom || p.name;
+            const imageUrl = p.imageUrl || p.image_url;
+            if (name && imageUrl) {
+                productImageCache.set(name.toLowerCase().trim(), imageUrl);
+            }
+        });
+    } catch (e) {
+        // Non-critical — letter avatars used as fallback
+    }
+}
+
+function getProductImage(productName) {
+    if (!productName) return null;
+    return productImageCache.get(productName.toLowerCase().trim()) || null;
+}
+
+function avatarColor(str) {
+    const palette = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#0ea5e9','#14b8a6','#ef4444'];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return palette[Math.abs(hash) % palette.length];
 }
 
 async function loadPendingItems() {
@@ -50,7 +82,7 @@ function updatePendingItemsUI(pendingOrder) {
 }
 
 function updatePendingItemsButton(pendingOrder) {
-    const btn = document.getElementById('pendingDeliveriesBtn');
+    const btn        = document.getElementById('pendingDeliveriesBtn');
     const countBadge = document.getElementById('pendingItemsCount');
     if (!btn || !countBadge) return;
 
@@ -63,8 +95,8 @@ function updatePendingItemsButton(pendingOrder) {
         const label = btn.querySelector('.pending-btn-label');
         if (label) {
             label.innerHTML = `
-                Livraisons en attente
-                <small>${total} article${total > 1 ? 's' : ''} en attente de disponibilité</small>
+                Pending deliveries
+                <small>${total} item${total > 1 ? 's' : ''} awaiting stock availability</small>
             `;
         }
 
@@ -81,17 +113,15 @@ function updatePendingItemsContainer(pendingOrder) {
     const container = document.getElementById('pendingDeliveriesContainer');
     if (!container) return;
 
+    container.innerHTML = '';
     if (pendingOrder?.items?.length > 0) {
-        container.innerHTML = '';
         container.appendChild(createPendingDeliveryCard(pendingOrder));
-    } else {
-        container.innerHTML = '';
     }
 }
 
 function createPendingDeliveryCard(pendingOrder) {
-    const items = pendingOrder.items || [];
-    const grouped = pendingOrder.groupedItems || {};
+    const items    = pendingOrder.items || [];
+    const grouped  = pendingOrder.groupedItems || {};
     const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
 
     const card = document.createElement('div');
@@ -102,17 +132,17 @@ function createPendingDeliveryCard(pendingOrder) {
     header.className = 'pending-delivery-header';
     header.innerHTML = `
         <div class="pending-delivery-header-info">
-            <h3><i class="fas fa-truck" style="margin-right:8px;color:#d97706;"></i>Articles en attente de livraison</h3>
-            <p>Ces articles seront expédiés dès que le stock sera disponible</p>
+            <h3><i class="fas fa-truck" style="margin-right:8px;color:#d97706;"></i>Items awaiting delivery</h3>
+            <p>These items will be shipped as soon as stock is available</p>
         </div>
         <span class="pending-delivery-badge">
             <i class="fas fa-box"></i>
-            ${totalQty} article${totalQty > 1 ? 's' : ''}
+            ${totalQty} item${totalQty > 1 ? 's' : ''}
         </span>
     `;
     card.appendChild(header);
 
-    // Body
+    // Body — items with photos
     const body = document.createElement('div');
     body.className = 'pending-delivery-body';
 
@@ -123,23 +153,20 @@ function createPendingDeliveryCard(pendingOrder) {
             body.appendChild(createCategorySection(category, grouped[category]));
         });
     } else {
-        // Pas de groupement — tout en une section
         const section = document.createElement('div');
         section.className = 'pending-category-section';
-        items.forEach(item => {
-            section.appendChild(createItemRow(item));
-        });
+        items.forEach(item => section.appendChild(createItemRow(item)));
         body.appendChild(section);
     }
 
     card.appendChild(body);
 
-    // Footer informatif
+    // Footer
     const footer = document.createElement('div');
     footer.className = 'pending-delivery-footer';
     footer.innerHTML = `
         <i class="fas fa-info-circle"></i>
-        <span>Aucune action requise de votre part. Vous serez notifié lors de l'expédition de ces articles.</span>
+        <span>No action required. You will be notified when these items are shipped.</span>
     `;
     card.appendChild(footer);
 
@@ -156,17 +183,28 @@ function createCategorySection(category, items) {
     section.appendChild(title);
 
     items.forEach(item => section.appendChild(createItemRow(item)));
-
     return section;
 }
 
 function createItemRow(item) {
     const row = document.createElement('div');
     row.className = 'pending-item-row';
+
+    const imageUrl = getProductImage(item.Nom);
+    const initial  = (item.Nom || '?').charAt(0).toUpperCase();
+    const color    = avatarColor(item.Nom || '');
+
+    const imgHTML = imageUrl
+        ? `<img src="${imageUrl}" alt="${item.Nom}" class="item-photo"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+           <div class="item-photo-placeholder" style="background:${color};display:none;">${initial}</div>`
+        : `<div class="item-photo-placeholder" style="background:${color};">${initial}</div>`;
+
     row.innerHTML = `
-        <div class="pending-item-qty">×${item.quantity}</div>
+        <div class="item-img-wrap">${imgHTML}</div>
         <div class="pending-item-name">${item.Nom}</div>
-        <div class="pending-item-status-tag">En attente</div>
+        <div class="pending-item-qty">× ${item.quantity}</div>
+        <div class="pending-item-status-tag">Awaiting stock</div>
     `;
     return row;
 }
