@@ -24,14 +24,20 @@
     <!-- Main Content -->
     <main>
         <div class="order-page-header">
-            <h2>My Orders</h2>
+            <h2>Mes commandes</h2>
+            <p class="order-page-subtitle">Retrouvez l'historique de vos commandes et téléchargez vos factures</p>
         </div>
-        
+
         <!-- Pending Deliveries Section -->
         <div class="pending-deliveries-button-container">
-            <button id="pendingDeliveriesBtn" class="pending-deliveries-btn">
-                <i class="fas fa-truck"></i> View pending delivery items
-                <span id="pendingItemsCount" class="pending-items-count">0</span>
+            <button id="pendingDeliveriesBtn" class="pending-deliveries-btn" style="display:none;">
+                <i class="fas fa-truck"></i>
+                <span class="pending-btn-label">
+                    Livraisons en attente
+                    <small>Chargement…</small>
+                </span>
+                <span id="pendingItemsCount" class="pending-items-count hidden">0</span>
+                <i class="fas fa-chevron-down pending-chevron"></i>
             </button>
         </div>
 

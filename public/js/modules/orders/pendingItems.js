@@ -3,241 +3,179 @@
 import { fetchUserOrders } from '../../core/api.js';
 import { formatDate } from '../../utils/formatter.js';
 
-// Store pending delivery order
 let pendingDeliveryOrder = null;
 
-// Initialize pending items management
 function initPendingItems() {
     loadPendingItems();
     setupPendingItemsToggle();
 }
 
-// Load pending delivery items
 async function loadPendingItems() {
     try {
         const orders = await fetchUserOrders();
-        
         pendingDeliveryOrder = orders.find(order => order.isToDeliverItems);
-        
         updatePendingItemsUI(pendingDeliveryOrder);
     } catch (error) {
         hidePendingItemsButton();
     }
 }
 
-// Setup toggle functionality for pending items
 function setupPendingItemsToggle() {
-    const pendingDeliveriesBtn = document.getElementById('pendingDeliveriesBtn');
-    const pendingDeliveriesContainer = document.getElementById('pendingDeliveriesContainer');
-    
-    if (!pendingDeliveriesBtn || !pendingDeliveriesContainer) return;
-    
-    pendingDeliveriesBtn.addEventListener('click', () => {
-        togglePendingDeliveries(pendingDeliveriesContainer);
-    });
+    const btn = document.getElementById('pendingDeliveriesBtn');
+    const container = document.getElementById('pendingDeliveriesContainer');
+    if (!btn || !container) return;
+
+    btn.addEventListener('click', () => togglePendingDeliveries(container));
 }
 
-// Toggle visibility of pending deliveries container
 function togglePendingDeliveries(container) {
     const isVisible = container.classList.contains('visible');
-    const pendingDeliveriesBtn = document.getElementById('pendingDeliveriesBtn');
-    const pendingItemsCount = document.getElementById('pendingItemsCount');
-    
+    const btn = document.getElementById('pendingDeliveriesBtn');
+
     if (isVisible) {
-        // Hide container
         container.classList.remove('visible');
-        setTimeout(() => {
-            container.style.display = 'none';
-        }, 300);
-        
-        // Update button text
-        if (pendingDeliveriesBtn) {
-            pendingDeliveriesBtn.innerHTML = `
-                <i class="fas fa-truck"></i> View pending delivery items
-                <span id="pendingItemsCount" class="pending-items-count">
-                    ${pendingItemsCount?.textContent || '0'}
-                </span>
-            `;
-        }
+        setTimeout(() => { container.style.display = 'none'; }, 550);
+        btn?.classList.remove('open');
     } else {
-        // Show container
         container.style.display = 'block';
         void container.offsetWidth;
         container.classList.add('visible');
-        
-        // Update button text
-        if (pendingDeliveriesBtn) {
-            pendingDeliveriesBtn.innerHTML = `
-                <i class="fas fa-chevron-up"></i> Hide pending delivery items
-                <span id="pendingItemsCount" class="pending-items-count">
-                    ${pendingItemsCount?.textContent || '0'}
-                </span>
-            `;
-        }
+        btn?.classList.add('open');
     }
 }
 
-// Update UI for pending items
 function updatePendingItemsUI(pendingOrder) {
     updatePendingItemsButton(pendingOrder);
     updatePendingItemsContainer(pendingOrder);
 }
 
-// Update pending items button
 function updatePendingItemsButton(pendingOrder) {
-    const pendingDeliveriesBtn = document.getElementById('pendingDeliveriesBtn');
-    const pendingItemsCount = document.getElementById('pendingItemsCount');
-    
-    if (!pendingDeliveriesBtn || !pendingItemsCount) return;
-    
+    const btn = document.getElementById('pendingDeliveriesBtn');
+    const countBadge = document.getElementById('pendingItemsCount');
+    if (!btn || !countBadge) return;
+
     if (pendingOrder?.items?.length > 0) {
-        // Calculate total pending items
-        const pendingItemsTotal = pendingOrder.items.reduce((total, item) => total + item.quantity, 0);
-        
-        // Update counter
-        pendingItemsCount.textContent = pendingItemsTotal;
-        pendingItemsCount.classList.remove('hidden');
-        
-        pendingDeliveriesBtn.classList.add('has-items');
-        pendingDeliveriesBtn.style.display = 'flex';
-    } else {
-        pendingItemsCount.classList.add('hidden');
-        pendingDeliveriesBtn.classList.remove('has-items');
-        pendingDeliveriesBtn.style.display = 'none';
-    }
-}
+        const total = pendingOrder.items.reduce((sum, item) => sum + item.quantity, 0);
 
-// Update pending items container
-function updatePendingItemsContainer(pendingOrder) {
-    const pendingDeliveriesContainer = document.getElementById('pendingDeliveriesContainer');
-    
-    if (!pendingDeliveriesContainer) return;
-    
-    if (pendingOrder?.items?.length > 0) {
-        const pendingDeliveryCard = createPendingDeliveryCard(pendingOrder);
-        
-        pendingDeliveriesContainer.innerHTML = '';
-        pendingDeliveriesContainer.appendChild(pendingDeliveryCard);
-    } else {
-        pendingDeliveriesContainer.innerHTML = `
-            <div class="empty-state">
-                <p>No pending delivery items</p>
-            </div>
-        `;
-    }
-}
+        countBadge.textContent = total;
+        countBadge.classList.remove('hidden');
 
-// Create pending delivery card
-function createPendingDeliveryCard(pendingOrder) {
-    const orderCard = document.createElement('div');
-    orderCard.className = 'order-card pending-delivery-card';
-    
-    // Card header
-    orderCard.innerHTML = `
-        <div class="order-card-header">
-            <h3>Pending Delivery Items</h3>
-            <span class="order-status status-processing">
-                Pending Delivery
-            </span>
-        </div>
-        <div class="order-date">
-            Items waiting to be delivered from previous orders
-        </div>
-    `;
-    
-    // Add items
-    const itemsContent = createPendingItemsContent(pendingOrder);
-    orderCard.appendChild(itemsContent);
-    
-    // Note section
-    const noteSection = document.createElement('div');
-    noteSection.className = 'order-summary';
-    noteSection.innerHTML = `
-        <div class="order-summary-note">
-            <span class="invoice-not-available">
-                <i class="fas fa-info-circle"></i> These items will be delivered when available
-            </span>
-        </div>
-    `;
-    
-    orderCard.appendChild(noteSection);
-    
-    return orderCard;
-}
-
-// Create pending items content
-function createPendingItemsContent(pendingOrder) {
-    const groupedItems = pendingOrder.groupedItems || {};
-    const toDeliverItems = pendingOrder.items || [];
-    
-    const itemsContainer = document.createElement('div');
-    
-    if (Object.keys(groupedItems).length > 0) {
-        // Grouped items by category
-        for (const category in groupedItems) {
-            const categorySection = createCategorySection(category, groupedItems[category]);
-            itemsContainer.appendChild(categorySection);
+        const label = btn.querySelector('.pending-btn-label');
+        if (label) {
+            label.innerHTML = `
+                Livraisons en attente
+                <small>${total} article${total > 1 ? 's' : ''} en attente de disponibilité</small>
+            `;
         }
+
+        btn.classList.add('has-items');
+        btn.style.display = 'flex';
     } else {
-        // Simple items list
-        const itemsTable = createItemsTable(toDeliverItems);
-        itemsContainer.appendChild(itemsTable);
+        countBadge.classList.add('hidden');
+        btn.classList.remove('has-items');
+        btn.style.display = 'none';
     }
-    
-    return itemsContainer;
 }
 
-// Create category section
-function createCategorySection(category, items) {
-    const categorySection = document.createElement('div');
-    categorySection.className = 'category-section';
-    
-    const categoryHeader = document.createElement('h4');
-    categoryHeader.className = 'category-header';
-    categoryHeader.textContent = category.charAt(0).toUpperCase() + category.slice(1);
-    
-    const itemsTable = createItemsTable(items);
-    
-    categorySection.appendChild(categoryHeader);
-    categorySection.appendChild(itemsTable);
-    
-    return categorySection;
+function updatePendingItemsContainer(pendingOrder) {
+    const container = document.getElementById('pendingDeliveriesContainer');
+    if (!container) return;
+
+    if (pendingOrder?.items?.length > 0) {
+        container.innerHTML = '';
+        container.appendChild(createPendingDeliveryCard(pendingOrder));
+    } else {
+        container.innerHTML = '';
+    }
 }
 
-// Create items table
-function createItemsTable(items) {
-    const itemsTable = document.createElement('table');
-    itemsTable.className = 'order-details-table';
-    
-    itemsTable.innerHTML = `
-        <thead>
-            <tr>
-                <th class="qty-column">Qty</th>
-                <th class="product-name-column">Product</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${items.map(item => `
-                <tr class="pending-item">
-                    <td class="qty-column">${item.quantity}</td>
-                    <td class="product-name-column">${item.Nom}</td>
-                </tr>
-            `).join('')}
-        </tbody>
+function createPendingDeliveryCard(pendingOrder) {
+    const items = pendingOrder.items || [];
+    const grouped = pendingOrder.groupedItems || {};
+    const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    const card = document.createElement('div');
+    card.className = 'pending-delivery-card';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'pending-delivery-header';
+    header.innerHTML = `
+        <div class="pending-delivery-header-info">
+            <h3><i class="fas fa-truck" style="margin-right:8px;color:#d97706;"></i>Articles en attente de livraison</h3>
+            <p>Ces articles seront expédiés dès que le stock sera disponible</p>
+        </div>
+        <span class="pending-delivery-badge">
+            <i class="fas fa-box"></i>
+            ${totalQty} article${totalQty > 1 ? 's' : ''}
+        </span>
     `;
-    
-    return itemsTable;
-}
+    card.appendChild(header);
 
-// Hide pending items button
-function hidePendingItemsButton() {
-    const pendingDeliveriesBtn = document.getElementById('pendingDeliveriesBtn');
-    if (pendingDeliveriesBtn) {
-        pendingDeliveriesBtn.style.display = 'none';
+    // Body
+    const body = document.createElement('div');
+    body.className = 'pending-delivery-body';
+
+    const hasGroups = Object.keys(grouped).length > 0;
+
+    if (hasGroups) {
+        Object.keys(grouped).sort().forEach(category => {
+            body.appendChild(createCategorySection(category, grouped[category]));
+        });
+    } else {
+        // Pas de groupement — tout en une section
+        const section = document.createElement('div');
+        section.className = 'pending-category-section';
+        items.forEach(item => {
+            section.appendChild(createItemRow(item));
+        });
+        body.appendChild(section);
     }
+
+    card.appendChild(body);
+
+    // Footer informatif
+    const footer = document.createElement('div');
+    footer.className = 'pending-delivery-footer';
+    footer.innerHTML = `
+        <i class="fas fa-info-circle"></i>
+        <span>Aucune action requise de votre part. Vous serez notifié lors de l'expédition de ces articles.</span>
+    `;
+    card.appendChild(footer);
+
+    return card;
 }
 
-// Export public functions
+function createCategorySection(category, items) {
+    const section = document.createElement('div');
+    section.className = 'pending-category-section';
+
+    const title = document.createElement('div');
+    title.className = 'pending-category-title';
+    title.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+    section.appendChild(title);
+
+    items.forEach(item => section.appendChild(createItemRow(item)));
+
+    return section;
+}
+
+function createItemRow(item) {
+    const row = document.createElement('div');
+    row.className = 'pending-item-row';
+    row.innerHTML = `
+        <div class="pending-item-qty">×${item.quantity}</div>
+        <div class="pending-item-name">${item.Nom}</div>
+        <div class="pending-item-status-tag">En attente</div>
+    `;
+    return row;
+}
+
+function hidePendingItemsButton() {
+    const btn = document.getElementById('pendingDeliveriesBtn');
+    if (btn) btn.style.display = 'none';
+}
+
 export {
     initPendingItems,
     loadPendingItems,

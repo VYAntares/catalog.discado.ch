@@ -725,3 +725,266 @@ Pour valider l'ensemble de la refonte :
 4. **Performance** : Audit Lighthouse avant/après (cibles : accessibilité > 80, performance > 80)
 5. **Régression** : Suite de tests automatisés (Phase 7) couvrant tous les endpoints API critiques
 6. **DB** : Vérifier intégrité des données après chaque migration avec `PRAGMA integrity_check`. Vérifier les index avec `EXPLAIN QUERY PLAN` sur les requêtes principales
+
+---
+
+## PARTIE 7 — POINTS D'APPRENTISSAGE
+
+Inventaire exhaustif de tous les concepts, techniques et bonnes pratiques abordés dans cet audit.
+
+### 7.1 — Stack & Technologies
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 1 | **Node.js** | Runtime serveur JavaScript, base de l'application |
+| 2 | **Express.js** | Framework web pour Node.js, gestion des routes et middlewares |
+| 3 | **express.Router()** | Module de routage Express pour découper les routes en fichiers séparés |
+| 4 | **SQLite3** | Base de données relationnelle embarquée, fichier unique |
+| 5 | **Vanilla JavaScript** | JavaScript sans framework frontend (pas de React/Vue/Angular) |
+| 6 | **npm** | Gestionnaire de paquets Node.js (package.json, package-lock.json, node_modules) |
+| 7 | **dotenv** | Chargement de variables d'environnement depuis un fichier `.env` |
+| 8 | **PM2** | Process manager pour Node.js (ecosystem.config.js, cluster mode, redémarrage, rotation logs) |
+| 9 | **Winston** | Bibliothèque de logging structuré pour Node.js (niveaux de log, transports fichier) |
+| 10 | **Jest** | Framework de tests unitaires pour JavaScript/Node.js |
+| 11 | **Vitest** | Alternative moderne à Jest pour les tests |
+| 12 | **supertest** | Bibliothèque de tests d'intégration HTTP pour Express |
+| 13 | **csurf** | Middleware Express de protection CSRF (Cross-Site Request Forgery) |
+| 14 | **express-validator** | Bibliothèque de validation et sanitization des entrées pour Express |
+| 15 | **multer** | Middleware Express pour la gestion des uploads de fichiers (multipart/form-data) |
+| 16 | **DOMPurify** | Bibliothèque de sanitization HTML côté client et serveur |
+| 17 | **sharp** | Bibliothèque Node.js de traitement d'images (conversion WebP) |
+| 18 | **esbuild** | Bundler/minifieur JavaScript ultra-rapide |
+| 19 | **ESLint** | Linter JavaScript pour détecter les erreurs et imposer un style de code |
+| 20 | **husky** | Outil pour configurer des Git hooks (pre-commit, pre-push) |
+| 21 | **lint-staged** | Exécuter des scripts uniquement sur les fichiers staged dans Git |
+| 22 | **Font Awesome** | Bibliothèque d'icônes (gestion des versions 5.x vs 6.x) |
+| 23 | **TypeScript** | Sur-ensemble typé de JavaScript (migration progressive recommandée) |
+| 24 | **Apache** | Serveur web utilisé en reverse proxy (.htaccess, proxy vers localhost:3000) |
+| 25 | **Fastify / NestJS** | Frameworks Node.js alternatifs à Express (mentionnés comme non nécessaires) |
+| 26 | **React / Vue** | Frameworks frontend (mentionnés comme non nécessaires pour ce projet) |
+| 27 | **PostgreSQL** | SGBD relationnel alternatif à SQLite (mentionné comme non nécessaire à cette échelle) |
+
+### 7.2 — Sécurité web
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 28 | **Path traversal** | Attaque exploitant `../` pour accéder à des fichiers hors du répertoire autorisé. Fix : `path.resolve()` + vérification que le chemin reste dans le dossier cible |
+| 29 | **CSRF (Cross-Site Request Forgery)** | Attaque forçant un utilisateur authentifié à exécuter des actions non voulues. Fix : token CSRF dans les formulaires et requêtes AJAX |
+| 30 | **XSS (Cross-Site Scripting)** | Injection de scripts malveillants via `innerHTML` sans sanitization. Fix : `textContent` ou DOMPurify |
+| 31 | **Injection SQL** | Insertion de code SQL via des entrées non validées (interpolation de noms de colonnes). Fix : whitelist des colonnes autorisées, requêtes paramétrées |
+| 32 | **Session fixation** | Attaque réutilisant un ID de session connu avant l'authentification. Fix : `req.session.regenerate()` après login |
+| 33 | **Mots de passe en clair (plaintext)** | Stockage de mots de passe non hashés en base de données. Fix : hashage systématique, suppression du fallback plaintext |
+| 34 | **Hashing de mots de passe** | Transformation irréversible des mots de passe avant stockage |
+| 35 | **Chiffrement (encryption/decryption)** | Transformation réversible de données sensibles avec clé |
+| 36 | **Gestion des clés de chiffrement** | Ne jamais regénérer au redémarrage, ne jamais logger en console, stocker dans `.env`, refuser de démarrer si absentes |
+| 37 | **Variables d'environnement (.env)** | Séparation des secrets du code source, `.env.example` comme template documenté |
+| 38 | **Content Security Policy (CSP)** | En-tête HTTP limitant les sources de scripts/styles. `unsafe-inline` à supprimer |
+| 39 | **Rate limiting / Throttling** | Limitation du nombre de requêtes par IP/utilisateur (protection brute force login) |
+| 40 | **Vérification de propriétaire (authorization check)** | Vérifier que `order.user_id === session.user.username` avant d'autoriser un téléchargement |
+| 41 | **OWASP Top 10** | Référentiel des 10 vulnérabilités web les plus critiques (path traversal, XSS, injection SQL, CSRF) |
+| 42 | **Whitelist (liste blanche)** | Approche de validation n'autorisant que les valeurs explicitement listées (noms de colonnes SQL, paramètres) |
+| 43 | **Sanitization des entrées** | Nettoyage des données utilisateur avant traitement (DOMPurify, express-validator) |
+| 44 | **Token CSRF via meta tag** | Technique d'injection du token CSRF dans une balise `<meta>` pour les appels AJAX |
+| 45 | **Protection .htaccess / .htdigest** | Protection d'accès direct aux fichiers sensibles via configuration Apache |
+| 46 | **Tests de régression sécurité** | Tests automatisés vérifiant que chaque vulnérabilité corrigée ne réapparaît pas |
+
+### 7.3 — Architecture & Patterns
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 47 | **Architecture monolithique** | Un seul fichier contenant toute la logique (anti-pattern : `index.js` de 3 087 lignes) |
+| 48 | **Architecture en couches (layered)** | Requête → Middleware → Routes → Controllers → Services → DB |
+| 49 | **Séparation des responsabilités (Separation of Concerns)** | Un fichier = une responsabilité (affichage OU état OU API OU validation) |
+| 50 | **Principe de responsabilité unique (SRP)** | Chaque module/fonction ne fait qu'une seule chose |
+| 51 | **Pattern MVC (Model-View-Controller)** | Séparation routes/contrôleurs/services pour organiser le backend |
+| 52 | **Middleware Express** | Fonctions intermédiaires dans le pipeline de traitement des requêtes (auth, CSRF, sanitize, validation, upload, throttle, errorHandler) |
+| 53 | **Couche Services** | Logique métier encapsulée dans des fichiers dédiés (userService, orderService, cryptoService, etc.) |
+| 54 | **Couche Controllers** | Extraction de la logique req/res hors des handlers de routes |
+| 55 | **Agrégateur de routes** | Fichier `routes/index.js` qui monte toutes les sous-routes |
+| 56 | **Architecture modulaire frontend** | Organisation core/modules/utils/components/shared |
+| 57 | **Modules ES6 (import/export)** | Système de modules JavaScript natif, remplacement des `window.*` globaux |
+| 58 | **Imports dynamiques** | Chargement conditionnel de modules JavaScript |
+| 59 | **DRY (Don't Repeat Yourself)** | Élimination de la duplication de code (fusionner formatter, modal, notification, storage, validation) |
+| 60 | **Couche partagée (shared)** | Code commun entre public/ et admin/ mutualisé dans un dossier `shared/` |
+| 61 | **Compartimentalisation** | Découpage de gros fichiers en petits modules focalisés (règle des 150 lignes) |
+| 62 | **Extraction de fonctions** | Découper une fonction longue en sous-fonctions (ex: `handleProfileSubmit()` → `collectFormData()` + `validateFormData()` + `submitProfile()` + `handleSubmitResult()`) |
+| 63 | **Pattern init()** | Chaque sous-module exporte une fonction `init()` appelée par le module parent |
+| 64 | **Gestion d'état frontend** | Séparation de l'état (cartState) de l'affichage (cartDisplay) et de l'API (cartApi) |
+| 65 | **Gestion centralisée des erreurs** | Middleware `errorHandler.js` + classes d'erreur typées (NotFoundError, ForbiddenError, ValidationError) |
+| 66 | **Classes d'erreur typées** | Création de sous-classes d'Error pour différencier les types d'erreurs |
+| 67 | **Fabrique d'application (app factory)** | Fichier `app.js` qui crée et configure l'instance Express séparément du point d'entrée |
+| 68 | **Point d'entrée allégé** | `index.js` réduit à ~50 lignes : import app, mount middleware, mount routes, listen |
+
+### 7.4 — Base de données
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 69 | **Requêtes paramétrées (prepared statements)** | Protection contre l'injection SQL en séparant la requête des données |
+| 70 | **Problème N+1** | Boucle exécutant N requêtes SELECT au lieu d'un seul JOIN. Fix : JOINs ou requêtes batch |
+| 71 | **JOIN SQL** | Combiner les données de plusieurs tables en une seule requête |
+| 72 | **GROUP_CONCAT** | Fonction SQL agrégeant plusieurs lignes en une seule chaîne (récupérer items de commandes en une requête) |
+| 73 | **Transactions SQL** | Groupement d'opérations atomiques (création commande + incrément compteur dans une seule transaction) |
+| 74 | **Table de séquences** | Pattern pour gérer des compteurs auto-incrémentés en DB (`sequences (name, value)`) |
+| 75 | **Race condition** | Accès concurrent à une ressource partagée sans synchronisation (compteur dans fichier JSON hors DB) |
+| 76 | **Normalisation de base de données** | Transformation de colonnes JSON en tables de liaison (supplier_emails, supplier_phones, supplier_wechats) |
+| 77 | **Tables de liaison** | Tables intermédiaires pour les relations many-to-many ou one-to-many normalisées |
+| 78 | **Index SQL** | Structures d'optimisation des requêtes (`CREATE INDEX idx_orders_user_status ON orders(user_id, status)`) |
+| 79 | **Index composites** | Index portant sur plusieurs colonnes (`user_id, status`) |
+| 80 | **Mode WAL (Write-Ahead Logging)** | Mode journal SQLite pour de meilleures performances en lecture concurrente |
+| 81 | **Migrations de base de données** | Fichiers SQL numérotés pour faire évoluer le schéma de manière versionnée et reproductible |
+| 82 | **Table de suivi de migrations** | Table `_migrations` enregistrant les migrations déjà appliquées |
+| 83 | **Scripts de rollback** | Scripts permettant d'annuler une migration en cas de problème |
+| 84 | **PRAGMA integrity_check** | Commande SQLite vérifiant l'intégrité de la base de données |
+| 85 | **EXPLAIN QUERY PLAN** | Commande SQL montrant comment le moteur exécute une requête (vérifie l'utilisation des index) |
+| 86 | **ALTER TABLE** | Modification de la structure d'une table existante (à déplacer dans des fichiers de migration) |
+| 87 | **Données JSON dans colonnes TEXT** | Anti-pattern : stocker du JSON dans une colonne TEXT au lieu de normaliser |
+| 88 | **Backup et restauration** | Procédure de sauvegarde et récupération des données (backups quotidiens, test de restauration) |
+
+### 7.5 — HTML, Sémantique & Accessibilité
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 89 | **Attribut `lang`** | Déclaration de la langue du document HTML (`lang="fr"`) |
+| 90 | **`<meta description>`** | Balise meta pour le résumé de la page dans les résultats de recherche |
+| 91 | **Open Graph** | Balises meta pour l'aperçu lors du partage sur les réseaux sociaux |
+| 92 | **`user-scalable=no`** | Directive viewport qui bloque le zoom — problème d'accessibilité |
+| 93 | **ARIA (Accessible Rich Internet Applications)** | Attributs HTML pour améliorer l'accessibilité des éléments interactifs |
+| 94 | **Skip navigation (skip-nav)** | Lien caché permettant aux utilisateurs de clavier de sauter la navigation |
+| 95 | **Focus trap** | Confinement du focus clavier à l'intérieur d'un modal ouvert |
+| 96 | **Navigation clavier** | Support complet de la navigation au clavier pour tous les éléments interactifs |
+| 97 | **Score Lighthouse accessibilité** | Métrique Google mesurant l'accessibilité d'une page (cible > 80) |
+| 98 | **Templates HTML statiques** | Extraction du HTML généré côté serveur (ex: page "accès refusé") vers des fichiers template |
+| 99 | **Sémantique HTML** | Utilisation correcte des balises HTML pour leur sens (heading, nav, main, section, etc.) |
+
+### 7.6 — CSS
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 100 | **Duplication CSS** | Même sélecteur (`.category-item`) défini dans 5 fichiers — à centraliser |
+| 101 | **CSS Custom Properties (variables CSS)** | `--z-header: 100`, `--z-modal: 200` pour standardiser les valeurs |
+| 102 | **Échelle z-index** | Système organisé de z-index au lieu de valeurs arbitraires (999, 1000, 1050, 1060) |
+| 103 | **Palette de couleurs cohérente** | Unifier les couleurs (`#2575fc` vs `#f44336`) via des custom properties |
+| 104 | **Styles inline dans HTML** | Anti-pattern : `<style>` dans le HTML au lieu d'un fichier CSS externe |
+| 105 | **CSS inline dans JavaScript** | Anti-pattern : 330 lignes de CSS dans `historyView.js` — à extraire vers un fichier CSS |
+| 106 | **Minification CSS** | Suppression des espaces et commentaires pour réduire la taille des fichiers |
+| 107 | **Concaténation CSS par page** | Regrouper les fichiers CSS en un seul par page pour réduire les requêtes HTTP |
+| 108 | **Gestion des versions de bibliothèques CSS** | Unifier les versions (Font Awesome 5.15.4 vs 6.4.0) |
+
+### 7.7 — JavaScript frontend
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 109 | **innerHTML vs textContent** | `innerHTML` interprète le HTML (vecteur XSS), `textContent` insère du texte brut |
+| 110 | **Sanitization HTML côté client** | Utilisation de DOMPurify pour nettoyer le HTML avant injection dans le DOM |
+| 111 | **Variables globales (window.*)** | Anti-pattern : polluer le scope global au lieu d'utiliser des modules ES6 |
+| 112 | **Event listeners et fuites mémoire** | Oublier de `removeEventListener` cause des fuites mémoire lors de la navigation |
+| 113 | **AbortController** | API pour annuler des requêtes fetch et nettoyer des event listeners |
+| 114 | **localStorage / sessionStorage** | APIs de stockage côté client (wrapper centralisé dans shared/storage.js) |
+| 115 | **Système de notifications toast** | Composant UI affichant des messages temporaires |
+| 116 | **Système de modales** | Composant UI pour les dialogues (createModalDOM, bindModalEvents, showModal) |
+| 117 | **Validation côté client** | Vérification des entrées avant envoi au serveur (email, téléphone, code postal, force du mot de passe) |
+| 118 | **Indicateurs visuels de force de mot de passe** | UI montrant la robustesse du mot de passe saisi |
+| 119 | **Chaîne if/else pour détection de page** | Anti-pattern pour le routing côté client |
+| 120 | **fetch() API** | API native JavaScript pour les requêtes HTTP asynchrones |
+| 121 | **Gestion des réponses API (handleApiResponse)** | Pattern centralisé pour traiter les réponses HTTP |
+| 122 | **IntersectionObserver** | API du navigateur pour détecter quand un élément entre dans le viewport (lazy loading) |
+
+### 7.8 — Performance
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 123 | **Lazy loading images** | Attribut `loading="lazy"` pour différer le chargement des images hors-écran |
+| 124 | **Format WebP** | Format d'image moderne offrant une meilleure compression que PNG/JPG |
+| 125 | **Élément `<picture>` avec fallback** | Balise HTML permettant de servir WebP avec fallback PNG/JPG |
+| 126 | **Minification JavaScript** | Suppression des espaces, commentaires et renommage de variables pour réduire la taille |
+| 127 | **Content hashing** | Ajout d'un hash dans le nom des fichiers assets pour le cache busting |
+| 128 | **Cache HTTP (Cache-Control)** | En-têtes HTTP contrôlant la mise en cache (`public, max-age=31536000` pour assets, `no-cache` pour API) |
+| 129 | **Pagination côté API** | Paramètres `limit` et `offset` pour charger les données par pages |
+| 130 | **Pagination côté frontend** | UI permettant de naviguer entre les pages de résultats |
+| 131 | **Score Lighthouse performance** | Métrique Google mesurant les performances d'une page (cible > 80) |
+| 132 | **Conversion d'images batch** | Script automatisé pour convertir toutes les images d'un répertoire |
+
+### 7.9 — Tests & Qualité
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 133 | **Tests unitaires** | Tests isolés d'une fonction ou d'un service (cryptoService, orderService, etc.) |
+| 134 | **Tests d'intégration** | Tests vérifiant le fonctionnement de plusieurs composants ensemble (supertest + Express) |
+| 135 | **Tests de régression** | Tests vérifiant qu'un bug corrigé ne réapparaît pas |
+| 136 | **Smoke tests** | Tests basiques vérifiant que l'application démarre et fonctionne (serveur up, login, produits chargent) |
+| 137 | **Couverture de code (code coverage)** | Pourcentage du code exécuté par les tests (cible ≥ 70%) |
+| 138 | **Test fixtures** | Données de test prédéfinies et réutilisables (testData.js) |
+| 139 | **Scripts npm test / test:watch** | Commandes npm pour lancer les tests et le mode watch |
+| 140 | **Pre-commit hooks** | Scripts exécutés automatiquement avant chaque commit Git (linting + tests) |
+| 141 | **Linting** | Analyse statique du code pour détecter erreurs et incohérences (ESLint) |
+| 142 | **Smoke test manuel** | Vérification manuelle de chaque page après une modification |
+| 143 | **Parcours de test fonctionnel** | Test end-to-end d'un flux utilisateur complet (login → catalogue → panier → commande → facture) |
+
+### 7.10 — DevOps & Déploiement
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 144 | **Git** | Système de contrôle de version (init, .gitignore, branches, commits) |
+| 145 | **.gitignore** | Fichier listant les éléments à exclure du suivi Git (node_modules, .env, *.db, uploads/, logs/) |
+| 146 | **Branching strategy** | Chaque phase = branche séparée pour isoler les changements |
+| 147 | **Variables d'environnement (.env / .env.example)** | Séparation de la configuration du code, template documenté pour l'équipe |
+| 148 | **PM2 cluster mode** | Exécution de l'application sur plusieurs processus pour la résilience |
+| 149 | **Politique de redémarrage PM2** | Configuration du comportement en cas de crash (restart automatique) |
+| 150 | **Rotation des logs** | Archivage automatique des anciens fichiers de log |
+| 151 | **Health check endpoint** | Route `GET /health` retournant l'état du serveur (status DB, uptime, version) |
+| 152 | **Reverse proxy Apache** | Configuration .htaccess pour rediriger les requêtes vers localhost:3000 |
+| 153 | **Stratégie de backup** | Backups quotidiens + backup manuel avant migration + test de restauration |
+| 154 | **Déploiement sans interruption (zero downtime)** | Objectif de refonte progressive sans couper le service |
+
+### 7.11 — Principes de code & Bonnes pratiques
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 155 | **Règle des 150 lignes par fichier** | Limite de taille pour garantir la lisibilité et la maintenabilité |
+| 156 | **Règle des 50 lignes par fonction** | Limite de complexité par fonction |
+| 157 | **Code mort** | Code commenté ou inutilisé qui encombre le projet (lignes 3050-3083, bases vides, InvoiceService2.js) |
+| 158 | **Dette technique** | Accumulation de compromis techniques nécessitant un remboursement futur |
+| 159 | **Scope creep** | Tendance à élargir le périmètre d'un chantier au-delà de ce qui était prévu |
+| 160 | **Refactoring vs réécriture** | Phase 2 = déplacer le code, PAS réécrire la logique |
+| 161 | **Nommage de package** | Un package nommé "mon-projet" n'est pas informatif — nommer correctement |
+| 162 | **README** | Documentation d'entrée du projet (absente dans le projet actuel) |
+| 163 | **Fichier de configuration centralisé** | Regrouper les constantes dans config.js plutôt que les éparpiller |
+| 164 | **Gestion des imports** | Préférer les imports explicites ES6 aux variables globales |
+| 165 | **Format de réponse d'erreur API consistant** | Toutes les erreurs API retournent le même format JSON |
+| 166 | **Validation côté serveur (express-validator)** | Schémas de validation par route pour tous les endpoints POST/PUT/DELETE |
+
+### 7.12 — Gestion de projet & Risques
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 167 | **Audit de code** | Analyse systématique de la qualité, sécurité et architecture d'un projet |
+| 168 | **Scoring par domaine** | Évaluation chiffrée de chaque aspect du projet (structure, sécurité, performance, etc.) |
+| 169 | **Roadmap de mise en œuvre** | Plan phasé avec dépendances, complexité et critères de validation |
+| 170 | **Dépendances entre phases** | Phase 4 dépend de Phase 2 + Phase 3, Phase 5 dépend de Phase 2, etc. |
+| 171 | **Parallélisation des phases** | Phase 3 parallélisable avec Phase 2 car pas de dépendance |
+| 172 | **Critères de validation** | Conditions mesurables définissant quand une phase est terminée |
+| 173 | **Matrice risques/impact/probabilité/mitigation** | Tableau structuré pour anticiper et gérer les risques |
+| 174 | **Stratégie de rollback** | Plan de retour arrière en cas de problème (backup, scripts de rollback, branche Git) |
+| 175 | **Deadline dure** | Limite de temps fixe au-delà de laquelle on livre l'état actuel (anti scope creep) |
+| 176 | **Communication utilisateurs** | Prévenir les utilisateurs des impacts (reconnexion nécessaire après changement de clés) |
+| 177 | **Monitoring** | Surveillance du système après changement (fallback plaintext 48h avec monitoring) |
+| 178 | **Vérification statique des imports** | Les imports ES6 sont vérifiables sans exécuter le code |
+
+### 7.13 — Patterns d'API & HTTP
+
+| # | Concept | Contexte dans l'audit |
+|---|---------|----------------------|
+| 179 | **API RESTful** | Organisation des endpoints par ressource (/api/products, /api/orders, /api/user-profile) |
+| 180 | **CRUD** | Create, Read, Update, Delete — opérations standard sur les ressources |
+| 181 | **Endpoints par domaine** | Séparation des routes API par domaine métier (auth, catalog, orders, profile, admin/*) |
+| 182 | **Authentification par session** | Gestion de l'état utilisateur via des sessions côté serveur |
+| 183 | **Middleware d'authentification** | requireLogin, requireAdmin, requirePermission — chaîne de vérifications |
+| 184 | **Système de permissions** | Gestion fine des accès par page/fonctionnalité (stock, compta, orders, clients, etc.) |
+| 185 | **Génération de PDF** | Facturation PDF avec QR suisse, bons de livraison |
+| 186 | **Upload de fichiers** | Gestion des pièces jointes fournisseurs via multer |
+| 187 | **Validation d'ID numérique** | Vérifier que `orderId` est bien numérique avant de l'utiliser dans un chemin fichier |
+| 188 | **path.resolve()** | Méthode Node.js pour résoudre un chemin absolu et prévenir le path traversal |
+
+---
+
+**Total : 188 points d'apprentissage** couvrant l'intégralité des concepts mentionnés dans cet audit, de la stack technique à la gestion de projet, en passant par la sécurité, l'architecture, les bases de données, le frontend, la performance, les tests et le DevOps.

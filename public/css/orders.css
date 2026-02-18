@@ -1,415 +1,745 @@
 /* =========================================
-   Orders Page General
+   Orders Page — Design épuré & moderne
    ========================================= */
-   .order-page-header {
-    margin-bottom: 30px;
+
+/* =========================================
+   Page Header
+   ========================================= */
+.order-page-header {
+    margin-bottom: 32px;
 }
 
+.order-page-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+}
+
+.order-page-subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* =========================================
+   Orders List Container
+   ========================================= */
 .orders-list {
-    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 60px;
 }
 
 /* =========================================
    Order Card
    ========================================= */
 .order-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    position: relative;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    transition: box-shadow 0.25s ease, transform 0.2s ease;
 }
 
-.order-card:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    bottom: -15px;
-    left: 10%;
-    right: 10%;
-    height: 1px;
-    background: linear-gradient(to right, 
-        rgba(0, 0, 0, 0), 
-        rgba(0, 0, 0, 0.1), 
-        rgba(0, 0, 0, 0));
+.order-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08), 0 14px 32px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+
+/* Barre colorée en haut selon statut */
+.order-card-top-bar {
+    height: 4px;
+    background: #e2e8f0;
+}
+
+.order-card-top-bar.bar-success {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.order-card-top-bar.bar-processing {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.order-card-body {
+    padding: 22px 28px 0;
 }
 
 .order-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e9ecef;
+    align-items: flex-start;
+    margin-bottom: 4px;
+    gap: 12px;
 }
 
-.order-card h3 {
+.order-card-header-left h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 5px 0;
+}
+
+.order-id-highlight {
     color: #2575fc;
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-weight: 600;
 }
 
 .order-date {
-    color: #777;
-    font-size: 14px;
-    margin-bottom: 15px;
+    color: #64748b;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.order-reference {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: #2575fc;
+    font-weight: 500;
+    background: rgba(37, 117, 252, 0.08);
+    padding: 2px 9px;
+    border-radius: 20px;
+    margin-top: 2px;
 }
 
 /* =========================================
-   Order Status
+   Status Badge
    ========================================= */
-   .order-status {
-    display: inline-block;
-    padding: 5px 10px;
+.order-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 13px;
     border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.status-shipped {
-    background-color: #d4edda;
-    color: #155724;
+.order-status::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-shipped,
+.status-partial {
+    background: #d1fae5;
+    color: #065f46;
 }
 
 .status-processing {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-/* Nous gardons cette classe pour la compatibilité avec l'interface admin */
-.status-partial {
-    background-color: #d4edda; /* Même couleur que completed pour le client */
-    color: #155724; /* Même couleur que completed pour le client */
+    background: #fef3c7;
+    color: #92400e;
 }
 
 /* =========================================
-   Section des articles en attente
+   Items Table
    ========================================= */
-/* On modifie cette partie pour garder un style différent dans la section "PENDING ITEMS" */
-.pending-delivery-card {
-    background-color: #fff8e1;
-    border-left: 4px solid #ffc107;
-    margin-bottom: 30px;
+.order-table-wrapper {
+    overflow-x: auto;
+    margin-top: 4px;
 }
 
-.pending-delivery-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(to right, #ffc107, transparent);
-    animation: pendingPulse 2s infinite;
-}
-
-/* Section header for pending items */
-.order-section-header td {
-    padding: 10px;
-    font-weight: bold;
-    text-align: center;
-    color: white;
-}
-
-.delivered-section {
-    background-color: #28a745;
-}
-
-.pending-section {
-    background-color: #ffc107;
-    color: #212529 !important;
-}
-
-/* =========================================
-   Order Details Table
-   ========================================= */
 .order-details-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 10px;
-    margin-bottom: 15px;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.order-details-table thead {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .order-details-table th {
-    text-align: left;
-    padding: 10px;
-    background-color: #f8f9fa;
-    color: #495057;
+    padding: 9px 28px;
+    color: #94a3b8;
     font-weight: 600;
-    border-bottom: 2px solid #e9ecef;
+    font-size: 0.69rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    text-align: left;
 }
 
 .order-details-table td {
-    padding: 12px 10px;
-    background-color: #fff;
-    border-bottom: 1px solid #f2f2f2;
+    padding: 11px 28px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.order-details-table tr:last-child td {
+.order-details-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.order-details-table .qty-column {
-    width: 10%;
+.order-details-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.qty-column {
+    width: 60px;
+    text-align: center !important;
+    font-weight: 700;
+    color: #2575fc !important;
+}
+
+.unit-price-column {
+    width: 110px;
+    text-align: right !important;
+    color: #94a3b8 !important;
+}
+
+.total-price-column {
+    width: 115px;
+    text-align: right !important;
+    font-weight: 600;
+    color: #10b981 !important;
+}
+
+/* Catégories dans le tableau */
+.category-header td {
+    padding: 7px 28px;
+}
+
+.category-section {
+    font-size: 0.69rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+    background: #f8fafc;
+}
+
+.pending-category {
+    color: #b45309;
+    background: #fffbeb;
+}
+
+/* Séparateurs de section */
+.order-section-header td {
+    padding: 8px 28px;
+    font-weight: 700;
+    font-size: 0.71rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: white;
     text-align: center;
-    font-weight: bold;
-    color: #2575fc;
 }
 
-.order-details-table .product-name-column {
-    width: 50%;
+.delivered-section {
+    background: #10b981;
 }
 
-.order-details-table .unit-price-column {
-    width: 20%;
-    text-align: right;
-    color: #6c757d;
+.pending-section {
+    background: #f59e0b;
+    color: #1e293b !important;
 }
 
-.order-details-table .total-price-column {
-    width: 20%;
-    text-align: right;
-    font-weight: bold;
-    color: #28a745;
+/* Lignes articles */
+.delivered-item td {
+    background: transparent;
+}
+
+.pending-item td {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.pending-item:hover td {
+    background: #fef9e5;
+}
+
+.pending-item .unit-price-column,
+.pending-item .total-price-column {
+    color: #d1d5db !important;
 }
 
 /* =========================================
-   Order Summary
+   Order Summary / Totaux
    ========================================= */
 .order-summary {
-    margin-top: 20px;
-    text-align: right;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 28px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
 }
 
-.order-summary-total {
+.summary-amounts {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    font-size: 1.2em;
-    font-weight: bold;
+    gap: 0;
+    flex-wrap: wrap;
+}
+
+.summary-block {
+    text-align: center;
+    padding: 0 22px;
+    position: relative;
+}
+
+.summary-block:first-child {
+    padding-left: 0;
+}
+
+.summary-block + .summary-block::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 28px;
+    background: #e2e8f0;
+}
+
+.summary-block-label {
+    font-size: 0.67rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 3px;
+}
+
+.summary-block-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.summary-block-value.ttc {
+    font-size: 1.15rem;
+    font-weight: 700;
     color: #2575fc;
+}
+
+.summary-actions {
+    display: flex;
+    align-items: center;
 }
 
 .download-invoice-btn {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 15px;
-    font-size: 14px;
     display: inline-flex;
     align-items: center;
-    transition: background-color 0.2s ease;
+    gap: 8px;
+    background: #2575fc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.84rem;
+    font-weight: 600;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(37, 117, 252, 0.28);
+    letter-spacing: 0.01em;
+    text-decoration: none;
 }
 
 .download-invoice-btn:hover {
-    background-color: #218838;
+    background: #1a5fd4;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(37, 117, 252, 0.38);
+}
+
+.download-invoice-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(37, 117, 252, 0.28);
 }
 
 .download-invoice-btn i {
-    margin-right: 8px;
+    font-size: 0.95rem;
 }
 
 .invoice-not-available {
-    color: #6c757d;
-    font-style: italic;
-    font-size: 0.9em;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    margin-left: 15px;
+    gap: 7px;
+    color: #94a3b8;
+    font-size: 0.81rem;
+    font-style: italic;
 }
 
 .invoice-not-available i {
-    margin-right: 5px;
-    color: #ffc107;
+    color: #f59e0b;
 }
 
 /* =========================================
-   Pending Items
+   Pending Deliveries — Bouton déclencheur
    ========================================= */
 .pending-deliveries-button-container {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
+    margin-bottom: 20px;
 }
 
 .pending-deliveries-btn {
     display: flex;
     align-items: center;
-    padding: 10px 15px;
-    background-color: #f8f9fa;
-    border: 2px solid #ffc107;
-    border-radius: 8px;
-    color: #495057;
+    gap: 14px;
+    width: 100%;
+    padding: 16px 22px;
+    background: white;
+    border: 2px solid #fde68a;
+    border-radius: 12px;
+    color: #1e293b;
     font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
+    text-align: left;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.1);
 }
 
 .pending-deliveries-btn:hover {
-    background-color: #ffc107;
-    color: #212529;
+    background: #fef9e5;
+    border-color: #f59e0b;
+    box-shadow: 0 4px 18px rgba(245, 158, 11, 0.2);
 }
 
-.pending-deliveries-btn i {
-    margin-right: 10px;
-    font-size: 1.2em;
+.pending-deliveries-btn .fa-truck {
+    color: #f59e0b;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.pending-btn-label {
+    flex: 1;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.pending-btn-label small {
+    display: block;
+    font-size: 0.74rem;
+    color: #64748b;
+    font-weight: 400;
+    margin-top: 2px;
 }
 
 .pending-items-count {
-    background-color: #ff6b6b;
+    background: #ef4444;
     color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
+    border-radius: 20px;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 8px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    margin-left: 10px;
+    font-size: 0.77rem;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
 .pending-items-count.hidden {
     display: none;
 }
 
+.pending-chevron {
+    color: #94a3b8;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.84rem;
+    flex-shrink: 0;
+}
+
+.pending-deliveries-btn.open .pending-chevron {
+    transform: rotate(180deg);
+}
+
+/* =========================================
+   Pending Deliveries — Container dépliable
+   ========================================= */
 .pending-deliveries-container {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.5s ease, opacity 0.3s ease;
+    transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
     opacity: 0;
 }
 
 .pending-deliveries-container.visible {
-    max-height: 2000px;
+    max-height: 9999px;
     opacity: 1;
-    margin-bottom: 20px;
-}
-
-.pending-delivery-card {
-    background-color: #fff8e1;
-    border-left: 4px solid #ffc107;
-    margin-bottom: 30px;
-}
-
-.pending-delivery-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(to right, #ffc107, transparent);
-    animation: pendingPulse 2s infinite;
-}
-
-@keyframes pendingPulse {
-    0% { opacity: 0.3; }
-    50% { opacity: 1; }
-    100% { opacity: 0.3; }
-}
-
-/* Special styles for pending items */
-.category-header {
-    padding: 10px 15px;
-    margin: 15px 0 10px 0;
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    font-size: 1.1em;
-    color: #495057;
-    font-weight: 600;
-}
-
-.category-section {
-    margin-bottom: 25px;
-}
-
-.pending-item {
-    background-color: rgba(255, 193, 7, 0.1);
-}
-
-.pending-item td {
-    color: #6c757d;
-}
-
-.pending-item .unit-price-column,
-.pending-item .total-price-column {
-    color: transparent !important;
-    position: relative;
-}
-
-.pending-item .unit-price-column::after,
-.pending-item .total-price-column::after {
-    content: "-";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #666;
-}
-
-.order-section-header td {
-    padding: 10px;
-    font-weight: bold;
-    text-align: center;
-    color: white;
-}
-
-.delivered-section {
-    background-color: #28a745;
-}
-
-.pending-section {
-    background-color: #ffc107;
-    color: #212529 !important;
-}
-
-.delivered-item {
-    background-color: rgba(40, 167, 69, 0.1);
-}
-
-/* Animation for pending delivery button */
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-.pending-deliveries-btn.has-items {
-    animation: pulse 2s infinite;
+    margin-bottom: 24px;
 }
 
 /* =========================================
-   Responsive Adjustments
+   Pending Delivery — Carte
    ========================================= */
-@media (max-width: 768px) {
-    .order-details-table {
-        font-size: 0.9em;
-    }
-    
-    .order-details-table th,
-    .order-details-table td {
-        padding: 8px;
-    }
-    
-    .order-summary-total {
-        flex-direction: column;
-        align-items: flex-end;
-    }
+.pending-delivery-card {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid #fde68a;
+    overflow: hidden;
+    box-shadow: 0 2px 14px rgba(245, 158, 11, 0.1);
+}
 
-    .download-invoice-btn {
-        margin-left: 0;
-        margin-top: 10px;
+.pending-delivery-header {
+    background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+    padding: 20px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #fde68a;
+}
+
+.pending-delivery-header-info h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #92400e;
+    margin: 0 0 4px 0;
+}
+
+.pending-delivery-header-info p {
+    font-size: 0.8rem;
+    color: #b45309;
+    margin: 0;
+}
+
+.pending-delivery-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f59e0b;
+    color: white;
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.pending-delivery-body {
+    /* sections gèrent le padding */
+}
+
+.pending-category-section {
+    border-bottom: 1px solid #fef9e5;
+}
+
+.pending-category-section:last-child {
+    border-bottom: none;
+}
+
+.pending-category-title {
+    padding: 8px 28px;
+    font-size: 0.67rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #b45309;
+    background: #fffbeb;
+    border-bottom: 1px solid #fef3c7;
+}
+
+.pending-item-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 28px;
+    gap: 14px;
+    border-bottom: 1px solid #fef9e5;
+    transition: background 0.15s;
+}
+
+.pending-item-row:last-child {
+    border-bottom: none;
+}
+
+.pending-item-row:hover {
+    background: #fffbeb;
+}
+
+.pending-item-qty {
+    font-weight: 700;
+    color: #d97706;
+    background: #fef3c7;
+    min-width: 38px;
+    height: 34px;
+    padding: 0 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.pending-item-name {
+    flex: 1;
+    font-size: 0.88rem;
+    color: #334155;
+    font-weight: 500;
+}
+
+.pending-item-status-tag {
+    font-size: 0.69rem;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.pending-delivery-footer {
+    padding: 14px 28px;
+    background: #fffbeb;
+    border-top: 1px solid #fde68a;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #92400e;
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.pending-delivery-footer i {
+    color: #f59e0b;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* =========================================
+   Empty State
+   ========================================= */
+.empty-state {
+    text-align: center;
+    padding: 80px 24px;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    color: #cbd5e1;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 1.15rem;
+    color: #475569;
+    margin: 0 0 8px;
+    font-weight: 600;
+}
+
+.empty-state p {
+    color: #94a3b8;
+    margin: 0 0 24px;
+    font-size: 0.9rem;
+}
+
+/* =========================================
+   Loading
+   ========================================= */
+.loading-container {
+    text-align: center;
+    padding: 80px 24px;
+    color: #94a3b8;
+}
+
+/* =========================================
+   Animations
+   ========================================= */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 2px 10px rgba(245, 158, 11, 0.1);
+    }
+    50% {
+        box-shadow: 0 4px 22px rgba(245, 158, 11, 0.3);
     }
 }
 
-/* Assurer une bonne visibilité des éléments de catégorie */
+.pending-deliveries-btn.has-items {
+    animation: pulse 2.5s ease-in-out infinite;
+}
+
+/* =========================================
+   Responsive
+   ========================================= */
+@media (max-width: 768px) {
+    .order-card-body {
+        padding: 16px 16px 0;
+    }
+
+    .order-details-table th,
+    .order-details-table td {
+        padding: 9px 14px;
+        font-size: 0.82rem;
+    }
+
+    .unit-price-column {
+        display: none;
+    }
+
+    .order-summary {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .summary-amounts {
+        justify-content: space-around;
+    }
+
+    .summary-block {
+        padding: 0 12px;
+    }
+
+    .summary-block:first-child {
+        padding-left: 12px;
+    }
+
+    .summary-actions {
+        justify-content: stretch;
+    }
+
+    .download-invoice-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .pending-deliveries-btn {
+        padding: 14px 16px;
+        gap: 10px;
+    }
+
+    .pending-delivery-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px 18px;
+        gap: 12px;
+    }
+
+    .pending-category-title,
+    .pending-item-row,
+    .pending-delivery-footer {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
+
+/* =========================================
+   Legacy / compatibilité
+   ========================================= */
 .category-item {
     padding: 8px 10px;
     background-color: #f5f5f5;
@@ -427,28 +757,9 @@
     background-color: #2575fc;
     color: white;
 }
-.category-section {
-    background-color: #f5f7fa;
-    color: #2575fc;
-    font-weight: 600;
-    padding: 8px 15px;
-    text-align: left;
-}
 
-.pending-category {
-    background-color: #fff8e1;
-    color: #ff9800;
+.order-summary-total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
-
-.category-header td {
-    padding: 8px 15px;
-}
-
-.delivered-item {
-    background-color: rgba(40, 167, 69, 0.05);
-}
-
-.delivered-item:hover {
-    background-color: rgba(40, 167, 69, 0.1);
-}
-
