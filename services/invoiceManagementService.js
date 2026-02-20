@@ -79,11 +79,14 @@ function getClientInvoices(userId, year = null) {
         query += ` ORDER BY i.invoice_date DESC`;
         
         const invoices = db.db.prepare(query).all(...params);
-        
+        const paymentsStmt = db.db.prepare(
+            'SELECT * FROM invoice_payments WHERE invoice_id = ? ORDER BY payment_date ASC, id ASC'
+        );
         return invoices.map(invoice => ({
             ...invoice,
             displayName: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
-            shopName: invoice.shop_name || 'N/A'
+            shopName: invoice.shop_name || 'N/A',
+            payments: paymentsStmt.all(invoice.id)
         }));
     } catch (error) {
         console.error('Error getting client invoices:', error);
@@ -437,6 +440,76 @@ function getUnpaidInvoices(year = null) {
     }
 }
 
+function getInvoicePayments(invoiceId) {
+    try {
+        const payments = db.db.prepare(
+            'SELECT * FROM invoice_payments WHERE invoice_id = ? ORDER BY payment_date ASC, id ASC'
+        ).all(invoiceId);
+        return { success: true, payments };
+    } catch (error) {
+        console.error('Error getting invoice payments:', error);
+        return { success: false, message: 'Erreur lors du chargement des paiements' };
+    }
+}
+
+function _recalcInvoiceTotals(invoiceId) {
+    const invoice = db.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
+    if (!invoice) return;
+    const row = db.db.prepare(
+        'SELECT COALESCE(SUM(amount), 0) as total FROM invoice_payments WHERE invoice_id = ?'
+    ).get(invoiceId);
+    const totalPaid = row.total;
+    const amountDue = Math.max(0, invoice.total_ttc - totalPaid);
+    let paymentStatus;
+    if (totalPaid <= 0) {
+        paymentStatus = 'unpaid';
+    } else if (totalPaid >= invoice.total_ttc) {
+        paymentStatus = 'paid';
+    } else {
+        paymentStatus = 'partial';
+    }
+    db.db.prepare(`
+        UPDATE invoices SET amount_paid = ?, amount_due = ?, payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).run(totalPaid, amountDue, paymentStatus, invoiceId);
+}
+
+function addInvoicePayment(invoiceId, amount, payment_date) {
+    try {
+        const invoice = db.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
+        if (!invoice) return { success: false, message: 'Facture non trouvée' };
+        db.db.prepare(
+            'INSERT INTO invoice_payments (invoice_id, amount, payment_date) VALUES (?, ?, ?)'
+        ).run(invoiceId, amount, payment_date);
+        _recalcInvoiceTotals(invoiceId);
+        return {
+            success: true,
+            invoice: getInvoiceDetails(invoiceId),
+            payments: getInvoicePayments(invoiceId).payments
+        };
+    } catch (error) {
+        console.error('Error adding invoice payment:', error);
+        return { success: false, message: 'Erreur lors de l\'ajout du paiement' };
+    }
+}
+
+function deleteInvoicePayment(paymentId) {
+    try {
+        const payment = db.db.prepare('SELECT * FROM invoice_payments WHERE id = ?').get(paymentId);
+        if (!payment) return { success: false, message: 'Paiement non trouvé' };
+        const invoiceId = payment.invoice_id;
+        db.db.prepare('DELETE FROM invoice_payments WHERE id = ?').run(paymentId);
+        _recalcInvoiceTotals(invoiceId);
+        return {
+            success: true,
+            invoice: getInvoiceDetails(invoiceId),
+            payments: getInvoicePayments(invoiceId).payments
+        };
+    } catch (error) {
+        console.error('Error deleting invoice payment:', error);
+        return { success: false, message: 'Erreur lors de la suppression du paiement' };
+    }
+}
+
 module.exports = {
     getAllInvoices,
     getClientInvoices,
@@ -446,5 +519,8 @@ module.exports = {
     getClientsSummary,
     getMonthlyBreakdown,
 	getMonthInvoices,  // ← NOUVELLE FONCTION AJOUTÉE
-	getUnpaidInvoices
+	getUnpaidInvoices,
+    getInvoicePayments,
+    addInvoicePayment,
+    deleteInvoicePayment
 };

@@ -12,6 +12,7 @@ const helmet = require('helmet');
 const multer = require('multer');   
 const sharp = require('sharp');       
 const invoiceManagementService = require('./services/invoiceManagementService');
+const ExcelJS = require('exceljs');
 const permissionService = require('./services/permissionService');
 const navigationService = require('./services/navigationService');
 
@@ -2757,6 +2758,41 @@ app.delete('/api/order-suppliers/:orderId/batches/:batchNumber', requireLogin, r
 // ============================================
 
 // ===== API ROUTES - COMPTABILITÉ =====
+app.get('/api/invoices/:invoiceId/payments', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
+  const { invoiceId } = req.params;
+  try {
+    const result = invoiceManagementService.getInvoicePayments(invoiceId);
+    if (!result.success) return res.status(400).json({ error: result.message });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur serveur: ' + error.message });
+  }
+});
+
+app.post('/api/invoices/:invoiceId/payments', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
+  const { invoiceId } = req.params;
+  const { amount, payment_date } = req.body;
+  if (!amount || !payment_date) return res.status(400).json({ error: 'Montant et date requis' });
+  try {
+    const result = invoiceManagementService.addInvoicePayment(invoiceId, parseFloat(amount), payment_date);
+    if (!result.success) return res.status(400).json({ error: result.message });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur serveur: ' + error.message });
+  }
+});
+
+app.delete('/api/invoices/:invoiceId/payments/:paymentId', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
+  const { paymentId } = req.params;
+  try {
+    const result = invoiceManagementService.deleteInvoicePayment(paymentId);
+    if (!result.success) return res.status(400).json({ error: result.message });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur serveur: ' + error.message });
+  }
+});
+
 app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
   const { invoiceId } = req.params;
   const paymentData = req.body;
@@ -2798,6 +2834,107 @@ app.get('/api/invoices/clients-summary', requireLogin, requireAdmin, requirePerm
   } catch (error) {
     console.error('Error getting clients summary:', error);
     res.status(500).json({ error: 'Error getting clients summary' });
+  }
+});
+
+app.get('/api/invoices/client/:userId/export-xlsx', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
+  const { userId } = req.params;
+  const year = req.query.year && req.query.year !== 'all' ? parseInt(req.query.year) : null;
+  try {
+    const invoices = invoiceManagementService.getClientInvoices(userId, year);
+    const sorted = [...invoices].sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date));
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Factures');
+
+    ws.columns = [
+      { header: 'Type', key: 'type', width: 16 },
+      { header: 'Invoice Number', key: 'inv_num', width: 20 },
+      { header: 'Invoice Date', key: 'inv_date', width: 14 },
+      { header: 'Client', key: 'client', width: 26 },
+      { header: 'Amount excl. VAT', key: 'ht', width: 18 },
+      { header: 'VAT', key: 'vat', width: 12 },
+      { header: 'Amount incl. VAT', key: 'ttc', width: 18 },
+      { header: 'Due Date', key: 'due', width: 14 },
+      { header: 'Amount Paid', key: 'paid', width: 14 },
+      { header: 'Balance Due', key: 'balance', width: 14 },
+      { header: 'Payment Date', key: 'pay_date', width: 14 },
+      { header: 'Status', key: 'status', width: 12 }
+    ];
+
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+    headerRow.alignment = { vertical: 'middle' };
+
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '';
+    const statusMap = { paid: 'Paid', partial: 'Partial', unpaid: 'Unpaid' };
+    const payFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+
+    for (const inv of sorted) {
+      ws.addRow({
+        type: 'Facture',
+        inv_num: inv.order_id || '',
+        inv_date: fmtDate(inv.invoice_date),
+        client: inv.client_full_name || '',
+        ht: parseFloat(inv.subtotal_ht) || 0,
+        vat: parseFloat(inv.vat_amount) || 0,
+        ttc: parseFloat(inv.total_ttc) || 0,
+        due: fmtDate(inv.due_date),
+        paid: parseFloat(inv.amount_paid) || 0,
+        balance: parseFloat(inv.amount_due) || 0,
+        pay_date: fmtDate(inv.paid_date),
+        status: statusMap[inv.payment_status] || 'Unpaid'
+      });
+
+      if (inv.payments && inv.payments.length > 0) {
+        inv.payments.forEach((p, i) => {
+          const r = ws.addRow({
+            type: `  Payment ${i + 1}`,
+            inv_num: inv.order_id || '',
+            inv_date: fmtDate(p.payment_date),
+            client: '',
+            ht: null, vat: null, ttc: null, due: '',
+            paid: parseFloat(p.amount) || 0,
+            balance: null,
+            pay_date: fmtDate(p.payment_date),
+            status: ''
+          });
+          r.eachCell({ includeEmpty: true }, cell => { cell.fill = payFill; });
+        });
+      }
+
+      ws.addRow({});
+    }
+
+    const totals = invoices.reduce((a, inv) => {
+      a.ht += parseFloat(inv.subtotal_ht) || 0;
+      a.vat += parseFloat(inv.vat_amount) || 0;
+      a.ttc += parseFloat(inv.total_ttc) || 0;
+      a.paid += parseFloat(inv.amount_paid) || 0;
+      a.balance += parseFloat(inv.amount_due) || 0;
+      return a;
+    }, { ht: 0, vat: 0, ttc: 0, paid: 0, balance: 0 });
+
+    const totRow = ws.addRow({
+      type: `TOTAL (${invoices.length} factures)`,
+      inv_num: '', inv_date: '', client: '',
+      ht: totals.ht, vat: totals.vat, ttc: totals.ttc,
+      due: '', paid: totals.paid, balance: totals.balance,
+      pay_date: '', status: ''
+    });
+    totRow.font = { bold: true };
+    totRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } };
+
+    const clientName = (invoices[0]?.client_full_name || userId).replace(/[^a-z0-9_\- ]/gi, '_');
+    const fileName = `invoices_${clientName}_${year || 'all'}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error generating XLSX:', error);
+    res.status(500).json({ error: 'Erreur génération Excel: ' + error.message });
   }
 });
 

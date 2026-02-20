@@ -345,6 +345,17 @@ function initDatabase() {
     `);
 
     db.exec(`
+    CREATE TABLE IF NOT EXISTS invoice_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        payment_date TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+    )
+    `);
+
+    db.exec(`
     CREATE TABLE IF NOT EXISTS user_permissions (
         username TEXT PRIMARY KEY,
         stock INTEGER DEFAULT 0,

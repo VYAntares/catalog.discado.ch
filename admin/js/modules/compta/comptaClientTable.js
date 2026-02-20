@@ -40,11 +40,130 @@ class ComptaClientTable {
         if (sortBtn) {
             sortBtn.addEventListener('click', () => this.toggleSort());
         }
-        
-        // Bouton export CSV
         const exportBtn = document.getElementById('exportCsvBtn');
         if (exportBtn) {
             exportBtn.addEventListener('click', () => this.exportToCSV());
+        }
+        this.setupPaymentsModal();
+    }
+
+    setupPaymentsModal() {
+        const modal = document.getElementById('paymentsModal');
+        const closeBtn = document.getElementById('paymentsModalClose');
+        const addBtn = document.getElementById('addPaymentBtn');
+
+        if (closeBtn) closeBtn.addEventListener('click', () => this.closePaymentsModal());
+        if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) this.closePaymentsModal(); });
+        if (addBtn) addBtn.addEventListener('click', () => this.addPayment());
+
+        const dateInput = document.getElementById('newPaymentDate');
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    async openPaymentsModal(invoiceId) {
+        const invoice = this.invoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+        this._paymentsModalInvoiceId = invoiceId;
+
+        document.getElementById('paymentsModalTitle').textContent = `Paiements — ${invoice.order_id}`;
+        document.getElementById('paymentsModalSubtitle').textContent = `Total facture: ${formatCurrency(invoice.total_ttc)}`;
+
+        const modal = document.getElementById('paymentsModal');
+        modal.style.display = 'flex';
+        await this.loadAndRenderPayments(invoiceId, invoice);
+    }
+
+    closePaymentsModal() {
+        document.getElementById('paymentsModal').style.display = 'none';
+        this._paymentsModalInvoiceId = null;
+    }
+
+    async loadAndRenderPayments(invoiceId, invoice) {
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/payments`, { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            this._renderPaymentsList(data.payments, invoice);
+        } catch (err) {
+            showNotification('Erreur: ' + err.message, 'error');
+        }
+    }
+
+    _renderPaymentsList(payments, invoice) {
+        const tbody = document.getElementById('paymentsHistoryBody');
+        if (!payments || payments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="no-data">Aucun paiement enregistré</td></tr>';
+        } else {
+            tbody.innerHTML = payments.map((p, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${this.formatDateShort(p.payment_date)}</td>
+                    <td class="text-right">${formatCurrency(p.amount)}</td>
+                    <td class="text-center">
+                        <button class="payments-delete-btn" data-payment-id="${p.id}" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            tbody.querySelectorAll('.payments-delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => this.deletePayment(btn.dataset.paymentId));
+            });
+        }
+        const totalPaid = (payments || []).reduce((s, p) => s + p.amount, 0);
+        const balanceDue = Math.max(0, invoice.total_ttc - totalPaid);
+        document.getElementById('paymentsTotalPaid').textContent = formatCurrency(totalPaid);
+        document.getElementById('paymentsBalanceDue').textContent = formatCurrency(balanceDue);
+    }
+
+    async addPayment() {
+        const invoiceId = this._paymentsModalInvoiceId;
+        if (!invoiceId) return;
+        const amount = parseFloat(document.getElementById('newPaymentAmount').value);
+        const payment_date = document.getElementById('newPaymentDate').value;
+        if (!amount || amount <= 0) { showNotification('Montant invalide', 'error'); return; }
+        if (!payment_date) { showNotification('Date requise', 'error'); return; }
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/payments`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, payment_date })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            document.getElementById('newPaymentAmount').value = '';
+            const idx = this.invoices.findIndex(inv => inv.id == invoiceId);
+            if (idx !== -1) this.invoices[idx] = { ...this.invoices[idx], ...data.invoice };
+            const invoice = this.invoices.find(inv => inv.id == invoiceId);
+            this._renderPaymentsList(data.payments, invoice);
+            this.displayInvoices();
+            showNotification('Paiement enregistré', 'success');
+            await this.openPaymentsModal(invoiceId);
+        } catch (err) {
+            showNotification('Erreur: ' + err.message, 'error');
+        }
+    }
+
+    async deletePayment(paymentId) {
+        const invoiceId = this._paymentsModalInvoiceId;
+        if (!invoiceId) return;
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/payments/${paymentId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            const idx = this.invoices.findIndex(inv => inv.id == invoiceId);
+            if (idx !== -1) this.invoices[idx] = { ...this.invoices[idx], ...data.invoice };
+            const invoice = this.invoices.find(inv => inv.id == invoiceId);
+            this._renderPaymentsList(data.payments, invoice);
+            this.displayInvoices();
+            showNotification('Paiement supprimé', 'success');
+            await this.openPaymentsModal(invoiceId);
+        } catch (err) {
+            showNotification('Erreur: ' + err.message, 'error');
         }
     }
 
@@ -219,6 +338,9 @@ class ComptaClientTable {
                     <button class="inv-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._editInvoiceBadge(${invoice.id})">
                         <i class="fas fa-pen"></i> Edit
                     </button>
+                    <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._openPaymentsBadge(${invoice.id})">
+                        <i class="fas fa-coins"></i> Paiements
+                    </button>
                     <a href="/api/admin/download-invoice/${invoice.order_id}/${this.clientId}"
                        class="inv-pdf-btn" target="_blank">
                         <i class="fas fa-file-pdf"></i> PDF
@@ -229,6 +351,7 @@ class ComptaClientTable {
         }).join('');
 
         window._editInvoiceBadge = (invoiceId) => this.openMobileEditModal(invoiceId);
+        window._openPaymentsBadge = (invoiceId) => this.openPaymentsModal(invoiceId);
     }
 
     openMobileEditModal(invoiceId) {
@@ -385,9 +508,12 @@ class ComptaClientTable {
 				<td class="editable-cell status-cell" data-field="commission_status" data-type="commission_select">
 					<span class="status-badge ${invoice.commission_status === 'received' ? 'status-paid' : 'status-unpaid'}">${invoice.commission_status === 'received' ? 'Reçu' : 'Non reçu'}</span>
 				</td>
-				<td class="text-center">
-					<a href="/api/admin/download-invoice/${invoice.order_id}/${this.clientId}" 
-					class="action-btn download-btn" 
+				<td class="text-center actions-cell">
+					<button class="action-btn payments-btn" data-invoice-id="${invoice.id}" title="Suivi des paiements">
+						<i class="fas fa-coins"></i>
+					</button>
+					<a href="/api/admin/download-invoice/${invoice.order_id}/${this.clientId}"
+					class="action-btn download-btn"
 					target="_blank"
 					title="Télécharger la facture">
 						<i class="fas fa-file-pdf"></i>
@@ -411,6 +537,9 @@ class ComptaClientTable {
     attachEventListeners() {
         document.querySelectorAll('.editable-cell').forEach(cell => {
             cell.addEventListener('click', (e) => this.startEdit(e.currentTarget));
+        });
+        document.querySelectorAll('.payments-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.openPaymentsModal(btn.dataset.invoiceId));
         });
     }
 
@@ -646,105 +775,30 @@ class ComptaClientTable {
         }
     }
 
-	exportToCSV() {
+	async exportToCSV() {
 		if (!this.invoices || this.invoices.length === 0) {
 			showNotification('No invoices to export', 'warning');
 			return;
 		}
-
-		const headers = [
-			'Invoice Number',
-			'Invoice Date',
-			'Client',
-			'Amount excl. VAT',
-			'VAT',
-			'Amount incl. VAT',
-			'Due Date',
-			'Amount Paid',
-			'Balance Due',
-			'Payment Date',
-			'Status'
-		];
-
-		const sortedInvoices = [...this.invoices].sort((a, b) => {
-			const dateA = new Date(a.invoice_date);
-			const dateB = new Date(b.invoice_date);
-			return this.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-		});
-
-		// Calculer les totaux
-		const totals = sortedInvoices.reduce((acc, invoice) => {
-			acc.count += 1;
-			acc.subtotal_ht += parseFloat(invoice.subtotal_ht) || 0;
-			acc.vat_amount += parseFloat(invoice.vat_amount) || 0;
-			acc.total_ttc += parseFloat(invoice.total_ttc) || 0;
-			acc.amount_paid += parseFloat(invoice.amount_paid) || 0;
-			acc.amount_due += parseFloat(invoice.amount_due) || 0;
-			return acc;
-		}, {
-			count: 0,
-			subtotal_ht: 0,
-			vat_amount: 0,
-			total_ttc: 0,
-			amount_paid: 0,
-			amount_due: 0
-		});
-
-		// Créer les lignes de données
-		const rows = sortedInvoices.map(invoice => {
-			return [
-				invoice.order_id || '',
-				this.formatDateShort(invoice.invoice_date),
-				`"${(invoice.client_full_name || '').replace(/"/g, '""')}"`,
-				this.formatNumberForCSV(invoice.subtotal_ht),
-				this.formatNumberForCSV(invoice.vat_amount),
-				this.formatNumberForCSV(invoice.total_ttc),
-				invoice.due_date ? this.formatDateShort(invoice.due_date) : '',
-				this.formatNumberForCSV(invoice.amount_paid),
-				this.formatNumberForCSV(invoice.amount_due),
-				invoice.paid_date ? this.formatDateShort(invoice.paid_date) : '',
-				this.getStatusText(invoice.payment_status)
-			].join(',');
-		});
-
-		// Ajouter une ligne vide
-		rows.push('');
-
-		// Ajouter la ligne de totaux
-		const totalsRow = [
-			`"TOTAL (${totals.count} invoices)"`,
-			'',
-			'',
-			this.formatNumberForCSV(totals.subtotal_ht),
-			this.formatNumberForCSV(totals.vat_amount),
-			this.formatNumberForCSV(totals.total_ttc),
-			'',
-			this.formatNumberForCSV(totals.amount_paid),
-			this.formatNumberForCSV(totals.amount_due),
-			'',
-			'',
-			''
-		].join(',');
-		
-		rows.push(totalsRow);
-
-		// Combiner en-têtes et lignes
-		const csvContent = [headers.join(','), ...rows].join('\n');
-		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-		const link = document.createElement('a');
-		const url = URL.createObjectURL(blob);
-		
-		const clientName = this.invoices[0]?.client_full_name || this.clientId;
-		const fileName = `invoices_${clientName}_${this.year}.csv`;
-
-		link.setAttribute('href', url);
-		link.setAttribute('download', fileName);
-		link.style.visibility = 'hidden';
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-
-		showNotification(`CSV export successful: ${fileName}`, 'success');
+		try {
+			const year = this.year || 'all';
+			const res = await fetch(`/api/invoices/client/${this.clientId}/export-xlsx?year=${year}`, { credentials: 'include' });
+			if (!res.ok) throw new Error('Erreur génération Excel');
+			const blob = await res.blob();
+			const link = document.createElement('a');
+			const url = URL.createObjectURL(blob);
+			const clientName = this.invoices[0]?.client_full_name || this.clientId;
+			const fileName = `invoices_${clientName}_${year}.xlsx`;
+			link.setAttribute('href', url);
+			link.setAttribute('download', fileName);
+			link.style.visibility = 'hidden';
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			showNotification(`Export Excel réussi: ${fileName}`, 'success');
+		} catch (err) {
+			showNotification('Erreur: ' + err.message, 'error');
+		}
 	}
 
     formatNumberForCSV(number) {
