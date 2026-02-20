@@ -1015,10 +1015,231 @@
         gap: 10px;
     }
 
-    .delivery-table-container,
+    /* === ARTICLES EN ATTENTE : layout compact sans scroll horizontal === */
+
+    .delivery-table-container {
+        overflow-x: visible;
+    }
+
+    .delivery-section .items-table {
+        display: block;
+        font-size: 12px;
+    }
+
+    /* Thead : on garde seulement la checkbox "tout sélectionner", on cache les labels */
+    .delivery-section .items-table thead {
+        display: block;
+    }
+
+    .delivery-section .items-table thead tr {
+        display: flex;
+        align-items: center;
+        padding: 4px 2px 8px 2px;
+        gap: 6px;
+        background: transparent;
+        border-bottom: 2px solid #fcd34d;
+    }
+
+    /* Première th : checkbox "tout sélectionner" + label */
+    .delivery-section .items-table thead th:first-child {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0;
+        background: transparent;
+        border: none;
+        color: #92400e;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .delivery-section .items-table thead th:first-child::after {
+        content: 'Tout sélectionner';
+    }
+
+    /* Masquer les autres th (Article, Catégorie, Quantité, Prix) */
+    .delivery-section .items-table thead th:nth-child(n+2) {
+        display: none;
+    }
+
+    .delivery-section .items-table tbody {
+        display: block;
+    }
+
+    /* Chaque ligne = flex row compact */
+    .delivery-section .items-table tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 5px 2px;
+        border-bottom: 1px solid #fde68a;
+        gap: 4px;
+        background: transparent;
+    }
+
+    /* En-têtes de catégorie : pleine largeur */
+    .delivery-section .items-table td.category-header {
+        flex: 0 0 100%;
+        width: 100%;
+        font-size: 11px;
+        padding: 5px 8px;
+        border-radius: 4px;
+        margin-top: 4px;
+    }
+
+    /* Colonne checkbox */
+    .delivery-section .items-table td:nth-child(1) {
+        flex: 0 0 22px;
+        padding: 0;
+        text-align: center;
+    }
+
+    /* Nom de l'article — prend la place restante */
+    .delivery-section .items-table td:nth-child(2) {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 0 2px;
+        color: #1e293b;
+        word-break: break-word;
+    }
+
+    /* Catégorie — masquée sur mobile (déjà visible dans le header de groupe) */
+    .delivery-section .items-table td:nth-child(3) {
+        display: none;
+    }
+
+    /* Quantité */
+    .delivery-section .items-table td:nth-child(4) {
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        padding: 0 2px;
+        white-space: nowrap;
+    }
+
+    .delivery-section .items-table td:nth-child(4)::before {
+        content: '×\00a0';
+        color: #94a3b8;
+    }
+
+    /* Prix unitaire */
+    .delivery-section .items-table td:nth-child(5) {
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 700;
+        color: #d97706;
+        padding: 0 2px;
+        white-space: nowrap;
+    }
+
+    /* === HISTORIQUE DES COMMANDES : redesign en cartes === */
+
     .orders-history-section {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: visible;
+    }
+
+    .orders-history-section .orders-table {
+        display: block;
+        min-width: auto;
+    }
+
+    .orders-history-section .orders-table thead {
+        display: none;
+    }
+
+    .orders-history-section .orders-table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* Chaque commande = carte */
+    .orders-history-section .orders-table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+            "ordid  status"
+            "date   count"
+            "action action";
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        border-left: 3px solid #2575fc;
+        padding: 10px 12px;
+        row-gap: 4px;
+        column-gap: 8px;
+        align-items: center;
+    }
+
+    .orders-history-section .orders-table tbody tr:hover {
+        box-shadow: 0 4px 14px rgba(37,117,252,0.12);
+    }
+
+    /* ID Commande */
+    .orders-history-section .orders-table td:nth-child(1) {
+        grid-area: ordid;
+        font-size: 12px;
+        font-weight: 700;
+        color: #2575fc;
+        padding: 0;
+        border: none;
+        word-break: break-all;
+    }
+
+    /* Date commandé / traité */
+    .orders-history-section .orders-table td:nth-child(2) {
+        grid-area: date;
+        font-size: 11px;
+        color: #64748b;
+        padding: 0;
+        border: none;
+        line-height: 1.5;
+    }
+
+    /* Badge statut */
+    .orders-history-section .orders-table td:nth-child(3) {
+        grid-area: status;
+        padding: 0;
+        border: none;
+        text-align: right;
+    }
+
+    .orders-history-section .orders-table td:nth-child(3) .order-status {
+        font-size: 10px;
+        padding: 3px 7px;
+    }
+
+    /* Nombre d'articles */
+    .orders-history-section .orders-table td:nth-child(4) {
+        grid-area: count;
+        padding: 0;
+        border: none;
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        text-align: right;
+    }
+
+    /* Bouton Détails */
+    .orders-history-section .orders-table td:nth-child(5) {
+        grid-area: action;
+        padding: 6px 0 0 0;
+        border: none;
+    }
+
+    .orders-history-section .orders-table .view-order-btn {
+        width: 100%;
+        justify-content: center;
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 7px;
     }
 
     /* === MODALE CRÉATION CLIENT === */
