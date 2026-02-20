@@ -1298,6 +1298,14 @@ main {
         border-radius: 16px;
         max-width: 480px;
     }
+
+    /* Vue par client — tailles de police agrandies sur desktop */
+    .client-badge-stat-label {
+        font-size: 11px;
+    }
+    .client-badge-stat-value {
+        font-size: 14px;
+    }
 }
 
 /* ===== RESPONSIVE ===== */

@@ -294,6 +294,60 @@
         </div>
     </main>
 
+    <!-- Modal suivi des paiements -->
+    <div id="paymentsModal" class="payments-modal-overlay" style="display:none;">
+        <div class="payments-modal">
+            <div class="payments-modal-header">
+                <div>
+                    <h3 id="paymentsModalTitle">Suivi des paiements</h3>
+                    <span id="paymentsModalSubtitle" class="payments-modal-subtitle"></span>
+                </div>
+                <button class="payments-modal-close" id="paymentsModalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="payments-modal-body">
+                <table class="payments-history-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Montant</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsHistoryBody">
+                        <tr><td colspan="4" class="no-data">Aucun paiement enregistré</td></tr>
+                    </tbody>
+                </table>
+                <div class="payments-summary">
+                    <div class="payments-summary-row">
+                        <span>Total payé</span>
+                        <span id="paymentsTotalPaid" class="text-success">0.00 CHF</span>
+                    </div>
+                    <div class="payments-summary-row">
+                        <span>Reste dû</span>
+                        <span id="paymentsBalanceDue" class="text-danger">0.00 CHF</span>
+                    </div>
+                </div>
+                <div class="payments-add-form">
+                    <h4>Ajouter un paiement</h4>
+                    <div class="payments-form-row">
+                        <div class="payments-form-group">
+                            <label>Date</label>
+                            <input type="date" id="newPaymentDate" class="payments-input">
+                        </div>
+                        <div class="payments-form-group">
+                            <label>Montant (CHF)</label>
+                            <input type="number" id="newPaymentAmount" class="payments-input" min="0.01" step="0.01" placeholder="0.00">
+                        </div>
+                        <button id="addPaymentBtn" class="payments-add-btn">
+                            <i class="fas fa-plus"></i> Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Conteneur de notifications -->
     <div id="notification-container"></div>
     <script type="module" src="/admin/js/utils/tabsPermissions.js"></script>

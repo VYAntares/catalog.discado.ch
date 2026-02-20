@@ -28,6 +28,7 @@ class ComptaMonth {
 
         this.setupUI();
         this.setupEventListeners();
+        this.setupPaymentsModal();
         this.loadMonthInvoices();
     }
 
@@ -219,6 +220,9 @@ class ComptaMonth {
                     <button class="inv-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthEditBadge(${invoice.id})">
                         <i class="fas fa-pen"></i> Edit
                     </button>
+                    <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthOpenPayments(${invoice.id})">
+                        <i class="fas fa-coins"></i> Paiements
+                    </button>
                     <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
                        class="inv-pdf-btn" target="_blank">
                         <i class="fas fa-file-pdf"></i> PDF
@@ -229,6 +233,7 @@ class ComptaMonth {
         }).join('');
 
         window._monthEditBadge = (invoiceId) => this.openMobileEditModal(invoiceId);
+        window._monthOpenPayments = (invoiceId) => this.openPaymentsModal(invoiceId);
     }
 
     openMobileEditModal(invoiceId) {
@@ -361,8 +366,11 @@ class ComptaMonth {
 				</td>
 				<!-- NOUVELLE COLONNE -->
 				<td class="text-center">
-					<a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}" 
-					class="action-btn download-btn" 
+					<button class="action-btn month-payments-btn" data-invoice-id="${invoice.id}" title="Suivi des paiements">
+						<i class="fas fa-coins"></i>
+					</button>
+					<a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+					class="action-btn download-btn"
 					target="_blank"
 					title="Télécharger la facture">
 						<i class="fas fa-file-pdf"></i>
@@ -387,6 +395,127 @@ class ComptaMonth {
         document.querySelectorAll('.editable-cell').forEach(cell => {
             cell.addEventListener('click', (e) => this.startEdit(e.currentTarget));
         });
+        document.querySelectorAll('.month-payments-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.openPaymentsModal(btn.dataset.invoiceId));
+        });
+    }
+
+    // ===== SUIVI DES PAIEMENTS =====
+
+    setupPaymentsModal() {
+        const modal = document.getElementById('paymentsModal');
+        const closeBtn = document.getElementById('paymentsModalClose');
+        const addBtn = document.getElementById('addPaymentBtn');
+
+        if (closeBtn) closeBtn.addEventListener('click', () => this.closePaymentsModal());
+        if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) this.closePaymentsModal(); });
+        if (addBtn) addBtn.addEventListener('click', () => this.addPayment());
+
+        const dateInput = document.getElementById('newPaymentDate');
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    async openPaymentsModal(invoiceId) {
+        const invoice = this.invoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+        this._paymentsModalInvoiceId = invoiceId;
+
+        document.getElementById('paymentsModalTitle').textContent = `Paiements — ${invoice.order_id}`;
+        document.getElementById('paymentsModalSubtitle').textContent = `Total facture: ${formatCurrency(invoice.total_ttc)}`;
+
+        const modal = document.getElementById('paymentsModal');
+        modal.style.display = 'flex';
+        await this.loadAndRenderPayments(invoiceId, invoice);
+    }
+
+    closePaymentsModal() {
+        document.getElementById('paymentsModal').style.display = 'none';
+        this._paymentsModalInvoiceId = null;
+    }
+
+    async loadAndRenderPayments(invoiceId, invoice) {
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/payments`, { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            this._renderPaymentsList(data.payments, invoice);
+        } catch (err) {
+            showNotification('Erreur: ' + err.message, 'error');
+        }
+    }
+
+    _renderPaymentsList(payments, invoice) {
+        const tbody = document.getElementById('paymentsHistoryBody');
+        if (!payments || payments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="no-data">Aucun paiement enregistré</td></tr>';
+        } else {
+            tbody.innerHTML = payments.map((p, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${this.formatDateShort(p.payment_date)}</td>
+                    <td class="text-right">${formatCurrency(p.amount)}</td>
+                    <td class="text-center">
+                        <button class="payments-delete-btn" data-payment-id="${p.id}" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            tbody.querySelectorAll('.payments-delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => this.deletePayment(btn.dataset.paymentId));
+            });
+        }
+        const totalPaid = (payments || []).reduce((s, p) => s + p.amount, 0);
+        const balanceDue = Math.max(0, invoice.total_ttc - totalPaid);
+        document.getElementById('paymentsTotalPaid').textContent = formatCurrency(totalPaid);
+        document.getElementById('paymentsBalanceDue').textContent = formatCurrency(balanceDue);
+    }
+
+    async addPayment() {
+        const invoiceId = this._paymentsModalInvoiceId;
+        if (!invoiceId) return;
+        const amount = parseFloat(document.getElementById('newPaymentAmount').value);
+        const payment_date = document.getElementById('newPaymentDate').value;
+        if (!amount || amount <= 0) { showNotification('Montant invalide', 'error'); return; }
+        if (!payment_date) { showNotification('Date requise', 'error'); return; }
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/payments`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, payment_date })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            document.getElementById('newPaymentAmount').value = '';
+            const idx = this.invoices.findIndex(inv => inv.id == invoiceId);
+            if (idx !== -1) this.invoices[idx] = { ...this.invoices[idx], ...data.invoice };
+            this.displayInvoices();
+            showNotification('Paiement enregistré', 'success');
+            await this.openPaymentsModal(invoiceId);
+        } catch (err) {
+            showNotification('Erreur: ' + err.message, 'error');
+        }
+    }
+
+    async deletePayment(paymentId) {
+        const invoiceId = this._paymentsModalInvoiceId;
+        if (!invoiceId) return;
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/payments/${paymentId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            const idx = this.invoices.findIndex(inv => inv.id == invoiceId);
+            if (idx !== -1) this.invoices[idx] = { ...this.invoices[idx], ...data.invoice };
+            this.displayInvoices();
+            showNotification('Paiement supprimé', 'success');
+            await this.openPaymentsModal(invoiceId);
+        } catch (err) {
+            showNotification('Erreur: ' + err.message, 'error');
+        }
     }
 
     startEdit(cell) {

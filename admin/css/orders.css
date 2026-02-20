@@ -1,118 +1,210 @@
-/* Order list styles */
+/* ===== ORDER LIST — MODERN REDESIGN ===== */
+
 .order-list {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     margin-bottom: 30px;
 }
 
 .order-item {
-    padding: 25px;
-    border-bottom: 1px solid #e1e8ed;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    border: 1px solid #eef0f5;
+    border-left: 4px solid #2575fc;
+    padding: 22px 24px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 25px;
-    transition: background-color 0.2s ease;
+    gap: 20px;
+    align-items: stretch;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .order-item:hover {
-    background-color: #f5f8fa;
-}
-
-.order-item:last-child {
-    border-bottom: none;
+    box-shadow: 0 6px 24px rgba(37, 117, 252, 0.12);
+    transform: translateY(-1px);
 }
 
 .order-details {
     flex: 1;
-    min-width: 300px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
+/* En-tête : numéro + date */
 .order-id {
-    font-weight: 600;
+    font-weight: 700;
     color: #2575fc;
-    font-size: 18px;
-    margin-bottom: 5px;
+    font-size: 17px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
+    margin-bottom: 2px;
+}
+
+.order-id i {
+    font-size: 15px;
+    opacity: 0.8;
 }
 
 .order-date {
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 15px;
+    font-size: 13px;
+    color: #94a3b8;
+    display: inline-block;
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-bottom: 10px;
 }
 
+/* Bloc client */
 .customer-info {
-    margin-bottom: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border-left: 3px solid #2575fc;
+    background: #f8faff;
+    border-radius: 10px;
+    border-left: 3px solid #667eea;
+    padding: 12px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 0;
 }
 
 .customer-name {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 5px;
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 15px;
+    margin-bottom: 0;
 }
 
 .customer-shop {
-    color: #666;
-    margin-bottom: 5px;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 0;
 }
 
 .customer-contact {
-    font-size: 14px;
-    color: #555;
+    font-size: 13px;
+    color: #64748b;
 }
 
+/* Bloc articles */
 .order-items {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    background: #f8faff;
+    border-radius: 10px;
+    padding: 12px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 0;
 }
 
 .item-count {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 15px;
+    margin-bottom: 0;
 }
 
 .items-preview {
-    color: #555;
-    font-size: 14px;
+    color: #64748b;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* Colonne actions */
 .order-actions {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: stretch;
     gap: 10px;
-    min-width: 150px;
+    min-width: 175px;
 }
 
-/* Styles spécifiques aux boutons d'ordre */
+/* Bouton view */
 .action-btn.view-btn {
-    background-color: #6c757d;
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    transition: all 0.2s ease;
 }
 
 .action-btn.view-btn:hover {
-    background-color: #5a6268;
+    background: linear-gradient(135deg, #5a6268, #495057);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108,117,125,0.3);
 }
 
+/* Bouton traiter */
 .action-btn.process-btn {
-    background-color: #28a745;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.2px;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.25);
+    transition: all 0.2s ease;
 }
 
 .action-btn.process-btn:hover {
-    background-color: #218838;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
 }
 
-/* Styles des modales de commande */
+/* Responsive pour orders */
+@media (max-width: 992px) {
+    .order-item {
+        padding: 18px 20px;
+    }
+    .order-actions {
+        min-width: 155px;
+    }
+}
+
+@media (max-width: 768px) {
+    .order-list {
+        gap: 12px;
+    }
+
+    .order-item {
+        flex-direction: column;
+        gap: 14px;
+        padding: 16px 18px;
+    }
+
+    .order-actions {
+        flex-direction: row;
+        width: 100%;
+        min-width: unset;
+    }
+
+    .action-btn.process-btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    .client-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .items-preview {
+        white-space: normal;
+    }
+}
+
+/* ===== STYLES MODALES DE COMMANDE ===== */
+
 .order-details-title {
     margin-bottom: 30px;
     padding-bottom: 15px;
@@ -147,6 +239,10 @@
 .order-header .order-date {
     color: #666;
     font-size: 14px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-weight: 400;
 }
 
 .client-info-grid {
@@ -322,29 +418,6 @@
     align-items: center;
 }
 
-/* Responsive pour orders */
-@media (max-width: 992px) {
-    .order-item {
-        padding: 20px;
-    }
-}
-
-@media (max-width: 768px) {
-    .order-item {
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .order-actions {
-        flex-direction: row;
-        width: 100%;
-    }
-    
-    .client-info-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
 /* Styles pour la modale de détails de commande */
 .modal {
     display: none;
@@ -490,13 +563,13 @@
         padding: 15px;
         max-height: 85vh;
     }
-    
+
     .order-details-title {
         font-size: 18px;
         margin-bottom: 15px;
         padding-bottom: 10px;
     }
-    
+
     .close-modal {
         top: 10px;
         right: 10px;
@@ -561,60 +634,60 @@
         padding: 10px 6px;
         font-size: 14px;
     }
-    
+
     /* Réduire la taille du texte des articles */
     .item-details .item-name {
         font-size: 13px;
     }
-    
+
     .item-details .item-price {
         font-size: 12px;
     }
-    
+
     /* Ajuster la largeur des champs numériques */
     .delivered-quantity {
         width: 60px;
         font-size: 14px;
         padding: 6px;
     }
-    
+
     /* Optimiser les boutons d'action */
     .action-buttons {
         display: flex;
         gap: 3px;
     }
-    
+
     /* Ajuster la taille des boutons */
     .max-quantity-btn,
     .unavailable-btn {
         width: 30px;
         height: 30px;
     }
-    
+
     /* Ajuster les marges et padding globaux */
     .order-process-container {
         gap: 15px;
     }
-    
+
     /* Ajuster la grille d'information client pour un seul affichage en colonne */
     .client-info-grid {
         grid-template-columns: 1fr !important;
         gap: 10px;
     }
-    
+
     /* Réduire la taille des informations client */
     .client-info-card {
         padding: 15px;
     }
-    
+
     .info-row {
         margin-bottom: 5px;
     }
-    
+
     .info-row strong {
         min-width: 120px;
     }
-    
+
     /* Ajustement pour la modale */
     .modal-content {
         width: 95%;
@@ -637,7 +710,7 @@
       padding: 15px 10px;
       overflow-y: auto;
     }
-    
+
     /* Close button */
     .close-modal {
       position: fixed;
@@ -646,147 +719,147 @@
       z-index: 1001;
       background-color: rgba(255, 255, 255, 0.8);
     }
-    
+
     /* Order header */
     .order-process-container .order-header {
       flex-direction: column;
       align-items: flex-start;
       padding-bottom: 10px;
     }
-    
+
     .order-process-container .order-header h1 {
       font-size: 18px;
       margin-bottom: 5px;
       padding-right: 30px; /* Space for close button */
     }
-    
+
     .order-process-container .order-date {
       font-size: 12px;
     }
-    
+
     /* Client info cards */
     .client-info-grid {
       grid-template-columns: 1fr;
       gap: 10px;
     }
-    
+
     .client-info-card {
       padding: 12px;
     }
-    
+
     .client-info-card h3 {
       font-size: 15px;
       margin-bottom: 10px;
       padding-bottom: 5px;
     }
-    
+
     .info-row {
       display: flex;
       flex-direction: column;
       margin-bottom: 8px;
     }
-    
+
     .info-row strong {
       min-width: auto;
       margin-bottom: 3px;
     }
-    
+
     /* Order items table */
     .order-items-section h2 {
       font-size: 16px;
       margin: 15px 0 10px;
     }
-    
+
     .process-order-table {
       font-size: 13px;
     }
-    
+
     .process-order-table th,
     .process-order-table td {
       padding: 8px 5px;
     }
-    
+
     /* Column optimization */
     .process-order-table th:first-child,
     .process-order-table td:first-child {
       width: 40%;
     }
-    
+
     .process-order-table th:nth-child(2),
     .process-order-table td:nth-child(2) {
       width: 15%;
       text-align: center;
     }
-    
+
     .process-order-table th:nth-child(3),
     .process-order-table td:nth-child(3) {
       width: 25%;
       text-align: center;
     }
-    
+
     .process-order-table th:nth-child(4),
     .process-order-table td:nth-child(4) {
       width: 20%;
       text-align: center;
     }
-    
+
     /* Item details */
     .item-details {
       width: 100%;
     }
-    
+
     .item-name {
       font-size: 13px;
       line-height: 1.3;
       display: block;
       margin-bottom: 3px;
     }
-    
+
     .item-price {
       font-size: 11px;
     }
-    
+
     /* Quantity inputs */
     .delivered-quantity {
       width: 40px;
       padding: 8px 5px;
       font-size: 13px;
     }
-    
+
     /* Action buttons */
     .action-buttons {
       display: flex;
       justify-content: center;
       gap: 4px;
     }
-    
+
     .max-quantity-btn,
     .unavailable-btn {
       width: 32px;
       height: 32px;
       padding: 0;
     }
-    
+
     /* Category headers */
     .process-order-table .category-header td {
       padding: 8px 5px;
       font-size: 13px;
     }
-    
+
     /* Order summary */
     .order-summary {
       padding: 10px;
       margin-top: 15px;
     }
-    
+
     .order-total {
       font-size: 14px;
     }
-    
+
     .order-total strong {
       font-size: 16px;
     }
-    
+
     /* Action footer */
     .order-process-actions {
       flex-direction: column;
@@ -794,93 +867,93 @@
       margin-top: 15px;
       padding-bottom: 30px; /* Extra padding at bottom for safer tapping */
     }
-    
+
     .order-process-actions .action-btn {
       width: 100%;
       padding: 12px;
       justify-content: center;
       font-size: 14px;
     }
-    
+
     /* Highlight rows better */
     .item-unavailable {
       background-color: rgba(220, 53, 69, 0.15);
     }
-    
+
     .delivered-item {
       background-color: rgba(40, 167, 69, 0.15);
     }
   }
-  
+
   /* Optimisations spécifiques pour les très petits écrans (iPhone SE, etc.) */
   @media screen and (max-width: 375px) {
     .item-name {
       font-size: 12px;
     }
-    
+
     .item-price {
       font-size: 10px;
     }
-    
+
     .delivered-quantity {
       width: 35px;
       padding: 6px 3px;
     }
-    
+
     .process-order-table th,
     .process-order-table td {
       padding: 6px 3px;
     }
-    
+
     .max-quantity-btn,
     .unavailable-btn {
       width: 28px;
       height: 28px;
     }
-    
+
     .max-quantity-btn i,
     .unavailable-btn i {
       font-size: 12px;
     }
-    
+
     /* Make header smaller */
     .order-process-container .order-header h1 {
       font-size: 16px;
     }
-    
+
     /* Make client cards more compact */
     .client-info-card {
       padding: 10px 8px;
     }
-    
+
     .info-row {
       margin-bottom: 5px;
       font-size: 12px;
     }
   }
-  
+
   /* Fix for scrolling issues in the table */
   @media screen and (max-width: 480px) {
     .order-items-section {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
-    
+
     .process-order-table {
       min-width: 100%;
       width: 100%;
     }
-    
+
     /* Fix quantity column alignment */
     .quantity-cell {
       text-align: center;
     }
-    
+
     /* Make the whole row clickable for better touch experience */
     .process-order-table tr {
       cursor: pointer;
     }
-    
+
     /* Fix bottom buttons so they don't get cut off */
     .order-process-container {
       padding-bottom: 20px;
@@ -888,14 +961,14 @@
   }
 
   .exceeds-ordered {
-    background-color: rgba(255, 193, 7, 0.2); 
+    background-color: rgba(255, 193, 7, 0.2);
   }
-  
+
   .exceeds-ordered .delivered-quantity {
     color: #ff9800;
     font-weight: bold;
   }
-  
+
   .quantity-info-text {
     margin: 10px 0;
     padding: 8px 12px;
@@ -904,12 +977,12 @@
     font-size: 14px;
     color: #555;
   }
-  
+
   .quantity-info-text i {
     color: #17a2b8;
     margin-right: 5px;
   }
-  
+
   .round-up-btn {
     background-color: #ff9800;
     color: white;
@@ -923,27 +996,27 @@
     cursor: pointer;
     transition: background-color 0.2s ease;
   }
-  
+
   .round-up-btn:hover {
     background-color: #e68a00;
   }
-  
+
   .round-up-btn i {
     font-size: 14px;
   }
-  
+
   @media screen and (max-width: 480px) {
     .quantity-info-text {
       font-size: 12px;
       padding: 6px 10px;
       margin: 8px 0;
     }
-    
+
     .round-up-btn {
       width: 28px;
       height: 28px;
     }
-    
+
     .round-up-btn i {
       font-size: 12px;
     }
@@ -1031,12 +1104,12 @@
   .product-image-cell {
       width: 40px;
   }
-  
+
   .product-thumbnail {
       width: 35px;
       height: 35px;
   }
-  
+
   .image-modal-content {
       padding: 15px;
   }
@@ -1047,7 +1120,7 @@
       width: 30px;
       height: 30px;
   }
-  
+
   .product-full-image {
       max-height: 60vh;
   }
