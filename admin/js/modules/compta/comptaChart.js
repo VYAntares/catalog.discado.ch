@@ -40,7 +40,7 @@ export class ComptaChart {
 
     render(containerId) {
         const container = document.getElementById(containerId);
-        
+
         if (!container) {
             console.error(`Container ${containerId} not found`);
             return;
@@ -51,9 +51,19 @@ export class ComptaChart {
             return;
         }
 
+        // Adapter la hauteur des barres à la taille d'écran (wrapper - 40px de marge labels)
+        const w = window.innerWidth;
+        if (w <= 768) {
+            this.chartHeight = 340; // 380px wrapper - 40px
+        } else if (w <= 1024) {
+            this.chartHeight = 340; // 380px wrapper - 40px
+        } else {
+            this.chartHeight = 380; // 420px wrapper - 40px
+        }
+
         // Générer les labels Y pour initialiser displayMaxValue
         this.yAxisLabels = this.generateYAxisLabels();
-        
+
         container.innerHTML = this.renderChart();
     }
 

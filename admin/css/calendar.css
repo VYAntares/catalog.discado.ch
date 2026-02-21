@@ -129,127 +129,168 @@
     opacity: 0.5;
 }
 
-/* Styles pour les éléments de commande */
+/* ===== CARTES DE COMMANDE (vue journée) ===== */
+
 .order-item {
-    background-color: #f8f9fa;
+    background: white;
     border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    border-left: 4px solid #2575fc;
+    margin-bottom: 12px;
+    border: none;
+    border-left: 3px solid #2575fc;
+    transition: box-shadow 0.2s ease;
+    overflow: hidden;
+    /* Reset de orders.css qui met display:flex et padding sur .order-item */
+    display: block;
+    padding: 0;
+    gap: 0;
+    align-items: unset;
+    transform: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.order-date-header {
-    color: #2575fc;
-    font-size: 18px;
-    margin: 0 0 10px 0;
+.order-item:hover {
+    box-shadow: 0 3px 12px rgba(37, 117, 252, 0.12);
+    transform: none;
+}
+
+/* Ligne unique horizontale sur PC — CSS Grid = alignement parfait sur toutes les lignes */
+.order-row {
+    display: grid;
+    grid-template-columns: 1.4fr 2fr 1.2fr 1.4fr;
+    align-items: center;
+    padding: 12px 18px;
+}
+
+.order-col {
     display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0 12px;
+}
+
+/* Colonne 1: icône + numéro + date */
+.order-col-id {
+    flex-direction: row;
     align-items: center;
     gap: 10px;
+    padding-left: 0;
+    border-right: 1px solid #f1f5f9;
 }
 
 .order-icon {
-    background-color: #e6f0ff;
-    width: 30px;
-    height: 30px;
+    background: #e6f0ff;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
     color: #2575fc;
 }
 
-.order-date-info {
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 15px;
+.order-id-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2575fc;
+    white-space: nowrap;
 }
 
-.order-client-info {
-    background-color: white;
-    border-radius: 6px;
-    padding: 12px 15px;
-    margin-bottom: 15px;
-    border-left: 3px solid #2575fc;
+.order-dates {
+    font-size: 12px;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+/* Colonne 2: nom client + boutique + email + tél */
+.order-col-client {
+    border-right: 1px solid #f1f5f9;
 }
 
 .client-name {
     font-weight: 600;
-    color: #333;
-    margin-bottom: 3px;
+    color: #1e293b;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.client-shop {
-    color: #666;
-    margin-bottom: 3px;
+.client-sub {
+    color: #64748b;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.client-contact {
-    font-size: 14px;
-    color: #555;
+/* Colonne 3: nb articles */
+.order-col-count {
+    align-items: center;
+    text-align: center;
+    border-right: 1px solid #f1f5f9;
 }
 
-.order-items-summary {
-    background-color: #f0f7ff;
-    border-radius: 6px;
-    padding: 12px 15px;
-    margin-bottom: 15px;
-}
-
-.item-count {
+.item-count-badge {
+    font-size: 15px;
     font-weight: 600;
-    color: #333;
-    margin-bottom: 5px;
+    color: #1e293b;
+    white-space: nowrap;
 }
 
-.items-preview {
-    color: #555;
-    font-size: 14px;
-}
-
-.order-actions {
-    display: flex;
-    gap: 10px;
+/* Colonne 4: boutons */
+.order-col-actions {
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
     justify-content: flex-end;
-    margin-top: 15px;
+    padding-right: 0;
 }
 
+.order-col-actions .action-btn {
+    flex: 1;
+}
+
+/* Boutons petits et élégants */
 .action-btn {
-    padding: 8px 14px;
-    background-color: #2575fc;
-    color: white;
+    padding: 5px 11px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 5px;
     text-decoration: none;
+    white-space: nowrap;
+    color: white;
 }
 
 .action-btn:hover {
-    background-color: #1a5cb8;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0.85;
+    transform: translateY(-1px);
 }
 
 .view-btn {
-    background-color: #6c757d;
+    background: #6c757d;
 }
 
 .view-btn:hover {
-    background-color: #5a6268;
+    background: #5a6268;
+    opacity: 1;
 }
 
 .download-btn {
-    background-color: #28a745;
+    background: #28a745;
 }
 
 .download-btn:hover {
-    background-color: #218838;
+    background: #218838;
+    opacity: 1;
 }
 
 /* Responsive */
@@ -297,14 +338,14 @@
 .calendar-container {
     padding: 15px;
     margin-bottom: 30px;
-  }
-  
-  .calendar-body {
+}
+
+.calendar-body {
     gap: 15px;
     margin-top: 10px;
-  }
-  
-  .calendar-day {
+}
+
+.calendar-day {
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -314,20 +355,20 @@
     margin: 2px;
     position: relative;
     font-weight: 500;
-  }
-  
-  .calendar-day.has-orders {
+}
+
+.calendar-day.has-orders {
     background-color: rgba(255, 255, 255, 0.15);
-  }
-  
-  .calendar-day.selected {
+}
+
+.calendar-day.selected {
     background-color: #e74c3c;
     transform: scale(1.15);
     z-index: 1;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  }
-  
-  .order-count {
+}
+
+.order-count {
     position: absolute;
     top: -5px;
     right: -5px;
@@ -339,209 +380,141 @@
     justify-content: center;
     font-size: 11px;
     font-weight: 600;
-  }
-  
-  /* Orders list improvements */
-  .day-orders-container {
+}
+
+/* Orders list container */
+.day-orders-container {
     background-color: white;
     border-radius: 10px;
     padding: 20px;
     margin-top: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  }
-  
-  .selected-date {
+}
+
+.selected-date {
     margin-bottom: 20px;
     font-size: 18px;
     color: #2575fc;
     font-weight: 600;
     padding-bottom: 10px;
     border-bottom: 1px solid #e1e8ed;
-  }
-  
-  .order-item {
-    padding: 20px;
-    margin-bottom: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    border-left: 4px solid #2575fc;
-  }
-  
-  .order-date-header {
-    font-size: 18px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .order-client-info {
-    margin-bottom: 15px;
-  }
-  
-  .order-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-  }
-  
-  /* iPhone specific optimizations for the history detail pages */
-  @media screen and (max-width: 480px) {
-    /* Fix for duplicate order title */
-    .order-details-modal .order-details-title:first-child {
-      display: none;
+}
+
+/* ===== RESPONSIVE CARTES ===== */
+
+/* Tablet/petit écran : tout en colonne, boutons pleine largeur */
+@media (max-width: 1150px) {
+    .order-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        padding: 12px 14px;
     }
-  
-    /* Modal content adjustments */
+
+    .order-col {
+        padding: 8px 0;
+        border-right: none !important;
+        width: 100%;
+    }
+
+    .order-col-id {
+        flex: none;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 12px;
+        margin-bottom: 4px;
+    }
+
+    .order-col-client {
+        flex: none;
+        padding-bottom: 4px;
+    }
+
+    .order-col-count {
+        flex: none;
+        align-items: flex-start;
+        text-align: left;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 10px;
+        margin-top: 4px;
+    }
+
+    .order-col-actions {
+        flex: none;
+        width: 100%;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 0;
+    }
+
+    .action-btn {
+        min-height: 42px;
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+}
+
+/* ===== MODAL DÉTAILS — BOTTOM SHEET sur mobile ===== */
+
+@media (max-width: 480px) {
+    .order-details-modal {
+        align-items: flex-end;
+    }
+
     .order-details-modal .modal-content {
-      margin: 0;
-      width: 100%;
-      max-width: 100%;
-      height: 100%;
-      max-height: 100%;
-      border-radius: 0;
-      padding: 15px 10px;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+        min-height: 60vh;
+        max-height: 92vh;
+        height: auto;
+        border-radius: 16px 16px 0 0;
+        padding: 16px 14px 28px 14px;
+        position: relative;
     }
-  
-    /* Close button optimization */
+
     .order-details-modal .close-modal {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      z-index: 1001;
-      background-color: rgba(255, 255, 255, 0.8);
+        position: sticky;
+        top: 0;
+        float: right;
+        z-index: 1001;
+        background: rgba(255, 255, 255, 0.95);
     }
-  
-    /* Order detail header adjustments */
-    .order-detail-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-  
-    .order-number {
-      font-size: 18px;
-    }
-  
-    /* Table adjustments */
-    .items-table {
-      font-size: 13px;
-    }
-  
-    .items-table th,
-    .items-table td {
-      padding: 8px 6px;
-    }
-  
-    /* Product column should be prioritized */
-    .product-column {
-      min-width: 120px;
-    }
-  
-    /* Make quantity columns narrower */
-    .qty-column {
-      width: 8%;
-    }
-  
-    /* Price columns can be narrower */
-    .unit-price-column,
-    .total-column {
-      width: 18%;
-    }
-  
-    /* Action buttons */
-    .action-btn {
-      padding: 8px 10px;
-      font-size: 12px;
-      min-height: 44px; /* Apple's recommended touch target size */
-    }
-  
-    /* Client detail section */
-    .client-detail-grid {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-  
-    .client-detail-item {
-      padding: 8px;
-    }
-  
-    /* Fix order summary on smaller screens */
-    .order-summary {
-      flex-direction: column;
-      text-align: right;
-    }
-  
-    .order-total-amount {
-      font-size: 18px;
-    }
-  
-    /* Fix action buttons footer */
-    .order-actions-footer {
-      flex-direction: column;
-      gap: 10px;
-    }
-  
-    .download-invoice-btn,
-    .close-detail-btn {
-      width: 100%;
-      justify-content: center;
-    }
-  
-    /* Fix category headers in item tables */
-    .category-header,
-    .category-section {
-      padding: 8px 6px;
-      font-size: 13px;
-    }
-  
-    /* Calendar improvements for mobile */
+
     .calendar-selectors {
-      flex-direction: column;
-      gap: 10px;
-      padding: 15px;
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
     }
-  
+
     .calendar-select {
-      width: 100%;
+        width: 100%;
     }
-  
+
     .calendar-day {
-      width: 35px;
-      height: 35px;
-      font-size: 13px;
+        width: 35px;
+        height: 35px;
+        font-size: 13px;
     }
-  
+
     .order-count {
-      min-width: 18px;
-      height: 18px;
-      font-size: 10px;
+        min-width: 18px;
+        height: 18px;
+        font-size: 10px;
     }
-  }
-  
-  /* For very small screens (iPhone SE, etc.) */
-  @media screen and (max-width: 375px) {
+}
+
+/* Très petits écrans */
+@media (max-width: 375px) {
     .calendar-day {
-      width: 32px;
-      height: 32px;
-      font-size: 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
     }
-  
+
     .order-count {
-      min-width: 16px;
-      height: 16px;
-      font-size: 9px;
+        min-width: 16px;
+        height: 16px;
+        font-size: 9px;
     }
-  
-    .items-table th,
-    .items-table td {
-      padding: 6px 4px;
-      font-size: 11px;
-    }
-  
-    .action-btn {
-      padding: 6px 8px;
-      font-size: 11px;
-    }
-  }
+}

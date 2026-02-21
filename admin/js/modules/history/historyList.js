@@ -274,55 +274,49 @@ function displayDayOrders(year, month, day) {
 function createOrderElement(order) {
     const orderDate = Formatter.formatDate(order.date);
     const processDate = Formatter.formatDate(order.lastProcessed);
-    
+
     const totalDeliveredItems = order.deliveredItems
         ? order.deliveredItems.reduce((sum, item) => sum + item.quantity, 0)
         : 0;
-    
-    const itemsPreview = (order.deliveredItems || []).slice(0, 3).map(item => {
-        const shortName = item.Nom.split(' - ')[0];
-        return shortName;
-    }).join(', ');
-    
+
     const userProfile = order.userProfile || {};
     const customerName = userProfile.fullName || order.userId;
     const shopName = userProfile.shopName || 'Non spécifié';
     const email = userProfile.email || 'Non spécifié';
     const phone = userProfile.phone || 'Non spécifié';
-    
+
     const orderItem = document.createElement('div');
     orderItem.className = 'order-item';
     orderItem.innerHTML = `
-        <h3 class="order-date-header">
-            <span class="order-icon"><i class="fas fa-clipboard-check"></i></span>
-            Commande #${order.orderId}
-        </h3>
-        <div class="order-date-info">
-            <div>Commandée le: ${orderDate}, ${new Date(order.date).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
-            <div>Traitée le: ${processDate}, ${new Date(order.lastProcessed).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
-            ${order.reference ? `<div>Référence client: ${order.reference}</div>` : ''}
-        </div>
-        <div class="order-client-info">
-            <div class="client-name-section">
+        <div class="order-row">
+            <div class="order-col order-col-id">
+                <span class="order-icon"><i class="fas fa-clipboard-check"></i></span>
+                <div>
+                    <div class="order-id-text">Commande #${order.orderId}</div>
+                    <div class="order-dates">Reçue le ${orderDate}</div>
+                    <div class="order-dates">Traitée le ${processDate}${order.reference ? ` · Réf: ${order.reference}` : ''}</div>
+                </div>
+            </div>
+            <div class="order-col order-col-client">
                 <div class="client-name">${customerName}</div>
-                <div class="client-shop">Boutique: ${shopName}</div>
-                <div class="client-contact">Email: ${email} | Tél: ${phone}</div>
+                <div class="client-sub">Boutique: ${shopName}</div>
+                <div class="client-sub">${email}</div>
+                <div class="client-sub">Tél: ${phone}</div>
+            </div>
+            <div class="order-col order-col-count">
+                <span class="item-count-badge">${totalDeliveredItems} article${totalDeliveredItems > 1 ? 's' : ''} livré${totalDeliveredItems > 1 ? 's' : ''}</span>
+            </div>
+            <div class="order-col order-col-actions">
+                <button class="action-btn view-btn view-order-details-btn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
+                    <i class="fas fa-eye"></i> Détails
+                </button>
+                <a href="${API.getInvoiceDownloadLink(order.orderId, order.userId)}" class="action-btn download-btn" target="_blank">
+                    <i class="fas fa-file-pdf"></i> Facture
+                </a>
             </div>
         </div>
-        <div class="order-items-summary">
-            <div class="item-count">${totalDeliveredItems} article${totalDeliveredItems > 1 ? 's' : ''} livré${totalDeliveredItems > 1 ? 's' : ''}</div>
-            <div class="items-preview">${itemsPreview}${(order.deliveredItems || []).length > 3 ? '...' : ''}</div>
-        </div>
-        <div class="order-actions">
-            <button class="action-btn view-btn view-order-details-btn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
-                <i class="fas fa-eye"></i> Voir détails
-            </button>
-            <a href="${API.getInvoiceDownloadLink(order.orderId, order.userId)}" class="action-btn download-btn" target="_blank">
-                <i class="fas fa-file-pdf"></i> Facture
-            </a>
-        </div>
     `;
-    
+
     return orderItem;
 }
 
