@@ -5,6 +5,7 @@ import { showNotification } from '../../utils/notification.js';
 import { initImagePreview } from './imagePreview.js';
 import { searchProducts } from './productSearch.js';
 import { initProductFilter, getCurrentCategory } from './productFilter.js';
+import { formatPrice } from '../../utils/formatter.js';
 
 // State management
 let allProducts = [];
@@ -156,7 +157,7 @@ function createInfoContainer(product) {
     nameSpan.className = "product-name";
 
     const priceSpan = document.createElement("span");
-    priceSpan.textContent = `${product.prix || "0.00"} CHF`;
+    priceSpan.textContent = `${formatPrice(product.prix || 0)} CHF`;
     priceSpan.className = "product-price";
 
     infoContainer.append(nameSpan, priceSpan);

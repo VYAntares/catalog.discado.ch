@@ -47,7 +47,9 @@ function fillOrderInfo(order) {
   document.getElementById('orderInvoiceNumber').textContent = order.invoice_number;
   document.getElementById('orderDate').textContent = Utils.formatDate(order.order_date);
   document.getElementById('orderStatusSelect').value = order.status;
-  document.getElementById('orderTotalAmount').value = (order.total_amount || 0).toFixed(2);
+  const totalAmountEl = document.getElementById('orderTotalAmount');
+  totalAmountEl.value = Utils.formatSwissNumber(order.total_amount || 0);
+  totalAmountEl.dataset.raw = order.total_amount || 0;
 
   // Set default payment date to today
   const today = new Date().toISOString().split('T')[0];
@@ -81,6 +83,7 @@ function createItemCard(item) {
   const category = item.category || 'N/A';
   const totalPrice = Utils.formatAmount(item.total_price);
   const unitPrice = (item.unit_price || 0).toFixed(2);
+  const unitPriceFormatted = Utils.formatSwissNumber(item.unit_price || 0);
 
   return `
     <div class="item-card" data-item-id="${item.id}">
@@ -92,7 +95,7 @@ function createItemCard(item) {
         <h4>${item.product_name}</h4>
         <p>Catégorie: ${category}</p>
         <div class="item-display" data-item-id="${item.id}">
-          <p>Quantité: ${item.quantity} × ${unitPrice} USD = <strong>${totalPrice}</strong></p>
+          <p>Quantité: ${item.quantity} × ${unitPriceFormatted} USD = <strong>${totalPrice}</strong></p>
         </div>
         <div class="item-edit" data-item-id="${item.id}" style="display:none;">
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -257,7 +260,7 @@ async function loadPayments() {
 
   try {
     const payments = await API.getSupplierOrderPayments(orderId);
-    const totalAmount = parseFloat(document.getElementById('orderTotalAmount').value) || 0;
+    const totalAmount = parseFloat(document.getElementById('orderTotalAmount').dataset.raw) || 0;
 
     // Calculate totals from payments
     let totalPaidUsd = 0;
@@ -268,9 +271,9 @@ async function loadPayments() {
     });
 
     // Update summary fields
-    document.getElementById('orderTotalPaidUsd').value = totalPaidUsd.toFixed(2);
-    document.getElementById('orderTotalPaidChf').value = totalPaidChf.toFixed(2);
-    document.getElementById('orderRemaining').value = (totalAmount - totalPaidUsd).toFixed(2);
+    document.getElementById('orderTotalPaidUsd').value = Utils.formatSwissNumber(totalPaidUsd);
+    document.getElementById('orderTotalPaidChf').value = Utils.formatSwissNumber(totalPaidChf);
+    document.getElementById('orderRemaining').value = Utils.formatSwissNumber(totalAmount - totalPaidUsd);
 
     // Render payments table
     renderPaymentsTable(payments);
@@ -293,8 +296,8 @@ function renderPaymentsTable(payments) {
   const rows = payments.map(p => `
     <tr>
       <td>${Utils.formatDate(p.payment_date)}</td>
-      <td>${(p.amount_usd || 0).toFixed(2)} USD</td>
-      <td>${(p.amount_chf || 0).toFixed(2)} CHF</td>
+      <td>${Utils.formatSwissNumber(p.amount_usd || 0)} USD</td>
+      <td>${Utils.formatSwissNumber(p.amount_chf || 0)} CHF</td>
       <td>
         <button class="btn btn-danger btn-sm delete-payment-btn" data-payment-id="${p.id}">
           <i class="fas fa-trash"></i>
@@ -735,11 +738,11 @@ function renderProductsList(products) {
         <h4>${product.name}</h4>
         <p><i class="fas fa-tag"></i> ${product.category || 'Autre'}</p>
         <p><i class="fas fa-barcode"></i> ${product.barcode || 'N/A'}</p>
-        ${product.origin_price > 0 ? `<p style="color: #718096; font-size: 12px;">Prix d'origine: ${product.origin_price.toFixed(2)} USD</p>` : ''}
+        ${product.origin_price > 0 ? `<p style="color: #718096; font-size: 12px;">Prix d'origine: ${Utils.formatSwissNumber(product.origin_price)} USD</p>` : ''}
       </div>
-      
+
       <div class="product-list-price">
-        ${(product.origin_price || 0).toFixed(2)} USD
+        ${Utils.formatSwissNumber(product.origin_price || 0)} USD
       </div>
       
       <div class="product-list-actions">

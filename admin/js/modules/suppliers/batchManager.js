@@ -222,10 +222,10 @@ function createBatchItemCard(item, batchNumber) {
 
         <p class="batch-item-details">
           <span class="quantity-badge">${item.quantity} unités</span>
-          <span class="price-tag">${item.unit_price.toFixed(2)} USD/u</span>
+          <span class="price-tag">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
         </p>
         <p class="batch-item-total">
-          Total: <strong>${(item.quantity * item.unit_price).toFixed(2)} USD</strong>
+          Total: <strong>${Utils.formatSwissNumber(item.quantity * item.unit_price)} USD</strong>
         </p>
         <div style="margin-top: 6px;">
           <select class="item-status-select" data-item-id="${item.id}"
@@ -535,13 +535,13 @@ function reattachBatchItemListeners() {
                     <h5>${item.product_name}</h5>
                     <p class="batch-item-details">
                       <span class="quantity-badge">${totalQty} unités</span>
-                      <span class="price-tag">${item.unit_price.toFixed(2)} USD/u</span>
+                      <span class="price-tag">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
                     </p>
                     <p style="font-size: 12px; color: #718096; margin: 4px 0 0 0;">
                       <i class="fas fa-info-circle"></i> ${batchDetails}
                     </p>
                     <p class="batch-item-total">
-                      Total: <strong>${(totalQty * item.unit_price).toFixed(2)} USD</strong>
+                      Total: <strong>${Utils.formatSwissNumber(totalQty * item.unit_price)} USD</strong>
                     </p>
                   </div>
                 </div>

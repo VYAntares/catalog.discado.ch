@@ -37,20 +37,29 @@ export function formatDateTime(dateString) {
     });
 }
 
+export function formatSwissNumber(number, decimals = 2) {
+    if (number === null || number === undefined) return '0.00';
+    const num = typeof number === 'string' ? parseFloat(number) : number;
+    if (isNaN(num)) return '0.00';
+    const fixed = num.toFixed(decimals);
+    const parts = fixed.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+    return parts.join('.');
+}
+
 export function formatPrice(price, options = {}) {
     if (price === undefined || price === null) return 'N/A';
-    
+
     try {
         const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-        
+
         if (isNaN(numPrice)) {
             return 'Invalid price';
         }
-        
-        const currency = options.currency || 'CHF';
+
         const decimals = options.decimals !== undefined ? options.decimals : 2;
-        
-        return numPrice.toFixed(decimals);
+
+        return formatSwissNumber(numPrice, decimals);
     } catch (error) {
         console.error('Error formatting price:', error);
         return 'Error';

@@ -5,6 +5,7 @@
 // Modules externes
 const express = require('express');
 const session = require('express-session');
+const SqliteStore = require('better-sqlite3-session-store')(session);
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
@@ -89,10 +90,11 @@ app.use(helmet.contentSecurityPolicy({
 
 // Configuration de la session
 app.use(session({
+  store: new SqliteStore({ client: dbModule.db }),
   secret: keys.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     secure: true,
     maxAge: 3 * 60 * 60 * 1000,
     httpOnly: true,
@@ -1792,6 +1794,17 @@ app.get('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req,
   }
 });
 
+// Formate un nombre au format suisse (apostrophe pour milliers, point pour décimales)
+function formatSwissNumber(number, decimals = 2) {
+  if (number === null || number === undefined) return '0.00';
+  const num = typeof number === 'string' ? parseFloat(number) : number;
+  if (isNaN(num)) return '0.00';
+  const fixed = num.toFixed(decimals);
+  const parts = fixed.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return parts.join('.');
+}
+
 // Export PDF d'une commande fournisseur
 app.get('/api/order-suppliers/:id/export-pdf', requireLogin, requireAdmin, async (req, res) => {
   try {
@@ -1948,13 +1961,13 @@ app.get('/api/order-suppliers/:id/export-pdf', requireLogin, requireAdmin, async
 
         // Prix unitaire
         doc.font('Helvetica').fontSize(9);
-        doc.text(`${(item.unit_price || 0).toFixed(2)}`, colX.price + 4, y + 16, { width: colW.price - 8, align: 'right' });
+        doc.text(formatSwissNumber(item.unit_price || 0), colX.price + 4, y + 16, { width: colW.price - 8, align: 'right' });
 
         // Total
         const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
         grandTotal += itemTotal;
         doc.font('Helvetica-Bold').fontSize(9);
-        doc.text(`${itemTotal.toFixed(2)}`, colX.total + 4, y + 16, { width: colW.total - 8, align: 'right' });
+        doc.text(formatSwissNumber(itemTotal), colX.total + 4, y + 16, { width: colW.total - 8, align: 'right' });
 
         // Batch
         doc.font('Helvetica').fontSize(9);
@@ -1972,7 +1985,7 @@ app.get('/api/order-suppliers/:id/export-pdf', requireLogin, requireAdmin, async
     y += 10;
     doc.rect(370, y, 185, 30).fill('#2d3748');
     doc.font('Helvetica-Bold').fontSize(12).fillColor('white');
-    doc.text(`TOTAL: ${grandTotal.toFixed(2)} USD`, 378, y + 8, { width: 170, align: 'right' });
+    doc.text(`TOTAL: ${formatSwissNumber(grandTotal)} USD`, 378, y + 8, { width: 170, align: 'right' });
     doc.fillColor('black');
 
     // ===== INFOS SUPPLÉMENTAIRES =====

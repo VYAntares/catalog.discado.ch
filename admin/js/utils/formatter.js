@@ -33,18 +33,17 @@ function formatDate(dateString, options = {}) {
 // Formate un prix
 function formatPrice(price, options = {}) {
     if (price === undefined || price === null) return 'N/A';
-    
+
     try {
         const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-        
+
         if (isNaN(numPrice)) {
             return 'Prix invalide';
         }
-        
-        const currency = options.currency || 'CHF';
+
         const decimals = options.decimals !== undefined ? options.decimals : 2;
-        
-        return numPrice.toFixed(decimals);
+
+        return formatSwissNumber(numPrice, decimals);
     } catch (error) {
         return 'Erreur';
     }

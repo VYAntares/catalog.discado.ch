@@ -16,10 +16,23 @@ export function formatDate(dateString) {
   }
   
   /**
+   * Formate un nombre au format suisse (apostrophe pour milliers, point pour décimales)
+   */
+  export function formatSwissNumber(number, decimals = 2) {
+	if (number === null || number === undefined) return '0.00';
+	const num = typeof number === 'string' ? parseFloat(number) : number;
+	if (isNaN(num)) return '0.00';
+	const fixed = num.toFixed(decimals);
+	const parts = fixed.split('.');
+	parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+	return parts.join('.');
+  }
+
+  /**
    * Formate un montant en USD
    */
   export function formatAmount(amount) {
-	return `${(amount || 0).toFixed(2)} USD`;
+	return `${formatSwissNumber(amount || 0)} USD`;
   }
   
   /**

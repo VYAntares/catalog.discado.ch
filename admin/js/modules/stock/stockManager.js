@@ -347,7 +347,7 @@ class StockManager {
 					</span>
 
 					<div class="product-price">
-						${price.toFixed(2)} CHF
+						${this.formatSwissNumber(price)} CHF
 					</div>
 
 					<div class="stock-control">
@@ -656,6 +656,17 @@ class StockManager {
 		document.addEventListener('keydown', escapeHandler);
 	}
 
+
+    // Formate un nombre au format suisse (apostrophe pour milliers, point pour décimales)
+    formatSwissNumber(number, decimals = 2) {
+        if (number === null || number === undefined) return '0.00';
+        const num = typeof number === 'string' ? parseFloat(number) : number;
+        if (isNaN(num)) return '0.00';
+        const fixed = num.toFixed(decimals);
+        const parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+        return parts.join('.');
+    }
 
     // Méthode helper pour échapper le HTML
     escapeHtml(text) {
@@ -1300,7 +1311,7 @@ class StockManager {
 			const quantity = parseFloat(quantityInput.value) || 0;
 			const price = parseFloat(priceInput.value) || 0;
 			const total = quantity * price;
-			totalInput.value = `${total.toFixed(2)} USD`;
+			totalInput.value = `${this.formatSwissNumber(total)} USD`;
 		};
 		
 		quantityInput.removeEventListener('input', calculateTotal);

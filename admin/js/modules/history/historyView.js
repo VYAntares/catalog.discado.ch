@@ -93,9 +93,11 @@ function displayOrderDetails(order, container) {
     const orderDate = Formatter.formatDate(order.date);
     const processDate = Formatter.formatDate(order.lastProcessed);
     
-    const totalAmount = (order.deliveredItems || []).reduce((total, item) => {
-        return total + (parseFloat(item.prix) * item.quantity);
-    }, 0).toFixed(2);
+    const totalAmount = Formatter.formatSwissNumber(
+        (order.deliveredItems || []).reduce((total, item) => {
+            return total + (parseFloat(item.prix) * item.quantity);
+        }, 0)
+    );
     
     let statusText = 'COMPLÈTE';
     let statusClass = 'status-completed';
@@ -156,8 +158,8 @@ function displayOrderDetails(order, container) {
             `;
             
             groupedItems[category].forEach(item => {
-                const itemTotal = (parseFloat(item.prix) * item.quantity).toFixed(2);
-                
+                const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
+
                 detailsHTML += `
                     <tr data-product-name="${item.Nom}">
                         <td class="qty-column">${item.quantity}</td>
