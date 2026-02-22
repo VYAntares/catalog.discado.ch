@@ -85,6 +85,32 @@
                 <i class="fas fa-chevron-down chevron"></i>
             </button>
             <div id="expensesContent" class="expenses-collapsible open">
+                <!-- Toggle vue annuelle / mensuelle -->
+                <div class="view-toggle-bar">
+                    <div class="view-toggle-buttons">
+                        <button id="viewAnnual" class="view-toggle-btn active" title="Vue annuelle">
+                            <i class="fas fa-calendar"></i> Annuelle
+                        </button>
+                        <button id="viewMonthly" class="view-toggle-btn" title="Vue mensuelle">
+                            <i class="fas fa-calendar-day"></i> Mensuelle
+                        </button>
+                    </div>
+                    <select id="filterMonth" class="filter-month-select" style="display:none;">
+                        <option value="1">Janvier</option>
+                        <option value="2">Février</option>
+                        <option value="3">Mars</option>
+                        <option value="4">Avril</option>
+                        <option value="5">Mai</option>
+                        <option value="6">Juin</option>
+                        <option value="7">Juillet</option>
+                        <option value="8">Août</option>
+                        <option value="9">Septembre</option>
+                        <option value="10">Octobre</option>
+                        <option value="11">Novembre</option>
+                        <option value="12">Décembre</option>
+                    </select>
+                </div>
+
                 <!-- Barre filtres -->
                 <div class="results-filters">
                     <div class="results-filters-left">

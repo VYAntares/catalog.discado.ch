@@ -29,6 +29,8 @@ class ResultsMain {
         this.searchQuery = '';
         this.sortField = 'date';
         this.sortOrder = 'desc';
+        this.viewMode = 'annual'; // 'annual' ou 'monthly'
+        this.filterMonth = new Date().getMonth() + 1; // mois courant (1-12)
         this.editingExpenseId = null;
         this.deleteExpenseId = null;
         this.monthlyOpen = false;
@@ -38,11 +40,17 @@ class ResultsMain {
 
     init() {
         this.populateYearSelect();
+        this.setDefaultMonth();
         this.setupEventListeners();
         this.loadData();
     }
 
     // ===== Année =====
+
+    setDefaultMonth() {
+        const monthSelect = document.getElementById('filterMonth');
+        if (monthSelect) monthSelect.value = this.filterMonth;
+    }
 
     populateYearSelect() {
         const select = document.getElementById('yearSelect');
@@ -76,6 +84,20 @@ class ResultsMain {
         // Barre de recherche
         document.getElementById('searchExpenses')?.addEventListener('input', (e) => {
             this.searchQuery = e.target.value.trim().toLowerCase();
+            this.renderExpensesTable();
+        });
+
+        // Vue annuelle / mensuelle
+        document.getElementById('viewAnnual')?.addEventListener('click', () => {
+            this.setViewMode('annual');
+        });
+        document.getElementById('viewMonthly')?.addEventListener('click', () => {
+            this.setViewMode('monthly');
+        });
+
+        // Filtre mois
+        document.getElementById('filterMonth')?.addEventListener('change', (e) => {
+            this.filterMonth = parseInt(e.target.value);
             this.renderExpensesTable();
         });
 
@@ -228,8 +250,26 @@ class ResultsMain {
 
     // ===== Rendu du tableau des dépenses =====
 
+    setViewMode(mode) {
+        this.viewMode = mode;
+        const btnAnnual = document.getElementById('viewAnnual');
+        const btnMonthly = document.getElementById('viewMonthly');
+        const monthSelect = document.getElementById('filterMonth');
+        if (btnAnnual) btnAnnual.classList.toggle('active', mode === 'annual');
+        if (btnMonthly) btnMonthly.classList.toggle('active', mode === 'monthly');
+        if (monthSelect) monthSelect.style.display = mode === 'monthly' ? '' : 'none';
+        this.renderExpensesTable();
+    }
+
     getFilteredExpenses() {
         let filtered = [...this.expenses];
+        // Filtre par mois si vue mensuelle
+        if (this.viewMode === 'monthly') {
+            filtered = filtered.filter(e => {
+                const d = new Date(e.date);
+                return (d.getMonth() + 1) === this.filterMonth;
+            });
+        }
         if (this.filterCategory !== 'all') {
             filtered = filtered.filter(e => e.category === this.filterCategory);
         }
@@ -280,12 +320,15 @@ class ResultsMain {
         }
 
         if (filtered.length === 0) {
+            const periodLabel = this.viewMode === 'monthly'
+                ? `${MONTH_NAMES[this.filterMonth - 1]} ${this.selectedYear}`
+                : this.selectedYear;
             tbody.innerHTML = `
                 <tr>
                     <td colspan="5">
                         <div class="empty-table-message">
                             <i class="fas fa-inbox"></i>
-                            Aucune dépense enregistrée pour ${this.selectedYear}
+                            Aucune dépense enregistrée pour ${periodLabel}
                         </div>
                     </td>
                 </tr>

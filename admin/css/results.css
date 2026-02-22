@@ -145,6 +145,63 @@
     margin-top: 2px;
 }
 
+/* ===== TOGGLE VUE ANNUELLE / MENSUELLE ===== */
+.view-toggle-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.view-toggle-buttons {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+}
+
+.view-toggle-btn {
+    padding: 7px 16px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.view-toggle-btn:hover {
+    color: #334155;
+    background: #e2e8f0;
+}
+
+.view-toggle-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+.filter-month-select {
+    padding: 7px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #334155;
+    background: white;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.filter-month-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
 /* ===== BARRE FILTRES ===== */
 .results-filters {
     display: flex;
