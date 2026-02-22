@@ -800,18 +800,18 @@ class ComptaClientTable {
 
 			const url = data.url;
 
-			// Priorité 1 : Web Share API (mobile natif)
-			if (navigator.share) {
+			// Sur mobile (iPhone, Android) : Web Share API
+			const isMobile = navigator.share && window.matchMedia('(pointer: coarse)').matches;
+			if (isMobile) {
 				try {
 					await navigator.share({ title: 'Factures', url });
 					return;
 				} catch (shareErr) {
-					// L'utilisateur a annulé ou share a échoué, on continue avec clipboard
 					if (shareErr.name === 'AbortError') return;
 				}
 			}
 
-			// Priorité 2 : Clipboard API
+			// Sur desktop : Clipboard API
 			try {
 				await navigator.clipboard.writeText(url);
 				showNotification('Lien copié dans le presse-papier !', 'success');

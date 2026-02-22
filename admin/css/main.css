@@ -79,7 +79,9 @@ header {
 .admin-tabs {
     background-color: #2575fc;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    /* Plus de position sticky - la barre reste en place */
+    position: sticky;
+    top: 0;
+    z-index: 99;
 }
 
 .tabs-container {

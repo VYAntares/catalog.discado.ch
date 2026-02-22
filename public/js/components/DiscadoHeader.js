@@ -70,6 +70,7 @@ function initDiscadoHeader() {
     <div id="userMenu" class="user-menu">
         <a href="/pages/profile.html"><i class="fas fa-user"></i> Profile</a>
         <a href="/pages/orders.html"><i class="fas fa-box"></i> My Orders</a>
+        <a href="/pages/my-invoices.html"><i class="fas fa-file-invoice"></i> My Invoices</a>
         <a href="/logout" class="menu-logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
     </div>
     <!-- Overlay du Menu -->

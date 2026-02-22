@@ -124,14 +124,63 @@ async function checkCurrentPageAccess() {
 }
 
 /**
+ * Marque l'onglet correspondant à la page courante comme actif
+ */
+function markCurrentTabActive() {
+  const currentPath = window.location.pathname;
+  const parentPath = SUBPAGE_TO_PARENT[currentPath];
+  const activePath = parentPath || currentPath;
+
+  const tab = document.querySelector(`.admin-tabs a[href="${activePath}"]`);
+  if (tab) {
+    tab.classList.add('active');
+  }
+}
+
+/**
+ * Rend la barre de navigation sticky sous le header
+ */
+function makeStickyTabs() {
+  const adminTabs = document.querySelector('.admin-tabs');
+  const header = document.querySelector('header');
+  if (!adminTabs) return;
+
+  const topOffset = header ? header.offsetHeight : 0;
+  adminTabs.style.position = 'sticky';
+  adminTabs.style.top = topOffset + 'px';
+  adminTabs.style.zIndex = '99';
+}
+
+// Recalculer après le chargement complet (images incluses)
+window.addEventListener('load', makeStickyTabs);
+
+/**
+ * Scroll horizontalement pour que l'onglet actif soit visible
+ */
+function scrollActiveTabIntoView() {
+  const activeTab = document.querySelector('.admin-tabs .tab.active');
+  if (activeTab) {
+    activeTab.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+  }
+}
+
+/**
  * Initialise le système de gestion des permissions des onglets
  */
 function initTabsPermissions() {
   console.log('🔧 Initialisation du système de permissions des onglets');
-  
-  // Masquer les onglets non accessibles
-  hideInaccessibleTabs();
-  
+
+  // Marquer l'onglet actif en premier
+  markCurrentTabActive();
+
+  // Sticky tabs
+  makeStickyTabs();
+
+  // Masquer les onglets non accessibles puis scroller vers l'actif
+  hideInaccessibleTabs().then(() => {
+    scrollActiveTabIntoView();
+  });
+
   // Vérifier l'accès à la page actuelle (sécurité supplémentaire)
   checkCurrentPageAccess();
 }
@@ -140,7 +189,8 @@ function initTabsPermissions() {
 export {
   hideInaccessibleTabs,
   checkCurrentPageAccess,
-  initTabsPermissions
+  initTabsPermissions,
+  markCurrentTabActive
 };
 
 // Auto-initialisation au chargement du DOM

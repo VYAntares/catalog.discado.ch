@@ -62,8 +62,15 @@ document.addEventListener('DOMContentLoaded', function() {
       const data = await response.json();
 
       if (data.success && data.redirect) {
-        // Login successful — redirect
-        window.location.href = data.redirect;
+        // Si un redirect est passé en URL param (ex: depuis la page shared invoices)
+        // On l'utilise sauf si le serveur force vers profile (mot de passe faible / profil incomplet)
+        const redirectParam = urlParams.get('redirect');
+        const isForced = data.redirect === '/pages/profile.html';
+        if (redirectParam && !isForced && redirectParam.startsWith('/pages/')) {
+          window.location.href = redirectParam;
+        } else {
+          window.location.href = data.redirect;
+        }
         return;
       }
 

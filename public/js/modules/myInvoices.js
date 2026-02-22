@@ -1,26 +1,14 @@
-// public/js/modules/sharedInvoices.js
-// Read-only public view of client invoices via share token
+// public/js/modules/myInvoices.js
+// Authenticated view of current user's invoices
 
-class SharedInvoicesView {
+class MyInvoicesView {
     constructor() {
-        this.token = null;
         this.invoices = [];
-        this.clientId = null;
         this.sortOrder = 'desc';
         this.init();
     }
 
     init() {
-        // Extract token from URL: /shared/invoices/:token
-        const parts = window.location.pathname.split('/');
-        this.token = parts[parts.length - 1];
-
-        if (!this.token) {
-            document.getElementById('invoicesTableBody').innerHTML =
-                '<tr><td colspan="12" class="error-message">Invalid share link</td></tr>';
-            return;
-        }
-
         this.setupEventListeners();
         this.loadInvoices();
     }
@@ -32,7 +20,6 @@ class SharedInvoicesView {
         const exportBtn = document.getElementById('exportXlsxBtn');
         if (exportBtn) exportBtn.addEventListener('click', () => this.exportToExcel());
 
-        // Modal
         const closeBtn = document.getElementById('paymentsModalClose');
         const modal = document.getElementById('paymentsModal');
         if (closeBtn) closeBtn.addEventListener('click', () => this.closeModal());
@@ -41,25 +28,17 @@ class SharedInvoicesView {
 
     async loadInvoices() {
         try {
-            const res = await fetch(`/api/public/shared-invoices/${this.token}`);
+            const res = await fetch('/api/my-invoices');
+            if (res.status === 401 || res.status === 403) {
+                window.location.href = '/pages/login.html';
+                return;
+            }
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
                 throw new Error(data.error || 'Failed to load invoices');
             }
             const data = await res.json();
             this.invoices = data.invoices || [];
-            this.clientId = data.client_id || null;
-
-            // Pre-fill login button with username
-            if (this.clientId) {
-                const loginBtn = document.querySelector('.shared-login-btn');
-                if (loginBtn) loginBtn.href = `/pages/login.html?username=${encodeURIComponent(this.clientId)}&redirect=/pages/my-invoices.html`;
-            }
-
-            if (this.invoices.length > 0) {
-                document.getElementById('clientName').textContent = this.invoices[0].client_full_name || 'Client';
-                document.title = `Invoices - ${this.invoices[0].client_full_name || 'Client'} - Discado`;
-            }
 
             this.updateSummary();
             this.displayInvoices();
@@ -103,6 +82,7 @@ class SharedInvoicesView {
 
         if (!this.invoices || this.invoices.length === 0) {
             tbody.innerHTML = '<tr><td colspan="12" class="no-data">No invoices found</td></tr>';
+            this.renderMobileBadges([]);
             return;
         }
 
@@ -288,7 +268,7 @@ class SharedInvoicesView {
         modal.style.display = 'flex';
 
         try {
-            const res = await fetch(`/api/public/shared-invoices/${this.token}/payments/${invoiceId}`);
+            const res = await fetch(`/api/my-invoices/payments/${invoiceId}`);
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error');
             this.renderPayments(data.payments, invoice);
@@ -324,15 +304,14 @@ class SharedInvoicesView {
     async exportToExcel() {
         if (!this.invoices || this.invoices.length === 0) return;
         try {
-            const res = await fetch(`/api/public/shared-invoices/${this.token}/export-xlsx`);
+            const res = await fetch('/api/my-invoices/export-xlsx');
             if (!res.ok) throw new Error('Error generating Excel');
             const blob = await res.blob();
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
-            const clientName = this.invoices[0]?.client_full_name || 'client';
-            const fileName = `invoices_${clientName}.xlsx`;
+            const clientName = this.invoices[0]?.client_full_name || 'invoices';
             link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
+            link.setAttribute('download', `invoices_${clientName}.xlsx`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -345,7 +324,7 @@ class SharedInvoicesView {
 
     async downloadPDF(invoiceId) {
         try {
-            const res = await fetch(`/api/public/shared-invoices/${this.token}/pdf/${invoiceId}`);
+            const res = await fetch(`/api/my-invoices/pdf/${invoiceId}`);
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
                 throw new Error(data.error || 'Error generating PDF');
@@ -366,7 +345,6 @@ class SharedInvoicesView {
         }
     }
 
-    // Utility methods
     formatCurrency(amount) {
         if (amount === null || amount === undefined) return '0.00 CHF';
         const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -397,5 +375,5 @@ class SharedInvoicesView {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new SharedInvoicesView();
+    new MyInvoicesView();
 });
