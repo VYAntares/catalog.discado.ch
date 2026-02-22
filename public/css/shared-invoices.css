@@ -660,8 +660,8 @@ input, button, textarea, select { font: inherit; }
     align-items: center;
     gap: 6px;
     padding: 7px 16px;
-    background: #fff1f1;
-    color: #e53e3e;
+    background: #f1f5f9;
+    color: #667eea;
     border: none;
     border-radius: 8px;
     font-size: 13px;
@@ -671,12 +671,12 @@ input, button, textarea, select { font: inherit; }
     font-family: inherit;
 }
 
-.inv-pdf-btn:hover { background: #fed7d7; color: #c53030; }
+.inv-pdf-btn:hover { background: #e0e7ff; color: #4f46e5; }
 
 .shared-pdf-btn {
     background: none;
     border: none;
-    color: #e53e3e;
+    color: #667eea;
     cursor: pointer;
     font-size: 14px;
     padding: 4px 6px;
@@ -684,7 +684,7 @@ input, button, textarea, select { font: inherit; }
     transition: background 0.2s;
 }
 
-.shared-pdf-btn:hover { background: #fed7d7; }
+.shared-pdf-btn:hover { background: #e0e7ff; }
 
 /* ===== RESPONSIVE ===== */
 
