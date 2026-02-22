@@ -44,6 +44,10 @@ class ComptaClientTable {
         if (exportBtn) {
             exportBtn.addEventListener('click', () => this.exportToCSV());
         }
+        const shareBtn = document.getElementById('shareLinkBtn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', () => this.generateShareLink());
+        }
         this.setupPaymentsModal();
     }
 
@@ -221,7 +225,11 @@ class ComptaClientTable {
             return;
         }
 
+        const statusOrder = { unpaid: 0, partial: 1, paid: 2 };
         const sortedInvoices = [...this.invoices].sort((a, b) => {
+            const sa = statusOrder[a.payment_status] ?? 1;
+            const sb = statusOrder[b.payment_status] ?? 1;
+            if (sa !== sb) return sa - sb;
             const dateA = new Date(a.invoice_date);
             const dateB = new Date(b.invoice_date);
             return this.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
@@ -272,7 +280,7 @@ class ComptaClientTable {
             }
 
             let paidDateHtml = '';
-            if (invoice.paid_date) {
+            if (invoice.paid_date && invoice.payment_status === 'paid') {
                 paidDateHtml = `
                 <div class="inv-date-block inv-date-paid-on">
                     <span class="inv-date-icon"><i class="fas fa-check-circle"></i></span>
@@ -774,6 +782,63 @@ class ComptaClientTable {
             }
         }
     }
+
+	async generateShareLink() {
+		if (!this.clientId) {
+			showNotification('No client specified', 'error');
+			return;
+		}
+		try {
+			const res = await fetch('/api/share/client-invoices', {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ client_id: this.clientId })
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || 'Error');
+
+			const url = data.url;
+
+			// Priorité 1 : Web Share API (mobile natif)
+			if (navigator.share) {
+				try {
+					await navigator.share({ title: 'Factures', url });
+					return;
+				} catch (shareErr) {
+					// L'utilisateur a annulé ou share a échoué, on continue avec clipboard
+					if (shareErr.name === 'AbortError') return;
+				}
+			}
+
+			// Priorité 2 : Clipboard API
+			try {
+				await navigator.clipboard.writeText(url);
+				showNotification('Lien copié dans le presse-papier !', 'success');
+				return;
+			} catch (clipErr) {
+				// ignore, fallback ci-dessous
+			}
+
+			// Priorité 3 : Fallback manuel (textarea + execCommand)
+			const textarea = document.createElement('textarea');
+			textarea.value = url;
+			textarea.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+			document.body.appendChild(textarea);
+			textarea.focus();
+			textarea.select();
+			try {
+				document.execCommand('copy');
+				showNotification('Lien copié !', 'success');
+			} catch (e) {
+				prompt('Copiez ce lien :', url);
+			} finally {
+				document.body.removeChild(textarea);
+			}
+		} catch (err) {
+			showNotification('Erreur : ' + err.message, 'error');
+		}
+	}
 
 	async exportToCSV() {
 		if (!this.invoices || this.invoices.length === 0) {
