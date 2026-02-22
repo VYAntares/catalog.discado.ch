@@ -386,7 +386,7 @@ app.post('/api/forgot-password', async (req, res) => {
     const { email } = req.body;
 
     if (!email || !email.trim()) {
-      return res.status(400).json({ success: false, message: 'Veuillez entrer votre adresse email.' });
+      return res.status(400).json({ success: false, message: 'Please enter your email address.' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
