@@ -55,9 +55,9 @@ class ProductStatsModal {
 
 			<div class="modal-body">
 			  <!-- Filtre année -->
-			  <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-				<label for="productStatsYearSelect" style="font-weight: 600; color: #2d3748; white-space: nowrap;">Année :</label>
-				<select id="productStatsYearSelect" style="flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px;">
+			  <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+				<label for="productStatsYearSelect" style="font-weight: 600; color: #2d3748; white-space: nowrap; font-size: 13px;">Année :</label>
+				<select id="productStatsYearSelect" style="flex: 1; min-width: 120px; padding: 5px 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 13px;">
 				  <option value="all">Toutes les années</option>
 				</select>
 			  </div>
@@ -199,10 +199,10 @@ class ProductStatsModal {
   
 	  if (stats.total_quantity === 0) {
 		let html = `
-		  <div style="text-align: center; padding: 30px; color: #718096;">
-			<i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 12px; opacity: 0.3;"></i>
-			<p style="margin: 0; font-size: 16px; font-weight: 600;">Aucune commande client</p>
-			<p style="margin: 8px 0 0 0; font-size: 14px;">Aucune commande client pour ce produit ${this.currentYear !== 'all' ? 'en ' + this.currentYear : ''}</p>
+		  <div style="text-align: center; padding: 16px; color: #718096;">
+			<i class="fas fa-inbox" style="font-size: 36px; margin-bottom: 8px; opacity: 0.3;"></i>
+			<p style="margin: 0; font-size: 14px; font-weight: 600;">Aucune commande client</p>
+			<p style="margin: 6px 0 0 0; font-size: 12px;">Aucune commande client pour ce produit ${this.currentYear !== 'all' ? 'en ' + this.currentYear : ''}</p>
 		  </div>
 		`;
 
@@ -213,22 +213,22 @@ class ProductStatsModal {
 			  <table style="width: 100%; border-collapse: collapse;">
 				<tbody>
 				  <tr id="supplier-order-row-empty" style="cursor: pointer;">
-					<td style="padding: 16px;">
-					  <div style="display: flex; align-items: center; gap: 12px;">
-						<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-						  <i class="fas fa-shopping-cart" style="color: white; font-size: 18px;"></i>
+					<td style="padding: 8px 6px;">
+					  <div style="display: flex; align-items: center; gap: 8px;">
+						<div style="width: 30px; height: 30px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+						  <i class="fas fa-shopping-cart" style="color: white; font-size: 14px;"></i>
 						</div>
 						<div>
-						  <div style="font-weight: 600; color: #2d3748; font-size: 15px;">En commande fournisseur</div>
-						  <div style="font-size: 12px; color: #718096;">Déjà commandé au fournisseur</div>
+						  <div style="font-weight: 600; color: #2d3748; font-size: 12px;">En commande fournisseur</div>
+						  <div style="font-size: 10px; color: #718096;">Déjà commandé au fournisseur</div>
 						</div>
 					  </div>
 					</td>
-					<td style="padding: 16px; text-align: center;">
-					  <div style="font-size: 28px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity}</div>
+					<td style="padding: 8px 6px; text-align: center;">
+					  <div style="font-size: 22px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity}</div>
 					</td>
-					<td style="padding: 16px; text-align: center;">
-					  <div style="font-size: 13px; color: #3182ce; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+					<td style="padding: 8px 6px; text-align: center;">
+					  <div style="font-size: 12px; color: #3182ce; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
 						<i class="fas fa-chevron-down" id="supplier-order-toggle-empty" style="transition: transform 0.3s;"></i>
 						Voir détail
 					  </div>
@@ -290,10 +290,10 @@ class ProductStatsModal {
   
 	  const html = `
 		<!-- Quantité totale (grande carte en haut) -->
-		<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; text-align: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-		  <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Quantité totale commandée</div>
-		  <div style="font-size: 48px; font-weight: bold; margin-bottom: 8px;">${stats.total_quantity}</div>
-		  <div style="font-size: 13px; opacity: 0.8;">
+		<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px; border-radius: 10px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+		  <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;">Quantité totale commandée</div>
+		  <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;">${stats.total_quantity}</div>
+		  <div style="font-size: 11px; opacity: 0.8;">
 			${stats.order_count} commande${stats.order_count > 1 ? 's' : ''}
 			${this.currentYear !== 'all' ? ' en ' + this.currentYear : ' (toutes années)'}
 		  </div>
@@ -304,35 +304,35 @@ class ProductStatsModal {
 		  <table style="width: 100%; border-collapse: collapse;">
 			<thead>
 			  <tr style="background: #f7fafc; border-bottom: 2px solid #e2e8f0;">
-				<th style="padding: 16px; text-align: left; font-weight: 600; color: #2d3748; font-size: 14px;">Statut</th>
-				<th style="padding: 16px; text-align: center; font-weight: 600; color: #2d3748; font-size: 14px;">Quantité</th>
-				<th style="padding: 16px; text-align: center; font-weight: 600; color: #2d3748; font-size: 14px;">Pourcentage</th>
+				<th style="padding: 8px 6px; text-align: left; font-weight: 600; color: #2d3748; font-size: 12px;">Statut</th>
+				<th style="padding: 8px 6px; text-align: center; font-weight: 600; color: #2d3748; font-size: 12px;">Qté</th>
+				<th style="padding: 8px 6px; text-align: center; font-weight: 600; color: #2d3748; font-size: 12px;">%</th>
 			  </tr>
 			</thead>
 			<tbody>
 			  <!-- Livré -->
 			  <tr style="border-bottom: 1px solid #e2e8f0;">
-				<td style="padding: 16px;">
-				  <div style="display: flex; align-items: center; gap: 12px;">
-					<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-					  <i class="fas fa-check" style="color: white; font-size: 18px;"></i>
+				<td style="padding: 8px 6px;">
+				  <div style="display: flex; align-items: center; gap: 8px;">
+					<div style="width: 30px; height: 30px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+					  <i class="fas fa-check" style="color: white; font-size: 14px;"></i>
 					</div>
 					<div>
-					  <div style="font-weight: 600; color: #2d3748; font-size: 15px;">Livré</div>
-					  <div style="font-size: 12px; color: #718096;">Articles déjà envoyés</div>
+					  <div style="font-weight: 600; color: #2d3748; font-size: 12px;">Livré</div>
+					  <div style="font-size: 10px; color: #718096;">Articles déjà envoyés</div>
 					</div>
 				  </div>
 				</td>
-				<td style="padding: 16px; text-align: center;">
-				  <div style="font-size: 28px; font-weight: bold; color: #38a169;">${stats.total_delivered}</div>
+				<td style="padding: 8px 6px; text-align: center;">
+				  <div style="font-size: 22px; font-weight: bold; color: #38a169;">${stats.total_delivered}</div>
 				</td>
-				<td style="padding: 16px; text-align: center;">
-				  <div style="position: relative; width: 100%; max-width: 150px; margin: 0 auto;">
-					<div style="background: #e2e8f0; height: 32px; border-radius: 16px; overflow: hidden;">
+				<td style="padding: 8px 6px; text-align: center;">
+				  <div style="position: relative; width: 100%; max-width: 100px; margin: 0 auto;">
+					<div style="background: #e2e8f0; height: 22px; border-radius: 11px; overflow: hidden;">
 					  <div style="background: linear-gradient(90deg, #48bb78 0%, #38a169 100%); height: 100%; width: ${deliveredPercentage}%; transition: width 0.5s ease; display: flex; align-items: center; justify-content: center;">
 					  </div>
 					</div>
-					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 14px; color: ${deliveredPercentage > 50 ? 'white' : '#2d3748'};">
+					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 11px; color: ${deliveredPercentage > 50 ? 'white' : '#2d3748'};">
 					  ${deliveredPercentage}%
 					</div>
 				  </div>
@@ -341,27 +341,27 @@ class ProductStatsModal {
   
 			  <!-- À livrer -->
 			  <tr style="border-bottom: 1px solid #e2e8f0;">
-				<td style="padding: 16px;">
-				  <div style="display: flex; align-items: center; gap: 12px;">
-					<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-					  <i class="fas fa-clock" style="color: white; font-size: 18px;"></i>
+				<td style="padding: 8px 6px;">
+				  <div style="display: flex; align-items: center; gap: 8px;">
+					<div style="width: 30px; height: 30px; background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+					  <i class="fas fa-clock" style="color: white; font-size: 14px;"></i>
 					</div>
 					<div>
-					  <div style="font-weight: 600; color: #2d3748; font-size: 15px;">À livrer</div>
-					  <div style="font-size: 12px; color: #718096;">En attente d'envoi</div>
+					  <div style="font-weight: 600; color: #2d3748; font-size: 12px;">À livrer</div>
+					  <div style="font-size: 10px; color: #718096;">En attente d'envoi</div>
 					</div>
 				  </div>
 				</td>
-				<td style="padding: 16px; text-align: center;">
-				  <div style="font-size: 28px; font-weight: bold; color: #ed8936;">${stats.total_remaining}</div>
+				<td style="padding: 8px 6px; text-align: center;">
+				  <div style="font-size: 22px; font-weight: bold; color: #ed8936;">${stats.total_remaining}</div>
 				</td>
-				<td style="padding: 16px; text-align: center;">
-				  <div style="position: relative; width: 100%; max-width: 150px; margin: 0 auto;">
-					<div style="background: #e2e8f0; height: 32px; border-radius: 16px; overflow: hidden;">
+				<td style="padding: 8px 6px; text-align: center;">
+				  <div style="position: relative; width: 100%; max-width: 100px; margin: 0 auto;">
+					<div style="background: #e2e8f0; height: 22px; border-radius: 11px; overflow: hidden;">
 					  <div style="background: linear-gradient(90deg, #f6ad55 0%, #ed8936 100%); height: 100%; width: ${remainingPercentage}%; transition: width 0.5s ease; display: flex; align-items: center; justify-content: center;">
 					  </div>
 					</div>
-					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 14px; color: ${remainingPercentage > 50 ? 'white' : '#2d3748'};">
+					<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 11px; color: ${remainingPercentage > 50 ? 'white' : '#2d3748'};">
 					  ${remainingPercentage}%
 					</div>
 				  </div>
@@ -370,21 +370,21 @@ class ProductStatsModal {
 
 			  <!-- En commande fournisseur -->
 			  <tr id="supplier-order-row" style="cursor: ${stats.supplier_order_details && stats.supplier_order_details.length > 0 ? 'pointer' : 'default'};">
-				<td style="padding: 16px;">
-				  <div style="display: flex; align-items: center; gap: 12px;">
-					<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-					  <i class="fas fa-shopping-cart" style="color: white; font-size: 18px;"></i>
+				<td style="padding: 8px 6px;">
+				  <div style="display: flex; align-items: center; gap: 8px;">
+					<div style="width: 30px; height: 30px; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+					  <i class="fas fa-shopping-cart" style="color: white; font-size: 14px;"></i>
 					</div>
 					<div>
-					  <div style="font-weight: 600; color: #2d3748; font-size: 15px;">En commande fournisseur</div>
-					  <div style="font-size: 12px; color: #718096;">Déjà commandé au fournisseur</div>
+					  <div style="font-weight: 600; color: #2d3748; font-size: 12px;">En commande fournisseur</div>
+					  <div style="font-size: 10px; color: #718096;">Déjà commandé au fournisseur</div>
 					</div>
 				  </div>
 				</td>
-				<td style="padding: 16px; text-align: center;">
-				  <div style="font-size: 28px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity || 0}</div>
+				<td style="padding: 8px 6px; text-align: center;">
+				  <div style="font-size: 22px; font-weight: bold; color: #3182ce;">${stats.supplier_order_quantity || 0}</div>
 				</td>
-				<td style="padding: 16px; text-align: center;">
+				<td style="padding: 8px 6px; text-align: center;">
 				  ${stats.supplier_order_details && stats.supplier_order_details.length > 0 ? `
 					<div style="font-size: 13px; color: #3182ce; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
 					  <i class="fas fa-chevron-down" id="supplier-order-toggle" style="transition: transform 0.3s;"></i>
@@ -428,7 +428,7 @@ class ProductStatsModal {
 		</div>
   
 		${stats.category ? `
-		  <div style="margin-top: 16px; padding: 12px 16px; background: #f7fafc; border-radius: 8px; font-size: 13px; color: #4a5568; display: flex; align-items: center; gap: 8px;">
+		  <div style="margin-top: 8px; padding: 8px 12px; background: #f7fafc; border-radius: 8px; font-size: 12px; color: #4a5568; display: flex; align-items: center; gap: 8px;">
 			<i class="fas fa-tag" style="color: #667eea;"></i>
 			<strong>Catégorie:</strong> ${this.formatCategoryName(stats.category)}
 		  </div>

@@ -660,23 +660,39 @@
 }
 
 /* Modale Statistiques - Responsive */
+#productStatsModal.modal-overlay {
+    padding: 8px;
+}
+
 .modal-stats {
-    max-width: 600px;
+    max-width: 520px;
+}
+
+.modal-stats .modal-header {
+    padding: 14px 16px;
+}
+
+.modal-stats .modal-header h2 {
+    font-size: 16px !important;
+}
+
+.modal-stats .modal-body {
+    padding: 12px 14px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
     .modal-content {
         max-width: 100%;
-        margin: 10px;
-        max-height: 95vh;
+        margin: 8px;
+        max-height: 96vh;
         overflow-y: auto;
     }
 
     .modal-stats {
         max-width: 100%;
-        margin: 5px;
-        width: calc(100vw - 10px);
+        margin: 4px;
+        width: calc(100vw - 8px);
     }
 
     .modal-header h2 {
@@ -709,26 +725,17 @@
 
     /* Contenu de la modale stats sur mobile */
     .modal-stats .modal-body table {
-        font-size: 13px;
+        font-size: 12px;
     }
 
     .modal-stats .modal-body table th,
     .modal-stats .modal-body table td {
-        padding: 10px 8px;
+        padding: 7px 5px;
     }
 
     /* Barres de progression dans les stats */
     .modal-stats .progress-container {
-        max-width: 120px;
-    }
-
-    /* Textes et valeurs dans les stats */
-    .modal-stats .modal-body > div[style*="font-size: 48px"] {
-        font-size: 36px !important;
-    }
-
-    .modal-stats .modal-body > div[style*="font-size: 28px"] {
-        font-size: 22px !important;
+        max-width: 90px;
     }
 
     /* Assurer que le contenu ne déborde pas */
@@ -744,21 +751,25 @@
         width: calc(100vw - 4px);
     }
 
+    .modal-stats .modal-header {
+        padding: 10px 12px;
+    }
+
     .modal-stats .modal-header h2 {
-        font-size: 14px !important;
+        font-size: 13px !important;
     }
 
     .modal-stats .modal-body {
-        padding: 10px;
+        padding: 8px 10px;
     }
 
     .modal-stats .modal-body table {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .modal-stats .modal-body table th,
     .modal-stats .modal-body table td {
-        padding: 8px 6px;
+        padding: 6px 4px;
     }
 }
 

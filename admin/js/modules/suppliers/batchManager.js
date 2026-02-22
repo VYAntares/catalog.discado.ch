@@ -6,7 +6,7 @@
 import * as API from '../../core/api.js';
 import * as State from './state.js';
 import * as Utils from './utils.js';
-import '../suppliers/productStatsModal.js?v=3';
+import '../suppliers/productStatsModal.js?v=8';
 
 // État local pour les batch
 let currentBatches = [];
