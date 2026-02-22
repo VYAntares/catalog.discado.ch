@@ -671,6 +671,7 @@ main {
     font-family: inherit;
     box-sizing: border-box;
     -webkit-appearance: none;
+    appearance: none;
 }
 
 .mobile-edit-field input:focus,
