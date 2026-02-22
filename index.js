@@ -499,6 +499,100 @@ app.get('/admin/results', requireLogin, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'results.html'));
 });
 
+// ===== API DÉPENSES (RÉSULTATS) =====
+
+// GET /api/expenses — Liste des dépenses (filtre année optionnel)
+app.get('/api/expenses', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { year } = req.query;
+    let expenses;
+    if (year) {
+      expenses = dbModule.expenses.getByYear.all(String(year));
+    } else {
+      expenses = dbModule.expenses.getAll.all();
+    }
+    res.json({ success: true, expenses });
+  } catch (error) {
+    console.error('Erreur chargement dépenses:', error);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/expenses/summary — Résumé par catégorie + mensuel
+app.get('/api/expenses/summary', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const year = req.query.year || String(new Date().getFullYear());
+    const summary = dbModule.expenses.getSummaryByYear.all(year);
+    const monthly = dbModule.expenses.getMonthlyByYear.all(year);
+    const grandTotal = dbModule.expenses.getGrandTotalByYear.get(year);
+    res.json({ success: true, summary, monthly, grandTotal });
+  } catch (error) {
+    console.error('Erreur résumé dépenses:', error);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/expenses — Créer une dépense
+app.post('/api/expenses', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { amount, date, category, description } = req.body;
+    if (!amount || !date || !category) {
+      return res.status(400).json({ success: false, error: 'Montant, date et catégorie requis' });
+    }
+    const validCategories = ['loyer', 'salaire', 'frais_divers', 'fournisseurs', 'poste', 'transporteur', 'essence'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ success: false, error: 'Catégorie invalide' });
+    }
+    const result = dbModule.expenses.create.run(parseFloat(amount), date, category, description || null);
+    const expense = dbModule.expenses.getById.get(result.lastInsertRowid);
+    res.json({ success: true, expense });
+  } catch (error) {
+    console.error('Erreur création dépense:', error);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// PUT /api/expenses/:id — Modifier une dépense
+app.put('/api/expenses/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, date, category, description } = req.body;
+    const existing = dbModule.expenses.getById.get(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Dépense non trouvée' });
+    }
+    if (!amount || !date || !category) {
+      return res.status(400).json({ success: false, error: 'Montant, date et catégorie requis' });
+    }
+    const validCategories = ['loyer', 'salaire', 'frais_divers', 'fournisseurs', 'poste', 'transporteur', 'essence'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ success: false, error: 'Catégorie invalide' });
+    }
+    dbModule.expenses.update.run(parseFloat(amount), date, category, description || null, id);
+    const expense = dbModule.expenses.getById.get(id);
+    res.json({ success: true, expense });
+  } catch (error) {
+    console.error('Erreur modification dépense:', error);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// DELETE /api/expenses/:id — Supprimer une dépense
+app.delete('/api/expenses/:id', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = dbModule.expenses.getById.get(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Dépense non trouvée' });
+    }
+    dbModule.expenses.delete.run(id);
+    res.json({ success: true, message: 'Dépense supprimée' });
+  } catch (error) {
+    console.error('Erreur suppression dépense:', error);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
 // ===== ROUTES CLIENT PROTÉGÉES =====
 app.get('/pages/catalog.html', requireLogin, requireSecurePassword, requireCompleteProfile, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'catalog.html'));
@@ -2231,7 +2325,8 @@ app.post('/api/order-suppliers/:id/payments', requireLogin, requireAdmin, (req, 
     const { amount_usd, amount_chf, payment_date } = req.body;
     const orderId = req.params.id;
 
-    dbModule.orderSupplierPayments.insert.run(orderId, amount_usd || 0, amount_chf || 0, payment_date);
+    const result = dbModule.orderSupplierPayments.insert.run(orderId, amount_usd || 0, amount_chf || 0, payment_date);
+    const paymentId = result.lastInsertRowid;
 
     // Recalculer amount_paid sur la commande
     const sums = dbModule.orderSupplierPayments.sumByOrderId.get(orderId);
@@ -2240,6 +2335,25 @@ app.post('/api/order-suppliers/:id/payments', requireLogin, requireAdmin, (req, 
       sums.total_paid_usd,
       orderId
     );
+
+    // Auto-créer une dépense fournisseur si montant CHF > 0
+    if (amount_chf && parseFloat(amount_chf) > 0) {
+      try {
+        const order = dbModule.orderSupplier.getById.get(orderId);
+        const supplier = order ? dbModule.suppliers.getById.get(order.supplier_id) : null;
+        const supplierName = supplier ? supplier.name : 'Fournisseur';
+        const invoiceNum = order ? order.invoice_number : '';
+        const description = `Paiement fournisseur ${supplierName}${invoiceNum ? ' - Cmd ' + invoiceNum : ''}`;
+        dbModule.expenses.createWithSupplierPayment.run(
+          parseFloat(amount_chf),
+          payment_date,
+          description,
+          paymentId
+        );
+      } catch (expError) {
+        console.error('Erreur création dépense auto fournisseur:', expError);
+      }
+    }
 
     res.json({ success: true, message: 'Payment added successfully' });
   } catch (error) {
@@ -2252,6 +2366,13 @@ app.post('/api/order-suppliers/:id/payments', requireLogin, requireAdmin, (req, 
 app.delete('/api/order-suppliers/:id/payments/:paymentId', requireLogin, requireAdmin, (req, res) => {
   try {
     const { id: orderId, paymentId } = req.params;
+
+    // Supprimer la dépense liée automatiquement
+    try {
+      dbModule.expenses.deleteBySupplierPaymentId.run(parseInt(paymentId));
+    } catch (expError) {
+      console.error('Erreur suppression dépense liée:', expError);
+    }
 
     dbModule.orderSupplierPayments.delete.run(paymentId);
 

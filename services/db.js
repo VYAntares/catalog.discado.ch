@@ -19,7 +19,7 @@ db.pragma('foreign_keys = ON');
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -368,6 +368,86 @@ function initDatabase() {
         FOREIGN KEY (username) REFERENCES users(username)
     )
     `);
+
+    // Création de la table expenses (suivi des dépenses)
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        amount REAL NOT NULL,
+        date DATE NOT NULL,
+        category TEXT NOT NULL CHECK(category IN ('loyer','salaire','frais_divers','fournisseurs','poste','transporteur')),
+        description TEXT,
+        supplier_payment_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    `);
+    console.log('✅ Table expenses créée ou déjà existante');
+
+    // Migration : mettre à jour le CHECK constraint pour ajouter les nouvelles catégories
+    try {
+        const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='expenses'").get();
+        if (tableInfo && tableInfo.sql && !tableInfo.sql.includes("'essence'")) {
+            db.exec(`
+                CREATE TABLE expenses_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    amount REAL NOT NULL,
+                    date DATE NOT NULL,
+                    category TEXT NOT NULL CHECK(category IN ('loyer','salaire','frais_divers','fournisseurs','poste','transporteur','essence')),
+                    description TEXT,
+                    supplier_payment_id INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            db.exec(`INSERT INTO expenses_new SELECT id, amount, date, category, description, supplier_payment_id, created_at, updated_at FROM expenses`);
+            db.exec(`DROP TABLE expenses`);
+            db.exec(`ALTER TABLE expenses_new RENAME TO expenses`);
+            console.log('✅ Table expenses migrée avec catégorie essence');
+        }
+    } catch (migErr) {
+        console.error('⚠️ Erreur migration CHECK expenses:', migErr.message);
+    }
+
+    // Ajouter la colonne supplier_payment_id si elle n'existe pas
+    if (!columnExists('expenses', 'supplier_payment_id')) {
+        try {
+            db.exec(`ALTER TABLE expenses ADD COLUMN supplier_payment_id INTEGER`);
+            console.log('✅ Colonne supplier_payment_id ajoutée à expenses');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne supplier_payment_id:', error.message);
+        }
+    }
+
+    // Migration unique : importer les paiements fournisseurs existants dans expenses
+    try {
+        const existingPayments = db.prepare(`
+            SELECT p.id, p.order_supplier_id, p.amount_chf, p.payment_date,
+                   s.name as supplier_name, o.invoice_number
+            FROM order_supplier_payments p
+            JOIN order_supplier o ON o.id = p.order_supplier_id
+            JOIN suppliers s ON s.id = o.supplier_id
+            WHERE p.amount_chf > 0
+            AND p.id NOT IN (SELECT supplier_payment_id FROM expenses WHERE supplier_payment_id IS NOT NULL)
+        `).all();
+
+        if (existingPayments.length > 0) {
+            const insertStmt = db.prepare(`
+                INSERT INTO expenses (amount, date, category, description, supplier_payment_id)
+                VALUES (?, ?, 'fournisseurs', ?, ?)
+            `);
+            const migrateAll = db.transaction((payments) => {
+                for (const p of payments) {
+                    const desc = `Paiement fournisseur ${p.supplier_name}${p.invoice_number ? ' - Cmd ' + p.invoice_number : ''}`;
+                    insertStmt.run(p.amount_chf, p.payment_date, desc, p.id);
+                }
+            });
+            migrateAll(existingPayments);
+            console.log(`✅ ${existingPayments.length} paiement(s) fournisseur migré(s) dans expenses`);
+        }
+    } catch (migErr) {
+        console.error('⚠️ Erreur migration paiements fournisseurs:', migErr.message);
+    }
 }
 
 // Initialisation de la base de données
@@ -761,5 +841,46 @@ module.exports = {
     findPendingDeliveryItem: db.prepare(`
         SELECT * FROM pending_deliveries 
         WHERE user_id = ? AND product_name = ? AND category = ?
-    `)
+    `),
+
+    // Requêtes liées aux dépenses
+    expenses: {
+        getAll: db.prepare('SELECT * FROM expenses ORDER BY date DESC'),
+        getByYear: db.prepare("SELECT * FROM expenses WHERE strftime('%Y', date) = ? ORDER BY date DESC"),
+        getById: db.prepare('SELECT * FROM expenses WHERE id = ?'),
+        create: db.prepare(`
+            INSERT INTO expenses (amount, date, category, description)
+            VALUES (?, ?, ?, ?)
+        `),
+        createWithSupplierPayment: db.prepare(`
+            INSERT INTO expenses (amount, date, category, description, supplier_payment_id)
+            VALUES (?, ?, 'fournisseurs', ?, ?)
+        `),
+        update: db.prepare(`
+            UPDATE expenses
+            SET amount = ?, date = ?, category = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `),
+        delete: db.prepare('DELETE FROM expenses WHERE id = ?'),
+        getBySupplierPaymentId: db.prepare('SELECT * FROM expenses WHERE supplier_payment_id = ?'),
+        deleteBySupplierPaymentId: db.prepare('DELETE FROM expenses WHERE supplier_payment_id = ?'),
+        getSummaryByYear: db.prepare(`
+            SELECT category, COUNT(*) as count, COALESCE(SUM(amount), 0) as total
+            FROM expenses
+            WHERE strftime('%Y', date) = ?
+            GROUP BY category
+        `),
+        getMonthlyByYear: db.prepare(`
+            SELECT strftime('%m', date) as month, category, COALESCE(SUM(amount), 0) as total
+            FROM expenses
+            WHERE strftime('%Y', date) = ?
+            GROUP BY strftime('%m', date), category
+            ORDER BY month ASC
+        `),
+        getGrandTotalByYear: db.prepare(`
+            SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count
+            FROM expenses
+            WHERE strftime('%Y', date) = ?
+        `)
+    }
 };
