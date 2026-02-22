@@ -3428,6 +3428,250 @@ app.get('/api/stats/category-details', requireLogin, requireAdmin, requirePermis
 //   }
 // });
 
+// ===== SHARE TOKENS - PARTAGE PUBLIC DES FACTURES =====
+
+// Générer un token de partage pour un client (admin only)
+app.post('/api/share/client-invoices', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
+  const { client_id } = req.body;
+  if (!client_id) return res.status(400).json({ error: 'client_id required' });
+
+  try {
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    // Token valid for 90 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Remove existing tokens for this client
+    dbModule.db.prepare('DELETE FROM share_tokens WHERE client_id = ?').run(client_id);
+    // Insert new token
+    dbModule.db.prepare('INSERT INTO share_tokens (token, client_id, expires_at) VALUES (?, ?, ?)').run(token, client_id, expiresAt);
+
+    const shareUrl = `https://catalog.discado.ch/shared/invoices/${token}`;
+    res.json({ success: true, token, url: shareUrl, expires_at: expiresAt });
+  } catch (error) {
+    console.error('Error generating share token:', error);
+    res.status(500).json({ error: 'Error generating share link' });
+  }
+});
+
+// Page publique pour voir les factures partagées
+app.get('/shared/invoices/:token', (req, res) => {
+  const { token } = req.params;
+  try {
+    const record = dbModule.db.prepare('SELECT * FROM share_tokens WHERE token = ?').get(token);
+    if (!record) return res.status(404).send('Link not found or expired');
+    if (record.expires_at && new Date(record.expires_at) < new Date()) {
+      return res.status(410).send('This share link has expired');
+    }
+    res.sendFile(path.join(__dirname, 'public', 'pages', 'shared-invoices.html'));
+  } catch (error) {
+    console.error('Error serving shared invoices page:', error);
+    res.status(500).send('Server error');
+  }
+});
+
+// API publique: récupérer les factures via share token
+app.get('/api/public/shared-invoices/:token', (req, res) => {
+  const { token } = req.params;
+  const year = req.query.year ? parseInt(req.query.year) : null;
+  try {
+    const record = dbModule.db.prepare('SELECT * FROM share_tokens WHERE token = ?').get(token);
+    if (!record) return res.status(404).json({ error: 'Invalid or expired link' });
+    if (record.expires_at && new Date(record.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'This share link has expired' });
+    }
+    const invoices = invoiceManagementService.getClientInvoices(record.client_id, year);
+    // Strip sensitive fields
+    const safeInvoices = invoices.map(inv => ({
+      id: inv.id,
+      order_id: inv.order_id,
+      invoice_date: inv.invoice_date,
+      client_full_name: inv.client_full_name,
+      subtotal_ht: inv.subtotal_ht,
+      vat_amount: inv.vat_amount,
+      total_ttc: inv.total_ttc,
+      payment_status: inv.payment_status,
+      amount_paid: inv.amount_paid,
+      amount_due: inv.amount_due,
+      due_date: inv.due_date,
+      paid_date: inv.paid_date,
+      payments: (inv.payments || []).map(p => ({
+        id: p.id,
+        amount: p.amount,
+        payment_date: p.payment_date
+      }))
+    }));
+    res.json({ invoices: safeInvoices, client_id: record.client_id });
+  } catch (error) {
+    console.error('Error getting shared invoices:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// API publique: récupérer les paiements d'une facture via share token
+app.get('/api/public/shared-invoices/:token/payments/:invoiceId', (req, res) => {
+  const { token, invoiceId } = req.params;
+  try {
+    const record = dbModule.db.prepare('SELECT * FROM share_tokens WHERE token = ?').get(token);
+    if (!record) return res.status(404).json({ error: 'Invalid or expired link' });
+    if (record.expires_at && new Date(record.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'This share link has expired' });
+    }
+    // Verify the invoice belongs to this client
+    const invoice = dbModule.db.prepare('SELECT * FROM invoices WHERE id = ? AND user_id = ?').get(invoiceId, record.client_id);
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    const result = invoiceManagementService.getInvoicePayments(invoiceId);
+    if (!result.success) return res.status(400).json({ error: result.message });
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting shared payments:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// API publique: export Excel via share token
+app.get('/api/public/shared-invoices/:token/export-xlsx', async (req, res) => {
+  const { token } = req.params;
+  const year = req.query.year && req.query.year !== 'all' ? parseInt(req.query.year) : null;
+  try {
+    const record = dbModule.db.prepare('SELECT * FROM share_tokens WHERE token = ?').get(token);
+    if (!record) return res.status(404).json({ error: 'Invalid or expired link' });
+    if (record.expires_at && new Date(record.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'This share link has expired' });
+    }
+
+    const invoices = invoiceManagementService.getClientInvoices(record.client_id, year);
+    const sorted = [...invoices].sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date));
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Invoices');
+
+    ws.columns = [
+      { header: 'Type', key: 'type', width: 16 },
+      { header: 'Invoice Number', key: 'inv_num', width: 20 },
+      { header: 'Invoice Date', key: 'inv_date', width: 14 },
+      { header: 'Client', key: 'client', width: 26 },
+      { header: 'Amount excl. VAT', key: 'ht', width: 18 },
+      { header: 'VAT', key: 'vat', width: 12 },
+      { header: 'Amount incl. VAT', key: 'ttc', width: 18 },
+      { header: 'Due Date', key: 'due', width: 14 },
+      { header: 'Amount Paid', key: 'paid', width: 14 },
+      { header: 'Balance Due', key: 'balance', width: 14 },
+      { header: 'Payment Date', key: 'pay_date', width: 14 },
+      { header: 'Status', key: 'status', width: 12 }
+    ];
+
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+    headerRow.alignment = { vertical: 'middle' };
+
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB') : '';
+    const statusMap = { paid: 'Paid', partial: 'Partial', unpaid: 'Unpaid' };
+    const payFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+
+    for (const inv of sorted) {
+      ws.addRow({
+        type: 'Invoice',
+        inv_num: inv.order_id || '',
+        inv_date: fmtDate(inv.invoice_date),
+        client: inv.client_full_name || '',
+        ht: parseFloat(inv.subtotal_ht) || 0,
+        vat: parseFloat(inv.vat_amount) || 0,
+        ttc: parseFloat(inv.total_ttc) || 0,
+        due: fmtDate(inv.due_date),
+        paid: parseFloat(inv.amount_paid) || 0,
+        balance: parseFloat(inv.amount_due) || 0,
+        pay_date: fmtDate(inv.paid_date),
+        status: statusMap[inv.payment_status] || 'Unpaid'
+      });
+
+      if (inv.payments && inv.payments.length > 0) {
+        inv.payments.forEach((p, i) => {
+          const r = ws.addRow({
+            type: `  Payment ${i + 1}`,
+            inv_num: inv.order_id || '',
+            inv_date: fmtDate(p.payment_date),
+            client: '', ht: null, vat: null, ttc: null, due: '',
+            paid: parseFloat(p.amount) || 0,
+            balance: null,
+            pay_date: fmtDate(p.payment_date),
+            status: ''
+          });
+          r.eachCell({ includeEmpty: true }, cell => { cell.fill = payFill; });
+        });
+      }
+      ws.addRow({});
+    }
+
+    const totals = invoices.reduce((a, inv) => {
+      a.ht += parseFloat(inv.subtotal_ht) || 0;
+      a.vat += parseFloat(inv.vat_amount) || 0;
+      a.ttc += parseFloat(inv.total_ttc) || 0;
+      a.paid += parseFloat(inv.amount_paid) || 0;
+      a.balance += parseFloat(inv.amount_due) || 0;
+      return a;
+    }, { ht: 0, vat: 0, ttc: 0, paid: 0, balance: 0 });
+
+    const totRow = ws.addRow({
+      type: `TOTAL (${invoices.length} invoices)`,
+      inv_num: '', inv_date: '', client: '',
+      ht: totals.ht, vat: totals.vat, ttc: totals.ttc,
+      due: '', paid: totals.paid, balance: totals.balance,
+      pay_date: '', status: ''
+    });
+    totRow.font = { bold: true };
+    totRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } };
+
+    const clientName = (invoices[0]?.client_full_name || record.client_id).replace(/[^a-z0-9_\- ]/gi, '_');
+    const fileName = `invoices_${clientName}_${year || 'all'}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error generating shared XLSX:', error);
+    res.status(500).json({ error: 'Error generating Excel: ' + error.message });
+  }
+});
+
+// API publique: télécharger le PDF d'une facture via share token
+app.get('/api/public/shared-invoices/:token/pdf/:invoiceId', async (req, res) => {
+  const { token, invoiceId } = req.params;
+  try {
+    const record = dbModule.db.prepare('SELECT * FROM share_tokens WHERE token = ?').get(token);
+    if (!record) return res.status(404).json({ error: 'Invalid or expired link' });
+    if (record.expires_at && new Date(record.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'This share link has expired' });
+    }
+    // Verify the invoice belongs to this client
+    const invoice = dbModule.db.prepare('SELECT * FROM invoices WHERE id = ? AND user_id = ?').get(invoiceId, record.client_id);
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    const orderDetails = orderService.getOrderDetails(invoice.order_id, invoice.user_id);
+    const userProfile = userService.getUserProfile(invoice.user_id);
+    if (!orderDetails || !userProfile) {
+      return res.status(404).json({ error: 'Order or user profile not found' });
+    }
+
+    const orderItems = orderDetails.deliveredItems || orderDetails.items;
+    const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
+    const remainingItems = orderDetails.remainingItems || [];
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Invoice_${invoice.order_id}.pdf`);
+    doc.pipe(res);
+    await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, invoice.order_id, remainingItems, false);
+    await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, invoice.order_id);
+    doc.end();
+  } catch (error) {
+    console.error('Error generating shared PDF:', error);
+    res.status(500).json({ error: 'Error generating PDF' });
+  }
+});
+
 // ===== DÉMARRAGE DU SERVEUR =====
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);

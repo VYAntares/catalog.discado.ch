@@ -13,7 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const loginBtn = form.querySelector('.login-button');
   const passwordToggle = document.getElementById('password-toggle');
 
-  usernameField.focus();
+  // Pre-fill username if passed as URL param (e.g. from shared invoice link)
+  const urlParams = new URLSearchParams(window.location.search);
+  const prefilledUsername = urlParams.get('username');
+  if (prefilledUsername) {
+    usernameField.value = prefilledUsername;
+    passwordField.focus();
+  } else {
+    usernameField.focus();
+  }
 
   // Password visibility toggle
   passwordToggle.addEventListener('click', function() {

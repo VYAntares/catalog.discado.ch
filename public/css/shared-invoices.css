@@ -655,6 +655,37 @@ input, button, textarea, select { font: inherit; }
 
 .inv-view-btn:hover { background: #e0e7ff; color: #4f46e5; }
 
+.inv-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: #fff1f1;
+    color: #e53e3e;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+}
+
+.inv-pdf-btn:hover { background: #fed7d7; color: #c53030; }
+
+.shared-pdf-btn {
+    background: none;
+    border: none;
+    color: #e53e3e;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.shared-pdf-btn:hover { background: #fed7d7; }
+
 /* ===== RESPONSIVE ===== */
 
 /* Always hide the table – cards are the primary view */
