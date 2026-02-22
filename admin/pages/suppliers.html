@@ -49,12 +49,12 @@
             <a href="/admin/suppliers" class="tab active">
                 <i class="fas fa-truck"></i> Fournisseurs
             </a>
-            <a href="/admin/stats" class="tab">
-                <i class="fas fa-chart-line"></i> Stats
-            </a>
 			<a href="/admin/results" class="tab">
 				<i class="fas fa-chart-line"></i> Résultat
 			</a>
+            <a href="/admin/stats" class="tab">
+                <i class="fas fa-chart-line"></i> Stats
+            </a>
         </div>
     </div>
 
@@ -200,6 +200,30 @@
                     </div>
 
                     <div id="paymentsHistoryContainer"></div>
+                </div>
+
+                <div class="order-financial">
+                    <h3><i class="fas fa-shipping-fast"></i> Frais de transport</h3>
+
+                    <h4 style="margin: 8px 0 12px 0; color: #4a5568;">Ajouter un frais de transport</h4>
+                    <div class="financial-grid">
+                        <div class="financial-field">
+                            <label>Montant CHF</label>
+                            <input type="number" id="transportAmountChf" step="0.01" placeholder="0.00">
+                            <span class="currency">CHF</span>
+                        </div>
+                        <div class="financial-field">
+                            <label>Date</label>
+                            <input type="date" id="transportDate">
+                        </div>
+                        <div style="display: flex; align-items: end;">
+                            <button class="btn btn-primary" id="saveTransportBtn">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="transportHistoryContainer"></div>
                 </div>
 
                 <div class="order-notes">

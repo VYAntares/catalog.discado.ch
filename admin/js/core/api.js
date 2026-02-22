@@ -415,6 +415,51 @@ async function deleteSupplierOrderPayment(orderId, paymentId) {
   }
 }
 
+// Récupère les frais de transport d'une commande fournisseur
+async function getSupplierOrderTransport(orderId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/transport`, API_CONFIG);
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Ajoute un frais de transport à une commande fournisseur
+async function addSupplierOrderTransport(orderId, amount_chf, transport_date) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/transport`, {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify({ amount_chf, transport_date })
+    });
+    const result = await handleApiResponse(response);
+    if (result.success) {
+      Notification.showNotification('Frais de transport enregistré', 'success');
+    }
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Supprime un frais de transport d'une commande fournisseur
+async function deleteSupplierOrderTransport(orderId, transportId) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/transport/${transportId}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+    const result = await handleApiResponse(response);
+    if (result.success) {
+      Notification.showNotification('Frais de transport supprimé', 'success');
+    }
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Ajoute un item à une commande fournisseur
 async function addSupplierOrderItem(orderId, itemData) {
   try {
@@ -725,6 +770,9 @@ export {
   getSupplierOrderPayments,
   addSupplierOrderPayment,
   deleteSupplierOrderPayment,
+  getSupplierOrderTransport,
+  addSupplierOrderTransport,
+  deleteSupplierOrderTransport,
   getSupplierOrderBatchStats,
   getSupplierOrderBatchItems,
   createSupplierOrderBatch,

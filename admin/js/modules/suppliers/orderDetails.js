@@ -57,8 +57,12 @@ function fillOrderInfo(order) {
 
   document.getElementById('orderNotes').value = order.notes || '';
 
+  // Set default transport date to today
+  document.getElementById('transportDate').value = today;
+
   // Load payments history and update summaries
   loadPayments();
+  loadTransportCosts();
 }
 
 /**
@@ -131,6 +135,13 @@ function attachEventListeners() {
   const saveBtn = document.getElementById('saveAmountsBtn');
   saveBtn.removeEventListener('click', handleSavePayment);
   saveBtn.addEventListener('click', handleSavePayment);
+
+  // Sauvegarde des frais de transport
+  const saveTransportBtn = document.getElementById('saveTransportBtn');
+  if (saveTransportBtn) {
+    saveTransportBtn.removeEventListener('click', handleSaveTransport);
+    saveTransportBtn.addEventListener('click', handleSaveTransport);
+  }
 
   // Suppression commande
   const deleteBtn = document.getElementById('deleteOrderBtn');
@@ -340,6 +351,106 @@ async function handleDeletePayment(paymentId) {
     await loadPayments();
   } catch (error) {
     console.error('Erreur suppression paiement:', error);
+  }
+}
+
+// ===== FRAIS DE TRANSPORT =====
+
+/**
+ * Gère l'ajout d'un frais de transport
+ */
+async function handleSaveTransport() {
+  const orderId = State.getCurrentOrderId();
+  const amountChf = parseFloat(document.getElementById('transportAmountChf').value) || 0;
+  const transportDate = document.getElementById('transportDate').value;
+
+  if (!amountChf || amountChf <= 0) {
+    alert('Veuillez entrer un montant CHF valide');
+    return;
+  }
+  if (!transportDate) {
+    alert('Veuillez sélectionner une date');
+    return;
+  }
+
+  try {
+    await API.addSupplierOrderTransport(orderId, amountChf, transportDate);
+    document.getElementById('transportAmountChf').value = '';
+    await loadTransportCosts();
+  } catch (error) {
+    console.error('Erreur ajout frais de transport:', error);
+  }
+}
+
+/**
+ * Charge et affiche les frais de transport
+ */
+async function loadTransportCosts() {
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    const transports = await API.getSupplierOrderTransport(orderId);
+    renderTransportTable(transports);
+  } catch (error) {
+    console.error('Erreur chargement frais de transport:', error);
+  }
+}
+
+/**
+ * Affiche le tableau des frais de transport
+ */
+function renderTransportTable(transports) {
+  const container = document.getElementById('transportHistoryContainer');
+
+  if (!transports || transports.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const rows = transports.map(t => `
+    <tr>
+      <td>${Utils.formatDate(t.transport_date)}</td>
+      <td>${Utils.formatSwissNumber(t.amount_chf || 0)} CHF</td>
+      <td>
+        <button class="btn btn-danger btn-sm delete-transport-btn" data-transport-id="${t.id}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <h4 style="margin: 24px 0 12px 0; color: #4a5568;">Historique des frais de transport</h4>
+    <table class="payments-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Montant CHF</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  container.querySelectorAll('.delete-transport-btn').forEach(btn => {
+    btn.addEventListener('click', () => handleDeleteTransport(btn.dataset.transportId));
+  });
+}
+
+/**
+ * Supprime un frais de transport
+ */
+async function handleDeleteTransport(transportId) {
+  if (!confirm('Supprimer ce frais de transport ?')) return;
+
+  const orderId = State.getCurrentOrderId();
+
+  try {
+    await API.deleteSupplierOrderTransport(orderId, transportId);
+    await loadTransportCosts();
+  } catch (error) {
+    console.error('Erreur suppression frais de transport:', error);
   }
 }
 

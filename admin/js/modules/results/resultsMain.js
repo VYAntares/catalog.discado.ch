@@ -339,8 +339,9 @@ class ResultsMain {
         tbody.innerHTML = filtered.map(expense => {
             const config = CATEGORY_CONFIG[expense.category] || { label: expense.category, colorClass: '' };
             const dateFormatted = this.formatDateShort(expense.date);
-            const isLinked = !!expense.supplier_payment_id;
-            const linkedBadge = isLinked ? ' <i class="fas fa-link" title="Lié au paiement fournisseur" style="color:#8b5cf6;font-size:11px;margin-left:4px;"></i>' : '';
+            const isLinked = !!(expense.supplier_payment_id || expense.transport_payment_id);
+            const linkedTitle = expense.transport_payment_id ? 'Lié à un frais de transport' : 'Lié au paiement fournisseur';
+            const linkedBadge = isLinked ? ` <i class="fas fa-link" title="${linkedTitle}" style="color:#8b5cf6;font-size:11px;margin-left:4px;"></i>` : '';
             return `
                 <tr data-id="${expense.id}">
                     <td>${dateFormatted}</td>

@@ -2644,6 +2644,79 @@ app.delete('/api/order-suppliers/:id/payments/:paymentId', requireLogin, require
   }
 });
 
+// ===== FRAIS DE TRANSPORT COMMANDES FOURNISSEUR =====
+
+// Lister les frais de transport d'une commande
+app.get('/api/order-suppliers/:id/transport', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const transports = dbModule.orderSupplierTransport.getByOrderId.all(req.params.id);
+    res.json(transports);
+  } catch (error) {
+    console.error('Error fetching transport costs:', error);
+    res.status(500).json({ error: 'Failed to fetch transport costs' });
+  }
+});
+
+// Ajouter un frais de transport
+app.post('/api/order-suppliers/:id/transport', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { amount_chf, transport_date } = req.body;
+    const orderId = req.params.id;
+
+    if (!amount_chf || parseFloat(amount_chf) <= 0) {
+      return res.status(400).json({ error: 'Montant CHF requis' });
+    }
+    if (!transport_date) {
+      return res.status(400).json({ error: 'Date requise' });
+    }
+
+    const result = dbModule.orderSupplierTransport.insert.run(orderId, parseFloat(amount_chf), transport_date);
+    const transportId = result.lastInsertRowid;
+
+    // Auto-créer une dépense transporteur
+    try {
+      const order = dbModule.orderSupplier.getById.get(orderId);
+      const supplier = order ? dbModule.suppliers.getById.get(order.supplier_id) : null;
+      const supplierName = supplier ? supplier.name : 'Fournisseur';
+      const invoiceNum = order ? order.invoice_number : '';
+      const description = `Frais de transport ${supplierName}${invoiceNum ? ' - Cmd ' + invoiceNum : ''}`;
+      dbModule.expenses.createWithTransportPayment.run(
+        parseFloat(amount_chf),
+        transport_date,
+        description,
+        transportId
+      );
+    } catch (expError) {
+      console.error('Erreur création dépense transport:', expError);
+    }
+
+    res.json({ success: true, message: 'Transport cost added successfully' });
+  } catch (error) {
+    console.error('Error adding transport cost:', error);
+    res.status(500).json({ error: 'Failed to add transport cost' });
+  }
+});
+
+// Supprimer un frais de transport
+app.delete('/api/order-suppliers/:id/transport/:transportId', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { transportId } = req.params;
+
+    // Supprimer la dépense liée automatiquement
+    try {
+      dbModule.expenses.deleteByTransportPaymentId.run(parseInt(transportId));
+    } catch (expError) {
+      console.error('Erreur suppression dépense transport liée:', expError);
+    }
+
+    dbModule.orderSupplierTransport.delete.run(transportId);
+    res.json({ success: true, message: 'Transport cost deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting transport cost:', error);
+    res.status(500).json({ error: 'Failed to delete transport cost' });
+  }
+});
+
 // ===== PIÈCES JOINTES COMMANDES FOURNISSEUR =====
 
 // Lister les pièces jointes d'une commande

@@ -242,10 +242,10 @@ function createBatchItemCard(item, batchNumber) {
         <button class="batch-item-action-btn" data-action="move" data-item-id="${item.id}" title="Déplacer">
           <i class="fas fa-arrows-alt"></i>
         </button>
-        <button class="btn edit-item-btn" data-item-id="${item.id}" title="Modifier">
+        <button class="btn btn-sm edit-item-btn" data-item-id="${item.id}" title="Modifier" style="background:#edf2f7; color:#4a5568;">
           <i class="fas fa-edit"></i>
         </button>
-        <button class="btn delete-item-btn" data-item-id="${item.id}" title="Supprimer">
+        <button class="btn btn-danger btn-sm delete-item-btn" data-item-id="${item.id}" title="Supprimer">
           <i class="fas fa-trash"></i>
         </button>
       </div>
@@ -476,88 +476,45 @@ function reattachBatchItemListeners() {
 
 
   function showAllBatchesMerged() {
-    console.log('🔍 showAllBatchesMerged appelée');
     const container = document.getElementById('batchContainersWrapper');
     const allItems = State.getCurrentOrderItems();
-    console.log('Items:', allItems);
-    
-    // Regrouper par product_id ET garder le premier ID
-    const grouped = {};
-    
+
+    // Grouper les items par batch_number
+    const byBatch = {};
     allItems.forEach(item => {
-      const key = item.product_id || item.product_name;
-      
-      if (!grouped[key]) {
-        grouped[key] = {
-          product_name: item.product_name,
-          image_url: item.image_url,
-          unit_price: item.unit_price,
-          category: item.category,
-          batches: {},
-          first_id: item.id  // 🆕 Garder le premier ID rencontré
-        };
-      }
-      
-      // Mettre à jour first_id si on trouve un ID plus petit
-      if (item.id < grouped[key].first_id) {
-        grouped[key].first_id = item.id;
-      }
-      
-      if (!grouped[key].batches[item.batch_number]) {
-        grouped[key].batches[item.batch_number] = 0;
-      }
-      
-      grouped[key].batches[item.batch_number] += item.quantity;
+      const b = item.batch_number || 1;
+      if (!byBatch[b]) byBatch[b] = [];
+      byBatch[b].push(item);
     });
-    
-    // Générer le HTML
+    const sortedBatchNums = Object.keys(byBatch).map(Number).sort((a, b) => a - b);
+
+    const totalQty = allItems.reduce((s, i) => s + i.quantity, 0);
+    const totalAmount = allItems.reduce((s, i) => s + i.total_price, 0);
+
     const html = `
       <div class="batch-container">
         <div class="batch-header">
-          <h4><i class="fas fa-layer-group"></i> Tous les batch (regroupé)</h4>
+          <h4><i class="fas fa-layer-group"></i> Tous les batch</h4>
         </div>
         <div class="batch-items-container">
-          ${Object.entries(grouped)
-            .sort((a, b) => a[1].first_id - b[1].first_id)  // 🆕 Tri par first_id
-            .map(([key, item]) => {
-              const totalQty = Object.values(item.batches).reduce((sum, q) => sum + q, 0);
-              const batchDetails = Object.entries(item.batches)
-                .map(([batch, qty]) => `${qty} batch ${batch}`)
-                .join(', ');
-              
-              return `
-                <div class="batch-item-card" style="opacity: 0.95;">
-                  <img src="${item.image_url || '/images/placeholder.png'}" 
-                       alt="${item.product_name}" 
-                       class="batch-item-image">
-                  
-                  <div class="batch-item-info">
-                    <h5>${item.product_name}</h5>
-                    <p class="batch-item-details">
-                      <span class="quantity-badge">${totalQty} unités</span>
-                      <span class="price-tag">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
-                    </p>
-                    <p style="font-size: 12px; color: #718096; margin: 4px 0 0 0;">
-                      <i class="fas fa-info-circle"></i> ${batchDetails}
-                    </p>
-                    <p class="batch-item-total">
-                      Total: <strong>${Utils.formatSwissNumber(totalQty * item.unit_price)} USD</strong>
-                    </p>
-                  </div>
-                </div>
-              `;
-            }).join('')}
+          ${sortedBatchNums.map(bNum => `
+            <div style="padding: 8px 12px; background: #edf2f7; color: #4a5568; font-weight: 600; font-size: 13px; border-radius: 6px; margin: 8px 0 4px 0;">
+              <i class="fas fa-box"></i> Batch ${bNum}
+              <span style="font-weight: 400; color: #718096; margin-left: 8px;">${byBatch[bNum].length} article${byBatch[bNum].length > 1 ? 's' : ''}</span>
+            </div>
+            ${byBatch[bNum].map(item => createBatchItemCard(item, item.batch_number)).join('')}
+          `).join('')}
         </div>
         <div class="batch-footer">
           <div class="batch-stats">
-            <span><strong>${Object.keys(grouped).length}</strong> produits différents</span>
-            <span><strong>${allItems.reduce((sum, i) => sum + i.quantity, 0)}</strong> unités totales</span>
-            <span><strong>${Utils.formatAmount(allItems.reduce((sum, i) => sum + i.total_price, 0))}</strong> USD</span>
+            <span><strong>${allItems.length}</strong> article${allItems.length > 1 ? 's' : ''}</span>
+            <span><strong>${totalQty}</strong> unités totales</span>
+            <span><strong>${Utils.formatAmount(totalAmount)}</strong> USD</span>
           </div>
         </div>
       </div>
     `;
-    
+
     container.innerHTML = html;
   }
 /**

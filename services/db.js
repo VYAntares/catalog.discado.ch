@@ -258,6 +258,18 @@ function initDatabase() {
         )
       `);
 
+    // Table pour les frais de transport des commandes fournisseurs
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS order_supplier_transport (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          order_supplier_id INTEGER NOT NULL,
+          amount_chf DECIMAL(10,2) NOT NULL DEFAULT 0,
+          transport_date DATE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (order_supplier_id) REFERENCES order_supplier(id) ON DELETE CASCADE
+        )
+      `);
+
     // Table pour les pièces jointes des commandes fournisseurs
     db.exec(`
         CREATE TABLE IF NOT EXISTS order_supplier_attachments (
@@ -427,6 +439,16 @@ function initDatabase() {
             console.log('✅ Colonne supplier_payment_id ajoutée à expenses');
         } catch (error) {
             console.error('⚠️ Erreur ajout colonne supplier_payment_id:', error.message);
+        }
+    }
+
+    // Ajouter la colonne transport_payment_id si elle n'existe pas
+    if (!columnExists('expenses', 'transport_payment_id')) {
+        try {
+            db.exec(`ALTER TABLE expenses ADD COLUMN transport_payment_id INTEGER`);
+            console.log('✅ Colonne transport_payment_id ajoutée à expenses');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne transport_payment_id:', error.message);
         }
     }
 
@@ -626,6 +648,22 @@ module.exports = {
         FROM order_supplier_payments
         WHERE order_supplier_id = ?
         `)
+    },
+
+    orderSupplierTransport: {
+        getByOrderId: db.prepare(`
+        SELECT * FROM order_supplier_transport
+        WHERE order_supplier_id = ?
+        ORDER BY transport_date DESC, created_at DESC
+        `),
+
+        insert: db.prepare(`
+        INSERT INTO order_supplier_transport (
+            order_supplier_id, amount_chf, transport_date
+        ) VALUES (?, ?, ?)
+        `),
+
+        delete: db.prepare('DELETE FROM order_supplier_transport WHERE id = ?'),
     },
 
     orderSupplierAttachments: {
@@ -881,6 +919,10 @@ module.exports = {
             INSERT INTO expenses (amount, date, category, description, supplier_payment_id)
             VALUES (?, ?, 'fournisseurs', ?, ?)
         `),
+        createWithTransportPayment: db.prepare(`
+            INSERT INTO expenses (amount, date, category, description, transport_payment_id)
+            VALUES (?, ?, 'transporteur', ?, ?)
+        `),
         update: db.prepare(`
             UPDATE expenses
             SET amount = ?, date = ?, category = ?, description = ?, updated_at = CURRENT_TIMESTAMP
@@ -889,6 +931,7 @@ module.exports = {
         delete: db.prepare('DELETE FROM expenses WHERE id = ?'),
         getBySupplierPaymentId: db.prepare('SELECT * FROM expenses WHERE supplier_payment_id = ?'),
         deleteBySupplierPaymentId: db.prepare('DELETE FROM expenses WHERE supplier_payment_id = ?'),
+        deleteByTransportPaymentId: db.prepare('DELETE FROM expenses WHERE transport_payment_id = ?'),
         getSummaryByYear: db.prepare(`
             SELECT category, COUNT(*) as count, COALESCE(SUM(amount), 0) as total
             FROM expenses
