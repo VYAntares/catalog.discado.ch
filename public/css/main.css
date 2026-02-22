@@ -268,6 +268,43 @@ main {
   .icon-btn i {
       font-size: 20px;
   }
+
+  .menu-toggle-btn {
+      border-radius: 8px;
+      transition: background-color 0.15s ease;
+  }
+
+  .hamburger-icon {
+      display: inline-flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      width: 18px;
+      height: 14px;
+  }
+
+  .hamburger-line {
+      display: block;
+      width: 100%;
+      height: 2px;
+      border-radius: 2px;
+      background-color: #374151;
+      transition: background-color 0.15s ease;
+  }
+
+  .menu-toggle-btn:hover {
+      background-color: #f3f4f6;
+  }
+
+  .menu-toggle-btn.active {
+      background-color: #f3f4f6;
+      border-radius: 8px 8px 0 0;
+  }
+
+  .menu-toggle-btn:hover .hamburger-line,
+  .menu-toggle-btn.active .hamburger-line {
+      background-color: #111827;
+  }
   
   .cart-count-badge {
       background-color: var(--primary-color);
@@ -293,57 +330,92 @@ main {
       font-size: 10px;
   }
   
-  /* User menu */
+  /* User menu — top/right positionnés par JS via getBoundingClientRect */
   .user-menu {
       position: fixed;
-      top: var(--header-height);
-      right: 0;
-      background-color: white;
-      box-shadow: -2px 2px 10px rgba(0,0,0,0.1);
-      width: 200px;
-      max-height: 0;
+      top: var(--header-height); /* fallback, écrasé par JS */
+      right: 16px;               /* fallback, écrasé par JS */
+      width: 220px;
+      background-color: #fff;
+      border: 1px solid #e8eaed;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
       overflow: hidden;
-      transition: max-height 0.3s ease;
       z-index: 1001;
-      border-radius: 0 0 0 8px;
       opacity: 0;
       visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transform-origin: top right;
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
   }
   
   .user-menu.open {
-      max-height: 200px;
-      border: 1px solid #eee;
       opacity: 1;
       visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
   }
   
   .user-menu a {
       display: flex;
       align-items: center;
-      padding: 12px 15px;
+      gap: 11px;
+      padding: 13px 18px;
       text-decoration: none;
-      color: var(--text-color);
-      border-bottom: 1px solid #eee;
-      transition: background-color 0.2s;
+      color: #374151;
+      border-bottom: 1px solid #f1f3f5;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      transition: background-color 0.15s ease, color 0.15s ease;
   }
   
   .user-menu a i {
-      margin-right: 10px;
-      font-size: 16px;
-      width: 20px;
+      font-size: 15px;
+      width: 18px;
       text-align: center;
+      color: #111827;
+      flex-shrink: 0;
+      transition: color 0.15s ease;
   }
   
   .user-menu a:hover {
-      background-color: #f5f5f5;
-      color: var(--primary-color);
+      background-color: #f8f9fa;
+      color: #111827;
+  }
+
+  .user-menu a:hover i {
+      color: #111827;
+  }
+
+  .user-menu a:not(:hover) i {
+      color: #111827;
   }
   
   .user-menu a.active {
-      border-left: 3px solid #2575fc;
-      background-color: #f5f5f5;
+      background-color: #f8f9fa;
       font-weight: 600;
-      padding-left: 12px;
+  }
+
+  /* Logout : accent rouge discret */
+  .user-menu a.menu-logout {
+      color: #dc2626;
+      border-bottom: none;
+  }
+
+  .user-menu a.menu-logout i {
+      color: #dc2626;
+  }
+
+  .user-menu a.menu-logout:hover {
+      background-color: #fff5f5;
+      color: #b91c1c;
+  }
+
+  .user-menu a.menu-logout:hover i {
+      color: #b91c1c;
   }
   
   .user-menu a:last-child {
@@ -352,12 +424,12 @@ main {
   
   /* Overlay */
   .menu-overlay {
-      position: fixed;
-      top: var(--header-height);
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0,0,0,0.5);
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      background-color: rgba(17, 24, 39, 0.18);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease;
@@ -440,7 +512,11 @@ main {
       }
       
       .user-menu {
-          width: 180px;
+          top: var(--header-height) !important;
+          right: 12px !important;
+          width: 220px !important;
+          border-radius: 0 0 12px 12px;
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.10);
       }
   }
   
@@ -869,120 +945,53 @@ main {
     }
 }
   /* =========================================
-   Correction pour les menus (à placer en dernier dans main.css)
+   Menu déroulant catégories
    ========================================= */
 
-/* 1. Menu déroulant (catégories) */
 .dropdown-menu {
-    position: fixed !important;
-    top: 80px !important;
-    left: 0 !important;
-    right: 0 !important;
-    background-color: white !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-    transition: max-height 0.3s ease !important;
-    z-index: 1050 !important; /* Valeur élevée pour assurer qu'il est au-dessus de tout */
-    border-bottom: 1px solid #ddd !important;
-  }
-  
-  .dropdown-menu.open {
-    max-height: 400px !important;
-    overflow-y: auto !important;
-  }
-  
-  /* 2. Sections du menu */
-  .menu-section {
-    padding: 15px !important;
-    border-bottom: 1px solid #eee !important;
-    background-color: white !important;
-    position: relative !important;
-    z-index: 1 !important;
-  }
-  
-  /* 3. Éléments de catégorie */
-  .category-item {
-    padding: 10px 12px !important;
-    background-color: #f5f5f5 !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-    margin-bottom: 5px !important;
-    transition: background-color 0.2s !important;
-    color: #333 !important;
-    font-weight: 500 !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-  }
-  
-  .category-item:hover {
-    background-color: #e0e0e0 !important;
-  }
-  
-  .category-item.active {
-    background-color: #2575fc !important;
-    color: white !important;
-    box-shadow: 0 2px 5px rgba(37, 117, 252, 0.2) !important;
-  }
-  
-  /* 4. Menu utilisateur */
-  .user-menu {
-    position: fixed !important;
-    top: 80px !important;
-    right: 0 !important;
-    background-color: white !important;
-    box-shadow: -2px 2px 10px rgba(0,0,0,0.2) !important;
-    width: 200px !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-    transition: max-height 0.3s ease !important;
-    z-index: 1060 !important; /* Encore plus élevé que le menu des catégories */
-    border-radius: 0 0 0 8px !important;
-    border-left: 1px solid #eee !important;
-    border-bottom: 1px solid #eee !important;
-  }
-  
-  .user-menu.open {
-    max-height: 200px !important;
-    overflow-y: auto !important;
-  }
-  
-  .user-menu a {
-    display: block !important;
-    padding: 12px 15px !important;
-    text-decoration: none !important;
-    color: #333 !important;
-    border-bottom: 1px solid #eee !important;
-    transition: background-color 0.2s !important;
-    font-weight: 500 !important;
-  }
-  
-  .user-menu a:hover {
-    background-color: #f5f5f5 !important;
-    color: #2575fc !important;
-  }
-  
-  .user-menu a:last-child {
-    border-bottom: none !important;
-  }
-  
-  /* 5. Overlay commun pour les deux menus */
-  .menu-overlay {
-    position: fixed !important;
-    top: 80px !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    transition: opacity 0.3s ease !important;
-    z-index: 1040 !important; /* Entre les valeurs des deux menus pour fonctionner avec les deux */
-  }
-  
-  .menu-overlay.active {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    z-index: 1050;
+    border-bottom: 1px solid #ddd;
+}
+
+.dropdown-menu.open {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.menu-section {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background-color: white;
+}
+
+.category-item {
+    padding: 10px 12px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 5px;
+    transition: background-color 0.2s;
+    color: #333;
+    font-weight: 500;
+}
+
+.category-item:hover {
+    background-color: #e0e0e0;
+}
+
+.category-item.active {
+    background-color: #2575fc;
+    color: white;
+}
 
   /* CSS pour une barre de recherche plus élégante */
 

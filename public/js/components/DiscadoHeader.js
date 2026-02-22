@@ -56,17 +56,21 @@ function initDiscadoHeader() {
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cartCountBadge" class="cart-count-badge">0</span>
                 </button>
-                <button id="userMenuToggle" class="icon-btn" aria-label="User menu">
-                    <i class="fas fa-user"></i>
+                <button id="userMenuToggle" class="icon-btn menu-toggle-btn" aria-label="User menu" aria-expanded="false" aria-controls="userMenu">
+                    <span class="hamburger-icon" aria-hidden="true">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </span>
                 </button>
             </div>
         </div>
     </header>
     <!-- Menu Utilisateur -->
     <div id="userMenu" class="user-menu">
-        <a href="/pages/profile.html"><i class="fas fa-user-circle"></i> Profile</a>
-        <a href="/pages/orders.html"><i class="fas fa-shopping-bag"></i> My Orders</a>
-        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="/pages/profile.html"><i class="fas fa-user"></i> Profile</a>
+        <a href="/pages/orders.html"><i class="fas fa-box"></i> My Orders</a>
+        <a href="/logout" class="menu-logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
     </div>
     <!-- Overlay du Menu -->
     <div id="menuOverlay" class="menu-overlay"></div>
@@ -134,18 +138,52 @@ function setupUserMenu() {
     });
 
     menuOverlay.addEventListener('click', closeAllMenus);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllMenus();
+        }
+    });
+}
+
+// Positionner le menu exactement sous le bas réel du header
+function positionUserMenu() {
+    const userMenu = document.getElementById('userMenu');
+    const userMenuToggle = document.getElementById('userMenuToggle');
+    const header = document.querySelector('.discado-header-initialized');
+    if (!userMenu || !header || !userMenuToggle) return;
+
+    const headerRect = header.getBoundingClientRect();
+    const btnRect = userMenuToggle.getBoundingClientRect();
+    // Flush avec le bas du header (pas d'espace)
+    userMenu.style.top = headerRect.bottom + 'px';
+    // Aligné sur le bord droit du bouton hamburger
+    userMenu.style.right = (window.innerWidth - btnRect.right) + 'px';
+    userMenu.style.left = 'auto';
 }
 
 // Basculer le menu utilisateur
 function toggleUserMenu() {
     const userMenu = document.getElementById('userMenu');
     const menuOverlay = document.getElementById('menuOverlay');
+    const userMenuToggle = document.getElementById('userMenuToggle');
     
     if (!userMenu || !menuOverlay) return;
     
-    userMenu.classList.toggle('open');
-    
-    if (userMenu.classList.contains('open')) {
+    const willOpen = !userMenu.classList.contains('open');
+
+    if (willOpen) {
+        positionUserMenu();
+    }
+
+    userMenu.classList.toggle('open', willOpen);
+
+    if (userMenuToggle) {
+        userMenuToggle.classList.toggle('active', willOpen);
+        userMenuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+
+    if (willOpen) {
         menuOverlay.classList.add('active');
     } else {
         menuOverlay.classList.remove('active');
@@ -169,9 +207,15 @@ function setupClickOutsideListener() {
 // Fermer le menu utilisateur
 function closeUserMenu() {
     const userMenu = document.getElementById('userMenu');
+    const userMenuToggle = document.getElementById('userMenuToggle');
     
     if (userMenu && userMenu.classList.contains('open')) {
         userMenu.classList.remove('open');
+    }
+
+    if (userMenuToggle) {
+        userMenuToggle.classList.remove('active');
+        userMenuToggle.setAttribute('aria-expanded', 'false');
     }
 }
 
