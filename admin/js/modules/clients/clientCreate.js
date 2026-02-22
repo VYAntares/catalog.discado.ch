@@ -150,7 +150,7 @@ async function handleFormSubmit() {
         });
         
         if (result.success) {
-            Notification.showNotification(`Client ${username} créé avec succès`, 'success');
+            // Success notification already shown by API.createNewClient()
             Modal.hideModal(createClientModal);
             createClientForm.reset();
             ClientList.refreshClientList();

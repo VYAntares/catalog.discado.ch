@@ -1,16 +1,16 @@
 /**
- * Module de gestion du mot de passe pour Discado
- * À placer dans: public/js/modules/profile/passwordManager.js
+ * Password management module for Discado
+ * Located at: public/js/modules/profile/passwordManager.js
  */
 
 import { saveUserPassword } from '../../core/api.js';
 import { showNotification } from '../../utils/notification.js';
 
 /**
- * Vérifie la correspondance des mots de passe
- * Version améliorée sans messages d'erreur pendant la saisie
- * @param {boolean} shouldShowError - Si true, affiche un message d'erreur
- * @returns {boolean} - true si les mots de passe correspondent
+ * Checks password match
+ * Improved version without error messages during input
+ * @param {boolean} shouldShowError - If true, displays an error message
+ * @returns {boolean} - true if passwords match
  */
 function checkPasswordMatch(shouldShowError = false) {
     const newPass = document.getElementById('newPassword').value;
@@ -20,7 +20,7 @@ function checkPasswordMatch(shouldShowError = false) {
     
     if (!confirmField) return false;
     
-    // Si le champ est vide, ne rien faire
+    // If the field is empty, do nothing
     if (!confirmPass) {
         confirmField.classList.remove('password-match', 'password-mismatch', 'input-error');
         removeErrorMessage(confirmField);
@@ -30,27 +30,27 @@ function checkPasswordMatch(shouldShowError = false) {
     const isMatch = newPass === confirmPass;
     
     if (isMatch) {
-        // Correspondance : afficher en vert
+        // Match: display in green
         confirmField.classList.add('password-match');
         confirmField.classList.remove('password-mismatch', 'input-error');
         removeErrorMessage(confirmField);
         
-        // Permettre la soumission si la validation est passée
+        // Allow submission if validation passed
         if (submitButton) {
             submitButton.classList.remove('disabled-submit');
         }
     } else {
-        // Non-correspondance : afficher en rouge mais sans message d'erreur
+        // Mismatch: display in red but without error message
         confirmField.classList.add('password-mismatch');
         confirmField.classList.remove('password-match');
         
-        // Ajouter la classe input-error et le message seulement si demandé
-        // (typiquement à la perte de focus ou soumission)
+        // Add input-error class and message only if requested
+        // (typically on blur or submission)
         if (shouldShowError) {
             confirmField.classList.add('input-error');
             showErrorMessage(confirmField, 'Passwords do not match');
             
-            // Bloquer la soumission si les mots de passe ne correspondent pas
+            // Block submission if passwords don't match
             if (submitButton) {
                 submitButton.classList.add('disabled-submit');
             }
@@ -61,38 +61,38 @@ function checkPasswordMatch(shouldShowError = false) {
 }
 
 /**
- * Initialise le gestionnaire de mot de passe avec la nouvelle logique
+ * Initializes the password manager with the new logic
  */
 function initPasswordManager() {
-    // Initialisation des éléments de l'interface
+    // Initialize interface elements
     const passwordFields = {
         current: document.getElementById('currentPassword'),
         new: document.getElementById('newPassword'),
         confirm: document.getElementById('confirmPassword')
     };
     
-    // Vérifier que les éléments existent
+    // Check that elements exist
     if (!passwordFields.current || !passwordFields.new || !passwordFields.confirm) {
         console.error('Password fields not found');
         return;
     }
     
-    // Ajout de boutons pour montrer/masquer les mots de passe
+    // Add show/hide password toggle buttons
     Object.values(passwordFields).forEach(field => {
         if (!field) return;
         
-        // Créer le bouton de toggle
+        // Create toggle button
         const toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
         toggleBtn.className = 'password-toggle';
         toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
-        toggleBtn.title = 'Afficher/Masquer le mot de passe';
+        toggleBtn.title = 'Show/Hide password';
         
-        // Ajouter le bouton à côté du champ
+        // Add button next to the field
         field.parentNode.style.position = 'relative';
         field.parentNode.appendChild(toggleBtn);
         
-        // Fonctionnalité de toggle
+        // Toggle functionality
         toggleBtn.addEventListener('click', () => {
             if (field.type === 'password') {
                 field.type = 'text';
@@ -104,20 +104,20 @@ function initPasswordManager() {
         });
     });
     
-    // Validation en temps réel du mot de passe
+    // Real-time password validation
     if (passwordFields.new) {
         passwordFields.new.addEventListener('input', function() {
             const password = this.value;
             validatePasswordStrength(password);
             
-            // Vérifier la correspondance si le champ de confirmation est rempli
-            // mais sans afficher de message d'erreur pendant la saisie
+            // Check match if confirm field is filled
+            // but without showing error message during input
             if (passwordFields.confirm && passwordFields.confirm.value) {
                 checkPasswordMatch(false);
             }
         });
         
-        // Quand l'utilisateur quitte le champ, montrer les erreurs si nécessaire
+        // When user leaves the field, show errors if needed
         passwordFields.new.addEventListener('blur', function() {
             if (this.value && passwordFields.confirm && passwordFields.confirm.value) {
                 checkPasswordMatch(true);
@@ -125,13 +125,13 @@ function initPasswordManager() {
         });
     }
     
-    // Validation de la correspondance des mots de passe sans message d'erreur pendant la saisie
+    // Validate password match without error message during input
     if (passwordFields.confirm) {
         passwordFields.confirm.addEventListener('input', function() {
             checkPasswordMatch(false);
         });
         
-        // Afficher le message d'erreur seulement quand l'utilisateur quitte le champ
+        // Show error message only when user leaves the field
         passwordFields.confirm.addEventListener('blur', function() {
             if (this.value) {
                 checkPasswordMatch(true);
@@ -139,7 +139,7 @@ function initPasswordManager() {
         });
     }
     
-    // Effacer les messages d'erreur lors de la saisie
+    // Clear error messages during input
     if (passwordFields.current) {
         passwordFields.current.addEventListener('input', function() {
             this.classList.remove('input-error');
@@ -152,8 +152,8 @@ function initPasswordManager() {
 }
 
 /**
- * Met à jour l'indicateur de force du mot de passe
- * @param {number} score - Score de force (0-100)
+ * Updates the password strength indicator
+ * @param {number} score - Strength score (0-100)
  */
 function updateStrengthMeter(score) {
     const strengthBar = document.getElementById('passwordStrength');
@@ -161,7 +161,7 @@ function updateStrengthMeter(score) {
     
     if (!strengthBar || !strengthText) return;
     
-    // Réinitialiser les classes
+    // Reset classes
     strengthBar.className = 'strength-indicator';
     
     if (score === 0) {
@@ -169,7 +169,7 @@ function updateStrengthMeter(score) {
         return;
     }
     
-    // Ajouter la classe appropriée
+    // Add appropriate class
     if (score < 40) {
         strengthBar.classList.add('strength-weak');
         strengthText.textContent = 'Weak password';
@@ -184,13 +184,13 @@ function updateStrengthMeter(score) {
         strengthText.textContent = 'Strong password';
     }
     
-    // Définir la largeur de la barre
+    // Set bar width
     strengthBar.style.width = score + '%';
 }
 
 /**
- * Met à jour les indicateurs des exigences du mot de passe
- * @param {Object} criteria - Critères validés ou non
+ * Updates the password requirements indicators
+ * @param {Object} criteria - Validated or not validated criteria
  */
 function updateRequirements(criteria) {
     const requirements = {
@@ -214,9 +214,9 @@ function updateRequirements(criteria) {
 }
 
 /**
- * Affiche un message d'erreur sous un champ
- * @param {HTMLElement} field - Le champ concerné
- * @param {string} message - Le message d'erreur
+ * Displays an error message below a field
+ * @param {HTMLElement} field - The targeted field
+ * @param {string} message - The error message
  */
 function showErrorMessage(field, message) {
     removeErrorMessage(field);
@@ -229,8 +229,8 @@ function showErrorMessage(field, message) {
 }
 
 /**
- * Supprime le message d'erreur d'un champ
- * @param {HTMLElement} field - Le champ concerné
+ * Removes the error message from a field
+ * @param {HTMLElement} field - The targeted field
  */
 function removeErrorMessage(field) {
     const errorElement = field.parentNode.querySelector('.error-message');
@@ -240,42 +240,42 @@ function removeErrorMessage(field) {
 }
 
 /**
- * Fonction qui indique si tous les champs de mot de passe sont valides
- * Cette fonction peut être appelée depuis n'importe où pour vérifier l'état actuel
- * @returns {boolean} - true si les mots de passe sont valides pour soumission
+ * Checks if all password fields are valid
+ * This function can be called from anywhere to check the current state
+ * @returns {boolean} - true if passwords are valid for submission
  */
 function arePasswordsValid() {
     const currentPassword = document.getElementById('currentPassword')?.value || '';
     const newPassword = document.getElementById('newPassword')?.value || '';
     const confirmPassword = document.getElementById('confirmPassword')?.value || '';
     
-    // Si aucun champ n'est rempli, tout est valide (pas de changement de mot de passe)
+    // If no field is filled, everything is valid (no password change)
     if (!currentPassword && !newPassword && !confirmPassword) {
         return true;
     }
     
-    // Si un des champs est rempli, tous doivent être remplis
+    // If one field is filled, all must be filled
     if ((currentPassword || newPassword || confirmPassword) && 
         !(currentPassword && newPassword && confirmPassword)) {
         return false;
     }
     
-    // Vérifier la force du mot de passe
+    // Check password strength
     const isStrong = validatePasswordStrength(newPassword);
     if (!isStrong) {
         return false;
     }
     
-    // Vérifier la correspondance
+    // Check match
     return newPassword === confirmPassword;
 }
 
 /**
- * Valide la force du mot de passe et met à jour les indicateurs visuels
- * Version améliorée qui ne montre pas de messages d'erreur pendant la saisie
- * @param {string} password - Le mot de passe à valider
- * @param {boolean} showError - Si true, affiche un message d'erreur
- * @returns {boolean} - true si le mot de passe répond à tous les critères
+ * Validates password strength and updates visual indicators
+ * Improved version that doesn't show error messages during input
+ * @param {string} password - The password to validate
+ * @param {boolean} showError - If true, displays an error message
+ * @returns {boolean} - true if the password meets all criteria
  */
 function validatePasswordStrength(password, showError = false) {
     const strengthBar = document.getElementById('passwordStrength');
@@ -288,7 +288,7 @@ function validatePasswordStrength(password, showError = false) {
         return false;
     }
     
-    // Critères de validation
+    // Validation criteria
     const criteria = {
         length: password.length >= 8,
         uppercase: /[A-Z]/.test(password),
@@ -297,10 +297,10 @@ function validatePasswordStrength(password, showError = false) {
         special: /[^A-Za-z0-9]/.test(password)
     };
     
-    // Mettre à jour les indicateurs visuels
+    // Update visual indicators
     updateRequirements(criteria);
     
-    // Calculer le score (0-100)
+    // Calculate score (0-100)
     let score = 0;
     if (criteria.length) score += 20;
     if (criteria.uppercase) score += 20;
@@ -310,31 +310,31 @@ function validatePasswordStrength(password, showError = false) {
     
     updateStrengthMeter(score);
     
-    // Valider le champ si tous les critères sont respectés
+    // Validate field if all criteria are met
     const isValid = Object.values(criteria).every(v => v);
     const passwordField = document.getElementById('newPassword');
     
     if (passwordField) {
         if (isValid) {
-             // Supprimer les classes d'erreur
+             // Remove error classes
              passwordField.classList.remove('input-error');
              passwordField.classList.remove('required-field');
-             // Ajouter une classe de validation si nécessaire
+             // Add validation class if needed
              passwordField.classList.add('valid-input');
              removeErrorMessage(passwordField);
         } else if (password.length > 0 && showError) {
-            // Afficher l'erreur seulement si demandé (par exemple, après le blur)
+            // Show error only if requested (e.g., after blur)
             passwordField.classList.add('input-error');
-            showErrorMessage(passwordField, 'Le mot de passe ne répond pas à toutes les exigences');
+            showErrorMessage(passwordField, 'Password does not meet all requirements');
             
-            // Désactiver le bouton si le mot de passe n'est pas valide
+            // Disable button if password is not valid
             if (submitButton) {
                 submitButton.classList.add('disabled-submit');
             }
         }
     }
     
-    // Si la validation du mot de passe a changé et qu'il y a une confirmation, vérifier sans message d'erreur
+    // If password validation changed and there's a confirmation, check without error message
     const confirmPassword = document.getElementById('confirmPassword');
     if (confirmPassword && confirmPassword.value) {
         checkPasswordMatch(false);
@@ -344,13 +344,13 @@ function validatePasswordStrength(password, showError = false) {
 }
 
 /**
- * Fonction pour valider la section du mot de passe de manière stricte
- * @returns {boolean} - True si la validation est réussie ou si aucun changement n'est demandé
+ * Strictly validates the password section
+ * @returns {boolean} - True if validation passed or no change requested
  */
 function validatePasswordSection() {
     const result = validatePasswordInputs();
     
-    // Si la validation a échoué, bloquer explicitement la soumission
+    // If validation failed, explicitly block submission
     if (!result.isValid) {
         const submitButton = document.querySelector('.save-btn');
         if (submitButton) {
@@ -362,8 +362,8 @@ function validatePasswordSection() {
 }
 
 /**
- * Initialisation des écouteurs d'événements pour la validation en temps réel
- * des champs de mot de passe avec impact sur le bouton de soumission
+ * Initializes event listeners for real-time validation
+ * of password fields with submit button control
  */
 function initPasswordValidationWithSubmitControl() {
     const passwordFields = {
@@ -375,7 +375,7 @@ function initPasswordValidationWithSubmitControl() {
     const submitButton = document.querySelector('.save-btn');
     if (!submitButton) return;
     
-    // Fonction commune pour valider et mettre à jour l'état du bouton
+    // Common function to validate and update button state
     function validateAndUpdateButton() {
         const isValid = arePasswordsValid();
         
@@ -383,7 +383,7 @@ function initPasswordValidationWithSubmitControl() {
             submitButton.classList.remove('disabled-submit');
             submitButton.title = '';
         } else {
-            // Ne désactiver le bouton que si des champs de mot de passe sont remplis
+            // Only disable button if password fields are filled
             const anyPasswordFilled = 
                 (passwordFields.current && passwordFields.current.value) ||
                 (passwordFields.new && passwordFields.new.value) ||
@@ -391,12 +391,12 @@ function initPasswordValidationWithSubmitControl() {
             
             if (anyPasswordFilled) {
                 submitButton.classList.add('disabled-submit');
-                submitButton.title = 'Veuillez remplir correctement tous les champs de mot de passe';
+                submitButton.title = 'Please fill in all password fields correctly';
             }
         }
     }
     
-    // Attacher les écouteurs aux champs
+    // Attach listeners to fields
     Object.values(passwordFields).forEach(field => {
         if (!field) return;
         
@@ -404,20 +404,20 @@ function initPasswordValidationWithSubmitControl() {
         field.addEventListener('blur', validateAndUpdateButton);
     });
     
-    // Validation initiale
+    // Initial validation
     validateAndUpdateButton();
 }
 
 /**
- * Vérifie si les entrées de mot de passe sont valides
- * @returns {Object} - Résultat de la validation
+ * Checks if password inputs are valid
+ * @returns {Object} - Validation result
  */
 function validatePasswordInputs() {
     const currentPassword = document.getElementById('currentPassword')?.value || '';
     const newPassword = document.getElementById('newPassword')?.value || '';
     const confirmPassword = document.getElementById('confirmPassword')?.value || '';
     
-    // Si aucun champ n'est rempli, pas de changement demandé
+    // If no field is filled, no change requested
     if (!currentPassword && !newPassword && !confirmPassword) {
         return {
             isValid: true,
@@ -426,7 +426,7 @@ function validatePasswordInputs() {
         };
     }
     
-    // Si un des champs est rempli, tous sont requis
+    // If one field is filled, all are required
     if ((currentPassword || newPassword || confirmPassword) && 
         !(currentPassword && newPassword && confirmPassword)) {
         
@@ -461,7 +461,7 @@ function validatePasswordInputs() {
         };
     }
     
-    // Valider la force du mot de passe
+    // Validate password strength
     const isStrong = validatePasswordStrength(newPassword);
     if (!isStrong) {
         return {
@@ -471,7 +471,7 @@ function validatePasswordInputs() {
         };
     }
     
-    // Vérifier que les mots de passe correspondent
+    // Check that passwords match
     const isMatch = checkPasswordMatch();
     if (!isMatch) {
         return {
@@ -481,7 +481,7 @@ function validatePasswordInputs() {
         };
     }
     
-    // Tout est valide, préparer les données
+    // Everything is valid, prepare data
     return {
         isValid: true,
         shouldUpdate: true,
@@ -493,70 +493,70 @@ function validatePasswordInputs() {
 }
 
 /**
- * Gère le changement de mot de passe
- * Version corrigée pour mieux gérer les erreurs
- * @returns {Promise<boolean>} - True si le changement a réussi ou si aucun changement n'est demandé
+ * Handles password change
+ * Improved version for better error handling
+ * @returns {Promise<boolean>} - True if change succeeded or no change requested
  */
 async function handlePasswordChange() {
     const result = validatePasswordInputs();
     
-    // Si pas de changement demandé ou validation échouée
+    // If no change requested or validation failed
     if (!result.isValid) {
         return false;
     }
     
-    // Si pas de mise à jour nécessaire (champs vides)
+    // If no update needed (empty fields)
     if (!result.shouldUpdate) {
         return true;
     }
     
     try {
-        // Envoyer la requête au serveur
+        // Send request to server
         const response = await saveUserPassword(result.data);
         
         if (response.success) {
-            // Réinitialiser les champs
+            // Reset fields
             const fields = ['currentPassword', 'newPassword', 'confirmPassword'];
             fields.forEach(id => {
                 const field = document.getElementById(id);
                 if (field) field.value = '';
             });
             
-            // Réinitialiser l'indicateur de force
+            // Reset strength indicator
             updateStrengthMeter(0);
             
-            // La notification est déjà gérée dans saveUserPassword
+            // Notification is already handled in saveUserPassword
             return true;
         } else {
-            // Gérer les erreurs spécifiques
+            // Handle specific errors
             if (response.code === 'INVALID_CURRENT_PASSWORD') {
                 const field = document.getElementById('currentPassword');
                 if (field) {
                     field.classList.add('input-error');
-                    showErrorMessage(field, 'Le mot de passe actuel est incorrect');
+                    showErrorMessage(field, 'Current password is incorrect');
                 }
                 
-                // Retourner true pour permettre de continuer avec la sauvegarde du profil
-                // même si le changement de mot de passe a échoué
-                // Cela évite que l'erreur de mot de passe bloque la sauvegarde des autres données
+                // Return true to allow profile save to continue
+                // even if password change failed
+                // This prevents password error from blocking other data save
                 return true;
             }
             
-            // Erreur silencieuse, laisser la sauvegarde du profil continuer
-            console.warn('Erreur de mot de passe ignorée pour permettre la sauvegarde du profil:', response.message);
+            // Silent error, let profile save continue
+            console.warn('Password error ignored to allow profile save:', response.message);
             return true;
         }
     } catch (error) {
-        console.error('Erreur lors de la mise à jour du mot de passe:', error);
+        console.error('Error updating password:', error);
         
-        // Ne pas bloquer la sauvegarde du profil pour un problème de mot de passe
-        // Retourner true pour permettre la sauvegarde des autres données
+        // Don't block profile save for a password issue
+        // Return true to allow other data to be saved
         return true;
     }
 }
 
 
-// Exporter les fonctions publiques
+// Export public functions
 export {
     initPasswordManager,
     validatePasswordSection,

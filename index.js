@@ -160,7 +160,7 @@ function checkLoginThrottling(identifier) {
     return { 
       allowed: false, 
       timeLeft: timeLeft,
-      message: `Trop de tentatives échouées. Veuillez réessayer dans ${timeLeft} minute(s).`
+      message: `Too many failed attempts. Please try again in ${timeLeft} minute(s).`
     };
   }
   
@@ -278,7 +278,37 @@ function requireCompleteProfile(req, res, next) {
   }
   
   if (!userService.isProfileComplete(req.session.user.username)) {
-    return res.redirect('/profile');
+    return res.redirect('/pages/profile.html');
+  }
+  
+  next();
+}
+
+// Block access when password is same as username (security risk)
+function requireSecurePassword(req, res, next) {
+  if (!req.session.user) {
+    return res.redirect('/');
+  }
+  
+  // Admins are not subject to this check
+  if (req.session.user.role === 'admin') {
+    return next();
+  }
+  
+  const username = req.session.user.username;
+  
+  if (userService.isPasswordSameAsUsername(username)) {
+    // For API calls, return JSON error
+    if (req.path.startsWith('/api/')) {
+      return res.status(403).json({
+        success: false,
+        code: 'PASSWORD_CHANGE_REQUIRED',
+        message: 'You must change your password before accessing this feature',
+        redirectTo: '/pages/profile.html'
+      });
+    }
+    // For page requests, redirect to profile
+    return res.redirect('/pages/profile.html');
   }
   
   next();
@@ -319,6 +349,16 @@ app.use('/pages/', (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/');
   }
+
+  // Block catalog and orders for users with weak password (password === username)
+  if (req.session.user.role !== 'admin') {
+    const blockedPages = ['/catalog.html', '/orders.html'];
+    if (blockedPages.includes(requestPath)) {
+      if (userService.isPasswordSameAsUsername(req.session.user.username)) {
+        return res.redirect('/pages/profile.html');
+      }
+    }
+  }
   
   next();
 });
@@ -330,7 +370,12 @@ app.post('/login', (req, res) => {
   
   const throttleCheck = checkLoginThrottling(identifier);
   if (!throttleCheck.allowed) {
-    return res.status(429).send(`${throttleCheck.message} <a href="/">Retour</a>`);
+    return res.status(429).json({ 
+      success: false, 
+      message: throttleCheck.message,
+      locked: true,
+      remainingAttempts: 0
+    });
   }
   
   const user = userService.getUser(username);
@@ -348,20 +393,25 @@ app.post('/login', (req, res) => {
       const firstPage = navigationService.getFirstAccessiblePage(username);
       
       if (!firstPage) {
-        return res.status(403).send(`
-          Votre compte administrateur n'a accès à aucune section. 
-          Veuillez contacter l'administrateur système. 
-          <a href="/logout">Se déconnecter</a>
-        `);
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Your admin account has no accessible sections. Please contact the system administrator.'
+        });
       }
       
       console.log(`✅ Login admin ${username} - Redirection vers ${firstPage.path}`);
-      return res.redirect(firstPage.path);
+      return res.json({ success: true, redirect: firstPage.path });
     } else {
+      // Check if password is same as username (email) — force password change
+      const isPasswordWeak = userService.isPasswordSameAsUsername(username);
+      if (isPasswordWeak) {
+        return res.json({ success: true, redirect: '/pages/profile.html' });
+      }
+
       if (userService.isProfileComplete(username)) {
-        return res.redirect('/pages/catalog.html');
+        return res.json({ success: true, redirect: '/pages/catalog.html' });
       } else {
-        return res.redirect('/profile');
+        return res.json({ success: true, redirect: '/pages/profile.html' });
       }
     }
   } else {
@@ -373,9 +423,18 @@ app.post('/login', (req, res) => {
     const remainingAttempts = 5 - loginAttempts[identifier].count;
     
     if (remainingAttempts <= 0) {
-      return res.status(429).send(`Trop de tentatives échouées. Votre compte est temporairement bloqué. <a href="/">Retour</a>`);
+      return res.status(429).json({ 
+        success: false, 
+        message: 'Too many failed attempts. Your account is temporarily locked.',
+        locked: true,
+        remainingAttempts: 0
+      });
     } else {
-      return res.status(401).send(`Identifiants invalides. Il vous reste ${remainingAttempts} tentative(s). <a href="/">Réessayer</a>`);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials',
+        remainingAttempts: remainingAttempts
+      });
     }
   }
 });
@@ -436,8 +495,12 @@ app.get('/admin/compta-month', requireLogin, requireAdmin, requirePermission('co
   res.sendFile(path.join(__dirname, 'admin/pages/compta-month.html'));
 });
 
+app.get('/admin/results', requireLogin, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'results.html'));
+});
+
 // ===== ROUTES CLIENT PROTÉGÉES =====
-app.get('/pages/catalog.html', requireLogin, requireCompleteProfile, (req, res) => {
+app.get('/pages/catalog.html', requireLogin, requireSecurePassword, requireCompleteProfile, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'catalog.html'));
 });
 
@@ -449,11 +512,11 @@ app.get('/pages/profile.html', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'profile.html'));
 });
 
-app.get('/orders', requireLogin, (req, res) => {
+app.get('/orders', requireLogin, requireSecurePassword, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'orders.html'));
 });
 
-app.get('/pages/orders.html', requireLogin, (req, res) => {
+app.get('/pages/orders.html', requireLogin, requireSecurePassword, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'orders.html'));
 });
 
@@ -485,12 +548,17 @@ app.get('/api/accessible-pages', requireLogin, requireAdmin, (req, res) => {
 app.get('/api/user-profile', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const profile = userService.getUserProfile(userId);
-  res.json(profile || {});
+  const passwordSameAsUsername = userService.isPasswordSameAsUsername(userId);
+  res.json({
+    ...(profile || {}),
+    passwordSameAsUsername
+  });
 });
 
 app.post('/api/save-profile', requireLogin, (req, res) => {
   const userId = req.session.user.username;
   const profileData = req.body;
+  let passwordChanged = false;
   
   try {
     if (profileData.passwordChange) {
@@ -499,7 +567,7 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
       if (!currentPassword || !newPassword) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Données de mot de passe incomplètes'
+          message: 'Incomplete password data'
         });
       }
       
@@ -508,14 +576,15 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
       if (!user) {
         return res.status(404).json({
           success: false, 
-          message: 'Utilisateur non trouvé'
+          message: 'User not found'
         });
       }
       
       if (!cryptoService.verifyPassword(user.password, currentPassword)) {
         return res.status(401).json({
-          success: false, 
-          message: 'Le mot de passe actuel est incorrect'
+          success: false,
+          code: 'INVALID_CURRENT_PASSWORD',
+          message: 'Current password is incorrect'
         });
       }
       
@@ -523,8 +592,10 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
         const updateResult = userService.updateUserPassword(userId, newPassword);
         
         if (!updateResult) {
-          throw new Error('Échec de la mise à jour du mot de passe');
+          throw new Error('Failed to update password');
         }
+        
+        passwordChanged = true;
         
         if (req.session.user) {
           delete req.session.user.password;
@@ -534,7 +605,7 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
       } catch (pwError) {
         return res.status(500).json({ 
           success: false, 
-          message: `Erreur lors de la mise à jour du mot de passe: ${pwError.message}`,
+          message: `Error updating password: ${pwError.message}`,
           error: pwError.message
         });
       }
@@ -543,32 +614,36 @@ app.post('/api/save-profile', requireLogin, (req, res) => {
     if (!profileData.firstName || !profileData.lastName || !profileData.email) {
       return res.status(400).json({
         success: false,
-        message: 'Les champs obligatoires du profil sont manquants'
+        message: 'Required profile fields are missing'
       });
     }
     
     const result = userService.saveUserProfile(profileData, userId);
     
     if (!result) {
-      throw new Error('Échec de la sauvegarde du profil');
+      throw new Error('Failed to save profile');
     }
     
     const updatedProfile = userService.getUserProfile(userId);
+    // Re-check after potential password change
+    const stillWeakPassword = userService.isPasswordSameAsUsername(userId);
     
     res.json({ 
       success: true,
-      passwordSameAsUsername: result.passwordSameAsUsername,
-      message: result.message,
-      passwordChanged: profileData.passwordChange !== undefined,
+      passwordSameAsUsername: stillWeakPassword,
+      message: stillWeakPassword ? 
+        'Profile saved. Please change your password.' : 
+        'Profile saved successfully',
+      passwordChanged: passwordChanged,
       isProfileComplete: result.isProfileComplete,
       profile: updatedProfile,
-      shouldRedirect: result.shouldRedirect,
-      redirectUrl: result.shouldRedirect ? '/pages/catalog.html' : null
+      shouldRedirect: !stillWeakPassword,
+      redirectUrl: !stillWeakPassword ? '/pages/catalog.html' : null
     });
   } catch (error) {
     res.status(500).json({ 
       success: false, 
-      message: `Erreur lors de la sauvegarde du profil: ${error.message}`,
+      message: `Error saving profile: ${error.message}`,
       error: error.message
     });
   }
@@ -1220,7 +1295,7 @@ app.delete('/api/products/delete-image', requireLogin, requireAdmin, requirePerm
 // 🔥 ROUTES GÉNÉRIQUES À LA FIN
 
 // Récupération des produits (format ancien pour catalog client)
-app.get('/api/products', requireLogin, async (req, res) => {
+app.get('/api/products', requireLogin, requireSecurePassword, async (req, res) => {
   try {
     const products = await productService.getProducts();
     
@@ -1265,7 +1340,7 @@ app.get('/api/products/:id', requireLogin, async (req, res) => {
 });
 
 // Sauvegarde d'une commande
-app.post('/api/save-order', requireLogin, (req, res) => {
+app.post('/api/save-order', requireLogin, requireSecurePassword, (req, res) => {
   const userId = req.session.user.username;
   const cartItems = req.body.items;
   const reference = req.body.reference || '';

@@ -1,182 +1,42 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Discado - Welcome</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', Arial, sans-serif;
-        }
-
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #dd6060, #ff3333);
-            text-align: center;
-        }
-
-        .welcome-container {
-            background-color: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            max-width: 90%;
-            width: 500px;
-        }
-
-        .logo-container {
-            margin-bottom: 30px;
-        }
-
-        .logo-container img {
-            max-width: 200px;
-            height: auto;
-        }
-
-        h1 {
-            margin-bottom: 20px;
-            color: #333;
-            font-size: 24px;
-        }
-
-        p {
-            color: #666;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .button-container {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .button {
-            padding: 12px 25px;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .primary-btn {
-            background-color: #2575fc;
-            color: white;
-            border: none;
-        }
-
-        .primary-btn:hover {
-            background-color: #1a5cb8;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(37, 117, 252, 0.3);
-        }
-
-        .secondary-btn {
-            background-color: #f1f3f5;
-            color: #333;
-            border: 1px solid #ddd;
-        }
-
-        .secondary-btn:hover {
-            background-color: #e1e5ea;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .auth-status {
-            display: none;
-            margin-top: 30px;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .auth-status.logged-in {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .auth-status.logged-out {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .info-text {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-            line-height: 1.4;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/welcome.css">
 </head>
-<body>
+<body class="welcome-page">
     <div class="welcome-container">
         <div class="logo-container">
             <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo">
         </div>
-        
+
+        <div class="welcome-divider"></div>
+
         <h1>Welcome to Discado</h1>
 
-        <p>Log in to browse our catalog of promotional products for your business.</p>
-        
+        <p class="welcome-subtitle">Log in to browse our catalog of promotional products for your business.</p>
+
         <div class="button-container">
-            <a href="/pages/login.html" id="login-btn" class="button secondary-btn">Log In</a>
-            <a href="mailto:catalog.discado@gmail.com?subject=Account%20Request&body=Hello%20Discado%20Team,%0A%0AI%20am%20interested%20in%20creating%20an%20account%20to%20access%20your%20catalog.%0A%0AShop%20name:%20%0AContact%20person:%20%0APhone:%20%0A%0AThank%20you." id="request-btn" class="button primary-btn">Request Account</a>
+            <a href="/pages/login.html" id="login-btn" class="button primary-btn">
+                <i class="fas fa-sign-in-alt"></i> Log In
+            </a>
+            <a href="mailto:catalog.discado@gmail.com?subject=Account%20Request&body=Hello%20Discado%20Team,%0A%0AI%20am%20interested%20in%20creating%20an%20account%20to%20access%20your%20catalog.%0A%0AShop%20name:%20%0AContact%20person:%20%0APhone:%20%0A%0AThank%20you." id="request-btn" class="button secondary-btn">
+                <i class="fas fa-envelope"></i> Request Account
+            </a>
         </div>
-        
-        <p class="info-text">Don't have an account yet? Click the "Request Account" button to send us an email and we'll create one for you.</p>
-        <div id="auth-status" class="auth-status">
-            
-        </div>
+
+        <p class="info-text">Don't have an account yet? Click "Request Account" and we'll create one for you.</p>
+
+        <div id="auth-status" class="auth-status"></div>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check authentication status
-        fetch('/api/check-auth')
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                // Ne pas lancer d'erreur, simplement retourner null pour indiquer "non connecté"
-                return null;
-            })
-            .then(data => {
-                // Si data est null, l'utilisateur n'est pas connecté
-                if (!data) return;
-                
-                // User is logged in
-                const authStatus = document.getElementById('auth-status');
-                const loginBtn = document.getElementById('login-btn');
-                
-                authStatus.textContent = `Welcome back, ${data.username || 'User'}!`;
-                authStatus.classList.add('logged-in');
-                authStatus.style.display = 'block';
-                
-                // Change login button to "My Account"
-                loginBtn.textContent = 'My Account';
-                loginBtn.href = '/pages/profile.html';
-                
-                // Redirect to catalog after 1.5 seconds
-                setTimeout(() => {
-                    window.location.href = '/pages/catalog.html';
-                }, 1500);
-            })
-            .catch(error => {
-                // Gérer les erreurs de réseau, pas les erreurs d'authentification
-                console.log('Network error:', error);
-            });
-    });
-    </script>
+    <script src="/js/welcome.js"></script>
 </body>
 </html>

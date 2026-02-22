@@ -11,179 +11,12 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/profile.css">
     <link rel="stylesheet" href="/css/cart.css">
-    <link rel="stylesheet" href="/css/menu-fix.css">
+    <link rel="stylesheet" href="/css/profile-extra.css">
     
     <!-- Enhanced Header Script -->
     <script src="/js/components/DiscadoHeader.js"></script>
     <!-- Cart Integration Script -->
     <script src="/js/components/CartIntegration.js"></script>
-    <style>
-        /* Styles supplémentaires pour améliorer le formulaire */
-        .loading-container {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .form-group input.input-error {
-            border-color: #f44336;
-            background-color: #fff8f8;
-        }
-        
-        .error-message {
-            color: #f44336;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-        
-        .error-message.visible {
-            display: block;
-        }
-        
-        .save-btn:disabled {
-            opacity: 0.7;
-            cursor: wait;
-        }
-        
-        /* Animation de chargement */
-        .save-btn.loading::after {
-            content: '';
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            margin-left: 10px;
-            animation: rotate 1s infinite linear;
-        }
-        
-        @keyframes rotate {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Style pour la notification de succès */
-        .success-notification {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 5px;
-            z-index: 9999;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translate(-50%, -20px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        
-        /* Styles pour les indicateurs de force du mot de passe */
-        .password-strength-meter {
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .password-strength-bar {
-            height: 6px;
-            background-color: #e0e0e0;
-            border-radius: 3px;
-            position: relative;
-            margin-bottom: 8px;
-        }
-        
-        .strength-indicator {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.3s, background-color 0.3s;
-            width: 0;
-        }
-        
-        .strength-weak {
-            background-color: #f44336;
-        }
-        
-        .strength-fair {
-            background-color: #ff9800;
-        }
-        
-        .strength-good {
-            background-color: #2196f3;
-        }
-        
-        .strength-strong {
-            background-color: #4caf50;
-        }
-        
-        .password-strength-text {
-            font-size: 12px;
-            color: #666;
-            margin: 0;
-        }
-        
-        /* Styles pour les exigences du mot de passe */
-        .password-requirements {
-            list-style: none;
-            padding-left: 0;
-            margin-top: 10px;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .password-requirements li {
-            margin-bottom: 4px;
-            position: relative;
-            padding-left: 20px;
-        }
-        
-        .password-requirements li:before {
-            content: '✕';
-            color: #ccc;
-            position: absolute;
-            left: 0;
-        }
-        
-        .password-requirements li.valid:before {
-            content: '✓';
-            color: #4caf50;
-        }
-        
-        /* Styles pour les toggles de mot de passe */
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            color: #666;
-            font-size: 16px;
-        }
-        
-        .form-group {
-            position: relative;
-        }
-        
-        /* Indicateurs de correspondance de mot de passe */
-        input.password-match {
-            border-color: #4caf50 !important;
-            background-color: #f1f8e9 !important;
-        }
-        
-        input.password-mismatch {
-            border-color: #f44336 !important;
-            background-color: #ffebee !important;
-        }
-    </style>
 </head>
 <body>
     <!-- Header will be loaded dynamically -->
@@ -315,7 +148,7 @@
     <!-- Scripts -->
     <script type="module" src="/js/core/app.js"></script>
     <script type="module">
-        // Importer le gestionnaire de profil complet qui gère les conflits
+        // Import the complete profile manager that handles conflicts
         import { initCompleteProfileManager } from '/js/modules/profile/profileManager.js';
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -340,7 +173,7 @@
                 });
             
             // Initialize profile manager with complete initialization
-            // Cette fonction désactive les scripts inline conflictuels
+            // This function disables conflicting inline scripts
             try {
                 initCompleteProfileManager();
                 console.log('Profile manager initialized successfully with conflict prevention');
@@ -366,137 +199,6 @@
         });
         });
     </script>
-    <script>
-        /**
-         * Fonction qui désactive le bouton de soumission si les mots de passe sont invalides
-         * Cette fonction peut être appelée directement dans le HTML
-         */
-        function setupPasswordValidationUI() {
-            const currentPassword = document.getElementById('currentPassword');
-            const newPassword = document.getElementById('newPassword');
-            const confirmPassword = document.getElementById('confirmPassword');
-            const submitButton = document.querySelector('.save-btn');
-            const passwordForm = document.getElementById('profileForm');
-            
-            if (!currentPassword || !newPassword || !confirmPassword || !submitButton || !passwordForm) {
-                console.warn('Elements nécessaires pour la validation des mots de passe non trouvés');
-                return;
-            }
-            
-            // Fonction pour vérifier si tous les champs sont valides
-            function validatePasswordFields() {
-                // Si aucun champ n'est rempli, pas de validation nécessaire
-                if (!currentPassword.value && !newPassword.value && !confirmPassword.value) {
-                    submitButton.classList.remove('disabled-submit');
-                    return true;
-                }
-                
-                // Si l'un des champs est rempli, ils doivent tous l'être
-                if ((currentPassword.value || newPassword.value || confirmPassword.value) && 
-                    !(currentPassword.value && newPassword.value && confirmPassword.value)) {
-                    submitButton.classList.add('disabled-submit');
-                    submitButton.title = 'All password fields must be filled';
-                    return false;
-                }
-                
-                // Vérifier que le nouveau mot de passe répond aux critères
-                const criteriaList = document.querySelectorAll('.password-requirements li');
-                let isStrongPassword = true;
-                
-                criteriaList.forEach(criterion => {
-                    if (!criterion.classList.contains('valid')) {
-                        isStrongPassword = false;
-                    }
-                });
-                
-                if (!isStrongPassword) {
-                    submitButton.classList.add('disabled-submit');
-                    submitButton.title = 'Password must meet all requirements';
-                    return false;
-                }
-                
-                // Vérifier que les mots de passe correspondent
-                if (newPassword.value !== confirmPassword.value) {
-                    submitButton.classList.add('disabled-submit');
-                    confirmPassword.classList.add('password-mismatch');
-                    confirmPassword.classList.remove('password-match');
-                    
-                    // Ajouter un message d'erreur si nécessaire
-                    const existingError = confirmPassword.parentNode.querySelector('.error-message');
-                    if (!existingError) {
-                        const errorMessage = document.createElement('div');
-                        errorMessage.className = 'error-message visible';
-                        errorMessage.textContent = 'Passwords do not match';
-                        confirmPassword.parentNode.appendChild(errorMessage);
-                    }
-                    
-                    submitButton.title = 'Passwords do not match';
-                    return false;
-                } else {
-                    confirmPassword.classList.add('password-match');
-                    confirmPassword.classList.remove('password-mismatch');
-                    
-                    // Supprimer le message d'erreur si présent
-                    const existingError = confirmPassword.parentNode.querySelector('.error-message');
-                    if (existingError) {
-                        existingError.remove();
-                    }
-                }
-                
-                // Tout est valide
-                submitButton.classList.remove('disabled-submit');
-                submitButton.title = '';
-                return true;
-            }
-            
-            // Attacher les événements aux champs
-            [currentPassword, newPassword, confirmPassword].forEach(field => {
-                field.addEventListener('input', validatePasswordFields);
-                field.addEventListener('blur', validatePasswordFields);
-            });
-            
-            // Interception de la soumission du formulaire
-            passwordForm.addEventListener('submit', function(event) {
-                if (!validatePasswordFields()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    
-                    // Mettre en évidence les champs en erreur
-                    if (!currentPassword.value && (newPassword.value || confirmPassword.value)) {
-                        currentPassword.classList.add('input-error');
-                        
-                        const existingError = currentPassword.parentNode.querySelector('.error-message');
-                        if (!existingError) {
-                            const errorMessage = document.createElement('div');
-                            errorMessage.className = 'error-message visible';
-                            errorMessage.textContent = 'Current password is required';
-                            currentPassword.parentNode.appendChild(errorMessage);
-                        }
-                    }
-                    
-                    if (newPassword.value !== confirmPassword.value) {
-                        confirmPassword.focus(); // Focus sur le champ de confirmation
-                    }
-                    
-                    return false;
-                }
-                
-                return true;
-            }, true); // Utiliser la phase de capture pour intercepter avant les autres gestionnaires
-            
-            // Validation initiale
-            validatePasswordFields();
-            
-            console.log('Validation des mots de passe configurée');
-        }
-
-        // Configuration immédiate si le DOM est déjà chargé
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setupPasswordValidationUI();
-        } else {
-            // Sinon, attendre que le DOM soit chargé
-            document.addEventListener('DOMContentLoaded', setupPasswordValidationUI);
-        }
-    </script>
+    <script src="/js/passwordValidation.js"></script>
 </body>
 </html>

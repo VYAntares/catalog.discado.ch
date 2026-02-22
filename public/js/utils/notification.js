@@ -4,8 +4,27 @@ import { AppConfig } from '../core/config.js';
 
 const DEFAULT_DURATION = AppConfig.NOTIFICATION_DURATION || 4000;
 const notificationTimeouts = new Map();
+const DEDUP_WINDOW_MS = 1500; // Ignore duplicate message+type within this window
+const recentNotifications = new Map();
 
 export function showNotification(message, type = 'success', options = {}) {
+    // Deduplication: skip if same message+type was shown recently
+    const dedupeKey = `${type}::${message}`;
+    const now = Date.now();
+    if (recentNotifications.has(dedupeKey)) {
+        const lastShown = recentNotifications.get(dedupeKey);
+        if (now - lastShown < DEDUP_WINDOW_MS) {
+            return null; // Skip duplicate
+        }
+    }
+    recentNotifications.set(dedupeKey, now);
+    // Clean old entries periodically
+    if (recentNotifications.size > 50) {
+        for (const [key, time] of recentNotifications) {
+            if (now - time > DEDUP_WINDOW_MS) recentNotifications.delete(key);
+        }
+    }
+
     const container = getNotificationContainer();
     
     const notification = document.createElement('div');

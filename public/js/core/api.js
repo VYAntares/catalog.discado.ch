@@ -34,9 +34,8 @@ async function handleApiResponse(response) {
   if (!response.ok) {
     const errorMessage = responseData.message || responseData.error || `Error: ${response.status}`;
     
-    if (response.status !== 401 && !response.url.includes('/api/change-password')) {
-      showNotification(errorMessage, 'error');
-    }
+    // Don't show notification here — callers handle their own error messages
+    // Return data so callers can process the error
     
     return responseData;
   }
@@ -145,16 +144,16 @@ export async function saveUserPassword(passwordData) {
     const result = await handleApiResponse(response);
     
     if (result.success) {
-      showNotification('Mot de passe mis à jour avec succès', 'success');
+      showNotification('Password updated successfully', 'success');
     }
     
     return result;
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du mot de passe:', error);
+    console.error('Error updating password:', error);
     
     return {
       success: false,
-      message: error.message || 'Erreur réseau lors de la mise à jour du mot de passe',
+      message: error.message || 'Network error while updating password',
       error: error
     };
   }

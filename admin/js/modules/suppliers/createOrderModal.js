@@ -4,6 +4,7 @@
  */
 
 import * as API from '../../core/api.js';
+import * as Notification from '../../utils/notification.js';
 import * as State from './state.js';
 import * as SupplierDetails from './supplierDetails.js';
 
@@ -90,9 +91,9 @@ async function handleSubmit() {
     // Recharger la vue du fournisseur
     await SupplierDetails.show(supplierId);
     
-    alert(`Commande ${invoiceNumber} créée ! Vous pouvez maintenant y ajouter des articles.`);
+    // Success notification already shown by API.createSupplierOrder()
   } catch (error) {
     console.error('❌ Erreur création commande:', error);
-    alert('Erreur lors de la création de la commande.');
+    Notification.showNotification('Erreur lors de la création de la commande', 'error');
   }
 }

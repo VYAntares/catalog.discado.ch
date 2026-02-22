@@ -1,21 +1,21 @@
 // services/userService.js
 // userService.js
-// Service de gestion des utilisateurs et profils
+// User and profile management service
 const dbModule = require('./db');
 const cryptoService = require('./cryptoService');
 
 const userService = {
-    // Récupération d'un utilisateur par son username
+    // Get a user by username
     getUser(username) {
         return dbModule.getUserByUsername.get(username);
     },
     
-    // Récupération de tous les utilisateurs
+    // Get all users
     getAllUsers() {
         return dbModule.getAllUsers.all();
     },
     
-    // Création d'un nouvel utilisateur avec mot de passe haché
+    // Create a new user with hashed password
     createUser(username, password, role) {
         try {
             const hashedPassword = cryptoService.hashPassword(password);
@@ -25,7 +25,7 @@ const userService = {
         }
     },
     
-    // Récupération du profil utilisateur formaté
+    // Get formatted user profile
     getUserProfile(username) {
         try {
             const profile = dbModule.getUserProfile.get(username);
@@ -53,7 +53,7 @@ const userService = {
         }
     },
     
-    // Vérification si le mot de passe est identique au nom d'utilisateur
+    // Check if password is the same as the username
     isPasswordSameAsUsername(username) {
         try {
             const user = this.getUser(username);
@@ -64,12 +64,12 @@ const userService = {
         }
     },
     
-    // Sauvegarde du profil utilisateur (création ou mise à jour)
+    // Save user profile (create or update)
     saveUserProfile(profileData, username) {
         try {
             const isPasswordWeak = this.isPasswordSameAsUsername(username);
             
-            // Normalisation des données
+            // Data normalization
             const normalizedData = {
                 firstName: profileData.firstName || '',
                 lastName: profileData.lastName || '',
@@ -86,22 +86,22 @@ const userService = {
             const existingProfile = dbModule.getUserProfile.get(username);
             let passwordChanged = false;
             
-            // Mise à jour ou création du profil
+            // Update or create profile
             if (existingProfile) {
                 this._updateProfile(username, normalizedData);
             } else {
                 this._createProfile(username, normalizedData);
             }
             
-            // Gestion du changement de mot de passe
+            // Handle password change
             if (profileData.passwordChange && profileData.passwordChange.newPassword) {
                 try {
                     const user = this.getUser(username);
-                    if (!user || user.password !== profileData.passwordChange.currentPassword) {
+                    if (!user || !cryptoService.verifyPassword(user.password, profileData.passwordChange.currentPassword)) {
                         return { 
                             success: false,
                             code: 'INVALID_CURRENT_PASSWORD',
-                            message: 'Le mot de passe actuel est incorrect',
+                            message: 'Current password is incorrect',
                             shouldRedirect: false
                         };
                     }
@@ -109,7 +109,7 @@ const userService = {
                     this.updateUserPassword(username, profileData.passwordChange.newPassword);
                     passwordChanged = true;
                 } catch (passwordError) {
-                    // Continuer malgré l'erreur
+                    // Continue despite error
                 }
             }
             
@@ -123,15 +123,15 @@ const userService = {
                 passwordSameAsUsername: isPasswordWeak && !passwordChanged,
                 profile: savedProfile,
                 message: isPasswordWeak && !passwordChanged ? 
-                    'Profil sauvegardé. Veuillez changer votre mot de passe.' : 
-                    'Profil sauvegardé avec succès'
+                    'Profile saved. Please change your password.' : 
+                    'Profile saved successfully'
             };
         } catch (error) {
             throw error;
         }
     },
     
-    // Mise à jour d'un profil existant
+    // Update an existing profile
     _updateProfile(username, data) {
         try {
             const hasReferralSource = dbModule.columnExists('user_profiles', 'referral_source');
@@ -150,7 +150,7 @@ const userService = {
                 );
             }
         } catch (error) {
-            // Tentative de secours sans referral_source
+            // Fallback without referral_source
             dbModule.fallbackUpdateUserProfile.run(
                 data.firstName, data.lastName, data.email, data.phone,
                 data.shopName, data.shopAddress, data.shopCity, data.shopZipCode,
@@ -159,7 +159,7 @@ const userService = {
         }
     },
     
-    // Création d'un nouveau profil
+    // Create a new profile
     _createProfile(username, data) {
         try {
             const hasReferralSource = dbModule.columnExists('user_profiles', 'referral_source');
@@ -178,7 +178,7 @@ const userService = {
                 );
             }
         } catch (error) {
-            // Tentative de secours sans referral_source
+            // Fallback without referral_source
             dbModule.fallbackCreateUserProfile.run(
                 username, data.firstName, data.lastName, data.email, 
                 data.phone, data.shopName, data.shopAddress, data.shopCity, 
@@ -187,7 +187,7 @@ const userService = {
         }
     },
     
-    // Récupération de tous les profils clients (pour admin)
+    // Get all client profiles (for admin)
     getAllClientProfiles() {
         try {
             const profiles = dbModule.getAllProfiles.all();
@@ -211,7 +211,7 @@ const userService = {
         }
     },
     
-    // Vérification si un profil est complet (tous champs obligatoires)
+    // Check if a profile is complete (all required fields)
     isProfileComplete(username) {
         const profile = this.getUserProfile(username);
         
@@ -227,13 +227,13 @@ const userService = {
         );
     },
 
-    // Mise à jour du mot de passe utilisateur
+    // Update user password
     updateUserPassword(username, newPassword) {
         try {
             const user = this.getUser(username);
-            if (!user) throw new Error('Utilisateur non trouvé');
+            if (!user) throw new Error('User not found');
             
-            // Nettoyage des doublons éventuels
+            // Cleanup duplicates if any
             const db = dbModule.db;
             const duplicates = db.prepare('SELECT COUNT(*) as count FROM users WHERE username = ?').get(username);
             
@@ -241,22 +241,22 @@ const userService = {
                 db.prepare('DELETE FROM users WHERE username = ? AND rowid NOT IN (SELECT MIN(rowid) FROM users WHERE username = ?)').run(username, username);
             }
             
-            // Hachage et mise à jour du mot de passe
+            // Hash and update password
             const hashedPassword = cryptoService.hashPassword(newPassword);
             const updateStmt = db.prepare('UPDATE users SET password = ? WHERE username = ?');
             const updateResult = updateStmt.run(hashedPassword, username);
             
             if (!updateResult || updateResult.changes === 0) {
-                throw new Error('Aucune ligne mise à jour dans la base de données');
+                throw new Error('No rows updated in database');
             }
             
-            // Vérification et nettoyage du cache
+            // Verification and cache cleanup
             const updatedUser = this.getUser(username);
             if (!updatedUser) {
-                throw new Error('L\'utilisateur n\'a pas été correctement mis à jour');
+                throw new Error('User was not properly updated');
             }
             
-            // Nettoyage du cache de session si présent
+            // Clear session cache if present
             if (global.sessionCache && global.sessionCache[username]) {
                 delete global.sessionCache[username];
             }
@@ -267,7 +267,7 @@ const userService = {
         }
     },
 
-    // Validation de la force du mot de passe
+    // Password strength validation
     validatePasswordStrength(password) {
         const criteria = {
             length: password.length >= 8,

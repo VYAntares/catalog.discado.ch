@@ -11,6 +11,7 @@ const API_CONFIG = {
 };
 
 // Gère les réponses API et extrait les messages d'erreur
+// Note: ne pas afficher de notification ici — les appelants gèrent leurs propres messages d'erreur
 async function handleApiResponse(response) {
   if (!response.ok) {
     const errorText = await response.text();
@@ -23,7 +24,6 @@ async function handleApiResponse(response) {
       errorMessage = `Erreur: ${response.status}`;
     }
     
-    Notification.showNotification(errorMessage, 'error');
     throw new Error(errorMessage);
   }
   

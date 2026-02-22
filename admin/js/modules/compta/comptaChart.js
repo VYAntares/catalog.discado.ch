@@ -51,14 +51,14 @@ export class ComptaChart {
             return;
         }
 
-        // Adapter la hauteur des barres à la taille d'écran (wrapper - 40px de marge labels)
+        // Adapter la hauteur des barres à la taille d'écran (wrapper CSS - 40px labels)
         const w = window.innerWidth;
         if (w <= 768) {
             this.chartHeight = 340; // 380px wrapper - 40px
         } else if (w <= 1024) {
             this.chartHeight = 340; // 380px wrapper - 40px
         } else {
-            this.chartHeight = 380; // 420px wrapper - 40px
+            this.chartHeight = 375; // valeur originale desktop (420px wrapper)
         }
 
         // Générer les labels Y pour initialiser displayMaxValue
@@ -96,11 +96,15 @@ export class ComptaChart {
             <div class="y-axis">
                 ${yAxisLabels.map(label => `<div class="y-axis-label">${formatCurrency(label)}</div>`).reverse().join('')}
             </div>
-            <div class="grid-lines">
-                ${gridLines}
-            </div>
-            <div class="chart-canvas">
-                ${monthBars}
+            <div class="chart-scroll-area">
+                <div class="chart-inner">
+                    <div class="grid-lines">
+                        ${gridLines}
+                    </div>
+                    <div class="chart-canvas">
+                        ${monthBars}
+                    </div>
+                </div>
             </div>
         `;
     }

@@ -9,7 +9,8 @@ const PAGE_PRIORITY = [
   { permission: 'compta', path: '/admin/compta', name: 'Compta' },
   { permission: 'stock', path: '/admin/stock', name: 'Stock' },
   { permission: 'suppliers', path: '/admin/suppliers', name: 'Fournisseurs' },
-  { permission: 'stats', path: '/admin/stats', name: 'Statistiques' }
+  { permission: 'stats', path: '/admin/stats', name: 'Statistiques' },
+  { permission: 'results', path: '/admin/results', name: 'Résultat' }
 ];
 
 /**

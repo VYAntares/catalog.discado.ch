@@ -35,7 +35,7 @@ function validateForm() {
         const field = document.getElementById(fieldId);
         if (!field || !field.value.trim()) {
             field.classList.add('input-error');
-            showErrorMessage(field, 'Ce champ est requis');
+            showErrorMessage(field, 'This field is required');
             isValid = false;
         } else {
             switch(fieldId) {
@@ -60,21 +60,21 @@ function validateForm() {
         if (!currentPassword) {
             const field = document.getElementById('currentPassword');
             field.classList.add('input-error');
-            showErrorMessage(field, 'Le mot de passe actuel est requis pour changer le mot de passe');
+            showErrorMessage(field, 'Current password is required to change password');
             isValid = false;
         }
 
         if (!newPassword) {
             const field = document.getElementById('newPassword');
             field.classList.add('input-error');
-            showErrorMessage(field, 'Le nouveau mot de passe est requis');
+            showErrorMessage(field, 'New password is required');
             isValid = false;
         }
 
         if (!confirmPassword) {
             const field = document.getElementById('confirmPassword');
             field.classList.add('input-error');
-            showErrorMessage(field, 'Veuillez confirmer votre nouveau mot de passe');
+            showErrorMessage(field, 'Please confirm your new password');
             isValid = false;
         }
 
@@ -107,7 +107,7 @@ async function handleProfileSubmit(event) {
     const saveBtn = document.querySelector('.save-btn');
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Enregistrement...';
+        saveBtn.textContent = 'Saving...';
     }
 
     try {
@@ -137,9 +137,9 @@ async function handleProfileSubmit(event) {
                 alertContainer.innerHTML = `
                     <div class="alert-icon">⚠️</div>
                     <div class="alert-content">
-                        <h4>Action requise pour votre sécurité</h4>
-                        <p>Votre mot de passe est identique à votre identifiant, ce qui représente un risque de sécurité.</p>
-                        <p>Veuillez définir un nouveau mot de passe sécurisé avant de continuer.</p>
+                        <h4>Action required for your security</h4>
+                        <p>Your password is the same as your username, which is a security risk.</p>
+                        <p>Please set a new secure password before continuing.</p>
                     </div>
                 `;
                 
@@ -156,19 +156,19 @@ async function handleProfileSubmit(event) {
                     passwordSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 
-                showNotification('Pour des raisons de sécurité, vous devez changer votre mot de passe', 'warning', 8000);
+                showNotification('For security reasons, you must change your password', 'warning', 8000);
                 
                 const currentPasswordField = document.getElementById('currentPassword');
                 if (currentPasswordField) {
                     currentPasswordField.classList.add('input-error');
-                    showErrorMessage(currentPasswordField, 'Pour des raisons de sécurité, vous devez changer votre mot de passe car il est identique à votre nom d\'utilisateur');
+                    showErrorMessage(currentPasswordField, 'For security reasons, you must change your password because it is the same as your username');
                     currentPasswordField.focus();
                 }
                 
                 const newPasswordField = document.getElementById('newPassword');
                 if (newPasswordField) {
                     newPasswordField.classList.add('required-field');
-                    showErrorMessage(newPasswordField, 'Veuillez définir un nouveau mot de passe différent de votre nom d\'utilisateur');
+                    showErrorMessage(newPasswordField, 'Please set a new password different from your username');
                 }
                 
                 function setupPasswordFieldListeners() {
@@ -207,7 +207,7 @@ async function handleProfileSubmit(event) {
                 
                 setupPasswordFieldListeners();
             } else {
-                showNotification('Profil enregistré avec succès', 'success');
+                showNotification('Profile saved successfully', 'success');
                 
                 if (document.getElementById('currentPassword')) document.getElementById('currentPassword').value = '';
                 if (document.getElementById('newPassword')) document.getElementById('newPassword').value = '';
@@ -232,18 +232,18 @@ async function handleProfileSubmit(event) {
             if (result.code === 'INVALID_CURRENT_PASSWORD') {
                 const field = document.getElementById('currentPassword');
                 field.classList.add('input-error');
-                showErrorMessage(field, 'Le mot de passe actuel est incorrect');
+                showErrorMessage(field, 'Current password is incorrect');
             } else {
-                showNotification(result.message || 'Erreur lors de l\'enregistrement', 'error');
+                showNotification(result.message || 'Error saving profile', 'error');
             }
         }
     } catch (error) {
-        console.error('Erreur lors de l\'enregistrement du profil:', error);
-        showNotification('Impossible d\'enregistrer le profil. Veuillez réessayer.', 'error');
+        console.error('Error saving profile:', error);
+        showNotification('Unable to save profile. Please try again.', 'error');
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Enregistrer';
+            saveBtn.textContent = 'Save';
         }
     }
 }
@@ -343,7 +343,7 @@ function setupRealTimeSubmitButton() {
         
         if (!isValid) {
             saveButton.classList.add('disabled-submit');
-            saveButton.title = 'Veuillez remplir correctement tous les champs de mot de passe';
+            saveButton.title = 'Please fill in all password fields correctly';
         } else {
             saveButton.classList.remove('disabled-submit');
             saveButton.title = '';
@@ -388,7 +388,7 @@ async function loadUserProfile() {
         hideLoadingIndicator(profileForm);
 
         if (!profileData || Object.keys(profileData).length === 0) {
-            showNotification('Veuillez compléter vos informations de profil', 'info');
+            showNotification('Please complete your profile information', 'info');
             resetFormFields();
             return;
         }
@@ -399,12 +399,69 @@ async function loadUserProfile() {
             field.disabled = false;
         });
 
-        showNotification('Profil chargé avec succès', 'success');
+        // Check if password is same as username — force password change
+        if (profileData.passwordSameAsUsername) {
+            showForcedPasswordChangeUI();
+        } else {
+            showNotification('Profile loaded successfully', 'success');
+        }
 
     } catch (error) {
-        console.error('Erreur lors du chargement du profil:', error);
-        showNotification('Impossible de charger le profil. Veuillez réessayer.', 'error');
+        console.error('Error loading profile:', error);
+        showNotification('Unable to load profile. Please try again.', 'error');
         resetFormFields();
+    }
+}
+
+function showForcedPasswordChangeUI() {
+    // Show security alert banner at top of page
+    const alertContainer = document.createElement('div');
+    alertContainer.className = 'security-alert-banner';
+    alertContainer.innerHTML = `
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+            <h4>Action required for your security</h4>
+            <p>Your password is the same as your username, which is a security risk.</p>
+            <p>Please set a new secure password before continuing.</p>
+        </div>
+    `;
+    
+    const mainContent = document.querySelector('main') || document.querySelector('.main-content') || document.body;
+    const existingAlert = mainContent.querySelector('.security-alert-banner');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    mainContent.insertBefore(alertContainer, mainContent.firstChild);
+    
+    // Highlight password section
+    const passwordSection = document.querySelector('.profile-section:nth-child(3)') || document.querySelector('.password-section') || document.getElementById('passwordFields');
+    if (passwordSection) {
+        passwordSection.classList.add('highlight-section');
+        passwordSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    showNotification('For security reasons, you must change your password', 'warning', 8000);
+    
+    // Mark current password field with error
+    const currentPasswordField = document.getElementById('currentPassword');
+    if (currentPasswordField) {
+        currentPasswordField.classList.add('input-error');
+        showErrorMessage(currentPasswordField, 'For security reasons, you must change your password because it is the same as your username');
+        currentPasswordField.focus();
+    }
+    
+    // Mark new password field as required
+    const newPasswordField = document.getElementById('newPassword');
+    if (newPasswordField) {
+        newPasswordField.classList.add('required-field');
+        showErrorMessage(newPasswordField, 'Please set a new password different from your username');
+    }
+    
+    // Disable save button until password fields are properly filled
+    const saveButton = document.querySelector('.save-btn');
+    if (saveButton) {
+        saveButton.classList.add('disabled-submit');
+        saveButton.title = 'You must change your password before saving';
     }
 }
 
@@ -414,7 +471,7 @@ function showLoadingIndicator(profileForm) {
     loadingMessage.className = 'loading-container';
     loadingMessage.innerHTML = `
         <div class="loading-spinner"></div>
-        <p>Chargement de vos données...</p>
+        <p>Loading your data...</p>
     `;
     profileForm.parentNode.insertBefore(loadingMessage, profileForm);
 }
@@ -523,7 +580,7 @@ function validateField(field, showErrors = true) {
     if (requiredFields.includes(field.id) && !field.value.trim()) {
         if (showErrors) {
             field.classList.add('input-error');
-            showErrorMessage(field, 'Ce champ est requis');
+            showErrorMessage(field, 'This field is required');
         }
         isValid = false;
     } else {
@@ -532,7 +589,7 @@ function validateField(field, showErrors = true) {
                 if (field.value && !isValidEmail(field.value)) {
                     if (showErrors) {
                         field.classList.add('input-error');
-                        showErrorMessage(field, 'Veuillez saisir une adresse email valide');
+                        showErrorMessage(field, 'Please enter a valid email address');
                     }
                     isValid = false;
                 } else {
@@ -545,7 +602,7 @@ function validateField(field, showErrors = true) {
                 if (field.value && !isValidPhone(field.value)) {
                     if (showErrors) {
                         field.classList.add('input-error');
-                        showErrorMessage(field, 'Veuillez saisir un numéro de téléphone valide');
+                        showErrorMessage(field, 'Please enter a valid phone number');
                     }
                     isValid = false;
                 } else {
@@ -558,7 +615,7 @@ function validateField(field, showErrors = true) {
                 if (field.value && !isValidZipCode(field.value)) {
                     if (showErrors) {
                         field.classList.add('input-error');
-                        showErrorMessage(field, 'Veuillez saisir un code postal valide');
+                        showErrorMessage(field, 'Please enter a valid zip code');
                     }
                     isValid = false;
                 } else {
@@ -580,7 +637,7 @@ function validateField(field, showErrors = true) {
 function validateEmailField(emailField) {
     if (emailField.value && !isValidEmail(emailField.value)) {
         emailField.classList.add('input-error');
-        showErrorMessage(emailField, 'Veuillez saisir une adresse email valide');
+        showErrorMessage(emailField, 'Please enter a valid email address');
         return false;
     }
     emailField.classList.remove('input-error');
@@ -591,7 +648,7 @@ function validateEmailField(emailField) {
 function validatePhoneField(phoneField) {
     if (phoneField.value && !isValidPhone(phoneField.value)) {
         phoneField.classList.add('input-error');
-        showErrorMessage(phoneField, 'Veuillez saisir un numéro de téléphone valide (10 chiffres)');
+        showErrorMessage(phoneField, 'Please enter a valid phone number (10 digits)');
         return false;
     }
     phoneField.classList.remove('input-error');
@@ -602,7 +659,7 @@ function validatePhoneField(phoneField) {
 function validateZipCodeField(zipCodeField) {
     if (zipCodeField.value && !isValidZipCode(zipCodeField.value)) {
         zipCodeField.classList.add('input-error');
-        showErrorMessage(zipCodeField, 'Veuillez saisir un code postal valide');
+        showErrorMessage(zipCodeField, 'Please enter a valid zip code');
         return false;
     }
     zipCodeField.classList.remove('input-error');
@@ -665,11 +722,11 @@ function disableInlineFormHandler() {
         
         const originalSubmit = profileForm.submit;
         profileForm.submit = function() {
-            console.log('Tentative de soumission native bloquée, utilisation du gestionnaire moduleProfileManager');
+            console.log('Attempted native submission blocked, using profileManager module handler');
             return false;
         };
         
-        console.log('Gestionnaire de formulaire inline désactivé');
+        console.log('Inline form handler disabled');
     }
 }
 
@@ -677,7 +734,7 @@ function initCompleteProfileManager() {
     disableInlineFormHandler();
     initProfileManager();
     
-    console.log('Module de profil complètement initialisé avec priorité sur les scripts inline');
+    console.log('Profile module fully initialized with priority over inline scripts');
 }
 
 document.addEventListener('DOMContentLoaded', function() {

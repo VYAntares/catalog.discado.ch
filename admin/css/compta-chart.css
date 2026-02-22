@@ -55,14 +55,14 @@
     background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
 }
 
-/* Wrapper principal du graphique */
+/* Wrapper principal du graphique — desktop: positioning original */
 .chart-wrapper {
     position: relative;
     height: 420px;
     margin-top: 20px;
 }
 
-/* Axe Y (labels à gauche) */
+/* Axe Y — desktop: absolute positioning original */
 .y-axis {
     position: absolute;
     left: 0;
@@ -82,10 +82,52 @@
     text-align: right;
 }
 
+/* Zone barres — desktop: absolute comme avant */
+.chart-scroll-area {
+    position: absolute;
+    left: 80px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+/* Ligne verticale gauche (axe Y) — s'arrête à la base des barres */
+.chart-scroll-area::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 40px;
+    width: 2px;
+    background: #cbd5e1;
+    z-index: 4;
+    pointer-events: none;
+}
+
+/* Ligne horizontale de base (axe X) — collée sous les barres */
+.chart-scroll-area::after {
+    content: '';
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #cbd5e1;
+    z-index: 4;
+    pointer-events: none;
+}
+
+/* Conteneur interne — définit la largeur scrollable sur mobile */
+.chart-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 /* Lignes de grille horizontales */
 .grid-lines {
     position: absolute;
-    left: 80px;
+    left: 0;
     right: 0;
     top: 0;
     bottom: 40px;
@@ -105,16 +147,15 @@
 /* Canvas contenant les barres */
 .chart-canvas {
     position: absolute;
-    left: 80px;
+    left: 0;
     right: 0;
     top: 0;
     bottom: 40px;
     display: flex;
     justify-content: space-around;
     align-items: flex-end;
-    border-left: 2px solid #cbd5e1;
-    border-bottom: 2px solid #cbd5e1;
     z-index: 2;
+    overflow: visible;
 }
 
 /* Groupe de barres par mois */
@@ -125,6 +166,7 @@
     flex: 1;
     height: 100%;
     position: relative;
+    overflow: visible;
 }
 
 /* Container des 3 barres */
@@ -178,7 +220,7 @@
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s;
-    z-index: 100;
+    z-index: 9999;
 }
 
 .bar:hover .bar-tooltip {
@@ -243,8 +285,6 @@
 @media (max-width: 768px) {
     .chart-container {
         padding: 20px 15px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
     }
 
     .chart-header {
@@ -253,25 +293,44 @@
         gap: 15px;
     }
 
+    /* Mobile: flex layout — axe Y fixe + zone barres scrollable */
     .chart-wrapper {
         height: 380px;
-        min-width: 520px;
+        display: flex;
+        align-items: stretch;
+        position: relative;
     }
 
     .y-axis {
+        position: relative;
+        left: auto;
+        top: auto;
+        bottom: auto;
         width: 55px;
+        flex-shrink: 0;
+        padding-bottom: 40px;
+        box-sizing: border-box;
     }
 
     .y-axis-label {
         font-size: 0.65rem;
     }
 
-    .chart-canvas {
-        left: 55px;
+    /* Zone barres: flex item scrollable */
+    .chart-scroll-area {
+        position: relative;
+        left: auto;
+        right: auto;
+        top: auto;
+        bottom: auto;
+        flex: 1;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .grid-lines {
-        left: 55px;
+    /* min-width force le scroll — bien espacer les 12 mois */
+    .chart-inner {
+        min-width: 550px;
     }
 
     .bar {
@@ -288,10 +347,6 @@
 }
 
 @media (max-width: 480px) {
-    .chart-wrapper {
-        min-width: 480px;
-    }
-
     .bar {
         width: 8px;
     }
