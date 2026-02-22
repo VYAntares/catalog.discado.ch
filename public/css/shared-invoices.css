@@ -49,7 +49,7 @@ input, button, textarea, select { font: inherit; }
 }
 
 .shared-header-left {
-    flex: 1;
+    flex-shrink: 0;
 }
 
 .shared-logo {
