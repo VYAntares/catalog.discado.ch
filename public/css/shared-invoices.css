@@ -662,6 +662,7 @@ input, button, textarea, select { font: inherit; }
 
 @media (max-width: 768px) {
     .shared-tagline { display: none; }
+    .shared-logo { height: 26px; }
 }
 
 @media (max-width: 768px) {
