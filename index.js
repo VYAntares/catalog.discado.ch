@@ -397,7 +397,7 @@ app.post('/api/forgot-password', async (req, res) => {
     // Réponse identique que l'email existe ou non (sécurité)
     if (!userRecord) {
       console.log(`⚠️ Tentative réinitialisation pour email inconnu: ${normalizedEmail}`);
-      return res.json({ success: true, message: 'Si cette adresse est associée à un compte, un email de réinitialisation a été envoyé.' });
+      return res.json({ success: true, message: 'If this email address is associated with an account, a reset link has been sent.' });
     }
 
     // Créer le token
@@ -412,10 +412,10 @@ app.post('/api/forgot-password', async (req, res) => {
     await emailService.sendPasswordResetEmail(normalizedEmail, token, baseUrl);
 
     console.log(`✅ Email de réinitialisation envoyé pour ${userRecord.username}`);
-    return res.json({ success: true, message: 'Si cette adresse est associée à un compte, un email de réinitialisation a été envoyé.' });
+    return res.json({ success: true, message: 'If this email address is associated with an account, a reset link has been sent.' });
   } catch (error) {
     console.error('❌ Erreur forgot-password:', error.message);
-    return res.status(500).json({ success: false, message: 'Erreur serveur. Veuillez réessayer plus tard.' });
+    return res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
   }
 });
 
@@ -424,7 +424,7 @@ app.get('/api/verify-reset-token', (req, res) => {
   const { token } = req.query;
 
   if (!token) {
-    return res.status(400).json({ valid: false, message: 'Token manquant.' });
+    return res.status(400).json({ valid: false, message: 'Missing token.' });
   }
 
   const tokenRecord = userService.validateResetToken(token);
@@ -440,7 +440,7 @@ app.post('/api/reset-password', (req, res) => {
   const { token, password } = req.body;
 
   if (!token || !password) {
-    return res.status(400).json({ success: false, message: 'Données manquantes.' });
+    return res.status(400).json({ success: false, message: 'Missing required fields.' });
   }
 
   const result = userService.resetPasswordWithToken(token, password);

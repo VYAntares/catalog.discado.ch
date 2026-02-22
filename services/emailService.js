@@ -27,7 +27,7 @@ const emailService = {
         const mailOptions = {
             from: `"${APP_NAME}" <${FROM_EMAIL}>`,
             to: toEmail,
-            subject: `${APP_NAME} — Réinitialisation de votre mot de passe`,
+            subject: `${APP_NAME} — Password Reset Request`,
             html: `
 <!DOCTYPE html>
 <html>
@@ -49,27 +49,27 @@ const emailService = {
                     <!-- Body -->
                     <tr>
                         <td style="padding:36px 40px 20px;">
-                            <h2 style="color:#333; margin:0 0 16px; font-size:20px; font-weight:600;">Réinitialisation du mot de passe</h2>
+                            <h2 style="color:#333; margin:0 0 16px; font-size:20px; font-weight:600;">Password Reset</h2>
                             <p style="color:#666; font-size:15px; line-height:1.6; margin:0 0 24px;">
-                                Vous avez demandé la réinitialisation de votre mot de passe. 
-                                Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.
+                                You requested a password reset for your Discado account.
+                                Click the button below to set a new password.
                             </p>
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding:8px 0 24px;">
                                         <a href="${resetLink}" 
                                            style="display:inline-block; background:linear-gradient(135deg, #e9394f, #ff4d5e); color:#ffffff; text-decoration:none; padding:14px 36px; border-radius:8px; font-size:15px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">
-                                            Réinitialiser mon mot de passe
+                                            Reset My Password
                                         </a>
                                     </td>
                                 </tr>
                             </table>
                             <p style="color:#999; font-size:13px; line-height:1.5; margin:0 0 16px;">
-                                Ce lien expire dans <strong>1 heure</strong>. Si vous n'avez pas demandé cette réinitialisation, ignorez simplement cet email.
+                                This link expires in <strong>1 hour</strong>. If you did not request a password reset, please ignore this email.
                             </p>
                             <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
                             <p style="color:#bbb; font-size:12px; line-height:1.5; margin:0;">
-                                Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br>
+                                If the button doesn't work, copy and paste this link into your browser:<br>
                                 <a href="${resetLink}" style="color:#e9394f; word-break:break-all;">${resetLink}</a>
                             </p>
                         </td>
@@ -87,16 +87,16 @@ const emailService = {
 </body>
 </html>
             `,
-            text: `Réinitialisation de votre mot de passe ${APP_NAME}\n\nVous avez demandé la réinitialisation de votre mot de passe.\nCliquez sur ce lien pour définir un nouveau mot de passe :\n${resetLink}\n\nCe lien expire dans 1 heure.\n\nSi vous n'avez pas demandé cette réinitialisation, ignorez cet email.`
+            text: `${APP_NAME} — Password Reset\n\nYou requested a password reset for your account.\nClick this link to set a new password:\n${resetLink}\n\nThis link expires in 1 hour.\n\nIf you did not request a password reset, please ignore this email.`
         };
 
         try {
             const info = await transporter.sendMail(mailOptions);
-            console.log(`✅ Email de réinitialisation envoyé à ${toEmail} (${info.messageId})`);
+            console.log(`✅ Password reset email sent to ${toEmail} (${info.messageId})`);
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error('❌ Erreur envoi email de réinitialisation:', error.message);
-            throw new Error('Impossible d\'envoyer l\'email. Veuillez réessayer plus tard.');
+            console.error('❌ Error sending password reset email:', error.message);
+            throw new Error('Unable to send email. Please try again later.');
         }
     },
 

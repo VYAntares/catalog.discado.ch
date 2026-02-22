@@ -345,12 +345,12 @@ const userService = {
         try {
             const tokenRecord = this.validateResetToken(token);
             if (!tokenRecord) {
-                return { success: false, message: 'Lien invalide ou expiré. Veuillez refaire une demande.' };
+                return { success: false, message: 'Invalid or expired link. Please submit a new request.' };
             }
 
             // Vérifier la solidité du mot de passe
             if (!this.validatePasswordStrength(newPassword)) {
-                return { success: false, message: 'Le mot de passe ne respecte pas les critères de sécurité.' };
+                return { success: false, message: 'Password does not meet security requirements.' };
             }
 
             // Mettre à jour le mot de passe
@@ -364,10 +364,10 @@ const userService = {
                 dbModule.passwordResetTokens.cleanup.run();
             } catch (e) { /* silent */ }
 
-            return { success: true, message: 'Mot de passe mis à jour avec succès.' };
+            return { success: true, message: 'Password updated successfully.' };
         } catch (error) {
             console.error('Erreur resetPasswordWithToken:', error.message);
-            return { success: false, message: 'Erreur lors de la réinitialisation. Veuillez réessayer.' };
+            return { success: false, message: 'Reset error. Please try again.' };
         }
     }
 };

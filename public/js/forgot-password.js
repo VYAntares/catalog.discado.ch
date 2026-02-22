@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const email = emailField.value.trim();
 
     if (!email) {
-      showError('Veuillez entrer votre adresse email.');
+      showError('Please enter your email address.');
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
       return;
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      showError('Veuillez entrer une adresse email valide.');
+      showError('Please enter a valid email address.');
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
       return;
@@ -56,12 +56,12 @@ document.addEventListener('DOMContentLoaded', function() {
         emailField.disabled = true;
         submitBtn.style.display = 'none';
       } else {
-        showError(data.message || 'Une erreur est survenue.');
+        showError(data.message || 'An error occurred.');
       }
     } catch (err) {
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
-      showError('Erreur de connexion. Veuillez réessayer.');
+      showError('Connection error. Please try again.');
     }
   });
 

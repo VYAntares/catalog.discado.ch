@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Validate passwords match
     if (password !== confirmPassword) {
-      showError('Les mots de passe ne correspondent pas.');
+      showError('Passwords do not match.');
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
       return;
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       /[^A-Za-z0-9]/.test(password);
 
     if (!isStrong) {
-      showError('Le mot de passe ne respecte pas tous les critères de sécurité.');
+      showError('Password does not meet all security requirements.');
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
       return;
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       submitBtn.disabled = false;
 
       if (response.ok && data.success) {
-        showSuccess(data.message + ' Redirection en cours...');
+        showSuccess(data.message + ' Redirecting...');
         // Disable form
         passwordField.disabled = true;
         confirmField.disabled = true;
@@ -138,16 +138,16 @@ document.addEventListener('DOMContentLoaded', async function() {
           window.location.href = '/pages/login.html';
         }, 3000);
       } else {
-        showError(data.message || 'Une erreur est survenue.');
+        showError(data.message || 'An error occurred.');
         // If token expired during the process, show invalid state
-        if (data.message && data.message.includes('expiré')) {
+        if (data.message && data.message.toLowerCase().includes('expired')) {
           setTimeout(() => showInvalidToken(), 2000);
         }
       }
     } catch (err) {
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
-      showError('Erreur de connexion. Veuillez réessayer.');
+      showError('Connection error. Please try again.');
     }
   });
 
