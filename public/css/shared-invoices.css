@@ -58,15 +58,16 @@ input, button, textarea, select { font: inherit; }
 }
 
 .shared-tagline {
-    font-size: 13px;
+    font-size: 11px;
     color: #666;
     white-space: nowrap;
+    text-align: right;
 }
 
 .shared-header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex-shrink: 0;
 }
 
@@ -693,7 +694,7 @@ input, button, textarea, select { font: inherit; }
 
 @media (max-width: 768px) {
     .shared-logo { height: 26px; }
-    .shared-tagline { font-size: 11px; }
+    .shared-tagline { font-size: 10px; }
 }
 
 @media (max-width: 768px) {
