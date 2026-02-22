@@ -2,12 +2,13 @@
 
 /* ===== NOTES CLIENT ===== */
 .client-notes-section {
-    margin: 15px 20px;
+    margin: 15px auto;
     padding: 16px 20px;
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     border-left: 4px solid #667eea;
+    max-width: 900px;
 }
 
 .client-notes-header {
@@ -244,6 +245,9 @@
     margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 15px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .back-btn {
@@ -343,6 +347,11 @@
     display: flex;
     gap: 15px;
     align-items: center;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 15px;
+    justify-content: flex-end;
 }
 
 .export-btn {

@@ -155,7 +155,7 @@ class ComptaMonth {
             }
 
             let paidDateHtml = '';
-            if (invoice.paid_date) {
+            if (invoice.paid_date && invoice.payment_status === 'paid') {
                 paidDateHtml = `
                 <div class="inv-date-block inv-date-paid-on">
                     <span class="inv-date-icon"><i class="fas fa-check-circle"></i></span>

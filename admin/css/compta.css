@@ -112,9 +112,10 @@ main {
 .search-container {
     display: flex;
     gap: 12px;
-    margin-bottom: 20px;
+    margin: 0 auto 20px;
     flex-wrap: wrap;
     align-items: center;
+    max-width: 900px;
 }
 
 .search-input {
@@ -1032,6 +1033,8 @@ main {
     flex-direction: column;
     gap: 12px;
     padding: 4px 0 16px;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
 /* Cacher les tableaux sur tous les écrans — on utilise les cartes */
