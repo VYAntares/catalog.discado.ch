@@ -356,6 +356,17 @@ function initDatabase() {
     `);
 
     db.exec(`
+    CREATE TABLE IF NOT EXISTS share_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token TEXT UNIQUE NOT NULL,
+        client_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES users(username)
+    )
+    `);
+
+    db.exec(`
     CREATE TABLE IF NOT EXISTS user_permissions (
         username TEXT PRIMARY KEY,
         stock INTEGER DEFAULT 0,
@@ -418,6 +429,20 @@ function initDatabase() {
             console.error('⚠️ Erreur ajout colonne supplier_payment_id:', error.message);
         }
     }
+
+    // Table pour les tokens de réinitialisation de mot de passe
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (username) REFERENCES users(username)
+    )
+    `);
+    console.log('✅ Table password_reset_tokens créée ou déjà existante');
 
     // Migration unique : importer les paiements fournisseurs existants dans expenses
     try {
@@ -881,6 +906,33 @@ module.exports = {
             SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count
             FROM expenses
             WHERE strftime('%Y', date) = ?
+        `)
+    },
+
+    // Requêtes liées aux tokens de réinitialisation de mot de passe
+    passwordResetTokens: {
+        create: db.prepare(`
+            INSERT INTO password_reset_tokens (username, token, expires_at)
+            VALUES (?, ?, ?)
+        `),
+        getByToken: db.prepare(`
+            SELECT * FROM password_reset_tokens
+            WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+        `),
+        markUsed: db.prepare(`
+            UPDATE password_reset_tokens SET used = 1 WHERE token = ?
+        `),
+        invalidateForUser: db.prepare(`
+            UPDATE password_reset_tokens SET used = 1 WHERE username = ? AND used = 0
+        `),
+        cleanup: db.prepare(`
+            DELETE FROM password_reset_tokens WHERE expires_at < datetime('now', '-1 day')
+        `),
+        getUserByEmail: db.prepare(`
+            SELECT u.username, up.email, up.first_name
+            FROM users u
+            JOIN user_profiles up ON u.username = up.username
+            WHERE up.email = ?
         `)
     }
 };

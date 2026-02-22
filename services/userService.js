@@ -278,6 +278,97 @@ const userService = {
         };
         
         return Object.values(criteria).every(valid => valid);
+    },
+
+    // ===== PASSWORD RESET METHODS =====
+
+    /**
+     * Trouver un utilisateur par son email de profil
+     * @param {string} email 
+     * @returns {object|null} { username, email, first_name }
+     */
+    getUserByEmail(email) {
+        try {
+            return dbModule.passwordResetTokens.getUserByEmail.get(email.toLowerCase().trim());
+        } catch (error) {
+            console.error('Erreur getUserByEmail:', error.message);
+            return null;
+        }
+    },
+
+    /**
+     * Créer un token de réinitialisation de mot de passe
+     * @param {string} username 
+     * @returns {string} token
+     */
+    createPasswordResetToken(username) {
+        try {
+            // Invalider les anciens tokens pour cet utilisateur
+            dbModule.passwordResetTokens.invalidateForUser.run(username);
+
+            // Générer un nouveau token (64 caractères hex)
+            const token = cryptoService.generateToken(32);
+
+            // Expiration dans 1 heure
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+            dbModule.passwordResetTokens.create.run(username, token, expiresAt);
+
+            return token;
+        } catch (error) {
+            console.error('Erreur createPasswordResetToken:', error.message);
+            throw new Error('Impossible de créer le token de réinitialisation');
+        }
+    },
+
+    /**
+     * Valider un token de réinitialisation
+     * @param {string} token 
+     * @returns {object|null} token record si valide
+     */
+    validateResetToken(token) {
+        try {
+            return dbModule.passwordResetTokens.getByToken.get(token);
+        } catch (error) {
+            console.error('Erreur validateResetToken:', error.message);
+            return null;
+        }
+    },
+
+    /**
+     * Réinitialiser le mot de passe avec un token valide
+     * @param {string} token 
+     * @param {string} newPassword 
+     * @returns {object} { success, message }
+     */
+    resetPasswordWithToken(token, newPassword) {
+        try {
+            const tokenRecord = this.validateResetToken(token);
+            if (!tokenRecord) {
+                return { success: false, message: 'Lien invalide ou expiré. Veuillez refaire une demande.' };
+            }
+
+            // Vérifier la solidité du mot de passe
+            if (!this.validatePasswordStrength(newPassword)) {
+                return { success: false, message: 'Le mot de passe ne respecte pas les critères de sécurité.' };
+            }
+
+            // Mettre à jour le mot de passe
+            this.updateUserPassword(tokenRecord.username, newPassword);
+
+            // Marquer le token comme utilisé
+            dbModule.passwordResetTokens.markUsed.run(token);
+
+            // Nettoyer les anciens tokens expirés
+            try {
+                dbModule.passwordResetTokens.cleanup.run();
+            } catch (e) { /* silent */ }
+
+            return { success: true, message: 'Mot de passe mis à jour avec succès.' };
+        } catch (error) {
+            console.error('Erreur resetPasswordWithToken:', error.message);
+            return { success: false, message: 'Erreur lors de la réinitialisation. Veuillez réessayer.' };
+        }
     }
 };
 

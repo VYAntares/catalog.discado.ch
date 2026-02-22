@@ -387,3 +387,159 @@ body.login-page::after {
     height: 200px;
   }
 }
+
+/* ===== Forgot Password Link ===== */
+.forgot-password-link {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.forgot-password-link a {
+  color: #888;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-password-link a:hover {
+  color: #e9394f;
+  text-decoration: underline;
+}
+
+/* ===== Forgot / Reset Password Pages ===== */
+.forgot-instructions {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.forgot-back-link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.forgot-back-link a {
+  color: #888;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-back-link a:hover {
+  color: #e9394f;
+}
+
+.forgot-back-link a i {
+  margin-right: 6px;
+}
+
+/* Success message */
+.success-message {
+  color: #059669;
+  margin-top: 18px;
+  font-size: 13px;
+  display: none;
+  text-align: center;
+  padding: 12px 16px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  font-weight: 500;
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.success-message i {
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.success-message.visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Invalid token state */
+.token-invalid {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.token-invalid-icon {
+  font-size: 48px;
+  color: #e9394f;
+  margin-bottom: 16px;
+}
+
+.token-invalid h3 {
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.token-invalid p {
+  color: #888;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+
+/* Loading state */
+.loading-state {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.loading-state p {
+  color: #888;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #eee;
+  border-top-color: #e9394f;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto;
+}
+
+/* Password criteria */
+.password-criteria {
+  margin: -8px 0 20px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.criteria-item {
+  font-size: 12px;
+  color: #999;
+  padding: 3px 0;
+  transition: color 0.2s;
+}
+
+.criteria-item i {
+  margin-right: 8px;
+  font-size: 10px;
+  width: 14px;
+  text-align: center;
+}
+
+.criteria-item.valid {
+  color: #059669;
+}
+
+.criteria-item.valid i {
+  color: #059669;
+}
+
+.criteria-item.invalid {
+  color: #999;
+}

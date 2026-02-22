@@ -1,5 +1,5 @@
 // sites/catalog.discado.ch/index.js
-// require('dotenv').config();
+require('dotenv').config();
 
 // ===== IMPORTATIONS =====
 // Modules externes
@@ -57,6 +57,7 @@ const cryptoService = require('./services/cryptoService');
 const deliveryNoteService = require('./services/deliveryNoteService');
 const dbModule = require('./services/db');
 const statsService = require('./services/statsServices');
+const emailService = require('./services/emailService');
 
 // ===== CONFIGURATION DE BASE =====
 const app = express();
@@ -323,6 +324,15 @@ app.get('/pages/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'login.html'));
 });
 
+// Pages publiques de réinitialisation de mot de passe (pas besoin d'auth)
+app.get('/pages/forgot-password.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'forgot-password.html'));
+});
+
+app.get('/pages/reset-password.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'reset-password.html'));
+});
+
 // ===== RESSOURCES STATIQUES =====
 app.use('/favicon.png', express.static(path.join(__dirname, 'public/favicon.png')));
 app.use('/apple-touch-icon.png', express.static(path.join(__dirname, 'public/apple-touch-icon.png')));
@@ -345,6 +355,11 @@ app.use('/pages/', (req, res, next) => {
   if (requestPath === '/login.html') {
     return next();
   }
+
+  // Pages de réinitialisation de mot de passe accessibles sans auth
+  if (requestPath === '/forgot-password.html' || requestPath === '/reset-password.html') {
+    return next();
+  }
   
   if (!req.session.user) {
     return res.redirect('/');
@@ -364,6 +379,79 @@ app.use('/pages/', (req, res, next) => {
 });
 
 // ===== ROUTES D'AUTHENTIFICATION =====
+
+// --- Mot de passe oublié ---
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Veuillez entrer votre adresse email.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Chercher l'utilisateur par email
+    const userRecord = userService.getUserByEmail(normalizedEmail);
+
+    // Réponse identique que l'email existe ou non (sécurité)
+    if (!userRecord) {
+      console.log(`⚠️ Tentative réinitialisation pour email inconnu: ${normalizedEmail}`);
+      return res.json({ success: true, message: 'Si cette adresse est associée à un compte, un email de réinitialisation a été envoyé.' });
+    }
+
+    // Créer le token
+    const token = userService.createPasswordResetToken(userRecord.username);
+
+    // Construire l'URL de base
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const baseUrl = `${protocol}://${host}`;
+
+    // Envoyer l'email
+    await emailService.sendPasswordResetEmail(normalizedEmail, token, baseUrl);
+
+    console.log(`✅ Email de réinitialisation envoyé pour ${userRecord.username}`);
+    return res.json({ success: true, message: 'Si cette adresse est associée à un compte, un email de réinitialisation a été envoyé.' });
+  } catch (error) {
+    console.error('❌ Erreur forgot-password:', error.message);
+    return res.status(500).json({ success: false, message: 'Erreur serveur. Veuillez réessayer plus tard.' });
+  }
+});
+
+// --- Vérifier validité d'un token ---
+app.get('/api/verify-reset-token', (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ valid: false, message: 'Token manquant.' });
+  }
+
+  const tokenRecord = userService.validateResetToken(token);
+  if (!tokenRecord) {
+    return res.json({ valid: false, message: 'Ce lien est invalide ou a expiré.' });
+  }
+
+  return res.json({ valid: true });
+});
+
+// --- Réinitialiser le mot de passe ---
+app.post('/api/reset-password', (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ success: false, message: 'Données manquantes.' });
+  }
+
+  const result = userService.resetPasswordWithToken(token, password);
+  
+  if (result.success) {
+    return res.json({ success: true, message: result.message });
+  } else {
+    return res.status(400).json({ success: false, message: result.message });
+  }
+});
+
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const identifier = `${req.ip}:${username}`;
