@@ -333,7 +333,7 @@ main {
   /* User menu — top/right positionnés par JS via getBoundingClientRect */
   .user-menu {
       position: fixed;
-      top: var(--header-height); /* fallback, écrasé par JS */
+      top: calc(var(--header-height) + env(safe-area-inset-top));
       right: 16px;               /* fallback, écrasé par JS */
       width: 220px;
       background-color: #fff;
@@ -512,7 +512,7 @@ main {
       }
       
       .user-menu {
-          top: var(--header-height) !important;
+          top: calc(var(--header-height) + env(safe-area-inset-top)) !important;
           right: 12px !important;
           width: 220px !important;
           border-radius: 0 0 12px 12px;
