@@ -1,0 +1,19 @@
+{
+  "appId": "ch.discado.catalog",
+  "appName": "Discado",
+  "webDir": "public",
+  "server": {
+    "url": "https://catalog.discado.ch",
+    "cleartext": false,
+    "allowNavigation": [
+      "catalog.discado.ch"
+    ]
+  },
+  "ios": {
+    "scheme": "Discado",
+    "backgroundColor": "#dd6060",
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "scrollEnabled": true
+  }
+}
