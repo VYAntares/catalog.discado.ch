@@ -14,11 +14,13 @@ body.welcome-page {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, #e9394f, #ff3333);
   text-align: center;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
   position: relative;
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Animated background shapes */

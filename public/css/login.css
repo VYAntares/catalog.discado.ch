@@ -14,8 +14,9 @@ body.login-page {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, #e9394f, #ff3333);
-  padding: 0 !important;
+  padding: env(safe-area-inset-top) 0 0 !important;
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
