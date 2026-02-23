@@ -6,6 +6,11 @@
     font-family: 'Inter', Arial, sans-serif;
 }
 
+html {
+    /* Fond blanc pour couvrir la status bar iOS sous le header */
+    background-color: #fff;
+}
+
 body {
     background-color: #f5f8fa;
     color: #333;
@@ -17,9 +22,9 @@ body {
 header {
     background-color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    /* iOS safe area: espace sous la Dynamic Island / notch */
-    padding-top: calc(15px + env(safe-area-inset-top, 0px));
-    padding-bottom: 15px;
+    /* iOS safe area: remonte sous la Dynamic Island / notch */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: 0;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -31,7 +36,7 @@ header {
     align-items: center;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 15px 20px;
 }
 
 .logo-container img {
