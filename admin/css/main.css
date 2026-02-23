@@ -6,9 +6,31 @@
     font-family: 'Inter', Arial, sans-serif;
 }
 
+html {
+    background-color: #fff;
+}
+
 body {
     background-color: #f5f8fa;
     color: #333;
+}
+
+/* ===== Page transition overlay (iOS flicker fix) ===== */
+#page-transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity .18s ease-out;
+}
+#page-transition-overlay.ready {
+    opacity: 0;
+}
+#page-transition-overlay.leaving {
+    opacity: 1;
+    transition: opacity .1s ease-in;
 }
 
 /* Header style */
