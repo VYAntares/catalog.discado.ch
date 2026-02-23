@@ -95,7 +95,7 @@ main {
 
 /* Variables pour faciliter la maintenance */
 :root {
-    --header-height: 80px;
+    --header-height: 65px;
     --header-compact-height: 50px;
     --primary-color: #f44336;
     --text-color: #333;
@@ -132,7 +132,7 @@ main {
       display: flex;
       align-items: center;
       width: 100%;
-      padding: 0 15px;
+      padding: 5px 30px;
       max-width: 1400px;
       margin: 0 auto;
       justify-content: space-between;
