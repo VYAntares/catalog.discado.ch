@@ -6,41 +6,46 @@
     font-family: 'Inter', Arial, sans-serif;
 }
 
-:root {
-    --admin-header-height: 60px;
-}
-
 body {
     background-color: #f5f8fa;
     color: #333;
-    /* Pousse le contenu sous le header fixe */
-    padding-top: calc(var(--admin-header-height) + env(safe-area-inset-top));
 }
 
 /* Header style */
 header {
     background-color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    /* Fixed comme le public : couvre toute la zone y compris derrière la barre de statut iOS */
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* iOS Capacitor app only: header extends behind status bar */
+body.capacitor-ios header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
-    height: calc(var(--admin-header-height) + env(safe-area-inset-top));
-    padding-top: env(safe-area-inset-top);
-    display: flex;
-    align-items: flex-end;
+    padding: calc(15px + env(safe-area-inset-top)) 0 15px;
+}
+
+body.capacitor-ios {
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+body.capacitor-ios .admin-tabs {
+    position: sticky;
+    top: calc(60px + env(safe-area-inset-top));
 }
 
 .header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 10px 20px;
+    padding: 0 20px;
 }
 
 .logo-container img {
@@ -93,8 +98,7 @@ header {
     background-color: #2575fc;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     position: sticky;
-    /* Colle juste sous le header fixe */
-    top: calc(var(--admin-header-height) + env(safe-area-inset-top));
+    top: 0;
     z-index: 99;
 }
 
