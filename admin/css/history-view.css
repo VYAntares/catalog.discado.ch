@@ -93,6 +93,7 @@
 
 .pending-table th, .pending-table td {
     background-color: #fff8e6;
+    color: #333;
 }
 
 .pending-notice {

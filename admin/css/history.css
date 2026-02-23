@@ -215,19 +215,12 @@
 }
 
 /* Style pour les articles en attente */
-.pending-item .unit-price-column,
-.pending-item .total-column {
-    color: transparent !important;
-    position: relative;
+.pending-item .unit-price-column {
+    color: #333 !important;
 }
 
-.pending-item .unit-price-column::after,
-.pending-item .total-column::after {
-    content: "-";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #666;
+.pending-item .total-column {
+    color: #e67e22 !important;
 }
 
 /* Responsive pour history */
