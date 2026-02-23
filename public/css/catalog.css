@@ -3,7 +3,7 @@
    ========================================= */
 .sticky-filter-bar {
     position: sticky;
-    top: var(--header-height, 80px);
+    top: calc(var(--header-height, 80px) + env(safe-area-inset-top));
     z-index: 990;
     background: #fff;
     border-bottom: 1px solid #eaeef6;
