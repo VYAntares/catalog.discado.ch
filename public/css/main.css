@@ -14,6 +14,8 @@ body {
     max-width: 100%;
     overflow-x: hidden;
     padding-top: 100px; /* CORRECTION: Augmenté de 80px à 100px pour éviter le chevauchement du header */
+    /* iOS safe area bas (home indicator) */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     color: #333;
 }
 
@@ -110,8 +112,9 @@ main {
       background-color: #fff;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       z-index: 1000;
-      padding: 0;
-      height: var(--header-height);
+      /* iOS safe area : remonte le header sous la Dynamic Island / notch */
+      padding-top: env(safe-area-inset-top, 0px);
+      height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
       display: flex;
       align-items: center;
       transition: transform 0.3s ease, height 0.3s ease;
@@ -119,12 +122,12 @@ main {
   
   /* Ajustement du padding-top uniquement sur les pages avec header */
   body:has(.discado-header-initialized) {
-      padding-top: var(--header-height);
+      padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
   }
   
   /* Alternative pour les navigateurs qui ne supportent pas :has */
   .has-header {
-      padding-top: var(--header-height);
+      padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
   }
   
   /* Structure de base du conteneur */
