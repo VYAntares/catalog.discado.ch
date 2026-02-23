@@ -6,32 +6,41 @@
     font-family: 'Inter', Arial, sans-serif;
 }
 
+:root {
+    --admin-header-height: 60px;
+}
+
 body {
     background-color: #f5f8fa;
     color: #333;
+    /* Pousse le contenu sous le header fixe */
+    padding-top: calc(var(--admin-header-height) + env(safe-area-inset-top));
 }
 
 /* Header style */
 header {
     background-color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    position: sticky;
+    /* Fixed comme le public : couvre toute la zone y compris derrière la barre de statut iOS */
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
-    /* Safe area iOS : la zone blanche remonte derrière l'heure/batterie */
+    height: calc(var(--admin-header-height) + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    align-items: flex-end;
 }
 
 .header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 15px 20px;
+    padding: 10px 20px;
 }
 
 .logo-container img {
@@ -84,7 +93,8 @@ header {
     background-color: #2575fc;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     position: sticky;
-    top: 0;
+    /* Colle juste sous le header fixe */
+    top: calc(var(--admin-header-height) + env(safe-area-inset-top));
     z-index: 99;
 }
 
