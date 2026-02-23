@@ -9,13 +9,17 @@
 body {
     background-color: #f5f8fa;
     color: #333;
+    /* iOS safe area bas (home indicator) */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Header style */
 header {
     background-color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    padding: 15px 0;
+    /* iOS safe area: espace sous la Dynamic Island / notch */
+    padding-top: calc(15px + env(safe-area-inset-top, 0px));
+    padding-bottom: 15px;
     position: sticky;
     top: 0;
     z-index: 100;

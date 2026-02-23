@@ -12,7 +12,7 @@
   "ios": {
     "scheme": "Discado",
     "backgroundColor": "#f5f5f5",
-    "contentInset": "automatic",
+    "contentInset": "always",
     "preferredContentMode": "mobile",
     "scrollEnabled": true
   }
