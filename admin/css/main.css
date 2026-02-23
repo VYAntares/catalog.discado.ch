@@ -15,10 +15,14 @@ body {
 header {
     background-color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    padding: calc(15px + env(safe-area-inset-top)) 0 15px;
     position: sticky;
     top: 0;
     z-index: 100;
+    /* Safe area iOS : la zone blanche remonte derrière l'heure/batterie */
+    padding-top: env(safe-area-inset-top);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 }
 
 .header-container {
@@ -27,7 +31,7 @@ header {
     align-items: center;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 15px 20px;
 }
 
 .logo-container img {
