@@ -11,8 +11,8 @@
   },
   "ios": {
     "scheme": "Discado",
-    "backgroundColor": "#ffffff",
-    "contentInset": "never",
+    "backgroundColor": "#dd6060",
+    "contentInset": "automatic",
     "preferredContentMode": "mobile",
     "scrollEnabled": true
   }
