@@ -336,6 +336,16 @@ app.get('/pages/reset-password.html', (req, res) => {
 // ===== RESSOURCES STATIQUES =====
 app.use('/favicon.png', express.static(path.join(__dirname, 'public/favicon.png')));
 app.use('/apple-touch-icon.png', express.static(path.join(__dirname, 'public/apple-touch-icon.png')));
+// PWA
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'public/manifest.json'));
+});
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.sendFile(path.join(__dirname, 'public/sw.js'));
+});
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/fonts', express.static(path.join(__dirname, 'public/fonts')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
