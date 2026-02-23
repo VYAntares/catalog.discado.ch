@@ -21,22 +21,32 @@ header {
     z-index: 100;
 }
 
-/* iOS Capacitor app only: header extends behind status bar */
-body.capacitor-ios header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: calc(8px + env(safe-area-inset-top)) 0 8px;
-}
+/* ============================================================
+   iOS Safe-Area Support (Capacitor / Safari viewport-fit=cover)
+   Pure CSS approach — no JS class needed.
+   env(safe-area-inset-top) returns 0 on desktop/Android,
+   and the real inset value (~47-59 px) on iOS notch/Dynamic Island.
+   ============================================================ */
+@supports(padding: env(safe-area-inset-top)) {
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background-color: #fff;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        padding: calc(8px + env(safe-area-inset-top, 0px)) 0 8px 0;
+    }
 
-body.capacitor-ios {
-    padding-top: calc(46px + env(safe-area-inset-top));
-}
+    body {
+        padding-top: calc(46px + env(safe-area-inset-top, 0px));
+    }
 
-body.capacitor-ios .admin-tabs {
-    position: sticky;
-    top: calc(46px + env(safe-area-inset-top));
+    .admin-tabs {
+        position: sticky;
+        top: calc(46px + env(safe-area-inset-top, 0px));
+    }
 }
 
 .header-container {
