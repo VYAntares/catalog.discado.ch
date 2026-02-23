@@ -154,10 +154,9 @@ function positionUserMenu() {
     const header = document.querySelector('.discado-header-initialized');
     if (!userMenu || !header || !userMenuToggle) return;
 
-    const headerRect = header.getBoundingClientRect();
     const btnRect = userMenuToggle.getBoundingClientRect();
-    // Flush avec le bas du header (pas d'espace)
-    userMenu.style.top = headerRect.bottom + 'px';
+    // Utilise CSS calc pour tenir compte de env(safe-area-inset-top) sur iOS
+    userMenu.style.top = 'calc(var(--header-height) + env(safe-area-inset-top))';
     // Aligné sur le bord droit du bouton hamburger
     userMenu.style.right = (window.innerWidth - btnRect.right) + 'px';
     userMenu.style.left = 'auto';
