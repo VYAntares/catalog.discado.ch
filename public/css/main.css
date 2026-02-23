@@ -95,7 +95,7 @@ main {
 
 /* Variables pour faciliter la maintenance */
 :root {
-    --header-height: 70px;
+    --header-height: 20px;
     --header-compact-height: 50px;
     --primary-color: #f44336;
     --text-color: #333;
