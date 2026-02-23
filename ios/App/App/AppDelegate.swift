@@ -73,8 +73,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func revealNewPage() {
         guard let snap = snapshotView else { return }
         // Short delay to let the new page render its first frame
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-            UIView.animate(withDuration: 0.12, animations: {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
+            UIView.animate(withDuration: 0.06, animations: {
                 snap.alpha = 0
             }) { _ in
                 snap.removeFromSuperview()
