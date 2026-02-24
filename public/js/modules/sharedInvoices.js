@@ -353,14 +353,27 @@ class SharedInvoicesView {
             const blob = await res.blob();
             const invoice = this.invoices.find(inv => inv.id == invoiceId);
             const invoiceNum = invoice ? invoice.order_id : invoiceId;
+            const filename = `Invoice_${invoiceNum}.pdf`;
+
+            // iOS / mobile : ouvre le share sheet natif (AirDrop, Mail, Imprimer…)
+            if (navigator.canShare && navigator.share) {
+                const file = new File([blob], filename, { type: 'application/pdf' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: filename });
+                    return;
+                }
+            }
+
+            // Fallback desktop : téléchargement classique
+            const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `Invoice_${invoiceNum}.pdf`;
+            link.href = objectUrl;
+            link.download = filename;
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
+            URL.revokeObjectURL(objectUrl);
         } catch (err) {
             alert('Error: ' + err.message);
         }

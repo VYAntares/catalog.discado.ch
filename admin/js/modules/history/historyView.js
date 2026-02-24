@@ -8,6 +8,7 @@ import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as Modal from '../../utils/modal.js';
 import * as OrderEdit from '../clients/clientOrderEdit.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 //Affiche les détails d'une commande
 async function viewOrderDetails(orderId, userId) {
@@ -302,11 +303,11 @@ function displayOrderDetails(order, container) {
             <button class="edit-order-btn" id="editOrderBtn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
                 <i class="fas fa-edit"></i> Modifier la commande
             </button>
-            <a href="${API.getInvoiceDownloadLink(order.orderId, order.userId)}" 
-               class="download-invoice-btn" 
-               target="_blank">
+            <button class="download-invoice-btn"
+               data-url="${API.getInvoiceDownloadLink(order.orderId, order.userId)}"
+               data-filename="Invoice_${order.orderId}.pdf">
                 <i class="fas fa-file-pdf"></i> Télécharger la Facture
-            </a>
+            </button>
             <button class="close-detail-btn" id="closeOrderDetailBtn">
                 <i class="fas fa-times"></i> Fermer
             </button>
@@ -334,6 +335,18 @@ function displayOrderDetails(order, container) {
             this.style.backgroundColor = '#28a745';
             
             Notification.showNotification('Mode édition activé - Cliquez sur les cellules pour modifier', 'info');
+        });
+    }
+
+    // Bouton téléchargement facture PDF (share sheet sur iOS)
+    const downloadBtn = container.querySelector('.download-invoice-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', async () => {
+            try {
+                await downloadOrShareFile(downloadBtn.dataset.url, downloadBtn.dataset.filename);
+            } catch (err) {
+                Notification.showNotification('Erreur : ' + err.message, 'error');
+            }
         });
     }
     

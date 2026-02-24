@@ -3,6 +3,7 @@
 import { fetchUserOrders, getInvoiceDownloadLink, fetchProducts } from '../../core/api.js';
 import { showNotification } from '../../utils/notification.js';
 import { formatDate, formatPrice } from '../../utils/formatter.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 const VAT_RATE = 0.081;
 
@@ -296,7 +297,16 @@ function buildDetailFooter(order) {
         const btn = document.createElement('button');
         btn.className = 'download-invoice-btn';
         btn.innerHTML = `<i class="fas fa-file-pdf"></i><span>Download invoice PDF</span>`;
-        btn.addEventListener('click', () => window.open(getInvoiceDownloadLink(order.orderId), '_blank'));
+        btn.addEventListener('click', async () => {
+            try {
+                await downloadOrShareFile(
+                    getInvoiceDownloadLink(order.orderId),
+                    `Invoice_${order.orderId}.pdf`
+                );
+            } catch (err) {
+                showNotification('Erreur : ' + err.message, 'error');
+            }
+        });
         footer.appendChild(btn);
     } else {
         footer.innerHTML = `

@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 class ComptaMonth {
     constructor() {
@@ -223,10 +224,11 @@ class ComptaMonth {
                     <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthOpenPayments(${invoice.id})">
                         <i class="fas fa-coins"></i> Paiements
                     </button>
-                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                       class="inv-pdf-btn" target="_blank">
+                    <button class="inv-pdf-btn download-invoice-btn"
+                       data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                       data-filename="Invoice_${invoice.order_id}.pdf">
                         <i class="fas fa-file-pdf"></i> PDF
-                    </a>
+                    </button>
                 </div>
             </div>
             `;
@@ -369,12 +371,12 @@ class ComptaMonth {
 					<button class="action-btn month-payments-btn" data-invoice-id="${invoice.id}" title="Suivi des paiements">
 						<i class="fas fa-coins"></i>
 					</button>
-					<a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-					class="action-btn download-btn"
-					target="_blank"
+					<button class="action-btn download-btn download-invoice-btn"
+					data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+					data-filename="Invoice_${invoice.order_id}.pdf"
 					title="Télécharger la facture">
 						<i class="fas fa-file-pdf"></i>
-					</a>
+					</button>
 				</td>
 			</tr>
 		`;
@@ -397,6 +399,15 @@ class ComptaMonth {
         });
         document.querySelectorAll('.month-payments-btn').forEach(btn => {
             btn.addEventListener('click', () => this.openPaymentsModal(btn.dataset.invoiceId));
+        });
+        document.querySelectorAll('.download-invoice-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                } catch (err) {
+                    showNotification('Erreur : ' + err.message, 'error');
+                }
+            });
         });
     }
 

@@ -8,6 +8,7 @@ import * as State from './state.js';
 import * as Utils from './utils.js';
 import * as SupplierDetails from './supplierDetails.js';
 import * as BatchManager from './batchManager.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 /**
  * Affiche les détails d'une commande
@@ -156,9 +157,16 @@ function attachEventListeners() {
   // Export PDF
   const exportPdfBtn = document.getElementById('exportOrderPdfBtn');
   if (exportPdfBtn) {
-    exportPdfBtn.onclick = () => {
+    exportPdfBtn.onclick = async () => {
       const orderId = State.getCurrentOrderId();
-      window.open(`/api/order-suppliers/${orderId}/export-pdf`, '_blank');
+      try {
+        await downloadOrShareFile(
+          `/api/order-suppliers/${orderId}/export-pdf`,
+          `Commande_${orderId}.pdf`
+        );
+      } catch (err) {
+        console.error('Erreur export PDF:', err);
+      }
     };
   }
 
@@ -180,6 +188,15 @@ function attachEventListeners() {
   });
   document.querySelectorAll('.delete-attachment-btn').forEach(btn => {
     btn.addEventListener('click', handleDeleteAttachment);
+  });
+  document.querySelectorAll('.view-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try {
+        await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+      } catch (err) {
+        console.error('Erreur ouverture pièce jointe:', err);
+      }
+    });
   });
 
   // Boutons items
@@ -575,10 +592,12 @@ function renderAttachmentsList(attachments, container) {
           </div>
         </div>
         <div class="attachment-actions">
-          <a href="/api/order-suppliers/${State.getCurrentOrderId()}/attachments/${att.id}/download"
-             target="_blank" class="btn btn-sm" style="background:#edf2f7; color:#4a5568;">
+          <button class="btn btn-sm view-attachment-btn"
+             data-url="/api/order-suppliers/${State.getCurrentOrderId()}/attachments/${att.id}/download"
+             data-filename="${att.original_name}"
+             style="background:#edf2f7; color:#4a5568;">
             <i class="fas fa-eye"></i> Voir
-          </a>
+          </button>
           <button class="btn btn-sm rename-attachment-btn" data-attachment-id="${att.id}" data-attachment-name="${att.original_name}" style="background:#edf2f7; color:#4a5568;">
             <i class="fas fa-pen"></i>
           </button>
