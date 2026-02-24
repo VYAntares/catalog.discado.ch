@@ -7,6 +7,9 @@
  * On desktop: triggers a standard browser download.
  */
 export async function downloadOrShareFile(url, filename, mimeType = 'application/pdf') {
+    // DEBUG — remove after testing
+    alert('DEBUG 1: downloadOrShareFile called\nURL: ' + url);
+
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -14,21 +17,27 @@ export async function downloadOrShareFile(url, filename, mimeType = 'application
     }
     const blob = await res.blob();
 
+    alert('DEBUG 2: blob OK, size=' + blob.size + ', type=' + blob.type);
+
     // Detect environment
     const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isMobile = isIOS || /Android/i.test(navigator.userAgent);
 
+    alert('DEBUG 3: isCapacitorNative=' + isCapacitorNative + ' isIOS=' + isIOS + ' isMobile=' + isMobile + ' hasShare=' + !!navigator.share);
+
     // On mobile / Capacitor: try native share sheet directly
     if ((isMobile || isCapacitorNative) && navigator.share) {
         try {
             const file = new File([blob], filename, { type: mimeType });
+            alert('DEBUG 4: calling navigator.share...');
             await navigator.share({ files: [file], title: filename });
+            alert('DEBUG 5: share succeeded!');
             return;
         } catch (err) {
             if (err.name === 'AbortError') return; // user cancelled
-            console.warn('navigator.share failed:', err);
+            alert('DEBUG 6: share FAILED: ' + err.name + ' - ' + err.message);
 
             // On iOS (Capacitor or WKWebView), <a download> opens Safari.
             // Show an in-app PDF overlay with a fresh-gesture Share button instead.
@@ -41,9 +50,12 @@ export async function downloadOrShareFile(url, filename, mimeType = 'application
 
     // iOS / Capacitor without navigator.share — show overlay
     if (isCapacitorNative || (isIOS && isMobile)) {
+        alert('DEBUG 7: no share API, showing overlay');
         _showPdfOverlay(blob, filename, mimeType);
         return;
     }
+
+    alert('DEBUG 8: desktop fallback — <a download>');
 
     // Desktop / Safari fallback: trigger browser download
     const objectUrl = URL.createObjectURL(blob);
