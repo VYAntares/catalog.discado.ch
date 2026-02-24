@@ -80,11 +80,16 @@ async function showProcessOrderModal(order, clientProfile) {
     
     orderDetailsContent.innerHTML = `
         <div class="order-process-container">
-            <div class="order-header">
-                <h1>Détails de la Commande #${order.orderId}</h1>
-                <div class="order-info">
-                    <span class="order-date">Commandé le ${orderDate}</span>
-                    ${order.reference ? `<span class="order-reference"> | Référence: ${order.reference}</span>` : ''}
+            <div class="order-detail-header">
+                <div class="order-detail-title">
+                    <div class="order-number">Commande #${order.orderId}</div>
+                    <div class="order-dates">
+                        <div>Commandée le: ${orderDate}</div>
+                        ${order.reference ? `<div>Référence: ${order.reference}</div>` : ''}
+                    </div>
+                </div>
+                <div class="order-status">
+                    <span class="status-badge status-pending">EN ATTENTE DE LIVRAISON</span>
                 </div>
             </div>
 
@@ -123,7 +128,7 @@ async function showProcessOrderModal(order, clientProfile) {
             </div>
 
             <div class="order-items-section">
-                <h2>Articles de la Commande</h2>
+                <h3 class="section-title">Articles de la Commande</h3>
                 <table class="process-order-table">
                     <thead>
                         <tr>

@@ -224,8 +224,8 @@
 
 .order-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     border-bottom: 2px solid #2575fc;
     padding-bottom: 15px;
 }
@@ -579,6 +579,11 @@
 /* Dans admin/css/orders.css */
 
 /* Styles pour les en-têtes de catégorie */
+.status-pending {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
 .category-section,
 .category-header {
     background-color: #f5f7fa;
@@ -722,8 +727,6 @@
 
     /* Order header */
     .order-process-container .order-header {
-      flex-direction: column;
-      align-items: flex-start;
       padding-bottom: 10px;
     }
 
