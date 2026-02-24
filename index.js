@@ -3540,13 +3540,25 @@ app.get('/api/invoices/all', requireLogin, requireAdmin, requirePermission('comp
 
 app.get('/api/invoices/unpaid', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
   const year = req.query.year ? parseInt(req.query.year) : null;
-  
+
   try {
     const invoices = invoiceManagementService.getUnpaidInvoices(year);
     res.json({ invoices });
   } catch (error) {
     console.error('Error getting unpaid invoices:', error);
     res.status(500).json({ error: 'Error getting unpaid invoices' });
+  }
+});
+
+app.get('/api/invoices/partial', requireLogin, requireAdmin, requirePermission('compta'), (req, res) => {
+  const year = req.query.year ? parseInt(req.query.year) : null;
+
+  try {
+    const invoices = invoiceManagementService.getPartialInvoices(year);
+    res.json({ invoices });
+  } catch (error) {
+    console.error('Error getting partial invoices:', error);
+    res.status(500).json({ error: 'Error getting partial invoices' });
   }
 });
 

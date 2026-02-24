@@ -9,10 +9,13 @@ class ComptaMain {
     constructor() {
         this.allClientsData = [];
         this.unpaidInvoices = [];
+        this.partialInvoices = [];
         this.allInvoicesData = [];
         this.allInvoicesFiltered = [];
         this.unpaidSortOrder = 'desc';
 		this.unpaidSortType = 'date';
+        this.partialSortOption = 'date_desc';
+        this.partialPctFilter = 100;
         this.selectedYear = new Date().getFullYear();
         this.currentSortOption = 'total_desc';
         this.allInvoicesSortOption = 'date_desc';
@@ -42,6 +45,8 @@ class ComptaMain {
             this.loadAllInvoices();
         } else if (tab === 'unpaid') {
             this.loadUnpaidInvoices();
+        } else if (tab === 'partial') {
+            this.loadPartialInvoices();
         }
     }
 
@@ -57,6 +62,8 @@ class ComptaMain {
             allInvoicesSortOption: this.allInvoicesSortOption,
             unpaidSortOrder: this.unpaidSortOrder,
             unpaidSortType: this.unpaidSortType,
+            partialSortOption: this.partialSortOption,
+            partialPctFilter: this.partialPctFilter,
             clientSearch: document.getElementById('clientSearchInput')?.value || '',
             allInvoicesSearch: document.getElementById('allInvoicesSearchInput')?.value || '',
             scrollY: window.scrollY
@@ -106,6 +113,18 @@ class ComptaMain {
                 this.unpaidSortType = state.unpaidSortType;
                 // Mettre à jour les boutons visuellement
                 this.updateUnpaidSortButtons();
+            }
+
+            if (state.partialSortOption) {
+                this.partialSortOption = state.partialSortOption;
+                const sel = document.getElementById('partialSortSelect');
+                if (sel) sel.value = state.partialSortOption;
+            }
+
+            if (state.partialPctFilter !== undefined) {
+                this.partialPctFilter = state.partialPctFilter;
+                const inp = document.getElementById('partialPctInput');
+                if (inp && state.partialPctFilter < 100) inp.value = state.partialPctFilter;
             }
 
             // Restaurer les recherches
@@ -204,6 +223,8 @@ class ComptaMain {
                 this.loadClientsData();
             } else if (activeTab === 'unpaid') {
                 this.loadUnpaidInvoices();
+            } else if (activeTab === 'partial') {
+                this.loadPartialInvoices();
             } else if (activeTab === 'all_invoices') {
                 this.loadAllInvoices();
             } else {
@@ -284,6 +305,29 @@ class ComptaMain {
             exportAllInvoicesBtn.addEventListener('click', () => this.exportAllInvoicesToCSV());
         }
 
+        // === Factures partielles ===
+        const partialSortSelect = document.getElementById('partialSortSelect');
+        if (partialSortSelect) {
+            partialSortSelect.addEventListener('change', (e) => {
+                this.partialSortOption = e.target.value;
+                this.saveState();
+                this.displayPartialInvoices();
+            });
+        }
+        const partialPctInput = document.getElementById('partialPctInput');
+        if (partialPctInput) {
+            partialPctInput.addEventListener('input', () => {
+                const val = parseFloat(partialPctInput.value);
+                this.partialPctFilter = isNaN(val) ? 100 : Math.min(100, Math.max(0, val));
+                this.saveState();
+                this.displayPartialInvoices();
+            });
+        }
+        const exportPartialBtn = document.getElementById('exportPartialCSVBtn');
+        if (exportPartialBtn) {
+            exportPartialBtn.addEventListener('click', () => this.exportPartialToCSV());
+        }
+
         // Sauvegarder l'état au moment de quitter la page (scroll inclus)
         window.addEventListener('beforeunload', () => this.saveState());
     }
@@ -314,6 +358,8 @@ class ComptaMain {
             document.querySelector('[data-tab="unpaid"]').click();
         } else if (tab === 'all_invoices') {
             document.querySelector('[data-tab="all_invoices"]').click();
+        } else if (tab === 'partial') {
+            document.querySelector('[data-tab="partial"]').click();
         }
     }
 
@@ -338,6 +384,8 @@ class ComptaMain {
             this.loadAllInvoices();
         } else if (targetTab === 'unpaid') {
             this.loadUnpaidInvoices();
+        } else if (targetTab === 'partial') {
+            this.loadPartialInvoices();
         }
     }
 
@@ -472,6 +520,314 @@ class ComptaMain {
             document.getElementById('unpaidInvoicesTableBody').innerHTML =
                 '<tr><td colspan="12" class="error-message">Impossible de charger les factures</td></tr>';
         }
+    }
+
+    async loadPartialInvoices() {
+        try {
+            const yearParam = this.selectedYear === 'all' ? '' : `year=${this.selectedYear}`;
+            const separator = yearParam ? '?' : '';
+            const response = await fetch(`/api/invoices/partial${separator}${yearParam}`, {
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Erreur lors du chargement des factures partielles');
+            const data = await response.json();
+            this.partialInvoices = data.invoices || [];
+            this.displayPartialInvoices();
+            this.restoreScrollPosition();
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors du chargement des factures partielles', 'error');
+            document.getElementById('partialInvoicesTableBody').innerHTML =
+                '<tr><td colspan="13" class="error-message">Impossible de charger les factures</td></tr>';
+        }
+    }
+
+    displayPartialInvoices() {
+        const tbody = document.getElementById('partialInvoicesTableBody');
+
+        // Filtrer par % payé
+        const filtered = this.partialInvoices.filter(inv => {
+            const pct = inv.total_ttc > 0 ? (inv.amount_paid / inv.total_ttc) * 100 : 0;
+            return pct < this.partialPctFilter;
+        });
+
+        if (!filtered || filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="13" class="no-data">Aucune facture partielle trouvée</td></tr>';
+            this.renderInvoicesBadges([], 'partialBadgesContainer');
+            return;
+        }
+
+        const sorted = [...filtered].sort((a, b) => {
+            const pctA = a.total_ttc > 0 ? (a.amount_paid / a.total_ttc) * 100 : 0;
+            const pctB = b.total_ttc > 0 ? (b.amount_paid / b.total_ttc) * 100 : 0;
+            switch (this.partialSortOption) {
+                case 'date_asc': return new Date(a.invoice_date) - new Date(b.invoice_date);
+                case 'client_asc': return (a.client_full_name || '').localeCompare(b.client_full_name || '');
+                case 'pct_asc': return pctA - pctB;
+                case 'pct_desc': return pctB - pctA;
+                default: return new Date(b.invoice_date) - new Date(a.invoice_date);
+            }
+        });
+
+        tbody.innerHTML = sorted.map(invoice => this.createPartialInvoiceRow(invoice)).join('');
+        this.renderInvoicesBadges(sorted, 'partialBadgesContainer');
+        this.attachPartialEventListeners();
+    }
+
+    createPartialInvoiceRow(invoice) {
+        const pct = invoice.total_ttc > 0
+            ? ((invoice.amount_paid / invoice.total_ttc) * 100).toFixed(1)
+            : '0.0';
+        const pctClass = parseFloat(pct) < 50 ? 'text-danger' : parseFloat(pct) < 80 ? 'text-warning' : 'text-success';
+
+        const paidDateValue = invoice.paid_date ?
+            new Date(invoice.paid_date).toISOString().split('T')[0] : '';
+        const dueDateValue = invoice.due_date ?
+            new Date(invoice.due_date).toISOString().split('T')[0] : '';
+
+        return `
+            <tr data-invoice-id="${invoice.id}">
+                <td class="invoice-number"><strong>${invoice.order_id}</strong></td>
+                <td>${this.formatDateShort(invoice.invoice_date)}</td>
+                <td>${invoice.client_full_name || 'N/A'}</td>
+                <td class="text-right">${formatCurrency(invoice.subtotal_ht)}</td>
+                <td class="text-right">${formatCurrency(invoice.vat_amount)}</td>
+                <td class="text-right"><strong>${formatCurrency(invoice.total_ttc)}</strong></td>
+                <td>${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
+                <td class="partial-editable text-right" data-field="amount_paid" data-type="number">
+                    ${formatCurrency(invoice.amount_paid)}
+                </td>
+                <td class="text-right ${pctClass}"><strong>${pct}%</strong></td>
+                <td class="text-right text-danger">
+                    ${formatCurrency(invoice.amount_due)}
+                </td>
+                <td class="partial-editable" data-field="paid_date" data-type="date">
+                    ${paidDateValue ? this.formatDateShort(invoice.paid_date) : 'N/A'}
+                </td>
+                <td class="partial-editable status-cell" data-field="payment_status" data-type="select">
+                    <span class="status-badge status-partial">Partial</span>
+                </td>
+                <td class="text-center">
+                    <button class="action-btn partial-payments-btn" data-invoice-id="${invoice.id}" title="Suivi des paiements">
+                        <i class="fas fa-coins"></i>
+                    </button>
+                    <button class="action-btn download-btn download-invoice-btn"
+                        data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                        data-filename="Invoice_${invoice.order_id}.pdf"
+                        title="Télécharger la facture">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
+    attachPartialEventListeners() {
+        document.querySelectorAll('#partial-tab .partial-editable').forEach(cell => {
+            cell.addEventListener('click', (e) => this.startEditPartial(e.currentTarget));
+        });
+        document.querySelectorAll('.partial-payments-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.openPaymentsModal(btn.dataset.invoiceId, 'partial'));
+        });
+        document.querySelectorAll('#partial-tab .download-invoice-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await window.downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                } catch (err) {
+                    showNotification('Erreur : ' + err.message, 'error');
+                }
+            });
+        });
+    }
+
+    startEditPartial(cell) {
+        const row = cell.closest('tr');
+        const invoiceId = row.dataset.invoiceId;
+        const field = cell.dataset.field;
+        const type = cell.dataset.type;
+
+        const invoice = this.partialInvoices.find(inv => inv.id == invoiceId);
+        if (!invoice || this.editingCells.has(cell)) return;
+
+        const currentValue = invoice[field];
+        let input;
+
+        if (type === 'select') {
+            input = document.createElement('select');
+            input.className = 'inline-edit-select';
+            input.innerHTML = `
+                <option value="unpaid" ${invoice.payment_status === 'unpaid' ? 'selected' : ''}>Non payé</option>
+                <option value="partial" ${invoice.payment_status === 'partial' ? 'selected' : ''}>Partiel</option>
+                <option value="paid" ${invoice.payment_status === 'paid' ? 'selected' : ''}>Payé</option>
+            `;
+        } else if (type === 'date') {
+            input = document.createElement('input');
+            input.type = 'date';
+            input.className = 'inline-edit-input';
+            input.value = currentValue ? new Date(currentValue).toISOString().split('T')[0] : '';
+        } else if (type === 'number') {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.01';
+            input.className = 'inline-edit-input';
+            input.value = currentValue || 0;
+        }
+
+        const originalContent = cell.innerHTML;
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+        if (type === 'number') input.select();
+        this.editingCells.set(cell, originalContent);
+
+        const save = async () => {
+            await this.saveEditPartial(invoiceId, field, input.value, cell, originalContent);
+        };
+        const cancel = () => {
+            cell.innerHTML = originalContent;
+            this.editingCells.delete(cell);
+        };
+
+        if (type === 'select') {
+            input.addEventListener('change', save);
+        } else {
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); save(); }
+                else if (e.key === 'Escape') cancel();
+            });
+        }
+    }
+
+    async saveEditPartial(invoiceId, field, newValue, cell, originalContent) {
+        const invoice = this.partialInvoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+
+        try {
+            let updateData = {};
+
+            if (field === 'amount_paid') {
+                const amountPaid = parseFloat(newValue) || 0;
+                const amountDue = invoice.total_ttc - amountPaid;
+                let paymentStatus = amountPaid >= invoice.total_ttc ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid';
+                updateData = {
+                    amount_paid: amountPaid,
+                    amount_due: amountDue,
+                    payment_status: paymentStatus,
+                    paid_date: amountPaid > 0 && !invoice.paid_date ? new Date().toISOString() : invoice.paid_date
+                };
+            } else if (field === 'paid_date') {
+                updateData = {
+                    amount_paid: invoice.amount_paid,
+                    amount_due: invoice.amount_due,
+                    payment_status: invoice.payment_status,
+                    paid_date: newValue || null
+                };
+            } else if (field === 'payment_status') {
+                let amountPaid = invoice.amount_paid;
+                let amountDue = invoice.amount_due;
+                let paidDate = invoice.paid_date;
+                if (newValue === 'paid') {
+                    amountPaid = invoice.total_ttc;
+                    amountDue = 0;
+                    if (!paidDate) paidDate = new Date().toISOString();
+                } else if (newValue === 'unpaid') {
+                    amountPaid = 0;
+                    amountDue = invoice.total_ttc;
+                    paidDate = null;
+                }
+                updateData = { amount_paid: amountPaid, amount_due: amountDue, payment_status: newValue, paid_date: paidDate };
+            }
+
+            const response = await fetch(`/api/invoices/${invoiceId}/payment`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(updateData)
+            });
+
+            const responseData = await response.json();
+            if (!response.ok) throw new Error(responseData.error || 'Erreur lors de la mise à jour');
+
+            showNotification('Facture mise à jour avec succès', 'success');
+            await this.loadPartialInvoices();
+        } catch (error) {
+            showNotification('Erreur: ' + error.message, 'error');
+            cell.innerHTML = originalContent;
+        }
+
+        this.editingCells.delete(cell);
+    }
+
+    exportPartialToCSV() {
+        const filtered = this.partialInvoices.filter(inv => {
+            const pct = inv.total_ttc > 0 ? (inv.amount_paid / inv.total_ttc) * 100 : 0;
+            return pct < this.partialPctFilter;
+        });
+
+        if (!filtered || filtered.length === 0) {
+            showNotification('No partial invoices to export', 'warning');
+            return;
+        }
+
+        const headers = [
+            'Invoice Number', 'Invoice Date', 'Client',
+            'Amount excl. VAT', 'VAT', 'Amount incl. VAT',
+            'Due Date', 'Amount Paid', '% Paid', 'Balance Due',
+            'Payment Date', 'Status'
+        ];
+
+        const totals = filtered.reduce((acc, inv) => {
+            acc.count += 1;
+            acc.subtotal_ht += parseFloat(inv.subtotal_ht) || 0;
+            acc.vat_amount += parseFloat(inv.vat_amount) || 0;
+            acc.total_ttc += parseFloat(inv.total_ttc) || 0;
+            acc.amount_paid += parseFloat(inv.amount_paid) || 0;
+            acc.amount_due += parseFloat(inv.amount_due) || 0;
+            return acc;
+        }, { count: 0, subtotal_ht: 0, vat_amount: 0, total_ttc: 0, amount_paid: 0, amount_due: 0 });
+
+        const rows = filtered.map(inv => {
+            const pct = inv.total_ttc > 0 ? ((inv.amount_paid / inv.total_ttc) * 100).toFixed(1) : '0.0';
+            return [
+                inv.order_id || '',
+                this.formatDateShort(inv.invoice_date),
+                `"${(inv.client_full_name || '').replace(/"/g, '""')}"`,
+                this.formatNumberForCSV(inv.subtotal_ht),
+                this.formatNumberForCSV(inv.vat_amount),
+                this.formatNumberForCSV(inv.total_ttc),
+                inv.due_date ? this.formatDateShort(inv.due_date) : '',
+                this.formatNumberForCSV(inv.amount_paid),
+                pct + '%',
+                this.formatNumberForCSV(inv.amount_due),
+                inv.paid_date ? this.formatDateShort(inv.paid_date) : '',
+                'Partial'
+            ].join(',');
+        });
+
+        rows.push('');
+        rows.push([
+            `"TOTAL (${totals.count} partial invoices)"`, '', '',
+            this.formatNumberForCSV(totals.subtotal_ht),
+            this.formatNumberForCSV(totals.vat_amount),
+            this.formatNumberForCSV(totals.total_ttc),
+            '',
+            this.formatNumberForCSV(totals.amount_paid),
+            '',
+            this.formatNumberForCSV(totals.amount_due),
+            '', ''
+        ].join(','));
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.setAttribute('href', URL.createObjectURL(blob));
+        link.setAttribute('download', `partial_invoices_${this.selectedYear}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showNotification(`CSV export successful: partial_invoices_${this.selectedYear}.csv`, 'success');
     }
 
     toggleUnpaidSort() {
@@ -702,11 +1058,15 @@ class ComptaMain {
             return;
         }
 
-        const dataSource = containerId === 'unpaidBadgesContainer' ? 'unpaid' : 'all';
+        const dataSource = containerId === 'unpaidBadgesContainer' ? 'unpaid'
+            : containerId === 'partialBadgesContainer' ? 'partial'
+            : 'all';
+        const showPct = containerId === 'partialBadgesContainer';
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         container.innerHTML = invoices.map(invoice => {
+            const pctPaid = invoice.total_ttc > 0 ? ((invoice.amount_paid / invoice.total_ttc) * 100).toFixed(1) : '0.0';
             const statusText = this.getInvoiceStatusText(invoice.payment_status);
             const cardClass = invoice.payment_status === 'paid' ? 'inv-paid'
                 : invoice.payment_status === 'partial' ? 'inv-partial' : 'inv-unpaid';
@@ -786,6 +1146,10 @@ class ComptaMain {
                                     <span class="inv-amount-label">Balance</span>
                                     <span class="inv-amount-value">${formatCurrency(invoice.amount_due)}</span>
                                 </div>
+                                ${showPct ? `<div class="inv-amount-item">
+                                    <span class="inv-amount-label">% payé</span>
+                                    <span class="inv-amount-value" style="color:${parseFloat(pctPaid)<50?'#e74c3c':parseFloat(pctPaid)<80?'#f39c12':'#27ae60'}">${pctPaid}%</span>
+                                </div>` : ''}
                             </div>
                         </div>
                     </div>
@@ -814,7 +1178,9 @@ class ComptaMain {
 
     openMobileEditModal(invoiceId, source) {
         // Chercher la facture dans la bonne source
-        const list = source === 'unpaid' ? this.unpaidInvoices : this.allInvoicesData;
+        const list = source === 'unpaid' ? this.unpaidInvoices
+            : source === 'partial' ? this.partialInvoices
+            : this.allInvoicesData;
         const invoice = list.find(inv => inv.id == invoiceId);
         if (!invoice) return;
 
@@ -908,6 +1274,8 @@ class ComptaMain {
                 // Recharger selon la source
                 if (source === 'unpaid') {
                     await this.loadUnpaidInvoices();
+                } else if (source === 'partial') {
+                    await this.loadPartialInvoices();
                 } else {
                     await this.loadAllInvoices();
                 }
@@ -933,7 +1301,9 @@ class ComptaMain {
     }
 
     async openPaymentsModal(invoiceId, source) {
-        const list = source === 'unpaid' ? this.unpaidInvoices : this.allInvoicesData;
+        const list = source === 'unpaid' ? this.unpaidInvoices
+            : source === 'partial' ? this.partialInvoices
+            : this.allInvoicesData;
         const invoice = list.find(inv => inv.id == invoiceId);
         if (!invoice) return;
         this._paymentsModalInvoiceId = invoiceId;
@@ -1009,10 +1379,13 @@ class ComptaMain {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur');
             document.getElementById('newPaymentAmount').value = '';
-            const list = source === 'unpaid' ? this.unpaidInvoices : this.allInvoicesData;
+            const list = source === 'unpaid' ? this.unpaidInvoices
+                : source === 'partial' ? this.partialInvoices
+                : this.allInvoicesData;
             const idx = list.findIndex(inv => inv.id == invoiceId);
             if (idx !== -1) list[idx] = { ...list[idx], ...data.invoice };
             if (source === 'unpaid') this.displayUnpaidInvoices();
+            else if (source === 'partial') this.displayPartialInvoices();
             else this.displayAllInvoices();
             showNotification('Paiement enregistré', 'success');
             await this.openPaymentsModal(invoiceId, source);
@@ -1032,10 +1405,13 @@ class ComptaMain {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur');
-            const list = source === 'unpaid' ? this.unpaidInvoices : this.allInvoicesData;
+            const list = source === 'unpaid' ? this.unpaidInvoices
+                : source === 'partial' ? this.partialInvoices
+                : this.allInvoicesData;
             const idx = list.findIndex(inv => inv.id == invoiceId);
             if (idx !== -1) list[idx] = { ...list[idx], ...data.invoice };
             if (source === 'unpaid') this.displayUnpaidInvoices();
+            else if (source === 'partial') this.displayPartialInvoices();
             else this.displayAllInvoices();
             showNotification('Paiement supprimé', 'success');
             await this.openPaymentsModal(invoiceId, source);
