@@ -5,7 +5,9 @@ echo "==> Installing Node.js via Homebrew..."
 brew install node
 
 echo "==> Moving to project root..."
-cd "$CI_WORKSPACE"
+cd "$CI_PRIMARY_REPOSITORY_PATH"
+echo "==> Current directory: $(pwd)"
+ls -la capacitor.config.json
 
 echo "==> Installing npm dependencies..."
 npm install
