@@ -85,6 +85,27 @@ function initDiscadoHeader() {
 
     // Mettre à jour le badge du panier
     updateCartCountBadge();
+
+    // Injecter le lien Admin Panel si l'utilisateur est admin
+    injectAdminPanelLink();
+}
+
+// Vérifie si l'utilisateur est admin et injecte le lien Admin Panel dans le menu
+function injectAdminPanelLink() {
+    fetch('/api/check-auth', { credentials: 'same-origin' })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.role === 'admin') {
+                const userMenu = document.getElementById('userMenu');
+                if (!userMenu || userMenu.querySelector('.admin-panel-link')) return;
+                const link = document.createElement('a');
+                link.href = '/admin/orders';
+                link.className = 'admin-panel-link';
+                link.innerHTML = '<i class="fas fa-user-shield"></i> Admin Panel';
+                userMenu.insertBefore(link, userMenu.firstChild);
+            }
+        })
+        .catch(function() { /* non connecté ou erreur réseau, on ignore */ });
 }
 
 // Mise à jour du badge de comptage du panier

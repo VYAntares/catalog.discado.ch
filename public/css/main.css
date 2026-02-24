@@ -417,7 +417,27 @@ main {
   .user-menu a.menu-logout:hover i {
       color: #b91c1c;
   }
-  
+
+  /* Admin Panel link : accent bleu */
+  .user-menu a.admin-panel-link {
+      color: #2575fc;
+      border-bottom: 2px solid #e8efff;
+      background-color: #f0f4ff;
+  }
+
+  .user-menu a.admin-panel-link i {
+      color: #2575fc;
+  }
+
+  .user-menu a.admin-panel-link:hover {
+      background-color: #e0eaff;
+      color: #1a5cb8;
+  }
+
+  .user-menu a.admin-panel-link:hover i {
+      color: #1a5cb8;
+  }
+
   .user-menu a:last-child {
       border-bottom: none;
   }
