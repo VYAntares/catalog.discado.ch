@@ -797,9 +797,7 @@ class ComptaMain {
                     <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._comptaOpenPayments(${invoice.id},'${dataSource}')">
                         <i class="fas fa-coins"></i> Paiements
                     </button>
-                    <button class="inv-pdf-btn download-invoice-btn"
-                       data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                       data-filename="Invoice_${invoice.order_id}.pdf">
+                    <button class="inv-pdf-btn download-invoice-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._comptaDownloadPdf('/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}','Invoice_${invoice.order_id}.pdf')">
                         <i class="fas fa-file-pdf"></i> PDF
                     </button>
                 </div>
@@ -809,6 +807,9 @@ class ComptaMain {
 
         window._comptaEditBadge = (invoiceId, source) => this.openMobileEditModal(invoiceId, source);
         window._comptaOpenPayments = (invoiceId, source) => this.openPaymentsModal(invoiceId, source);
+        window._comptaDownloadPdf = (url, filename) => {
+            downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
+        };
     }
 
     openMobileEditModal(invoiceId, source) {
