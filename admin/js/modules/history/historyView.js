@@ -303,11 +303,6 @@ function displayOrderDetails(order, container) {
             <button class="edit-order-btn" id="editOrderBtn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
                 <i class="fas fa-edit"></i> Modifier la commande
             </button>
-            <button class="download-invoice-btn"
-               data-url="${API.getInvoiceDownloadLink(order.orderId, order.userId)}"
-               data-filename="Invoice_${order.orderId}.pdf">
-                <i class="fas fa-file-pdf"></i> Télécharger la Facture
-            </button>
             <button class="close-detail-btn" id="closeOrderDetailBtn">
                 <i class="fas fa-times"></i> Fermer
             </button>
@@ -318,6 +313,27 @@ function displayOrderDetails(order, container) {
     
     // Marquer le conteneur avec l'ID de commande pour l'édition
     container.setAttribute('data-order-id', order.orderId);
+
+    // Bouton facture PDF — créé en DOM avec listener direct (comme public/orderList.js)
+    const actionsFooter = container.querySelector('.order-actions-footer');
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'download-invoice-btn';
+    dlBtn.innerHTML = `<i class="fas fa-file-pdf"></i> Télécharger la Facture`;
+    dlBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            await downloadOrShareFile(
+                API.getInvoiceDownloadLink(order.orderId, order.userId),
+                `Invoice_${order.orderId}.pdf`
+            );
+        } catch (err) {
+            Notification.showNotification('Erreur : ' + err.message, 'error');
+        }
+    });
+    // Insérer avant le bouton Fermer
+    const closeDetailBtn = actionsFooter.querySelector('.close-detail-btn');
+    actionsFooter.insertBefore(dlBtn, closeDetailBtn);
     
     // Ajouter le gestionnaire pour le bouton d'édition
     const editBtn = container.querySelector('.edit-order-btn');
@@ -335,18 +351,6 @@ function displayOrderDetails(order, container) {
             this.style.backgroundColor = '#28a745';
             
             Notification.showNotification('Mode édition activé - Cliquez sur les cellules pour modifier', 'info');
-        });
-    }
-
-    // Bouton téléchargement facture PDF (share sheet sur iOS)
-    const downloadBtn = container.querySelector('.download-invoice-btn');
-    if (downloadBtn) {
-        downloadBtn.addEventListener('click', async () => {
-            try {
-                await downloadOrShareFile(downloadBtn.dataset.url, downloadBtn.dataset.filename);
-            } catch (err) {
-                Notification.showNotification('Erreur : ' + err.message, 'error');
-            }
         });
     }
     
