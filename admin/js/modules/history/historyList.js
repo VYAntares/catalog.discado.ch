@@ -311,14 +311,28 @@ function createOrderElement(order) {
                 <button class="action-btn view-btn view-order-details-btn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
                     <i class="fas fa-eye"></i> Détails
                 </button>
-                <button class="action-btn download-btn download-history-btn"
-                   data-url="${API.getInvoiceDownloadLink(order.orderId, order.userId)}"
-                   data-filename="Invoice_${order.orderId}.pdf">
-                    <i class="fas fa-file-pdf"></i> Facture
-                </button>
             </div>
         </div>
     `;
+
+    // Bouton facture PDF — créé en DOM avec listener direct (comme public/orderList.js)
+    const actionsCol = orderItem.querySelector('.order-col-actions');
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'action-btn download-btn';
+    dlBtn.innerHTML = `<i class="fas fa-file-pdf"></i> Facture`;
+    dlBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            await downloadOrShareFile(
+                API.getInvoiceDownloadLink(order.orderId, order.userId),
+                `Invoice_${order.orderId}.pdf`
+            );
+        } catch (err) {
+            Notification.showNotification('Erreur : ' + err.message, 'error');
+        }
+    });
+    actionsCol.appendChild(dlBtn);
 
     return orderItem;
 }
@@ -330,15 +344,6 @@ function setupOrderDetailsButtons() {
             const orderId = this.getAttribute('data-order-id');
             const userId = this.getAttribute('data-user-id');
             HistoryView.viewOrderDetails(orderId, userId);
-        });
-    });
-    document.querySelectorAll('.download-history-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            try {
-                await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
-            } catch (err) {
-                Notification.showNotification('Erreur : ' + err.message, 'error');
-            }
         });
     });
 }
