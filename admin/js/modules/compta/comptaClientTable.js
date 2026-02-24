@@ -352,7 +352,7 @@ class ComptaClientTable {
                     <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._openPaymentsBadge(${invoice.id})">
                         <i class="fas fa-coins"></i> Paiements
                     </button>
-                    <button class="inv-pdf-btn download-invoice-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._clientDownloadPdf('/api/admin/download-invoice/${invoice.order_id}/${this.clientId}','Invoice_${invoice.order_id}.pdf')">
+                    <button class="inv-pdf-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._clientDownloadPdf('/api/admin/download-invoice/${invoice.order_id}/${this.clientId}','Invoice_${invoice.order_id}.pdf')">
                         <i class="fas fa-file-pdf"></i> PDF
                     </button>
                 </div>
