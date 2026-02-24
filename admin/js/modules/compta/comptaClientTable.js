@@ -560,6 +560,7 @@ class ComptaClientTable {
                 }
             });
         });
+    }
 
     startEdit(cell) {
         const row = cell.closest('tr');
