@@ -336,11 +336,6 @@ app.get('/pages/reset-password.html', (req, res) => {
 // ===== RESSOURCES STATIQUES =====
 app.use('/favicon.png', express.static(path.join(__dirname, 'public/favicon.png')));
 app.use('/apple-touch-icon.png', express.static(path.join(__dirname, 'public/apple-touch-icon.png')));
-// Apple App Site Association (trousseau / Associated Domains)
-app.get('/.well-known/apple-app-site-association', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.sendFile(path.join(__dirname, 'public/.well-known/apple-app-site-association'));
-});
 // PWA
 app.get('/manifest.json', (req, res) => {
   res.setHeader('Content-Type', 'application/manifest+json');
