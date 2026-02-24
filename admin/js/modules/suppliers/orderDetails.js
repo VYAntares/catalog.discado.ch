@@ -8,7 +8,7 @@ import * as State from './state.js';
 import * as Utils from './utils.js';
 import * as SupplierDetails from './supplierDetails.js';
 import * as BatchManager from './batchManager.js';
-import { downloadOrShareFile } from '../../utils/fileDownload.js';
+// downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 /**
  * Affiche les détails d'une commande
@@ -160,7 +160,7 @@ function attachEventListeners() {
     exportPdfBtn.onclick = async () => {
       const orderId = State.getCurrentOrderId();
       try {
-        await downloadOrShareFile(
+        await window.downloadOrShareFile(
           `/api/order-suppliers/${orderId}/export-pdf`,
           `Commande_${orderId}.pdf`
         );
@@ -192,7 +192,7 @@ function attachEventListeners() {
   document.querySelectorAll('.view-attachment-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try {
-        await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+        await window.downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
       } catch (err) {
         console.error('Erreur ouverture pièce jointe:', err);
       }

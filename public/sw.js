@@ -1,5 +1,5 @@
 // Service Worker - Discado PWA
-const CACHE_NAME = 'discado-v2';
+const CACHE_NAME = 'discado-v3';
 
 // Ressources à mettre en cache lors de l'installation
 const PRECACHE_URLS = [
@@ -41,6 +41,11 @@ self.addEventListener('activate', event => {
   );
 });
 
+// ===== MESSAGE (force skipWaiting from page) =====
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
 // ===== FETCH =====
 self.addEventListener('fetch', event => {
   const { request } = event;
@@ -56,7 +61,6 @@ self.addEventListener('fetch', event => {
   }
 
   // Ne JAMAIS cacher les fichiers JS/admin — toujours Network First
-  // pour éviter les versions obsolètes
   if (url.pathname.endsWith('.js') || url.pathname.startsWith('/admin/')) {
     event.respondWith(
       fetch(request)

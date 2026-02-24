@@ -3,7 +3,7 @@
 import { formatCurrency } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
 import { ComptaChart } from './comptaChart.js';
-import { downloadOrShareFile } from '../../utils/fileDownload.js';
+// downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 class ComptaMain {
     constructor() {
@@ -808,7 +808,7 @@ class ComptaMain {
         window._comptaEditBadge = (invoiceId, source) => this.openMobileEditModal(invoiceId, source);
         window._comptaOpenPayments = (invoiceId, source) => this.openPaymentsModal(invoiceId, source);
         window._comptaDownloadPdf = (url, filename) => {
-            downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
+            window.downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
         };
     }
 
@@ -1054,7 +1054,7 @@ class ComptaMain {
         document.querySelectorAll('.download-invoice-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 try {
-                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                    await window.downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
                 } catch (err) {
                     showNotification('Erreur : ' + err.message, 'error');
                 }
@@ -1666,7 +1666,7 @@ class ComptaMain {
         document.querySelectorAll('#all_invoices-tab .download-invoice-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 try {
-                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                    await window.downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
                 } catch (err) {
                     showNotification('Erreur : ' + err.message, 'error');
                 }

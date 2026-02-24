@@ -8,7 +8,7 @@ import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as Modal from '../../utils/modal.js';
 import * as OrderEdit from '../clients/clientOrderEdit.js';
-import { downloadOrShareFile } from '../../utils/fileDownload.js';
+// downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 //Affiche les détails d'une commande
 async function viewOrderDetails(orderId, userId) {
@@ -323,7 +323,7 @@ function displayOrderDetails(order, container) {
         e.preventDefault();
         e.stopPropagation();
         try {
-            await downloadOrShareFile(
+            await window.downloadOrShareFile(
                 API.getInvoiceDownloadLink(order.orderId, order.userId),
                 `Invoice_${order.orderId}.pdf`
             );

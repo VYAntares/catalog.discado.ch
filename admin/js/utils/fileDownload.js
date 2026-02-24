@@ -2,11 +2,12 @@
  * admin/js/utils/fileDownload.js
  *
  * Downloads a file from an authenticated API URL.
- * On Capacitor iOS:  opens the native share sheet (or an in-app PDF overlay).
- * On iOS / Safari mobile: opens the native share sheet.
- * On desktop: triggers a standard browser download.
+ * - Mobile (iOS/Android, web or Capacitor app): native share sheet
+ * - Desktop: standard browser download
+ *
+ * Also registers as window.downloadOrShareFile for inline/onclick use.
  */
-export async function downloadOrShareFile(url, filename, mimeType = 'application/pdf') {
+async function downloadOrShareFile(url, filename, mimeType = 'application/pdf') {
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -14,36 +15,29 @@ export async function downloadOrShareFile(url, filename, mimeType = 'application
     }
     const blob = await res.blob();
 
-    // Detect environment
-    const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isMobile = isIOS || /Android/i.test(navigator.userAgent);
 
-    // On mobile / Capacitor: try native share sheet directly
-    if ((isMobile || isCapacitorNative) && navigator.share) {
+    // Mobile: try native share sheet
+    if (isMobile && navigator.share) {
         try {
             const file = new File([blob], filename, { type: mimeType });
             await navigator.share({ files: [file], title: filename });
             return;
         } catch (err) {
-            if (err.name === 'AbortError') return; // user cancelled
-            // On iOS (Capacitor or WKWebView), <a download> opens Safari.
-            // Show an in-app PDF overlay with a fresh-gesture Share button instead.
-            if (isCapacitorNative || isIOS) {
-                _showPdfOverlay(blob, filename, mimeType);
-                return;
-            }
+            if (err.name === 'AbortError') return;
+            // share failed — fall through to overlay on iOS, download on Android
         }
     }
 
-    // iOS / Capacitor without navigator.share — show overlay
-    if (isCapacitorNative || (isIOS && isMobile)) {
+    // iOS without working share: show in-app PDF overlay with share button
+    if (isIOS) {
         _showPdfOverlay(blob, filename, mimeType);
         return;
     }
 
-    // Desktop / Safari fallback: trigger browser download
+    // Desktop / Android fallback: trigger browser download
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = objectUrl;
@@ -55,21 +49,16 @@ export async function downloadOrShareFile(url, filename, mimeType = 'application
     setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
-/* ---------- Capacitor iOS in-app PDF overlay ---------- */
-
 function _showPdfOverlay(blob, filename, mimeType) {
-    // Remove any previous overlay
     document.getElementById('cap-pdf-overlay')?.remove();
 
     const objectUrl = URL.createObjectURL(blob);
 
-    // Overlay container
     const overlay = document.createElement('div');
     overlay.id = 'cap-pdf-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;'
         + 'background:rgba(0,0,0,0.92);display:flex;flex-direction:column;';
 
-    // Header bar
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;'
         + 'padding:10px 14px;background:#1a1a2e;flex-shrink:0;gap:8px;';
@@ -80,7 +69,6 @@ function _showPdfOverlay(blob, filename, mimeType) {
         + 'text-overflow:ellipsis;white-space:nowrap;flex:1;';
     header.appendChild(title);
 
-    // Share button — provides a FRESH user gesture so navigator.share works reliably
     const shareBtn = document.createElement('button');
     shareBtn.innerHTML = '<i class="fas fa-share-alt"></i> Partager';
     shareBtn.style.cssText = 'background:#3498db;color:#fff;border:none;padding:8px 14px;'
@@ -90,12 +78,11 @@ function _showPdfOverlay(blob, filename, mimeType) {
             const file = new File([blob], filename, { type: mimeType });
             await navigator.share({ files: [file], title: filename });
         } catch (e) {
-            if (e.name !== 'AbortError') console.warn('Share from overlay failed:', e);
+            if (e.name !== 'AbortError') console.warn('Share failed:', e);
         }
     });
     header.appendChild(shareBtn);
 
-    // Close button
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '<i class="fas fa-times"></i>';
     closeBtn.style.cssText = 'background:#e74c3c;color:#fff;border:none;padding:8px 14px;'
@@ -107,7 +94,6 @@ function _showPdfOverlay(blob, filename, mimeType) {
     header.appendChild(closeBtn);
     overlay.appendChild(header);
 
-    // PDF viewer (iframe with blob URL)
     const viewer = document.createElement('iframe');
     viewer.src = objectUrl;
     viewer.style.cssText = 'flex:1;border:none;background:#fff;';
@@ -115,3 +101,9 @@ function _showPdfOverlay(blob, filename, mimeType) {
 
     document.body.appendChild(overlay);
 }
+
+// Register globally so inline onclick handlers work even without ES module import
+window.downloadOrShareFile = downloadOrShareFile;
+
+// Also export for ES module consumers
+export { downloadOrShareFile };
