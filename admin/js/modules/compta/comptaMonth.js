@@ -226,9 +226,7 @@ class ComptaMonth {
                     <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthOpenPayments(${invoice.id})">
                         <i class="fas fa-coins"></i> Paiements
                     </button>
-                    <button class="inv-pdf-btn download-invoice-btn"
-                       data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                       data-filename="Invoice_${invoice.order_id}.pdf">
+                    <button class="inv-pdf-btn download-invoice-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthDownloadPdf('/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}','Invoice_${invoice.order_id}.pdf')">
                         <i class="fas fa-file-pdf"></i> PDF
                     </button>
                 </div>
@@ -238,6 +236,9 @@ class ComptaMonth {
 
         window._monthEditBadge = (invoiceId) => this.openMobileEditModal(invoiceId);
         window._monthOpenPayments = (invoiceId) => this.openPaymentsModal(invoiceId);
+        window._monthDownloadPdf = (url, filename) => {
+            downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
+        };
     }
 
     openMobileEditModal(invoiceId) {

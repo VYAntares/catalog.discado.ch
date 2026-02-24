@@ -30,17 +30,17 @@ export async function downloadOrShareFile(url, filename, mimeType = 'application
             if (err.name === 'AbortError') return; // user cancelled
             console.warn('navigator.share failed:', err);
 
-            // On Capacitor iOS the <a download> fallback opens Safari.
-            // Instead, show an in-app PDF overlay with a fresh-gesture Share button.
-            if (isCapacitorNative) {
+            // On iOS (Capacitor or WKWebView), <a download> opens Safari.
+            // Show an in-app PDF overlay with a fresh-gesture Share button instead.
+            if (isCapacitorNative || isIOS) {
                 _showPdfOverlay(blob, filename, mimeType);
                 return;
             }
         }
     }
 
-    // Capacitor native without navigator.share — show overlay
-    if (isCapacitorNative) {
+    // iOS / Capacitor without navigator.share — show overlay
+    if (isCapacitorNative || (isIOS && isMobile)) {
         _showPdfOverlay(blob, filename, mimeType);
         return;
     }
