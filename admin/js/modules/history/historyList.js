@@ -320,9 +320,11 @@ function createOrderElement(order) {
     const dlBtn = document.createElement('button');
     dlBtn.className = 'action-btn download-btn';
     dlBtn.innerHTML = `<i class="fas fa-file-pdf"></i> Facture`;
+    dlBtn.setAttribute('onclick', "event.preventDefault();event.stopPropagation();alert('CLICK OK historyList btn orderId=" + order.orderId + "')");
     dlBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
+        alert('DEBUG addEventListener FIRED for historyList');
         try {
             await downloadOrShareFile(
                 API.getInvoiceDownloadLink(order.orderId, order.userId),
