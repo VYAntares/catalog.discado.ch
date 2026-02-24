@@ -49,11 +49,6 @@ async function showProcessOrderModal(order, clientProfile) {
         return;
     }
     
-    // Masquer le titre statique du modal (le header dynamique le remplace)
-    if (orderDetailsTitle) {
-        orderDetailsTitle.style.display = 'none';
-    }
-    
     // ✅ RÉCUPÉRER LES PRODUITS DEPUIS LA BASE DE DONNÉES
     let enrichedItems = [...order.items];
     try {

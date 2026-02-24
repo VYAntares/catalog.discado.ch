@@ -2,7 +2,7 @@
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
-import { downloadOrShareFile } from '../../utils/fileDownload.js';
+// downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 class ComptaMonth {
     constructor() {
@@ -237,7 +237,7 @@ class ComptaMonth {
         window._monthEditBadge = (invoiceId) => this.openMobileEditModal(invoiceId);
         window._monthOpenPayments = (invoiceId) => this.openPaymentsModal(invoiceId);
         window._monthDownloadPdf = (url, filename) => {
-            downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
+            window.downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
         };
     }
 
@@ -406,7 +406,7 @@ class ComptaMonth {
         document.querySelectorAll('.download-invoice-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 try {
-                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                    await window.downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
                 } catch (err) {
                     showNotification('Erreur : ' + err.message, 'error');
                 }

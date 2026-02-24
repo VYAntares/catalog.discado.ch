@@ -2,7 +2,7 @@
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
-import { downloadOrShareFile } from '../../utils/fileDownload.js';
+// downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 class ComptaClientTable {
     constructor() {
@@ -363,7 +363,7 @@ class ComptaClientTable {
         window._editInvoiceBadge = (invoiceId) => this.openMobileEditModal(invoiceId);
         window._openPaymentsBadge = (invoiceId) => this.openPaymentsModal(invoiceId);
         window._clientDownloadPdf = (url, filename) => {
-            downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
+            window.downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
         };
     }
 
@@ -557,7 +557,7 @@ class ComptaClientTable {
         document.querySelectorAll('.download-invoice-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 try {
-                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                    await window.downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
                 } catch (err) {
                     showNotification('Erreur : ' + err.message, 'error');
                 }

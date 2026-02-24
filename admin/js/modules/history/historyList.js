@@ -7,7 +7,7 @@ import * as API from '../../core/api.js';
 import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as HistoryView from './historyView.js';
-import { downloadOrShareFile } from '../../utils/fileDownload.js';
+// downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 let historyOrderList;
 let searchInput;
@@ -324,7 +324,7 @@ function createOrderElement(order) {
         e.preventDefault();
         e.stopPropagation();
         try {
-            await downloadOrShareFile(
+            await window.downloadOrShareFile(
                 API.getInvoiceDownloadLink(order.orderId, order.userId),
                 `Invoice_${order.orderId}.pdf`
             );
