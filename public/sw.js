@@ -1,5 +1,5 @@
 // Service Worker - Discado PWA
-const CACHE_NAME = 'discado-v1';
+const CACHE_NAME = 'discado-v2';
 
 // Ressources à mettre en cache lors de l'installation
 const PRECACHE_URLS = [
@@ -55,6 +55,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Ne JAMAIS cacher les fichiers JS/admin — toujours Network First
+  // pour éviter les versions obsolètes
+  if (url.pathname.endsWith('.js') || url.pathname.startsWith('/admin/')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then(cached => cached || Response.error()))
+    );
+    return;
+  }
+
   // Stratégie Network First pour les pages HTML
   if (request.headers.get('Accept') && request.headers.get('Accept').includes('text/html')) {
     event.respondWith(
@@ -71,7 +88,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Stratégie Cache First pour les assets statiques (CSS, JS, images)
+  // Stratégie Cache First pour les assets statiques (CSS, images)
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
