@@ -334,16 +334,21 @@ class MyInvoicesView {
             const invoiceNum = invoice ? invoice.order_id : invoiceId;
             const filename = `Invoice_${invoiceNum}.pdf`;
 
-            // iOS / mobile : ouvre le share sheet natif (AirDrop, Mail, Imprimer…)
-            if (navigator.canShare && navigator.share) {
-                const file = new File([blob], filename, { type: 'application/pdf' });
-                if (navigator.canShare({ files: [file] })) {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isMobile = isIOS || /Android/i.test(navigator.userAgent);
+
+            if (isMobile && navigator.share) {
+                try {
+                    const file = new File([blob], filename, { type: 'application/pdf' });
                     await navigator.share({ files: [file], title: filename });
                     return;
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') return;
+                    console.warn('Share failed, falling back:', shareErr);
                 }
             }
 
-            // Fallback desktop : téléchargement classique
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = objectUrl;
@@ -352,7 +357,7 @@ class MyInvoicesView {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(objectUrl);
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
         } catch (err) {
             alert('Error: ' + err.message);
         }

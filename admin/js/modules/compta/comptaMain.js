@@ -3,6 +3,7 @@
 import { formatCurrency } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
 import { ComptaChart } from './comptaChart.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 class ComptaMain {
     constructor() {
@@ -536,10 +537,11 @@ class ComptaMain {
 		});
 
 		tbody.innerHTML = sortedInvoices.map(invoice => this.createUnpaidInvoiceRow(invoice)).join('');
-		this.attachUnpaidEventListeners();
 
-		// Badges mobiles
+		// Badges mobiles (AVANT listeners pour que les boutons existent dans le DOM)
 		this.renderInvoicesBadges(sortedInvoices, 'unpaidBadgesContainer');
+
+		this.attachUnpaidEventListeners();
 	}
 
     createUnpaidInvoiceRow(invoice) {
@@ -576,12 +578,12 @@ class ComptaMain {
                     <button class="action-btn unpaid-payments-btn" data-invoice-id="${invoice.id}" title="Suivi des paiements">
                         <i class="fas fa-coins"></i>
                     </button>
-                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                    class="action-btn download-btn"
-                    target="_blank"
+                    <button class="action-btn download-btn download-invoice-btn"
+                    data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                    data-filename="Invoice_${invoice.order_id}.pdf"
                     title="Télécharger la facture">
                         <i class="fas fa-file-pdf"></i>
-                    </a>
+                    </button>
                 </td>
             </tr>
         `;
@@ -795,10 +797,11 @@ class ComptaMain {
                     <button class="inv-payments-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._comptaOpenPayments(${invoice.id},'${dataSource}')">
                         <i class="fas fa-coins"></i> Paiements
                     </button>
-                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                       class="inv-pdf-btn" target="_blank">
+                    <button class="inv-pdf-btn download-invoice-btn"
+                       data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                       data-filename="Invoice_${invoice.order_id}.pdf">
                         <i class="fas fa-file-pdf"></i> PDF
-                    </a>
+                    </button>
                 </div>
             </div>
             `;
@@ -1046,6 +1049,15 @@ class ComptaMain {
         });
         document.querySelectorAll('.unpaid-payments-btn').forEach(btn => {
             btn.addEventListener('click', () => this.openPaymentsModal(btn.dataset.invoiceId, 'unpaid'));
+        });
+        document.querySelectorAll('.download-invoice-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                } catch (err) {
+                    showNotification('Erreur : ' + err.message, 'error');
+                }
+            });
         });
     }
 
@@ -1538,11 +1550,12 @@ class ComptaMain {
 
         const sorted = this.sortAllInvoices(this.allInvoicesFiltered);
         tbody.innerHTML = sorted.map(invoice => this.createAllInvoiceRow(invoice)).join('');
-        this.attachAllInvoicesEventListeners();
         this.updateAllInvoicesSummaryBar(this.allInvoicesFiltered);
 
-        // Badges mobiles
+        // Badges mobiles (AVANT listeners pour que les boutons existent dans le DOM)
         this.renderInvoicesBadges(sorted, 'allInvoicesBadgesContainer');
+
+        this.attachAllInvoicesEventListeners();
     }
 
     updateAllInvoicesSummaryBar(invoices) {
@@ -1621,12 +1634,12 @@ class ComptaMain {
                     <button class="action-btn all-inv-payments-btn" data-invoice-id="${invoice.id}" title="Suivi des paiements">
                         <i class="fas fa-coins"></i>
                     </button>
-                    <a href="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
-                    class="action-btn download-btn"
-                    target="_blank"
+                    <button class="action-btn download-btn download-invoice-btn"
+                    data-url="/api/admin/download-invoice/${invoice.order_id}/${invoice.user_id}"
+                    data-filename="Invoice_${invoice.order_id}.pdf"
                     title="Télécharger la facture">
                         <i class="fas fa-file-pdf"></i>
-                    </a>
+                    </button>
                 </td>
             </tr>
         `;
@@ -1648,6 +1661,15 @@ class ComptaMain {
         });
         document.querySelectorAll('.all-inv-payments-btn').forEach(btn => {
             btn.addEventListener('click', () => this.openPaymentsModal(btn.dataset.invoiceId, 'all'));
+        });
+        document.querySelectorAll('#all_invoices-tab .download-invoice-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+                } catch (err) {
+                    showNotification('Erreur : ' + err.message, 'error');
+                }
+            });
         });
     }
 

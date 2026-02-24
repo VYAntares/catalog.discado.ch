@@ -7,6 +7,7 @@ import * as API from '../../core/api.js';
 import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as HistoryView from './historyView.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 let historyOrderList;
 let searchInput;
@@ -310,9 +311,11 @@ function createOrderElement(order) {
                 <button class="action-btn view-btn view-order-details-btn" data-order-id="${order.orderId}" data-user-id="${order.userId}">
                     <i class="fas fa-eye"></i> Détails
                 </button>
-                <a href="${API.getInvoiceDownloadLink(order.orderId, order.userId)}" class="action-btn download-btn" target="_blank">
+                <button class="action-btn download-btn download-history-btn"
+                   data-url="${API.getInvoiceDownloadLink(order.orderId, order.userId)}"
+                   data-filename="Invoice_${order.orderId}.pdf">
                     <i class="fas fa-file-pdf"></i> Facture
-                </a>
+                </button>
             </div>
         </div>
     `;
@@ -327,6 +330,15 @@ function setupOrderDetailsButtons() {
             const orderId = this.getAttribute('data-order-id');
             const userId = this.getAttribute('data-user-id');
             HistoryView.viewOrderDetails(orderId, userId);
+        });
+    });
+    document.querySelectorAll('.download-history-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            try {
+                await downloadOrShareFile(btn.dataset.url, btn.dataset.filename);
+            } catch (err) {
+                Notification.showNotification('Erreur : ' + err.message, 'error');
+            }
         });
     });
 }
