@@ -115,10 +115,12 @@ class ComptaMonth {
         });
 
         tbody.innerHTML = sortedInvoices.map(invoice => this.createTableRow(invoice)).join('');
-        this.attachEventListeners();
 
         // Badges mobiles
         this.renderInvoicesBadges(sortedInvoices);
+
+        // Attacher les listeners APRÈS que badges ET tableau sont dans le DOM
+        this.attachEventListeners();
     }
 
     renderInvoicesBadges(invoices) {
