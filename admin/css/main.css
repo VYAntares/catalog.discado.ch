@@ -8,11 +8,18 @@
 
 html {
     background-color: #fff;
+    overflow-x: hidden;
 }
 
 body {
     background-color: #f5f8fa;
     color: #333;
+    overflow-x: hidden;
+}
+
+/* Variable hauteur de l'en-tête admin */
+:root {
+    --admin-header-height: 40px;
 }
 
 /* Header style */
@@ -25,22 +32,30 @@ header {
     z-index: 100;
 }
 
-/* iOS Capacitor app only: header extends behind status bar */
+/* iOS Capacitor app only: header descend sous la barre de statut */
 body.capacitor-ios header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    padding: calc(8px + env(safe-area-inset-top)) 0 8px;
+    padding: env(safe-area-inset-top) 0 8px;
+    height: calc(var(--admin-header-height) + env(safe-area-inset-top));
+    display: flex;
+    align-items: flex-end;
 }
 
 body.capacitor-ios {
-    padding-top: calc(46px + env(safe-area-inset-top));
+    padding-top: calc(var(--admin-header-height) + env(safe-area-inset-top));
 }
 
 body.capacitor-ios .admin-tabs {
     position: sticky;
-    top: calc(46px + env(safe-area-inset-top));
+    top: calc(var(--admin-header-height) + env(safe-area-inset-top));
+}
+
+/* Ensure header-container fills the full width when header is flex on iOS */
+body.capacitor-ios header .header-container {
+    width: 100%;
 }
 
 .header-container {
