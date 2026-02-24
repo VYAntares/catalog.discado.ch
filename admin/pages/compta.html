@@ -96,6 +96,9 @@
             <button class="compta-tab-btn" data-tab="unpaid">
                 <i class="fas fa-exclamation-triangle"></i> Factures impayées
             </button>
+            <button class="compta-tab-btn" data-tab="partial">
+                <i class="fas fa-hourglass-half"></i> Partielles
+            </button>
         </div>
 
         <!-- Tab: Vue d'ensemble -->
@@ -297,6 +300,66 @@
                         <tbody id="unpaidInvoicesTableBody">
                             <tr>
                                 <td colspan="12" class="loading">Chargement des factures impayées...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Factures partielles -->
+        <div id="partial-tab" class="compta-tab-content">
+            <div class="search-container">
+                <div class="sort-controls">
+                    <select id="partialSortSelect" class="search-input" style="max-width: 220px;">
+                        <option value="date_desc">Date ↓ (récente)</option>
+                        <option value="date_asc">Date ↑ (ancienne)</option>
+                        <option value="client_asc">Client (A-Z)</option>
+                        <option value="pct_asc">% payé ↑ (moins payé)</option>
+                        <option value="pct_desc">% payé ↓ (plus payé)</option>
+                    </select>
+
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <label style="font-size:13px;font-weight:600;white-space:nowrap;">Afficher &lt;</label>
+                        <input type="number" id="partialPctInput" class="search-input"
+                            min="1" max="100" step="1" placeholder="100"
+                            style="max-width:80px;" title="Afficher uniquement les factures payées à moins de X%">
+                        <label style="font-size:13px;font-weight:600;white-space:nowrap;">% payé</label>
+                    </div>
+
+                    <button id="exportPartialCSVBtn" class="export-btn">
+                        <i class="fas fa-file-csv"></i>
+                        Exporter en CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Badges mobiles factures partielles -->
+            <div id="partialBadgesContainer" class="mobile-badges-container"></div>
+
+            <div class="unpaid-invoices-container">
+                <div class="invoices-table-wrapper">
+                    <table class="invoices-table" id="partialInvoicesTable">
+                        <thead>
+                            <tr>
+                                <th>Num facture</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Montant HT</th>
+                                <th>TVA</th>
+                                <th>Montant TTC</th>
+                                <th>Date échéance</th>
+                                <th>Montant encaissé</th>
+                                <th>% payé</th>
+                                <th>Solde dû</th>
+                                <th>Date paiement</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partialInvoicesTableBody">
+                            <tr>
+                                <td colspan="13" class="loading">Chargement des factures partielles...</td>
                             </tr>
                         </tbody>
                     </table>
