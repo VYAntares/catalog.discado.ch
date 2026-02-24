@@ -20,12 +20,19 @@
             <div class="logo-container">
                 <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
             </div>
-            <div class="admin-user">
-                <i class="fas fa-user-shield"></i>
-                <span>Admin</span>
-                <a href="/logout" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                </a>
+            <div class="admin-user-menu">
+                <button class="admin-menu-btn" id="adminMenuToggle" aria-label="Menu utilisateur">
+                    <i class="fas fa-user-shield"></i>
+                    <span class="hamburger-icon" aria-hidden="true">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </span>
+                </button>
+                <div class="admin-dropdown" id="adminDropdown">
+                    <a href="/pages/catalog.html"><i class="fas fa-store"></i> Catalogue</a>
+                    <a href="/logout" class="menu-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                </div>
             </div>
         </div>
     </header>
@@ -87,6 +94,7 @@
 
     <!-- Conteneur de notifications -->
     <div id="notification-container"></div>
+        <script src="/admin/js/utils/adminMenu.js"></script>
     <script type="module" src="/admin/js/utils/tabsPermissions.js"></script>
 
     <!-- Inclure les scripts JS en type module pour supporter ES6 imports -->
