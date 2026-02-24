@@ -85,7 +85,8 @@ app.use(helmet.contentSecurityPolicy({
     styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "data:"],
     imgSrc: ["'self'", "data:", "blob:"],
-    connectSrc: ["'self'"]
+    connectSrc: ["'self'"],
+    frameSrc: ["'self'", "blob:"]   // Allow blob PDFs in Capacitor iOS overlay
   }
 }));
 

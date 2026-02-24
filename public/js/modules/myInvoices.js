@@ -334,19 +334,29 @@ class MyInvoicesView {
             const invoiceNum = invoice ? invoice.order_id : invoiceId;
             const filename = `Invoice_${invoiceNum}.pdf`;
 
+            const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isMobile = isIOS || /Android/i.test(navigator.userAgent);
 
-            if (isMobile && navigator.share) {
+            if ((isMobile || isCapacitorNative) && navigator.share) {
                 try {
                     const file = new File([blob], filename, { type: 'application/pdf' });
                     await navigator.share({ files: [file], title: filename });
                     return;
                 } catch (shareErr) {
                     if (shareErr.name === 'AbortError') return;
-                    console.warn('Share failed, falling back:', shareErr);
+                    console.warn('Share failed:', shareErr);
+                    if (isCapacitorNative) {
+                        this._showPdfOverlay(blob, filename);
+                        return;
+                    }
                 }
+            }
+
+            if (isCapacitorNative) {
+                this._showPdfOverlay(blob, filename);
+                return;
             }
 
             const objectUrl = URL.createObjectURL(blob);
@@ -361,6 +371,38 @@ class MyInvoicesView {
         } catch (err) {
             alert('Error: ' + err.message);
         }
+    }
+
+    _showPdfOverlay(blob, filename) {
+        document.getElementById('cap-pdf-overlay')?.remove();
+        const objectUrl = URL.createObjectURL(blob);
+        const overlay = document.createElement('div');
+        overlay.id = 'cap-pdf-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;';
+        const header = document.createElement('div');
+        header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#1a1a2e;flex-shrink:0;gap:8px;';
+        const t = document.createElement('span');
+        t.textContent = filename;
+        t.style.cssText = 'color:#fff;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;';
+        header.appendChild(t);
+        const shareBtn = document.createElement('button');
+        shareBtn.innerHTML = '<i class="fas fa-share-alt"></i> Partager';
+        shareBtn.style.cssText = 'background:#3498db;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer;flex-shrink:0;';
+        shareBtn.addEventListener('click', async () => {
+            try { const f = new File([blob], filename, { type: 'application/pdf' }); await navigator.share({ files: [f], title: filename }); } catch (e) { if (e.name !== 'AbortError') console.warn(e); }
+        });
+        header.appendChild(shareBtn);
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        closeBtn.style.cssText = 'background:#e74c3c;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:15px;cursor:pointer;flex-shrink:0;';
+        closeBtn.addEventListener('click', () => { overlay.remove(); URL.revokeObjectURL(objectUrl); });
+        header.appendChild(closeBtn);
+        overlay.appendChild(header);
+        const viewer = document.createElement('iframe');
+        viewer.src = objectUrl;
+        viewer.style.cssText = 'flex:1;border:none;background:#fff;';
+        overlay.appendChild(viewer);
+        document.body.appendChild(overlay);
     }
 
     formatCurrency(amount) {
