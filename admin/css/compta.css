@@ -199,6 +199,31 @@ main {
     color: #667eea;
 }
 
+.overdue-filter-btn.active {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-color: #dc2626;
+}
+
+.overdue-filter-btn.active:hover {
+    border-color: #b91c1c;
+    color: white;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+}
+
+.overdue-row {
+    background-color: #fff5f5 !important;
+}
+
+.overdue-row td {
+    background-color: #fff5f5 !important;
+}
+
+.overdue-due-date {
+    color: #dc2626 !important;
+    font-weight: 700;
+}
+
 /* ===== CONTAINERS AVEC SCROLL HORIZONTAL ===== */
 .clients-summary-list,
 .unpaid-invoices-container {

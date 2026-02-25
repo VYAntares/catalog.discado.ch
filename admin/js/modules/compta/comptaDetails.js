@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatSwissNumber } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
+import { shareOrDownloadBlob } from '../../utils/fileDownload.js';
 
 class ComptaDetails {
     constructor() {
@@ -216,7 +217,7 @@ class ComptaDetails {
 		window.location.href = `/admin/compta-month?year=${this.year}&month=${month}&type=${this.type}`;
 	}
 
-    exportToCSV() {
+    async exportToCSV() {
         if (!this.monthlyData || this.monthlyData.length === 0) {
             showNotification('No data to export', 'warning');
             return;
@@ -289,25 +290,15 @@ class ComptaDetails {
 
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
+
         const typeNames = {
             'total_amount': 'total_incl_vat',
             'total_paid': 'total_paid',
             'total_due': 'total_due',
             'total_invoices': 'invoice_count'
         };
-
         const fileName = `monthly_details_${typeNames[this.type]}_${this.year}.csv`;
-
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        await shareOrDownloadBlob(blob, fileName);
         showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 }

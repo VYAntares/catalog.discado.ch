@@ -268,6 +268,11 @@
 						<span id="unpaidSortClientText">Trié par date</span>
 					</button>
                     
+                    <button id="unpaidOverdueBtn" class="sort-btn overdue-filter-btn" title="Afficher uniquement les factures dont la date d'échéance est dépassée">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>En retard</span>
+                    </button>
+
                     <button id="exportUnpaidCSVBtn" class="export-btn">
                         <i class="fas fa-file-csv"></i>
                         Exporter en CSV
@@ -326,6 +331,11 @@
                             style="max-width:80px;" title="Afficher uniquement les factures payées à moins de X%">
                         <label style="font-size:13px;font-weight:600;white-space:nowrap;">% payé</label>
                     </div>
+
+                    <button id="partialOverdueBtn" class="sort-btn overdue-filter-btn" title="Afficher uniquement les factures dont la date d'échéance est dépassée">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>En retard</span>
+                    </button>
 
                     <button id="exportPartialCSVBtn" class="export-btn">
                         <i class="fas fa-file-csv"></i>

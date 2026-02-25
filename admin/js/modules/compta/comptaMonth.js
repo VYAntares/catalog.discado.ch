@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
+import { shareOrDownloadBlob } from '../../utils/fileDownload.js';
 // downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 class ComptaMonth {
@@ -694,7 +695,7 @@ class ComptaMonth {
         this.editingCells.delete(cell);
     }
 
-    exportToCSV() {
+    async exportToCSV() {
         if (!this.invoices || this.invoices.length === 0) {
             showNotification('No invoices to export', 'warning');
             return;
@@ -783,19 +784,9 @@ class ComptaMonth {
         // Combiner en-têtes et lignes
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
         const monthName = monthNames[this.month - 1];
         const fileName = `invoices_${monthName}_${this.year}.csv`;
-
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        await shareOrDownloadBlob(blob, fileName);
         showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 

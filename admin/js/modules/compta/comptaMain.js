@@ -3,6 +3,7 @@
 import { formatCurrency } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
 import { ComptaChart } from './comptaChart.js';
+import { shareOrDownloadBlob } from '../../utils/fileDownload.js';
 // downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 class ComptaMain {
@@ -14,8 +15,10 @@ class ComptaMain {
         this.allInvoicesFiltered = [];
         this.unpaidSortOrder = 'desc';
 		this.unpaidSortType = 'date';
+        this.unpaidOverdueFilter = false;
         this.partialSortOption = 'date_desc';
         this.partialPctFilter = 100;
+        this.partialOverdueFilter = false;
         this.selectedYear = new Date().getFullYear();
         this.currentSortOption = 'total_desc';
         this.allInvoicesSortOption = 'date_desc';
@@ -62,8 +65,10 @@ class ComptaMain {
             allInvoicesSortOption: this.allInvoicesSortOption,
             unpaidSortOrder: this.unpaidSortOrder,
             unpaidSortType: this.unpaidSortType,
+            unpaidOverdueFilter: this.unpaidOverdueFilter,
             partialSortOption: this.partialSortOption,
             partialPctFilter: this.partialPctFilter,
+            partialOverdueFilter: this.partialOverdueFilter,
             clientSearch: document.getElementById('clientSearchInput')?.value || '',
             allInvoicesSearch: document.getElementById('allInvoicesSearchInput')?.value || '',
             scrollY: window.scrollY
@@ -115,6 +120,12 @@ class ComptaMain {
                 this.updateUnpaidSortButtons();
             }
 
+            if (state.unpaidOverdueFilter !== undefined) {
+                this.unpaidOverdueFilter = state.unpaidOverdueFilter;
+                const btn = document.getElementById('unpaidOverdueBtn');
+                if (btn) btn.classList.toggle('active', state.unpaidOverdueFilter);
+            }
+
             if (state.partialSortOption) {
                 this.partialSortOption = state.partialSortOption;
                 const sel = document.getElementById('partialSortSelect');
@@ -125,6 +136,12 @@ class ComptaMain {
                 this.partialPctFilter = state.partialPctFilter;
                 const inp = document.getElementById('partialPctInput');
                 if (inp && state.partialPctFilter < 100) inp.value = state.partialPctFilter;
+            }
+
+            if (state.partialOverdueFilter !== undefined) {
+                this.partialOverdueFilter = state.partialOverdueFilter;
+                const btn = document.getElementById('partialOverdueBtn');
+                if (btn) btn.classList.toggle('active', state.partialOverdueFilter);
             }
 
             // Restaurer les recherches
@@ -275,6 +292,17 @@ class ComptaMain {
 			unpaidSortClientBtn.addEventListener('click', () => this.toggleUnpaidClientSort());
 		}
 
+        // Filtre "en retard" factures impayées
+        const unpaidOverdueBtn = document.getElementById('unpaidOverdueBtn');
+        if (unpaidOverdueBtn) {
+            unpaidOverdueBtn.addEventListener('click', () => {
+                this.unpaidOverdueFilter = !this.unpaidOverdueFilter;
+                unpaidOverdueBtn.classList.toggle('active', this.unpaidOverdueFilter);
+                this.saveState();
+                this.displayUnpaidInvoices();
+            });
+        }
+
         // Export CSV factures impayées
         const exportUnpaidBtn = document.getElementById('exportUnpaidCSVBtn');
         if (exportUnpaidBtn) {
@@ -323,6 +351,17 @@ class ComptaMain {
                 this.displayPartialInvoices();
             });
         }
+        // Filtre "en retard" factures partielles
+        const partialOverdueBtn = document.getElementById('partialOverdueBtn');
+        if (partialOverdueBtn) {
+            partialOverdueBtn.addEventListener('click', () => {
+                this.partialOverdueFilter = !this.partialOverdueFilter;
+                partialOverdueBtn.classList.toggle('active', this.partialOverdueFilter);
+                this.saveState();
+                this.displayPartialInvoices();
+            });
+        }
+
         const exportPartialBtn = document.getElementById('exportPartialCSVBtn');
         if (exportPartialBtn) {
             exportPartialBtn.addEventListener('click', () => this.exportPartialToCSV());
@@ -545,11 +584,19 @@ class ComptaMain {
     displayPartialInvoices() {
         const tbody = document.getElementById('partialInvoicesTableBody');
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         // Filtrer par % payé
-        const filtered = this.partialInvoices.filter(inv => {
+        let filtered = this.partialInvoices.filter(inv => {
             const pct = inv.total_ttc > 0 ? (inv.amount_paid / inv.total_ttc) * 100 : 0;
             return pct < this.partialPctFilter;
         });
+
+        // Filtrer par retard de paiement
+        if (this.partialOverdueFilter) {
+            filtered = filtered.filter(inv => inv.due_date && new Date(inv.due_date) < today);
+        }
 
         if (!filtered || filtered.length === 0) {
             tbody.innerHTML = '<tr><td colspan="13" class="no-data">Aucune facture partielle trouvée</td></tr>';
@@ -580,20 +627,24 @@ class ComptaMain {
             : '0.0';
         const pctClass = parseFloat(pct) < 50 ? 'text-danger' : parseFloat(pct) < 80 ? 'text-warning' : 'text-success';
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isOverdue = invoice.due_date && new Date(invoice.due_date) < today;
+
         const paidDateValue = invoice.paid_date ?
             new Date(invoice.paid_date).toISOString().split('T')[0] : '';
         const dueDateValue = invoice.due_date ?
             new Date(invoice.due_date).toISOString().split('T')[0] : '';
 
         return `
-            <tr data-invoice-id="${invoice.id}">
+            <tr data-invoice-id="${invoice.id}" class="${isOverdue ? 'overdue-row' : ''}">
                 <td class="invoice-number"><strong>${invoice.order_id}</strong></td>
                 <td>${this.formatDateShort(invoice.invoice_date)}</td>
                 <td>${invoice.client_full_name || 'N/A'}</td>
                 <td class="text-right">${formatCurrency(invoice.subtotal_ht)}</td>
                 <td class="text-right">${formatCurrency(invoice.vat_amount)}</td>
                 <td class="text-right"><strong>${formatCurrency(invoice.total_ttc)}</strong></td>
-                <td>${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
+                <td class="${isOverdue ? 'overdue-due-date' : ''}">${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
                 <td class="partial-editable text-right" data-field="amount_paid" data-type="number">
                     ${formatCurrency(invoice.amount_paid)}
                 </td>
@@ -759,7 +810,7 @@ class ComptaMain {
         this.editingCells.delete(cell);
     }
 
-    exportPartialToCSV() {
+    async exportPartialToCSV() {
         const filtered = this.partialInvoices.filter(inv => {
             const pct = inv.total_ttc > 0 ? (inv.amount_paid / inv.total_ttc) * 100 : 0;
             return pct < this.partialPctFilter;
@@ -820,14 +871,9 @@ class ComptaMain {
 
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.setAttribute('href', URL.createObjectURL(blob));
-        link.setAttribute('download', `partial_invoices_${this.selectedYear}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showNotification(`CSV export successful: partial_invoices_${this.selectedYear}.csv`, 'success');
+        const fileName = `partial_invoices_${this.selectedYear}.csv`;
+        await shareOrDownloadBlob(blob, fileName);
+        showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
     toggleUnpaidSort() {
@@ -871,14 +917,22 @@ class ComptaMain {
 
     displayUnpaidInvoices() {
 		const tbody = document.getElementById('unpaidInvoicesTableBody');
-		
-		if (!this.unpaidInvoices || this.unpaidInvoices.length === 0) {
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		let invoices = this.unpaidInvoices || [];
+		if (this.unpaidOverdueFilter) {
+			invoices = invoices.filter(inv => inv.due_date && new Date(inv.due_date) < today);
+		}
+
+		if (!invoices || invoices.length === 0) {
 			tbody.innerHTML = '<tr><td colspan="12" class="no-data">Aucune facture impayée trouvée</td></tr>';
 			return;
 		}
 
 		// REMPLACER TOUTE LA LOGIQUE DE TRI PAR CECI :
-		const sortedInvoices = [...this.unpaidInvoices].sort((a, b) => {
+		const sortedInvoices = [...invoices].sort((a, b) => {
 			if (this.unpaidSortType === 'client') {
 				// Tri alphabétique par nom de client
 				const nameA = (a.client_full_name || '').toLowerCase();
@@ -903,21 +957,25 @@ class ComptaMain {
     createUnpaidInvoiceRow(invoice) {
         const statusClass = 'status-unpaid';
         const statusText = 'Non payé';
-        
-        const paidDateValue = invoice.paid_date ? 
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isOverdue = invoice.due_date && new Date(invoice.due_date) < today;
+
+        const paidDateValue = invoice.paid_date ?
             new Date(invoice.paid_date).toISOString().split('T')[0] : '';
-        const dueDateValue = invoice.due_date ? 
+        const dueDateValue = invoice.due_date ?
             new Date(invoice.due_date).toISOString().split('T')[0] : '';
-        
+
         return `
-            <tr data-invoice-id="${invoice.id}">
+            <tr data-invoice-id="${invoice.id}" class="${isOverdue ? 'overdue-row' : ''}">
                 <td class="invoice-number"><strong>${invoice.order_id}</strong></td>
                 <td>${this.formatDateShort(invoice.invoice_date)}</td>
                 <td>${invoice.client_full_name || 'N/A'}</td>
                 <td class="text-right">${formatCurrency(invoice.subtotal_ht)}</td>
                 <td class="text-right">${formatCurrency(invoice.vat_amount)}</td>
                 <td class="text-right"><strong>${formatCurrency(invoice.total_ttc)}</strong></td>
-                <td>${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
+                <td class="${isOverdue ? 'overdue-due-date' : ''}">${dueDateValue ? this.formatDateShort(invoice.due_date) : 'Non définie'}</td>
                 <td class="editable-cell text-right" data-field="amount_paid" data-type="number">
                     ${formatCurrency(invoice.amount_paid)}
                 </td>
@@ -1600,7 +1658,7 @@ class ComptaMain {
         this.editingCells.delete(cell);
     }
 
-    exportUnpaidToCSV() {
+    async exportUnpaidToCSV() {
         if (!this.unpaidInvoices || this.unpaidInvoices.length === 0) {
             showNotification('No unpaid invoices to export', 'warning');
             return;
@@ -1684,18 +1742,8 @@ class ComptaMain {
         // Combiner en-têtes et lignes
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
         const fileName = `unpaid_invoices_${this.selectedYear}.csv`;
-
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        await shareOrDownloadBlob(blob, fileName);
         showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
@@ -2226,7 +2274,7 @@ class ComptaMain {
         this.displayAllInvoices();
     }
 
-    exportAllInvoicesToCSV() {
+    async exportAllInvoicesToCSV() {
         if (!this.allInvoicesFiltered || this.allInvoicesFiltered.length === 0) {
             showNotification('No invoices to export', 'warning');
             return;
@@ -2279,21 +2327,12 @@ class ComptaMain {
 
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-
         const fileName = `all_invoices_${this.selectedYear}.csv`;
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        await shareOrDownloadBlob(blob, fileName);
         showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
-    exportClientsToCSV() {
+    async exportClientsToCSV() {
         if (!this.allClientsData || this.allClientsData.length === 0) {
             showNotification('No clients to export', 'warning');
             return;
@@ -2360,18 +2399,8 @@ class ComptaMain {
 
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-
         const fileName = `clients_invoices_${this.selectedYear}.csv`;
-
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        await shareOrDownloadBlob(blob, fileName);
         showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 }

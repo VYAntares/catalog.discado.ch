@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Discado - Service temporairement indisponible</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#dd6060">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Discado">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: linear-gradient(135deg, #e9394f, #ff3333);
+            text-align: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+            position: relative;
+            padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            animation: float 8s ease-in-out infinite;
+        }
+
+        body::before {
+            width: 450px;
+            height: 450px;
+            top: -120px;
+            right: -100px;
+        }
+
+        body::after {
+            width: 350px;
+            height: 350px;
+            bottom: -80px;
+            left: -80px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.05); }
+        }
+
+        .error-container {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 48px 36px 40px;
+            border-radius: 24px;
+            box-shadow:
+                0 24px 64px rgba(0, 0, 0, 0.15),
+                0 1px 3px rgba(0, 0, 0, 0.08);
+            max-width: 92%;
+            width: 440px;
+            position: relative;
+            z-index: 1;
+            animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(24px);
+        }
+
+        @keyframes cardIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-icon svg {
+            width: 36px;
+            height: 36px;
+            color: #e9394f;
+        }
+
+        .error-divider {
+            width: 48px;
+            height: 3px;
+            background: linear-gradient(90deg, #e9394f, #ff5566);
+            border-radius: 3px;
+            margin: 0 auto 24px;
+        }
+
+        h1 {
+            color: #222;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.3px;
+        }
+
+        .error-message {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .error-details {
+            color: #999;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 32px;
+        }
+
+        .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            background: linear-gradient(135deg, #e9394f, #ff4d5e);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(233, 57, 79, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(233, 57, 79, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(233, 57, 79, 0.3);
+        }
+
+        .refresh-btn svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.4s ease;
+        }
+
+        .refresh-btn.loading svg {
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .auto-retry {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+            color: #aaa;
+            font-size: 13px;
+        }
+
+        .auto-retry span {
+            color: #e9394f;
+            font-weight: 600;
+        }
+
+        .home-link {
+            display: inline-block;
+            margin-top: 16px;
+            color: #999;
+            font-size: 13px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .home-link:hover {
+            color: #e9394f;
+        }
+
+        @media (max-width: 480px) {
+            .error-container {
+                padding: 36px 24px 32px;
+                border-radius: 18px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            body::before {
+                width: 280px;
+                height: 280px;
+            }
+
+            body::after {
+                width: 220px;
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+        </div>
+
+        <div class="error-divider"></div>
+
+        <h1>Service temporairement indisponible</h1>
+
+        <p class="error-message">
+            Le serveur est momentanément surchargé ou en maintenance.
+        </p>
+
+        <p class="error-details">
+            Veuillez rafraîchir la page. Si le problème persiste, réessayez dans quelques instants.
+        </p>
+
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshPage()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182M2.985 14.652" />
+            </svg>
+            Rafraîchir la page
+        </button>
+
+        <div class="auto-retry" id="autoRetry">
+            Nouvelle tentative automatique dans <span id="countdown">10</span>s
+        </div>
+
+        <a href="/" class="home-link">Retour à l'accueil</a>
+    </div>
+
+    <script>
+        var countdown = 10;
+        var countdownEl = document.getElementById('countdown');
+        var refreshBtn = document.getElementById('refreshBtn');
+
+        function refreshPage() {
+            refreshBtn.classList.add('loading');
+            refreshBtn.textContent = 'Chargement...';
+            // Use cache-busting to avoid getting the cached error
+            window.location.reload();
+        }
+
+        var timer = setInterval(function() {
+            countdown--;
+            if (countdownEl) countdownEl.textContent = countdown;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                refreshPage();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

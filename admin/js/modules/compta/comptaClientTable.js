@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from '../../utils/formatter.js';
 import { showNotification } from '../../utils/notification.js';
+import { shareOrDownloadBlob } from '../../utils/fileDownload.js';
 // downloadOrShareFile is loaded globally from inline <script> in HTML page
 
 class ComptaClientTable {
@@ -864,16 +865,9 @@ class ComptaClientTable {
 			const res = await fetch(`/api/invoices/client/${this.clientId}/export-xlsx?year=${year}`, { credentials: 'include' });
 			if (!res.ok) throw new Error('Erreur génération Excel');
 			const blob = await res.blob();
-			const link = document.createElement('a');
-			const url = URL.createObjectURL(blob);
 			const clientName = this.invoices[0]?.client_full_name || this.clientId;
 			const fileName = `invoices_${clientName}_${year}.xlsx`;
-			link.setAttribute('href', url);
-			link.setAttribute('download', fileName);
-			link.style.visibility = 'hidden';
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
+			await shareOrDownloadBlob(blob, fileName);
 			showNotification(`Export Excel réussi: ${fileName}`, 'success');
 		} catch (err) {
 			showNotification('Erreur: ' + err.message, 'error');

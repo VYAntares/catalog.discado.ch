@@ -102,8 +102,40 @@ function _showPdfOverlay(blob, filename, mimeType) {
     document.body.appendChild(overlay);
 }
 
+/**
+ * Shares or downloads a Blob that was already created client-side (e.g. CSV generated in JS).
+ * - Mobile (iOS/Android): native share sheet
+ * - Desktop: standard browser download
+ */
+async function shareOrDownloadBlob(blob, filename) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isMobile = isIOS || /Android/i.test(navigator.userAgent);
+
+    if (isMobile && navigator.share) {
+        try {
+            const file = new File([blob], filename, { type: blob.type });
+            await navigator.share({ files: [file], title: filename });
+            return;
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+        }
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
 // Register globally so inline onclick handlers work even without ES module import
 window.downloadOrShareFile = downloadOrShareFile;
+window.shareOrDownloadBlob = shareOrDownloadBlob;
 
 // Also export for ES module consumers
-export { downloadOrShareFile };
+export { downloadOrShareFile, shareOrDownloadBlob };
