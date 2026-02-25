@@ -3513,9 +3513,10 @@ app.get('/api/invoices/client/:userId/export-xlsx', requireLogin, requireAdmin, 
     const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '';
     const statusMap = { paid: 'Paid', partial: 'Partial', unpaid: 'Unpaid' };
     const payFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+    const noPayFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7DA' } };
 
     for (const inv of sorted) {
-      ws.addRow({
+      const invRow = ws.addRow({
         type: 'Facture',
         inv_num: inv.order_id || '',
         inv_date: fmtDate(inv.invoice_date),
@@ -3529,6 +3530,10 @@ app.get('/api/invoices/client/:userId/export-xlsx', requireLogin, requireAdmin, 
         pay_date: fmtDate(inv.paid_date),
         status: statusMap[inv.payment_status] || 'Unpaid'
       });
+
+      if (!inv.payments || inv.payments.length === 0) {
+        invRow.eachCell({ includeEmpty: true }, cell => { cell.fill = noPayFill; });
+      }
 
       if (inv.payments && inv.payments.length > 0) {
         inv.payments.forEach((p, i) => {

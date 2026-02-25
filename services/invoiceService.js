@@ -404,7 +404,6 @@ class InvoiceService {
       const qrBillData = {
         currency: 'CHF',
         amount: totalTTC,
-        reference: formattedOrderId.replace('-', ''),
         creditor: {
           name: 'Discado Sàrl',
           address: 'Sevelin 4A',
@@ -420,8 +419,7 @@ class InvoiceService {
           city: userProfile.shopCity || userProfile.city,
           country: 'CH'
         },
-        message: `Invoice ${formattedOrderId}`,
-        additionalInformation: 'Payment terms: net 30 days'
+        message: `Facture ${formattedOrderId}`
       };
 
       // Reset fill color to black before QR Bill (it renders its own text)
