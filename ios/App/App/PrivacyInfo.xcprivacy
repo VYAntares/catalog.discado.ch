@@ -10,7 +10,7 @@
 	<array/>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array/>
-	<key>NSPrivacyEncryptionComplianceCode</key>
+	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>
 </plist>
