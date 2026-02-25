@@ -11,14 +11,14 @@ const COLORS = {
   primary:    '#1a1a2e',   // Bleu nuit profond
   secondary:  '#16213e',   // Bleu marine
   accent:     '#e94560',   // Rouge corail
-  muted:      '#7f8c8d',   // Gris moyen
-  light:      '#f8f9fa',   // Gris très clair
+  muted:      '#333333',   // Gris foncé (lisible à l'impression)
+  light:      '#e8e8e8',   // Gris clair renforcé
   white:      '#ffffff',
-  text:       '#2c3e50',   // Texte principal
-  textLight:  '#95a5a6',   // Texte secondaire
+  text:       '#111111',   // Texte principal noir
+  textLight:  '#333333',   // Texte secondaire foncé
   border:     '#dee2e6',   // Bordures légères
-  catBg:      '#f1f3f5',   // Fond catégorie
-  rowAlt:     '#fafbfc',   // Lignes alternées
+  catBg:      '#e0e0e0',   // Fond catégorie renforcé
+  rowAlt:     '#eeeeee',   // Lignes alternées renforcées
 };
 
 const MARGIN = { left: 50, right: 50, top: 45, bottom: 60 };
@@ -31,11 +31,18 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatDateShort(d) {
+  return `${String(d.getDate()).padStart(2,'0')} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 function drawRoundedRect(doc, x, y, w, h, r, fillColor) {
   doc.save();
   doc.roundedRect(x, y, w, h, r).fill(fillColor);
   doc.restore();
 }
+
 
 function drawLine(doc, x1, y1, x2, y2, color = COLORS.border, width = 0.5) {
   doc.save()
@@ -99,7 +106,7 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     doc.text('DELIVERY NOTE', MARGIN.left, titleY + 6);
 
     // Date right-aligned
-    const dateStr = deliveryDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = formatDateShort(deliveryDate);
     doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted);
     doc.text(dateStr, MARGIN.left + CONTENT_WIDTH - 130, titleY + 10, { width: 130, align: 'right' });
 
@@ -112,14 +119,12 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
     const colDescW = 370;
     const colQtyW = CONTENT_WIDTH - colDescW;
 
-    // Header background
-    drawRoundedRect(doc, MARGIN.left, y, CONTENT_WIDTH, 22, 3, COLORS.catBg);
+    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLORS.primary);
+    doc.text('DESCRIPTION', MARGIN.left + 8, y + 4, { width: colDescW - 16, characterSpacing: 1 });
+    doc.text('QTY', MARGIN.left + colDescW + 5, y + 4, { width: colQtyW - 10, align: 'center', characterSpacing: 1 });
+    drawLine(doc, MARGIN.left, y + 16, MARGIN.left + CONTENT_WIDTH, y + 16, '#000000', 0.8);
 
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLORS.muted);
-    doc.text('DESCRIPTION', MARGIN.left + 12, y + 7, { width: colDescW - 20, characterSpacing: 1 });
-    doc.text('QTY', MARGIN.left + colDescW + 5, y + 7, { width: colQtyW - 10, align: 'center', characterSpacing: 1 });
-
-    return { y: y + 22, colDescW, colQtyW };
+    return { y: y + 20, colDescW, colQtyW };
   }
 
   // ── Render items ──
@@ -150,10 +155,9 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
       }
 
       // Category row
-      yPos += 4;
-      drawRoundedRect(doc, MARGIN.left, yPos, CONTENT_WIDTH, 20, 2, COLORS.catBg);
-      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLORS.primary);
-      doc.text(capitalize(cat), MARGIN.left + 12, yPos + 6, { width: CONTENT_WIDTH - 20 });
+      yPos += 6;
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(COLORS.primary);
+      doc.text(capitalize(cat), MARGIN.left + 8, yPos + 4, { width: CONTENT_WIDTH - 16 });
 
       // Category item count
       const catQty = grouped[cat].reduce((s, i) => s + (i.quantity || 0), 0);
@@ -170,13 +174,6 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
           yPos = th.y;
         }
 
-        // Alternating row bg
-        if (rowIndex % 2 === 1) {
-          doc.save();
-          doc.rect(MARGIN.left, yPos, CONTENT_WIDTH, 20).fill(COLORS.rowAlt);
-          doc.restore();
-        }
-
         // Item name
         doc.font('Helvetica').fontSize(8.5).fillColor(COLORS.text);
         doc.text(item.Nom || '', MARGIN.left + 16, yPos + 6, { width: colDescW - 30, lineBreak: false });
@@ -188,9 +185,9 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
         doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLORS.primary);
         doc.text(qtyStr, MARGIN.left + colDescW + 5, yPos + 6, { width: colQtyW - 10, align: 'center' });
 
-        // Light separator line
+        // Fine separator line
         yPos += 20;
-        drawLine(doc, MARGIN.left + 12, yPos, MARGIN.left + CONTENT_WIDTH - 12, yPos, COLORS.border, 0.3);
+        drawLine(doc, MARGIN.left, yPos, MARGIN.left + CONTENT_WIDTH, yPos, '#000000', 0.3);
 
         rowIndex++;
       }

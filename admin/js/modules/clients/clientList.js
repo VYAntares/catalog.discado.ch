@@ -35,6 +35,13 @@ async function loadClients() {
         allClients = clients;
         displayClients(clients);
         initEvents();
+
+        // Ouvrir automatiquement la modale si ?client=USERNAME dans l'URL (lien depuis la carte)
+        const params = new URLSearchParams(window.location.search);
+        const openClient = params.get('client');
+        if (openClient) {
+            ClientView.viewClientDetails(openClient);
+        }
     } catch (error) {
         clientTableBody.innerHTML = `
             <tr>

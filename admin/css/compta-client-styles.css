@@ -555,3 +555,55 @@
     font-weight: 500;
 }
 .payments-add-btn:hover { background: #5a32a3; }
+
+/* ===== IMPRESSION ===== */
+@media print {
+    /* Masquer les éléments non utiles à l'impression */
+    .back-btn,
+    .sort-controls,
+    .editable-cell::after,
+    .payments-modal-overlay,
+    .payments-delete-btn,
+    .payments-add-form {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+    }
+
+    /* Textes gris → noir */
+    .client-id-label,
+    .loading, .no-data, .error-message,
+    .payments-modal-subtitle,
+    .payments-modal-close,
+    .payments-history-table th,
+    .payments-form-group label,
+    .payments-add-form h4 {
+        color: #111 !important;
+    }
+
+    /* Fonds gris → assez foncés pour être visibles à l'impression */
+    .client-info {
+        background: #d8d8d8 !important;
+    }
+
+    .payments-history-table th {
+        background: #d8d8d8 !important;
+        color: #111 !important;
+    }
+
+    .payments-summary {
+        background: #d8d8d8 !important;
+    }
+
+    .invoices-table tbody tr:nth-child(even) td {
+        background-color: #d8d8d8 !important;
+    }
+
+    /* Conteneur : supprimer les ombres */
+    .client-invoices-container {
+        box-shadow: none;
+        border: 1px solid #bbb;
+    }
+}

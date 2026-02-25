@@ -259,6 +259,7 @@ class ComptaClientTable {
         today.setHours(0, 0, 0, 0);
 
         container.innerHTML = invoices.map(invoice => {
+            const pctPaid = invoice.total_ttc > 0 ? ((invoice.amount_paid / invoice.total_ttc) * 100).toFixed(1) : '0.0';
             const statusText = this.getStatusText(invoice.payment_status);
             const cardClass = invoice.payment_status === 'paid' ? 'inv-paid'
                 : invoice.payment_status === 'partial' ? 'inv-partial' : 'inv-unpaid';
@@ -341,6 +342,10 @@ class ComptaClientTable {
                                 <div class="inv-amount-item ${invoice.amount_due > 0 ? 'inv-amount-due' : 'inv-amount-clear'}">
                                     <span class="inv-amount-label">Balance</span>
                                     <span class="inv-amount-value">${formatCurrency(invoice.amount_due)}</span>
+                                </div>
+                                <div class="inv-amount-item">
+                                    <span class="inv-amount-label">% payé</span>
+                                    <span class="inv-amount-value" style="color:${parseFloat(pctPaid)<50?'#e74c3c':parseFloat(pctPaid)<80?'#f39c12':'#27ae60'}">${pctPaid}%</span>
                                 </div>
                             </div>
                         </div>

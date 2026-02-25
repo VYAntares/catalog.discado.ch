@@ -1119,7 +1119,7 @@ class ComptaMain {
         const dataSource = containerId === 'unpaidBadgesContainer' ? 'unpaid'
             : containerId === 'partialBadgesContainer' ? 'partial'
             : 'all';
-        const showPct = containerId === 'partialBadgesContainer';
+        const showPct = true;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 

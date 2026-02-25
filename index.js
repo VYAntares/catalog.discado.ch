@@ -84,8 +84,8 @@ app.use(helmet.contentSecurityPolicy({
     scriptSrcAttr: ["'unsafe-inline'"],  // ← AJOUTÉ CETTE LIGNE
     styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "data:"],
-    imgSrc: ["'self'", "data:", "blob:"],
-    connectSrc: ["'self'"],
+    imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://cdnjs.cloudflare.com"],
+    connectSrc: ["'self'", "https://nominatim.openstreetmap.org"],
     frameSrc: ["'self'", "blob:"]   // Allow blob PDFs in Capacitor iOS overlay
   }
 }));
@@ -601,6 +601,10 @@ app.get('/admin/compta-month', requireLogin, requireAdmin, requirePermission('co
 
 app.get('/admin/results', requireLogin, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'pages', 'results.html'));
+});
+
+app.get('/admin/clients-map', requireLogin, requireAdmin, requirePermission('clients'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'pages', 'clients-map.html'));
 });
 
 // ===== API DÉPENSES (RÉSULTATS) =====
@@ -2160,6 +2164,94 @@ app.delete('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) =>
     } catch (error) {
         console.error('Error deleting supplier:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression du fournisseur' });
+    }
+});
+
+// ============================================
+// ROUTES LOCALISATION CLIENTS (CARTE)
+// ============================================
+
+// GET /api/client-locations — Liste tous les points avec infos profil client
+app.get('/api/client-locations', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const locations = dbModule.db.prepare(`
+            SELECT cl.*,
+                   up.first_name, up.last_name, up.shop_name,
+                   up.shop_address, up.shop_city, up.shop_zip_code,
+                   up.email, up.phone
+            FROM client_locations cl
+            LEFT JOIN user_profiles up ON cl.client_id = up.username
+            ORDER BY cl.created_at DESC
+        `).all();
+        res.json(locations);
+    } catch (error) {
+        console.error('Error fetching client locations:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des localisations' });
+    }
+});
+
+// POST /api/client-locations — Crée un point
+app.post('/api/client-locations', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const { client_id, label, latitude, longitude, notes } = req.body;
+        if (!label || latitude == null || longitude == null) {
+            return res.status(400).json({ error: 'label, latitude et longitude sont requis' });
+        }
+        const result = dbModule.clientLocations.create.run(
+            client_id || null,
+            label,
+            parseFloat(latitude),
+            parseFloat(longitude),
+            notes || null
+        );
+        const location = dbModule.clientLocations.getById.get(result.lastInsertRowid);
+        res.status(201).json(location);
+    } catch (error) {
+        console.error('Error creating client location:', error);
+        res.status(500).json({ error: 'Erreur lors de la création de la localisation' });
+    }
+});
+
+// PUT /api/client-locations/:id — Modifie un point
+app.put('/api/client-locations/:id', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const { label, latitude, longitude, notes } = req.body;
+        if (!label || latitude == null || longitude == null) {
+            return res.status(400).json({ error: 'label, latitude et longitude sont requis' });
+        }
+        const location = dbModule.clientLocations.getById.get(id);
+        if (!location) {
+            return res.status(404).json({ error: 'Localisation non trouvée' });
+        }
+        dbModule.clientLocations.update.run(
+            label,
+            parseFloat(latitude),
+            parseFloat(longitude),
+            notes || null,
+            id
+        );
+        const updated = dbModule.clientLocations.getById.get(id);
+        res.json(updated);
+    } catch (error) {
+        console.error('Error updating client location:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour de la localisation' });
+    }
+});
+
+// DELETE /api/client-locations/:id — Supprime un point
+app.delete('/api/client-locations/:id', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const location = dbModule.clientLocations.getById.get(id);
+        if (!location) {
+            return res.status(404).json({ error: 'Localisation non trouvée' });
+        }
+        dbModule.clientLocations.delete.run(id);
+        res.json({ success: true, message: 'Localisation supprimée avec succès' });
+    } catch (error) {
+        console.error('Error deleting client location:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression de la localisation' });
     }
 });
 

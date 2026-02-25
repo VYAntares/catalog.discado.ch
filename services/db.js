@@ -19,7 +19,7 @@ db.pragma('foreign_keys = ON');
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses', 'client_locations'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -181,6 +181,22 @@ function initDatabase() {
     )
     `);
     console.log('✅ Table suppliers créée ou déjà existante');
+
+    // Création de la table client_locations
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS client_locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id TEXT,
+        label TEXT NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES user_profiles(username)
+    )
+    `);
+    console.log('✅ Table client_locations créée ou déjà existante');
 
     // Table pour les commandes fournisseurs
     db.exec(`
@@ -950,6 +966,22 @@ module.exports = {
             FROM expenses
             WHERE strftime('%Y', date) = ?
         `)
+    },
+
+    // Requêtes liées aux localisations clients (carte)
+    clientLocations: {
+        getAll: db.prepare('SELECT * FROM client_locations ORDER BY created_at DESC'),
+        getById: db.prepare('SELECT * FROM client_locations WHERE id = ?'),
+        create: db.prepare(`
+            INSERT INTO client_locations (client_id, label, latitude, longitude, notes)
+            VALUES (?, ?, ?, ?, ?)
+        `),
+        update: db.prepare(`
+            UPDATE client_locations
+            SET label = ?, latitude = ?, longitude = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `),
+        delete: db.prepare('DELETE FROM client_locations WHERE id = ?')
     },
 
     // Requêtes liées aux tokens de réinitialisation de mot de passe

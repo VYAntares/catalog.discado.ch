@@ -11,14 +11,14 @@ const COLORS = {
   primary:    '#1a1a2e',
   secondary:  '#16213e',
   accent:     '#e94560',
-  muted:      '#7f8c8d',
-  light:      '#f8f9fa',
+  muted:      '#333333',
+  light:      '#e8e8e8',
   white:      '#ffffff',
-  text:       '#2c3e50',
-  textLight:  '#95a5a6',
+  text:       '#111111',
+  textLight:  '#333333',
   border:     '#dee2e6',
-  catBg:      '#f1f3f5',
-  rowAlt:     '#fafbfc',
+  catBg:      '#e0e0e0',
+  rowAlt:     '#eeeeee',
   green:      '#27ae60',
 };
 
@@ -38,6 +38,7 @@ function drawRoundedRect(doc, x, y, w, h, r, fillColor) {
   doc.restore();
 }
 
+
 function drawLine(doc, x1, y1, x2, y2, color = COLORS.border, width = 0.5) {
   doc.save()
      .moveTo(x1, y1)
@@ -46,6 +47,17 @@ function drawLine(doc, x1, y1, x2, y2, color = COLORS.border, width = 0.5) {
      .strokeColor(color)
      .stroke()
      .restore();
+}
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function formatDateShort(d) {
+  return `${String(d.getDate()).padStart(2,'0')} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatDateLong(d) {
+  return `${String(d.getDate()).padStart(2,'0')} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function formatCHF(amount) {
@@ -79,7 +91,7 @@ class InvoiceService {
       doc = new PDFDocument({ autoFirstPage: true });
     }
 
-    const { totals, finalYPosition } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId);
+    const { totals } = await this.generateItemsPage(doc, orderItems, userProfile, orderDate, orderId);
 
     doc.addPage();
     await this.generateTotalPage(doc, {
@@ -143,7 +155,7 @@ class InvoiceService {
     doc.text(`INVOICE  ${formattedOrderId}`, MARGIN.left, titleY + 6);
 
     // Date right-aligned
-    const dateStr = orderDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = formatDateShort(orderDate);
     doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted);
     doc.text(dateStr, MARGIN.left + CONTENT_WIDTH - 130, titleY + 10, { width: 130, align: 'right' });
 
@@ -167,17 +179,17 @@ class InvoiceService {
 
     // ── Table header ──
     function drawTableHeader(y) {
-      drawRoundedRect(doc, MARGIN.left, y, CONTENT_WIDTH, 22, 3, COLORS.catBg);
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLORS.muted);
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLORS.primary);
       let x = MARGIN.left;
-      doc.text('DESCRIPTION', x + 12, y + 7, { width: COL.desc - 20, characterSpacing: 1 });
+      doc.text('DESCRIPTION', x + 8, y + 4, { width: COL.desc - 16, characterSpacing: 1 });
       x += COL.desc;
-      doc.text('QTY', x + 5, y + 7, { width: COL.qty - 10, align: 'center', characterSpacing: 1 });
+      doc.text('QTY', x + 5, y + 4, { width: COL.qty - 10, align: 'center', characterSpacing: 1 });
       x += COL.qty;
-      doc.text('UNIT PRICE', x + 5, y + 7, { width: COL.unit - 10, align: 'right', characterSpacing: 1 });
+      doc.text('UNIT PRICE', x + 5, y + 4, { width: COL.unit - 10, align: 'right', characterSpacing: 1 });
       x += COL.unit;
-      doc.text('TOTAL', x + 5, y + 7, { width: COL.total - 10, align: 'right', characterSpacing: 1 });
-      return y + 22;
+      doc.text('TOTAL', x + 5, y + 4, { width: COL.total - 10, align: 'right', characterSpacing: 1 });
+      drawLine(doc, MARGIN.left, y + 16, MARGIN.left + CONTENT_WIDTH, y + 16, '#000000', 0.8);
+      return y + 20;
     }
 
     // ── Main header ──
@@ -205,10 +217,9 @@ class InvoiceService {
       }
 
       // Category row
-      yPos += 4;
-      drawRoundedRect(doc, MARGIN.left, yPos, CONTENT_WIDTH, 20, 2, COLORS.catBg);
-      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLORS.primary);
-      doc.text(capitalize(cat), MARGIN.left + 12, yPos + 6, { width: COL.desc - 20 });
+      yPos += 6;
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(COLORS.primary);
+      doc.text(capitalize(cat), MARGIN.left + 8, yPos + 4, { width: COL.desc - 16 });
 
       // Category subtotal
       const catTotal = grouped[cat].reduce((s, i) => s + (parseFloat(i.prix) * (i.quantity || 0)), 0);
@@ -224,13 +235,6 @@ class InvoiceService {
           doc.addPage();
           yPos = MARGIN.top;
           yPos = drawTableHeader(yPos);
-        }
-
-        // Alternating bg
-        if (rowIndex % 2 === 1) {
-          doc.save();
-          doc.rect(MARGIN.left, yPos, CONTENT_WIDTH, 20).fill(COLORS.rowAlt);
-          doc.restore();
         }
 
         let x = MARGIN.left;
@@ -260,7 +264,7 @@ class InvoiceService {
         doc.text(`${formatCHF(lineTotal)} CHF`, x + 5, yPos + 6, { width: COL.total - 10, align: 'right' });
 
         yPos += 20;
-        drawLine(doc, MARGIN.left + 12, yPos, MARGIN.left + CONTENT_WIDTH - 12, yPos, COLORS.border, 0.3);
+        drawLine(doc, MARGIN.left, yPos, MARGIN.left + CONTENT_WIDTH, yPos, '#000000', 0.3);
 
         rowIndex++;
       }
@@ -389,7 +393,7 @@ class InvoiceService {
     sy += 16;
     const dueDate = new Date(orderDate);
     dueDate.setMonth(dueDate.getMonth() + 1);
-    const dueDateStr = dueDate.toLocaleDateString('fr-CH', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dueDateStr = formatDateLong(dueDate);
     doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted);
     doc.text(`Payment due date: ${dueDateStr}`, MARGIN.left, sy, {
       width: CONTENT_WIDTH, align: 'center'

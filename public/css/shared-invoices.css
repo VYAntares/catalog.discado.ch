@@ -699,6 +699,66 @@ input, button, textarea, select { font: inherit; }
     .shared-header-right { margin-left: 12px; }
 }
 
+/* ===== IMPRESSION ===== */
+@media print {
+    /* Masquer les éléments non utiles à l'impression */
+    .shared-header,
+    .shared-controls,
+    .inv-card-actions,
+    .shared-footer,
+    #paymentsModal {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+        padding-top: 0;
+    }
+
+    /* Textes gris → noir */
+    .shared-summary-label,
+    .shared-tagline,
+    .shared-modal-subtitle,
+    .shared-modal-close,
+    .loading, .no-data, .error-message,
+    .inv-date-label,
+    .inv-amount-label,
+    .inv-amount-value,
+    .inv-date-value {
+        color: #111 !important;
+    }
+
+    /* Fonds gris → assez foncés pour être visibles à l'impression */
+    .inv-card-dates {
+        background: #d8d8d8 !important;
+    }
+
+    .shared-payments-table th {
+        background: #d8d8d8 !important;
+        color: #111 !important;
+    }
+
+    .shared-payments-summary {
+        background: #d8d8d8 !important;
+    }
+
+    .shared-table tbody tr:nth-child(even) td {
+        background-color: #d8d8d8 !important;
+    }
+
+    /* Cartes : supprimer les ombres, conserver les bordures */
+    .inv-card {
+        box-shadow: none;
+        border: 1px solid #bbb;
+        page-break-inside: avoid;
+    }
+
+    .shared-summary-card {
+        box-shadow: none;
+        border: 1px solid #bbb;
+    }
+}
+
 @media (max-width: 768px) {
     body { padding-top: 64px; }
 

@@ -49,6 +49,7 @@ function checkPageAccess(username, requestedPath) {
     '/admin/client-invoices': 'compta',
     '/admin/compta-details': 'compta',
     '/admin/compta-month': 'compta',
+    '/admin/clients-map': 'clients',
     '/admin/stats': 'stats'
   };
 

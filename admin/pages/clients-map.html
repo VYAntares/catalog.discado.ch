@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<link rel="icon" type="image/png" href="/favicon.png">
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <title>Carte Clients - Discado</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/clients-map.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())document.body?document.body.classList.add("capacitor-ios"):document.addEventListener("DOMContentLoaded",function(){document.body.classList.add("capacitor-ios")});</script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/public/images/logo/logo_discado_noir.png" alt="Discado Logo">
+            </div>
+            <div class="admin-user-menu">
+                <button class="admin-menu-btn" id="adminMenuToggle" aria-label="Menu utilisateur">
+                    <i class="fas fa-user-shield"></i>
+                    <span class="hamburger-icon" aria-hidden="true">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </span>
+                </button>
+                <div class="admin-dropdown" id="adminDropdown">
+                    <a href="/pages/catalog.html"><i class="fas fa-store"></i> Catalogue</a>
+                    <a href="/logout" class="menu-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation (le tab "Client Database" sera marqué actif par tabsPermissions.js) -->
+	<div class="admin-tabs">
+		<div class="tabs-container">
+			<a href="/admin/orders" class="tab">
+				<i class="fas fa-shopping-cart"></i> Gestion des commandes
+			</a>
+			<a href="/admin/order-history" class="tab">
+				<i class="fas fa-history"></i> Historique des commandes
+			</a>
+			<a href="/admin/clients" class="tab">
+				<i class="fas fa-users"></i> Client Database
+			</a>
+			<a href="/admin/compta" class="tab">
+				<i class="fas fa-calculator"></i> Compta
+			</a>
+			<a href="/admin/stock" class="tab">
+				<i class="fas fa-boxes"></i> Stock
+			</a>
+            <a href="/admin/suppliers" class="tab">
+                <i class="fas fa-truck"></i> Fournisseurs
+            </a>
+			<a href="/admin/results" class="tab">
+				<i class="fas fa-chart-line"></i> Résultat
+			</a>
+            <a href="/admin/stats" class="tab">
+                <i class="fas fa-chart-line"></i> Stats
+            </a>
+		</div>
+	</div>
+
+    <!-- Main Content -->
+    <main>
+        <div class="map-wrapper">
+            <!-- Barre du haut : retour + titre + recherche d'adresse -->
+            <div class="map-topbar">
+                <a href="/admin/clients" class="map-back-btn">
+                    <i class="fas fa-arrow-left"></i> Client Database
+                </a>
+                <h2 class="map-title"><i class="fas fa-map-marked-alt"></i> Carte des magasins</h2>
+                <div class="map-search-bar">
+                    <input type="text" id="addressSearch" placeholder="Rechercher une adresse...">
+                    <button id="searchBtn"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+
+            <!-- Carte Leaflet -->
+            <div id="map"></div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="/admin/js/utils/adminMenu.js"></script>
+    <script type="module" src="/admin/js/utils/tabsPermissions.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script type="module" src="/admin/js/modules/clients/clientsMap.js"></script>
+</body>
+</html>

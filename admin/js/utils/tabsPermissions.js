@@ -18,7 +18,8 @@ const TAB_PERMISSIONS = {
 const SUBPAGE_TO_PARENT = {
   '/admin/client-invoices': '/admin/compta',
   '/admin/compta-details': '/admin/compta',
-  '/admin/compta-month': '/admin/compta'
+  '/admin/compta-month': '/admin/compta',
+  '/admin/clients-map': '/admin/clients'
 };
 
 /**
