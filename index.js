@@ -84,7 +84,7 @@ app.use(helmet.contentSecurityPolicy({
     scriptSrcAttr: ["'unsafe-inline'"],  // ← AJOUTÉ CETTE LIGNE
     styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "data:"],
-    imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://cdnjs.cloudflare.com"],
+    imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://*.tile.opentopomap.org", "https://mt0.google.com", "https://mt1.google.com", "https://mt2.google.com", "https://mt3.google.com", "https://cdnjs.cloudflare.com"],
     connectSrc: ["'self'", "https://nominatim.openstreetmap.org"],
     frameSrc: ["'self'", "blob:"]   // Allow blob PDFs in Capacitor iOS overlay
   }

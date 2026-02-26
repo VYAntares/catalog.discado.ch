@@ -40,10 +40,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initMap() {
     map = L.map('map').setView([46.8182, 8.2275], 8);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19
-    }).addTo(map);
+    const tileLayers = {
+        plan: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19
+        }),
+        satellite: L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            subdomains: ['0', '1', '2', '3'],
+            attribution: '© Google',
+            maxZoom: 20
+        }),
+        hybride: L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            subdomains: ['0', '1', '2', '3'],
+            attribution: '© Google',
+            maxZoom: 20
+        }),
+        topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a>',
+            maxZoom: 17
+        })
+    };
+
+    let activeLayer = tileLayers.plan;
+    activeLayer.addTo(map);
+
+    addLayerControl(tileLayers, (newLayer) => {
+        map.removeLayer(activeLayer);
+        activeLayer = newLayer;
+        map.addLayer(activeLayer);
+    });
 
     // Clic sur la carte → ajout manuel
     map.on('click', (e) => {
@@ -54,7 +79,45 @@ function initMap() {
 }
 
 /**
- * Ajoute la légende des couleurs de marqueurs
+ * Contrôle custom de sélection de fond de carte (toggle identique à la légende)
+ */
+function addLayerControl(tileLayers, switchLayer) {
+    const ctrl = L.control({ position: 'topright' });
+    ctrl.onAdd = function () {
+        const div = L.DomUtil.create('div', 'map-layerctrl');
+        div.innerHTML = `
+            <button class="layerctrl-toggle" title="Changer le fond de carte">
+                <i class="fas fa-layer-group"></i>
+            </button>
+            <div class="layerctrl-content">
+                <div class="layerctrl-title">Fond de carte</div>
+                <label class="layerctrl-option"><input type="radio" name="maplayer" value="plan" checked> Plan</label>
+                <label class="layerctrl-option"><input type="radio" name="maplayer" value="satellite"> Satellite</label>
+                <label class="layerctrl-option"><input type="radio" name="maplayer" value="hybride"> Satellite + Routes</label>
+                <label class="layerctrl-option"><input type="radio" name="maplayer" value="topo"> Topographique</label>
+            </div>
+        `;
+
+        L.DomEvent.disableClickPropagation(div);
+
+        div.querySelector('.layerctrl-toggle').addEventListener('click', () => {
+            div.classList.toggle('layerctrl-open');
+        });
+
+        div.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                switchLayer(tileLayers[radio.value]);
+                div.classList.remove('layerctrl-open');
+            });
+        });
+
+        return div;
+    };
+    ctrl.addTo(map);
+}
+
+/**
+ * Ajoute la légende des couleurs de marqueurs (collapsible)
  */
 function addLegend() {
     const legend = L.control({ position: 'bottomright' });
@@ -67,12 +130,21 @@ function addLegend() {
                 <circle cx="12" cy="11" r="4" fill="rgba(255,255,255,0.45)"/>
             </svg>`;
         div.innerHTML = `
-            <div class="legend-title">Commandes (année)</div>
-            <div class="legend-item">${pin('#9ca3af','#6b7280')} Aucune commande</div>
-            <div class="legend-item">${pin('#ffffff','#94a3b8')} Inactif cette année</div>
-            <div class="legend-item">${pin('#fbbf24','#d97706')} 1–3 commandes</div>
-            <div class="legend-item">${pin('#22c55e','#16a34a')} 4+ commandes</div>
+            <button class="legend-toggle" title="Légende des marqueurs">?</button>
+            <div class="legend-content">
+                <div class="legend-title">Commandes (année)</div>
+                <div class="legend-item">${pin('#9ca3af','#6b7280')} Aucune commande</div>
+                <div class="legend-item">${pin('#ffffff','#94a3b8')} Inactif cette année</div>
+                <div class="legend-item">${pin('#fbbf24','#d97706')} 1–3 commandes</div>
+                <div class="legend-item">${pin('#22c55e','#16a34a')} 4+ commandes</div>
+            </div>
         `;
+
+        L.DomEvent.disableClickPropagation(div);
+        div.querySelector('.legend-toggle').addEventListener('click', () => {
+            div.classList.toggle('legend-open');
+        });
+
         return div;
     };
     legend.addTo(map);
@@ -195,7 +267,7 @@ function buildViewPopupHTML(loc) {
             <div class="map-popup-client">
                 ${shop    ? `<div class="map-popup-row"><i class="fas fa-store"></i> <strong>${escapeHtml(shop)}</strong></div>` : ''}
                 ${fullName? `<div class="map-popup-row"><i class="fas fa-user"></i> ${escapeHtml(fullName)}</div>` : ''}
-                ${addr    ? `<div class="map-popup-row"><i class="fas fa-map-pin"></i> ${escapeHtml(addr)}</div>` : ''}
+                ${addr    ? `<div class="map-popup-row"><i class="fas fa-map-pin"></i> <a href="https://maps.apple.com/?daddr=${loc.latitude},${loc.longitude}&dirflg=d" target="_blank" rel="noopener noreferrer">${escapeHtml(addr)}</a></div>` : ''}
                 ${email   ? `<div class="map-popup-row"><i class="fas fa-envelope"></i> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></div>` : ''}
                 ${phone   ? `<div class="map-popup-row"><i class="fas fa-phone"></i> <a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></div>` : ''}
             </div>`;

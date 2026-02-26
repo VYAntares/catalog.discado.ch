@@ -424,17 +424,52 @@
     background: #fff;
 }
 
-/* ===== LÉGENDE CARTE ===== */
+/* ===== LÉGENDE CARTE (collapsible) ===== */
 .map-legend {
-    background: #fff;
-    padding: 10px 14px;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     font-family: 'Inter', Arial, sans-serif;
     font-size: 12px;
     color: #4a5568;
     line-height: 1;
-    pointer-events: none;
+    pointer-events: auto;
+}
+
+/* Bouton "?" — affiché en permanence */
+.legend-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(4px);
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #4a5568;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+}
+
+.legend-toggle:hover,
+.map-legend.legend-open .legend-toggle {
+    background: #fff;
+    color: #2d3748;
+}
+
+/* Contenu masqué par défaut */
+.legend-content {
+    display: none;
+    background: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 6px;
+}
+
+.map-legend.legend-open .legend-content {
+    display: block;
 }
 
 .legend-title {
@@ -455,6 +490,79 @@
 
 .legend-item:last-child {
     margin-bottom: 0;
+}
+
+/* ===== CONTRÔLE LAYERS CUSTOM (même style que légende) ===== */
+.map-layerctrl {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 12px;
+    color: #4a5568;
+}
+
+.layerctrl-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(4px);
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 6px;
+    font-size: 16px;
+    color: #4a5568;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+}
+
+.layerctrl-toggle:hover,
+.map-layerctrl.layerctrl-open .layerctrl-toggle {
+    background: #fff;
+    color: #2d3748;
+}
+
+.layerctrl-content {
+    display: none;
+    background: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 6px;
+    min-width: 160px;
+}
+
+.map-layerctrl.layerctrl-open .layerctrl-content {
+    display: block;
+}
+
+.layerctrl-title {
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.layerctrl-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background 0.1s;
+}
+
+.layerctrl-option:hover {
+    background: #f7fafc;
+}
+
+.layerctrl-option input {
+    cursor: pointer;
+    accent-color: #667eea;
 }
 
 
