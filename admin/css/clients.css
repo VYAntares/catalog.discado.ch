@@ -1471,44 +1471,31 @@
     align-items: center;
 }
 
-.admin-btn-expand {
+.admin-btn-details {
+    white-space: nowrap;
+}
+
+.admin-btn-invoice {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: #f1f5f9;
-    border: 1.5px solid #e2e8f0;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
     border-radius: 8px;
     font-size: 13px;
-    font-weight: 600;
-    color: #475569;
+    font-weight: 700;
+    color: white;
     cursor: pointer;
     transition: all 0.2s;
-}
-
-.admin-btn-expand:hover {
-    background: #e2e8f0;
-    color: #1e293b;
-}
-
-.admin-order-card-header.detail-open .admin-btn-expand {
-    background: #2575fc;
-    border-color: #2575fc;
-    color: white;
-    box-shadow: 0 2px 8px rgba(37,117,252,0.28);
-}
-
-.admin-expand-chevron {
-    font-size: 11px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-order-card-header.detail-open .admin-expand-chevron {
-    transform: rotate(180deg);
-}
-
-.admin-btn-edit {
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(34,197,94,0.25);
+}
+
+.admin-btn-invoice:hover {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    box-shadow: 0 4px 12px rgba(34,197,94,0.35);
+    transform: translateY(-1px);
 }
 
 /* ─── Panneau de détail (accordéon) ─── */
@@ -1667,39 +1654,38 @@
 
 @media (max-width: 600px) {
     .admin-order-card-header {
-        flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .admin-order-header-info {
+        flex: 1;
+        min-width: 0;
     }
 
     .admin-order-header-right {
-        width: 100%;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .admin-order-total {
+        align-items: flex-end;
     }
 
     .admin-order-header-actions {
-        flex-wrap: wrap;
+        display: flex;
+        flex-direction: row;
         gap: 6px;
     }
 
-    .admin-btn-expand,
-    .admin-btn-edit {
-        flex: 1;
+    .admin-btn-details,
+    .admin-btn-invoice {
         justify-content: center;
-        min-width: 120px;
-    }
-
-    .admin-order-detail-inner {
-        padding: 12px 12px 14px 12px;
-    }
-
-    .admin-detail-footer {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .admin-download-invoice-btn {
-        justify-content: center;
+        padding: 8px 12px;
+        font-size: 12px;
     }
 }
 

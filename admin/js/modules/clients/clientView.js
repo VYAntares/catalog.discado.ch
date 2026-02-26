@@ -8,6 +8,7 @@ import * as Notification from '../../utils/notification.js';
 import * as Formatter from '../../utils/formatter.js';
 import * as Modal from '../../utils/modal.js';
 import * as HistoryView from '../history/historyView.js';
+import { downloadOrShareFile } from '../../utils/fileDownload.js';
 
 let clientModal;
 let clientDetailsContent;
@@ -417,7 +418,7 @@ function displayOrderHistory(container, orders, clientId) {
     container.appendChild(section);
 }
 
-// Crée une carte de commande extensible
+// Crée une carte de commande
 function createAdminOrderCard(order, clientId) {
     const deliveredItems = order.deliveredItems || order.items || [];
     const pendingItems   = order.remainingItems || [];
@@ -429,6 +430,7 @@ function createAdminOrderCard(order, clientId) {
     const statusText  = isComplete ? 'Complète' : 'En attente';
     const statusClass = isComplete ? 'status-completed' : 'status-pending';
     const barClass    = isComplete ? 'admin-order-bar-success' : 'admin-order-bar-pending';
+    const isInvoiceAvailable = !['pending', 'in progress'].includes(order.status);
 
     const orderDate   = Formatter.formatDate(order.date);
     const processDate = order.lastProcessed ? Formatter.formatDate(order.lastProcessed) : null;
@@ -436,12 +438,10 @@ function createAdminOrderCard(order, clientId) {
     const card = document.createElement('div');
     card.className = 'admin-order-card';
 
-    // Barre colorée en haut
     const topBar = document.createElement('div');
     topBar.className = `admin-order-card-top-bar ${barClass}`;
     card.appendChild(topBar);
 
-    // Header cliquable
     const header = document.createElement('div');
     header.className = 'admin-order-card-header';
     header.innerHTML = `
@@ -463,122 +463,28 @@ function createAdminOrderCard(order, clientId) {
                 <span class="admin-order-total-value">${Formatter.formatPrice(totalHT)} CHF</span>
             </div>
             <div class="admin-order-header-actions">
-                <button class="admin-btn-expand">
-                    <i class="fas fa-list-ul"></i>
-                    <span>Voir les articles</span>
-                    <i class="fas fa-chevron-down admin-expand-chevron"></i>
-                </button>
-                <button class="admin-btn-edit action-btn details-btn">
+                <button class="admin-btn-details action-btn details-btn">
                     <i class="fas fa-edit"></i>
-                    <span>Modifier</span>
+                    <span>Détails</span>
                 </button>
+                ${isInvoiceAvailable ? `
+                <button class="admin-btn-invoice">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Facture</span>
+                </button>` : ''}
             </div>
         </div>
     `;
     card.appendChild(header);
 
-    // Panneau de détail extensible
-    const panel = createAdminOrderDetailPanel(order, clientId, deliveredItems, pendingItems);
-    card.appendChild(panel);
-
-    // Événements
-    header.querySelector('.admin-btn-expand').addEventListener('click', () => {
-        const isOpen = panel.classList.contains('open');
-        panel.classList.toggle('open', !isOpen);
-        header.classList.toggle('detail-open', !isOpen);
-    });
-
-    header.querySelector('.admin-btn-edit').addEventListener('click', () => {
+    header.querySelector('.admin-btn-details').addEventListener('click', () => {
         HistoryView.showOrderDetailsFromClientView(order.orderId, clientId);
     });
 
-    return card;
-}
-
-// Crée le panneau de détail d'une commande (articles + facture)
-function createAdminOrderDetailPanel(order, clientId, deliveredItems, pendingItems) {
-    const panel = document.createElement('div');
-    panel.className = 'admin-order-detail-panel';
-
-    const inner = document.createElement('div');
-    inner.className = 'admin-order-detail-inner';
-
-    if (deliveredItems.length > 0) {
-        inner.appendChild(buildAdminItemsSection(deliveredItems, false));
-    }
-
-    if (pendingItems.length > 0) {
-        const banner = document.createElement('div');
-        banner.className = 'admin-detail-pending-banner';
-        banner.innerHTML = `<i class="fas fa-clock"></i> Articles en attente de stock — seront livrés dès disponibilité`;
-        inner.appendChild(banner);
-        inner.appendChild(buildAdminItemsSection(pendingItems, true));
-    }
-
-    inner.appendChild(buildAdminDetailFooter(order, clientId));
-    panel.appendChild(inner);
-    return panel;
-}
-
-// Construit une section d'articles groupés par catégorie
-function buildAdminItemsSection(items, isPending) {
-    const section = document.createElement('div');
-    section.className = 'admin-detail-items-section';
-
-    const grouped = {};
-    items.forEach(item => {
-        const cat = item.categorie || 'Autre';
-        if (!grouped[cat]) grouped[cat] = [];
-        grouped[cat].push(item);
-    });
-
-    Object.keys(grouped).sort().forEach(category => {
-        const catTitle = document.createElement('div');
-        catTitle.className = `admin-detail-category-title${isPending ? ' admin-detail-cat-pending' : ''}`;
-        catTitle.innerHTML = `<i class="fas fa-tag"></i> ${category.charAt(0).toUpperCase() + category.slice(1)}`;
-        section.appendChild(catTitle);
-
-        grouped[category].forEach(item => {
-            section.appendChild(buildAdminItemRow(item, isPending));
-        });
-    });
-
-    return section;
-}
-
-// Construit une ligne d'article
-function buildAdminItemRow(item, isPending) {
-    const row = document.createElement('div');
-    row.className = `admin-detail-item-row${isPending ? ' admin-detail-item-pending' : ''}`;
-
-    const total = parseFloat(item.prix) * item.quantity;
-    row.innerHTML = `
-        <div class="admin-item-info">
-            <div class="admin-item-name">${item.Nom}</div>
-            <div class="admin-item-unit">${isPending ? 'En attente de livraison' : `${Formatter.formatPrice(item.prix)} CHF / unité`}</div>
-        </div>
-        <div class="admin-item-qty">× ${item.quantity}</div>
-        <div class="admin-item-total ${isPending ? 'admin-item-total-pending' : ''}">
-            ${isPending ? '—' : `${Formatter.formatPrice(total)} CHF`}
-        </div>
-    `;
-    return row;
-}
-
-// Construit le footer avec bouton facture + modifier
-function buildAdminDetailFooter(order, clientId) {
-    const footer = document.createElement('div');
-    footer.className = 'admin-detail-footer';
-
-    const isInvoiceAvailable = !['pending', 'in progress'].includes(order.status);
-
     if (isInvoiceAvailable) {
-        const invoiceBtn = document.createElement('button');
-        invoiceBtn.className = 'admin-download-invoice-btn';
-        invoiceBtn.innerHTML = `<i class="fas fa-file-pdf"></i><span>Télécharger la facture PDF</span>`;
-        invoiceBtn.addEventListener('click', async () => {
+        header.querySelector('.admin-btn-invoice').addEventListener('click', async () => {
             try {
-                await window.downloadOrShareFile(
+                await downloadOrShareFile(
                     API.getInvoiceDownloadLink(order.orderId, clientId),
                     `Facture_${order.orderId}.pdf`
                 );
@@ -586,15 +492,9 @@ function buildAdminDetailFooter(order, clientId) {
                 Notification.showNotification('Erreur : ' + err.message, 'error');
             }
         });
-        footer.appendChild(invoiceBtn);
-    } else {
-        const notice = document.createElement('div');
-        notice.className = 'admin-invoice-not-available';
-        notice.innerHTML = `<i class="fas fa-clock"></i><span>Facture disponible une fois la commande traitée</span>`;
-        footer.appendChild(notice);
     }
 
-    return footer;
+    return card;
 }
 
 export {
