@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="/admin/css/main.css">
+    <link rel="stylesheet" href="/admin/css/clients.css">
+    <link rel="stylesheet" href="/admin/css/history-view.css">
     <link rel="stylesheet" href="/admin/css/clients-map.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())document.body?document.body.classList.add("capacitor-ios"):document.addEventListener("DOMContentLoaded",function(){document.body.classList.add("capacitor-ios")});</script>
@@ -80,12 +82,40 @@
                     <input type="text" id="addressSearch" placeholder="Rechercher une adresse...">
                     <button id="searchBtn"><i class="fas fa-search"></i></button>
                 </div>
+                <div class="map-year-filter">
+                    <i class="fas fa-calendar-alt map-year-icon"></i>
+                    <select id="yearSelector" class="map-year-selector">
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                    </select>
+                </div>
+                <button id="populateMapBtn" class="map-populate-btn">
+                    <i class="fas fa-map-marked-alt"></i> Ajouter tous les clients
+                </button>
             </div>
 
             <!-- Carte Leaflet -->
             <div id="map"></div>
         </div>
     </main>
+
+    <!-- Modale fiche client -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="clientDetailsTitle" class="client-details-title">Détails du client</h2>
+            <div id="clientDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Modale détails commande -->
+    <div id="orderModal" class="modal order-details-modal">
+        <div class="modal-content">
+            <span class="close-order-modal">&times;</span>
+            <h2 id="orderModalTitle" class="order-details-title">Détails de la commande</h2>
+            <div id="orderModalContent"></div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="/admin/js/utils/adminMenu.js"></script>

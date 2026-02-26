@@ -3,18 +3,35 @@
  * admin/js/modules/clients/clientsMap.js
  */
 
+import { viewClientDetails } from './clientView.js';
+import { initModals } from '../../utils/modal.js';
+
 // ===== ÉTAT =====
 let map = null;
 let markers = [];       // { id, marker, location }
 let tempMarker = null;  // marqueur temporaire avant confirmation
 let clientsCache = [];  // liste des profils clients chargés au démarrage
+let selectedYear = new Date().getFullYear(); // année filtrée pour les commandes
 
 // ===== INITIALISATION =====
 
 document.addEventListener('DOMContentLoaded', async () => {
     initMap();
+    initModals();
     await Promise.all([loadClients(), loadLocations()]);
     bindSearchBar();
+    bindPopulateBtn();
+    bindYearSelector();
+
+    // Ré-ouvrir la fiche client si on revient depuis les factures (param ?openClient=)
+    const urlParams = new URLSearchParams(window.location.search);
+    const openClientId = urlParams.get('openClient');
+    if (openClientId) {
+        viewClientDetails(openClientId, true);
+        // Nettoyer l'URL sans recharger la page
+        const cleanUrl = window.location.pathname;
+        history.replaceState(null, '', cleanUrl);
+    }
 });
 
 /**
@@ -32,6 +49,33 @@ function initMap() {
     map.on('click', (e) => {
         openAddPopup(e.latlng.lat, e.latlng.lng);
     });
+
+    addLegend();
+}
+
+/**
+ * Ajoute la légende des couleurs de marqueurs
+ */
+function addLegend() {
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'map-legend');
+        const pin = (fill, stroke) => `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="14" height="21" style="flex-shrink:0">
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z"
+                      fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+                <circle cx="12" cy="11" r="4" fill="rgba(255,255,255,0.45)"/>
+            </svg>`;
+        div.innerHTML = `
+            <div class="legend-title">Commandes (année)</div>
+            <div class="legend-item">${pin('#9ca3af','#6b7280')} Aucune commande</div>
+            <div class="legend-item">${pin('#ffffff','#94a3b8')} Inactif cette année</div>
+            <div class="legend-item">${pin('#fbbf24','#d97706')} 1–3 commandes</div>
+            <div class="legend-item">${pin('#22c55e','#16a34a')} 4+ commandes</div>
+        `;
+        return div;
+    };
+    legend.addTo(map);
 }
 
 // ===== CHARGEMENT DES CLIENTS =====
@@ -57,7 +101,7 @@ async function loadClients() {
  */
 async function loadLocations() {
     try {
-        const res = await fetch('/api/client-locations', { credentials: 'include' });
+        const res = await fetch(`/api/client-locations?year=${selectedYear}`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const locations = await res.json();
         locations.forEach(addPermanentMarker);
@@ -70,10 +114,48 @@ async function loadLocations() {
 // ===== MARQUEURS PERMANENTS =====
 
 /**
+ * Crée une icône SVG en forme de pin coloré (pointe vers le bas)
+ */
+function createPinIcon(fillColor, strokeColor) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z"
+              fill="${fillColor}" stroke="${strokeColor}" stroke-width="1.5"/>
+        <circle cx="12" cy="11" r="4" fill="rgba(255,255,255,0.45)"/>
+    </svg>`;
+    return L.divIcon({
+        html: svg,
+        className: '',
+        iconSize: [24, 36],
+        iconAnchor: [12, 36],
+        popupAnchor: [0, -36]
+    });
+}
+
+/**
+ * Retourne les couleurs du pin selon le nombre de commandes du client
+ */
+function getMarkerStyle(location) {
+    if (!location.client_id || (location.orders_total || 0) === 0) {
+        return { fill: '#9ca3af', stroke: '#6b7280' };   // gris — aucune commande
+    }
+    const year = location.orders_year || 0;
+    if (year === 0) {
+        return { fill: '#ffffff', stroke: '#94a3b8' };   // blanc — inactif cette année
+    }
+    if (year <= 3) {
+        return { fill: '#fbbf24', stroke: '#d97706' };   // jaune — 1-3 commandes
+    }
+    return { fill: '#22c55e', stroke: '#16a34a' };       // vert — 4+ commandes
+}
+
+/**
  * Ajoute un marqueur permanent pour une localisation
  */
 function addPermanentMarker(location) {
-    const marker = L.marker([location.latitude, location.longitude]).addTo(map);
+    const style = getMarkerStyle(location);
+    const icon  = createPinIcon(style.fill, style.stroke);
+    const marker = L.marker([location.latitude, location.longitude], { icon }).addTo(map);
+
     marker.bindPopup(buildViewPopupHTML(location), { maxWidth: 300 });
 
     marker.on('popupopen', () => {
@@ -130,9 +212,9 @@ function buildViewPopupHTML(loc) {
             </div>
             ${hasClient ? `
             <div class="map-popup-link">
-                <a href="/admin/clients?client=${encodeURIComponent(loc.client_id)}" class="btn-map-view-client">
-                    <i class="fas fa-external-link-alt"></i> Voir fiche client
-                </a>
+                <button class="btn-map-view-client" data-client-id="${escapeHtml(loc.client_id)}">
+                    <i class="fas fa-user"></i> Voir fiche client
+                </button>
             </div>` : ''}
         </div>`;
 }
@@ -157,6 +239,13 @@ function attachViewPopupListeners(marker, location) {
             await deleteLocation(location.id);
         });
     }
+
+    const viewClientBtn = document.querySelector(`.btn-map-view-client[data-client-id="${location.client_id}"]`);
+    if (viewClientBtn) {
+        viewClientBtn.addEventListener('click', () => {
+            viewClientDetails(location.client_id, true);
+        });
+    }
 }
 
 // ===== POPUP D'AJOUT =====
@@ -167,66 +256,71 @@ function attachViewPopupListeners(marker, location) {
 function openAddPopup(lat, lng) {
     clearTempMarker();
 
-    tempMarker = L.marker([lat, lng], { opacity: 0.7 }).addTo(map);
+    tempMarker = L.marker([lat, lng], {
+        icon: createPinIcon('#9ca3af', '#6b7280'),
+        opacity: 0.7
+    }).addTo(map);
 
-    const selectOptions = clientsCache.map(c => {
-        const display = [c.shopName, [c.firstName, c.lastName].filter(Boolean).join(' ')]
-            .filter(Boolean).join(' — ') || c.clientId;
-        return `<option value="${escapeHtml(c.clientId)}" data-shop="${escapeHtml(c.shopName || '')}" data-name="${escapeHtml([c.firstName, c.lastName].filter(Boolean).join(' '))}">${escapeHtml(display)}</option>`;
-    }).join('');
+    // Construire le DOM
+    const container = document.createElement('div');
+    container.className = 'map-confirm-popup';
 
-    const popupContent = `
-        <div class="map-confirm-popup">
-            <p><i class="fas fa-map-pin"></i> Ajouter un point</p>
-            <label class="map-form-label">Client (optionnel)</label>
-            <select id="new-point-client">
-                <option value="">— Nom libre (sans lien client) —</option>
-                ${selectOptions}
-            </select>
-            <label class="map-form-label">Nom affiché *</label>
-            <input type="text" id="new-point-label" placeholder="Nom du magasin..." maxlength="200">
-            <label class="map-form-label">Notes</label>
-            <textarea id="new-point-notes" rows="2" placeholder="Notes (optionnel)"></textarea>
-            <button id="confirm-add-point"><i class="fas fa-plus"></i> Ajouter ce point</button>
-        </div>`;
+    // 1. Créer le HTML de base
+    container.innerHTML = `
+        <p><i class="fas fa-map-pin"></i> Ajouter un point</p>
+        <label class="map-form-label">Client (optionnel)</label>
+        <select class="js-client-select">
+            <option value="">— Nom libre (sans lien client) —</option>
+            ${clientsCache.map(c => {
+                const display = [c.shopName, [c.firstName, c.lastName].filter(Boolean).join(' ')]
+                    .filter(Boolean).join(' — ') || c.clientId;
+                return `<option value="${escapeHtml(c.clientId)}" data-shop="${escapeHtml(c.shopName || '')}" data-name="${escapeHtml([c.firstName, c.lastName].filter(Boolean).join(' '))}">${escapeHtml(display)}</option>`;
+            }).join('')}
+        </select>
+        <label class="map-form-label">Nom affiché *</label>
+        <input type="text" class="js-label-input" placeholder="Nom du magasin..." maxlength="200">
+        <label class="map-form-label">Notes</label>
+        <textarea class="js-notes-input" rows="2" placeholder="Notes (optionnel)"></textarea>
+        <button class="js-confirm-btn"><i class="fas fa-plus"></i> Ajouter ce point</button>`;
 
-    tempMarker.bindPopup(popupContent, { maxWidth: 300 }).openPopup();
+    // 2. APRÈS avoir inséré le HTML, récupérer les éléments
+    const selectEl   = container.querySelector('.js-client-select');
+    const labelEl    = container.querySelector('.js-label-input');
+    const notesEl    = container.querySelector('.js-notes-input');
+    const confirmBtn = container.querySelector('.js-confirm-btn');
 
-    tempMarker.on('popupopen', () => {
-        const selectEl = document.getElementById('new-point-client');
-        const labelEl  = document.getElementById('new-point-label');
-
-        // Auto-remplir le label quand un client est sélectionné
-        if (selectEl) {
-            selectEl.addEventListener('change', () => {
-                const opt = selectEl.options[selectEl.selectedIndex];
-                const shop = opt.dataset.shop || '';
-                const name = opt.dataset.name || '';
-                if (selectEl.value && labelEl) {
-                    labelEl.value = shop || name || '';
-                } else if (labelEl && !labelEl.value) {
-                    labelEl.value = '';
-                }
-            });
-        }
-
-        if (labelEl) labelEl.focus();
-
-        const confirmBtn = document.getElementById('confirm-add-point');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', async () => {
-                const clientId = selectEl?.value || null;
-                const label    = (labelEl?.value || '').trim();
-                const notes    = document.getElementById('new-point-notes')?.value || '';
-
-                if (!label) {
-                    alert('Le nom affiché est obligatoire.');
-                    return;
-                }
-                await createLocation(clientId || null, label, lat, lng, notes);
-            });
+    // 3. Attacher les listeners
+    selectEl.addEventListener('change', () => {
+        const opt  = selectEl.options[selectEl.selectedIndex];
+        const shop = opt.dataset.shop || '';
+        const name = opt.dataset.name || '';
+        if (selectEl.value) {
+            labelEl.value = shop || name || '';
         }
     });
+
+    confirmBtn.addEventListener('click', async () => {
+        const clientId = selectEl.value || null;
+        const label    = labelEl.value.trim();
+        const notes    = notesEl.value || '';
+
+        if (!label) {
+            alert('Le nom affiché est obligatoire.');
+            return;
+        }
+        
+        // Désactiver le bouton pendant le traitement
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ajout...';
+        
+        await createLocation(clientId, label, lat, lng, notes);
+    });
+
+    // 4. Ouvrir la popup APRÈS avoir attaché les listeners
+    tempMarker.bindPopup(container, { maxWidth: 300 }).openPopup();
+    
+    // Focus après un court délai pour s'assurer que la popup est bien ouverte
+    setTimeout(() => labelEl.focus(), 100);
 }
 
 /**
@@ -240,6 +334,65 @@ function clearTempMarker() {
 }
 
 // ===== RECHERCHE D'ADRESSE =====
+
+// ===== AJOUT AUTOMATIQUE DE TOUS LES CLIENTS =====
+
+/**
+ * Connecte le bouton "Ajouter tous les clients" à la route de géocodage en masse
+ */
+function bindPopulateBtn() {
+    const btn = document.getElementById('populateMapBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        if (!confirm('Géocoder et ajouter tous les clients avec adresse non encore sur la carte ?\n\nCela peut prendre plusieurs minutes selon le nombre de clients.')) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Géocodage en cours...';
+
+        try {
+            const res = await fetch('/api/admin/populate-client-map', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${res.status}`);
+            }
+            const data = await res.json();
+
+            const msg = `Terminé !\n\n✅ Ajoutés : ${data.added}\n❌ Échecs : ${data.failed}\nTotal traités : ${data.total}`;
+            alert(msg);
+
+            if (data.added > 0) {
+                // Recharger les marqueurs
+                markers.forEach(m => m.marker.remove());
+                markers.length = 0;
+                await Promise.all([loadClients(), loadLocations()]);
+            }
+        } catch (err) {
+            console.error('Erreur populate-map:', err);
+            showError('Erreur : ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-map-marked-alt"></i> Ajouter tous les clients';
+        }
+    });
+}
+
+/**
+ * Connecte le sélecteur d'année pour recharger les marqueurs avec les bons compteurs
+ */
+function bindYearSelector() {
+    const sel = document.getElementById('yearSelector');
+    if (!sel) return;
+    sel.addEventListener('change', async () => {
+        selectedYear = parseInt(sel.value, 10);
+        markers.forEach(m => m.marker.remove());
+        markers.length = 0;
+        await loadLocations();
+    });
+}
 
 function bindSearchBar() {
     const input = document.getElementById('addressSearch');

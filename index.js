@@ -1183,6 +1183,12 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
     const sum_total_remaining_price = remainingResult?.sum_total_remaining_price || 0;
     const supplier_order_quantity = supplierOrderResult?.supplier_order_quantity || 0;
 
+    // 🆕 Récupération du stock actuel du produit
+    const stockQuery = `SELECT stock FROM products WHERE name = ? LIMIT 1`;
+    const stockStmt = dbModule.db.prepare(stockQuery);
+    const stockResult = stockStmt.get(productName);
+    const current_stock = stockResult?.stock ?? null;
+
     const result = {
       product_name: productName,
       category: deliveredResult?.category || null,
@@ -1195,7 +1201,8 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
       unit_price: deliveredResult?.unit_price || 0,
       order_count: deliveredResult?.order_count || 0,
       supplier_order_quantity: supplier_order_quantity,
-      supplier_order_details: supplierOrderDetails
+      supplier_order_details: supplierOrderDetails,
+      current_stock: current_stock
     };
     
     res.json(result);
@@ -1903,6 +1910,160 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
   }
 });
 
+// ── Facture EUR — compte Raiffeisen ──
+app.get('/api/admin/download-invoice-eur/:orderId/:userId', requireLogin, requireAdmin, async (req, res) => {
+  const { orderId, userId } = req.params;
+  try {
+    const orderDetails = orderService.getOrderDetails(orderId, userId);
+    const userProfile = userService.getUserProfile(userId);
+    if (!orderDetails || !userProfile) return res.status(404).json({ error: 'Not found' });
+
+    const orderItems = orderDetails.deliveredItems || orderDetails.items || [];
+    const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
+
+    // Totaux
+    const totalHT = orderItems.reduce((s, i) => s + (parseFloat(i.prix) * (i.quantity || 0)), 0);
+    const montantTVA = Math.round(totalHT * 0.081 * 20) / 20;
+    const totalTTC = totalHT + montantTVA;
+
+    const fmtEUR = v => {
+      const [i, d] = parseFloat(v).toFixed(2).split('.');
+      return i.replace(/\B(?=(\d{3})+(?!\d))/g, "'") + '.' + d;
+    };
+    const MONTHS_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const dateStr = `${String(orderDate.getDate()).padStart(2,'0')} ${MONTHS_S[orderDate.getMonth()]} ${orderDate.getFullYear()}`;
+
+    const ML = 50, MR = 50, MT = 45;
+    const PW = 595.28;
+    const CW = PW - ML - MR;
+    const PRIMARY = '#1a1a2e', ACCENT = '#e94560', MUTED = '#333333', BORDER = '#dee2e6';
+
+    const drawLine = (doc, x1,y1,x2,y2, color=BORDER, w=0.5) =>
+      doc.save().moveTo(x1,y1).lineTo(x2,y2).lineWidth(w).strokeColor(color).stroke().restore();
+
+    function drawHeader(doc) {
+      const rootDir = path.resolve(__dirname, '.');
+      const logoPath = path.join(rootDir, 'public','images','logo','logo_discado_noir.png');
+      if (fs.existsSync(logoPath)) doc.image(logoPath, ML, MT, { width: 80 });
+      drawLine(doc, ML, MT+35, ML+80, MT+35, ACCENT, 2);
+
+      let sY = MT + 48;
+      doc.font('Helvetica').fontSize(7.5).fillColor(MUTED);
+      ['Discado Sàrl','Sevelin 4A','1007 Lausanne','+41 79 457 33 85','catalog.discado@gmail.com'].forEach(l => { doc.text(l, ML, sY); sY += 10; });
+      doc.font('Helvetica').fontSize(7).fillColor(MUTED).text('TVA CHE-114.139.308', ML, sY + 6);
+
+      const cX = 350; let cY = MT + 50;
+      doc.font('Helvetica').fontSize(7).fillColor(MUTED).text('BILL TO', cX, cY, { characterSpacing: 1.5 });
+      cY += 14; drawLine(doc, cX, cY, cX+170, cY, ACCENT, 1); cY += 8;
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(PRIMARY).text(`${userProfile.firstName} ${userProfile.lastName}`, cX, cY); cY += 13;
+      doc.font('Helvetica').fontSize(8.5).fillColor('#111111');
+      doc.text(userProfile.shopName || '', cX, cY); cY += 11;
+      doc.text(userProfile.shopAddress || '', cX, cY); cY += 11;
+      doc.text(`${userProfile.shopZipCode||''} ${userProfile.shopCity||''}`, cX, cY);
+
+      const titleY = MT + 155;
+      drawLine(doc, ML, titleY+28, ML+CW, titleY+28, BORDER, 0.5);
+      doc.font('Helvetica-Bold').fontSize(14).fillColor(PRIMARY).text(`INVOICE  ${orderId}`, ML, titleY+6);
+      doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(dateStr, ML+CW-130, titleY+10, { width:130, align:'right' });
+      doc.fillColor('#111111');
+      return titleY + 38;
+    }
+
+    // ── PAGE 1 : items ──
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Invoice_EUR_${orderId}.pdf`);
+    doc.pipe(res);
+
+    let yPos = drawHeader(doc);
+
+    // Table header
+    const COL = { desc:220, qty:60, unit:105, total: CW-385 };
+    const drawTH = y => {
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(PRIMARY);
+      let x = ML;
+      doc.text('DESCRIPTION', x+8, y+4, { width:COL.desc-16, characterSpacing:1 }); x+=COL.desc;
+      doc.text('QTY', x+5, y+4, { width:COL.qty-10, align:'center', characterSpacing:1 }); x+=COL.qty;
+      doc.text('UNIT PRICE', x+5, y+4, { width:COL.unit-10, align:'right', characterSpacing:1 }); x+=COL.unit;
+      doc.text('TOTAL', x+5, y+4, { width:COL.total-10, align:'right', characterSpacing:1 });
+      drawLine(doc, ML, y+16, ML+CW, y+16, '#000000', 0.8);
+      return y+20;
+    };
+    yPos = drawTH(yPos);
+
+    for (const item of orderItems) {
+      const prix = parseFloat(item.prix)||0, qty = item.quantity||0, lineTotal = prix*qty;
+      let x = ML;
+      doc.font('Helvetica').fontSize(8.5).fillColor('#111111').text(item.Nom||'', x+16, yPos+6, { width:COL.desc-30, lineBreak:false }); x+=COL.desc;
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY).text(String(qty), x+5, yPos+6, { width:COL.qty-10, align:'center' }); x+=COL.qty;
+      doc.font('Helvetica').fontSize(8.5).fillColor('#111111').text(`${fmtEUR(prix)} EUR`, x+5, yPos+6, { width:COL.unit-10, align:'right' }); x+=COL.unit;
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY).text(`${fmtEUR(lineTotal)} EUR`, x+5, yPos+6, { width:COL.total-10, align:'right' });
+      yPos += 20;
+      drawLine(doc, ML, yPos, ML+CW, yPos, '#000000', 0.3);
+    }
+
+    yPos += 14;
+    const tX = ML+CW-220;
+    drawLine(doc, tX, yPos, tX+220, yPos, BORDER, 0.5); yPos += 6;
+    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text('Subtotal HT', tX, yPos, { width:120 });
+    doc.font('Helvetica').fontSize(8.5).fillColor('#111111').text(`${fmtEUR(totalHT)} EUR`, tX+120, yPos, { width:100, align:'right' }); yPos += 18;
+    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text('VAT 8.1%', tX, yPos, { width:120 });
+    doc.font('Helvetica').fontSize(8.5).fillColor('#111111').text(`${fmtEUR(montantTVA)} EUR`, tX+120, yPos, { width:100, align:'right' }); yPos += 20;
+    drawLine(doc, tX, yPos, tX+220, yPos, PRIMARY, 1); yPos += 8;
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(PRIMARY).text('TOTAL TTC', tX, yPos, { width:120 });
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(PRIMARY).text(`${fmtEUR(totalTTC)} EUR`, tX+120, yPos-1, { width:100, align:'right' }); yPos += 28;
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY).text('See next page for payment details.', ML, yPos+10);
+
+    // ── PAGE 2 : récap + coordonnées bancaires ──
+    doc.addPage();
+    yPos = drawHeader(doc);
+
+    // Carte récap
+    const cardY = yPos + 20;
+    doc.save().roundedRect(ML+60, cardY, CW-120, 130, 8).fill('#e8e8e8').restore();
+    doc.save().roundedRect(ML+62, cardY+2, CW-124, 126, 6).lineWidth(0.5).strokeColor(BORDER).stroke().restore();
+
+    const cx = PW/2; let sy = cardY+18;
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text('Subtotal HT', cx-100, sy, { width:100, align:'right' });
+    doc.font('Helvetica').fontSize(9).fillColor('#111111').text(`${fmtEUR(totalHT)} EUR`, cx+10, sy, { width:90 }); sy += 20;
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text('VAT 8.1%', cx-100, sy, { width:100, align:'right' });
+    doc.font('Helvetica').fontSize(9).fillColor('#111111').text(`${fmtEUR(montantTVA)} EUR`, cx+10, sy, { width:90 }); sy += 24;
+    drawLine(doc, cx-80, sy, cx+80, sy, ACCENT, 1); sy += 14;
+    doc.font('Helvetica-Bold').fontSize(18).fillColor(PRIMARY).text(`${fmtEUR(totalTTC)} EUR`, cx-100, sy, { width:200, align:'center' }); sy += 26;
+    doc.font('Helvetica').fontSize(8).fillColor(MUTED).text('AMOUNT DUE (INCL. VAT)', cx-100, sy, { width:200, align:'center', characterSpacing:1 });
+
+    // Coordonnées bancaires
+    let bY = cardY + 170;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(PRIMARY).text('PAYMENT DETAILS', ML, bY, { width:CW, align:'center', characterSpacing:0.8 }); bY += 20;
+    drawLine(doc, ML+60, bY, ML+CW-60, bY, BORDER, 0.5); bY += 16;
+
+    const bankLines = [
+      ['Bénéficiaire', 'DISCADO Sàrl — Compte courant EUR'],
+      ['IBAN',         'CH88 8080 8009 0913 5223 2'],
+      ['SWIFT-BIC',    'RAIFCH22'],
+      ['Banque',       'Raiffeisen Suisse'],
+      ['Référence',    `Facture ${orderId}`],
+    ];
+    bankLines.forEach(([label, value]) => {
+      doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(label, cx-120, bY, { width:110, align:'right' });
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY).text(value, cx+10, bY, { width:180 });
+      bY += 18;
+    });
+
+    const dueDate = new Date(orderDate); dueDate.setMonth(dueDate.getMonth()+1);
+    const MONTHS_L = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const dueDateStr = `${String(dueDate.getDate()).padStart(2,'0')} ${MONTHS_L[dueDate.getMonth()]} ${dueDate.getFullYear()}`;
+    bY += 10;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(PRIMARY).text('PAYMENT TERMS: NET 30 DAYS', ML, bY, { width:CW, align:'center', characterSpacing:0.8 }); bY += 16;
+    doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(`Payment due date: ${dueDateStr}`, ML, bY, { width:CW, align:'center' });
+
+    doc.end();
+  } catch (err) {
+    console.error('EUR invoice error:', err);
+    res.status(500).json({ error: 'Error generating EUR invoice' });
+  }
+});
+
 app.post('/api/admin/create-client', requireLogin, requireAdmin, (req, res) => {
   const { username, password, profileData } = req.body;
   
@@ -2174,15 +2335,20 @@ app.delete('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) =>
 // GET /api/client-locations — Liste tous les points avec infos profil client
 app.get('/api/client-locations', requireLogin, requireAdmin, (req, res) => {
     try {
+        const year = String(req.query.year || new Date().getFullYear());
         const locations = dbModule.db.prepare(`
             SELECT cl.*,
                    up.first_name, up.last_name, up.shop_name,
                    up.shop_address, up.shop_city, up.shop_zip_code,
-                   up.email, up.phone
+                   up.email, up.phone,
+                   COUNT(DISTINCT inv.id) as orders_total,
+                   COUNT(DISTINCT CASE WHEN strftime('%Y', inv.invoice_date) = ? THEN inv.id END) as orders_year
             FROM client_locations cl
             LEFT JOIN user_profiles up ON cl.client_id = up.username
+            LEFT JOIN invoices inv ON inv.user_id = cl.client_id
+            GROUP BY cl.id
             ORDER BY cl.created_at DESC
-        `).all();
+        `).all(year);
         res.json(locations);
     } catch (error) {
         console.error('Error fetching client locations:', error);
@@ -2252,6 +2418,65 @@ app.delete('/api/client-locations/:id', requireLogin, requireAdmin, (req, res) =
     } catch (error) {
         console.error('Error deleting client location:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression de la localisation' });
+    }
+});
+
+// POST /api/admin/populate-client-map — Géocode et ajoute tous les clients avec adresse
+app.post('/api/admin/populate-client-map', requireLogin, requireAdmin, async (req, res) => {
+    try {
+        // Clients avec adresse mais pas encore dans client_locations
+        const clients = dbModule.db.prepare(`
+            SELECT up.username, up.shop_name, up.shop_address, up.shop_city, up.shop_zip_code
+            FROM user_profiles up
+            WHERE up.shop_address IS NOT NULL AND up.shop_address != ''
+              AND up.username NOT IN (
+                  SELECT client_id FROM client_locations WHERE client_id IS NOT NULL
+              )
+        `).all();
+
+        const results = { total: clients.length, added: 0, failed: 0, details: [] };
+
+        for (const client of clients) {
+            const query = [client.shop_address, client.shop_zip_code, client.shop_city, 'Switzerland']
+                .filter(Boolean).join(', ');
+
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ch&limit=1`;
+                const nominatimRes = await fetch(url, {
+                    headers: { 'User-Agent': 'catalog.discado.ch' }
+                });
+
+                if (!nominatimRes.ok) throw new Error(`Nominatim HTTP ${nominatimRes.status}`);
+
+                const places = await nominatimRes.json();
+
+                if (!places || places.length === 0) {
+                    throw new Error('Adresse introuvable');
+                }
+
+                const lat = parseFloat(places[0].lat);
+                const lon = parseFloat(places[0].lon);
+                const label = client.shop_name || client.username;
+
+                dbModule.clientLocations.create.run(client.username, label, lat, lon, null);
+
+                results.added++;
+                results.details.push({ client: client.username, label, status: 'ok', lat, lon });
+                console.log(`✅ [populate-map] ${label} → ${lat}, ${lon}`);
+            } catch (err) {
+                results.failed++;
+                results.details.push({ client: client.username, status: 'error', error: err.message });
+                console.warn(`❌ [populate-map] ${client.username}: ${err.message}`);
+            }
+
+            // Respecter le rate limit Nominatim (max 1 requête/seconde)
+            await new Promise(resolve => setTimeout(resolve, 1100));
+        }
+
+        res.json(results);
+    } catch (error) {
+        console.error('Error populating client map:', error);
+        res.status(500).json({ error: 'Erreur lors du géocodage des clients' });
     }
 });
 

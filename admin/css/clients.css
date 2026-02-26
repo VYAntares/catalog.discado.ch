@@ -532,8 +532,15 @@
     display: none;
 }
 
+.client-modal-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px 6px;
+    flex-wrap: wrap;
+}
+
 .modal .client-section .info-section:first-of-type {
-    margin-top: 15px;
+    margin-top: 10px;
 }
 
 /* ---- MODAL CRÉATION CLIENT ---- */
@@ -1277,6 +1284,422 @@
     .details-btn {
         font-size: 11px;
         padding: 8px 8px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PENDING ITEMS — BOUTON TOGGLE ACCORDÉON
+   ══════════════════════════════════════════════════════════════ */
+
+.admin-pending-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    padding: 0 0 14px 0;
+    transition: opacity 0.2s;
+}
+
+.admin-pending-toggle-btn:hover {
+    opacity: 0.85;
+}
+
+.admin-pending-toggle-label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-pending-toggle-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #d97706;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-pending-toggle-label small {
+    font-size: 12px;
+    color: #92400e;
+    font-weight: 500;
+}
+
+.admin-pending-count-badge {
+    background: #f59e0b;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.admin-pending-chevron {
+    color: #d97706;
+    font-size: 13px;
+    flex-shrink: 0;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-pending-toggle-btn.open .admin-pending-chevron {
+    transform: rotate(180deg);
+}
+
+/* Contenu collapsible */
+.admin-pending-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-pending-collapse.open {
+    max-height: 3000px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ORDER CARDS — CARTES EXTENSIBLES
+   ══════════════════════════════════════════════════════════════ */
+
+.admin-order-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid #eef0f5;
+    transition: box-shadow 0.2s;
+}
+
+.admin-order-card:hover {
+    box-shadow: 0 4px 18px rgba(37,117,252,0.10);
+}
+
+.admin-order-card-top-bar {
+    height: 4px;
+}
+
+.admin-order-bar-success {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.admin-order-bar-pending {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.admin-order-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    flex-wrap: wrap;
+}
+
+.admin-order-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-order-header-id {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.admin-order-num {
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2575fc;
+}
+
+.admin-order-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.admin-order-header-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.admin-order-header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.admin-order-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.admin-order-total-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.admin-order-total-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.admin-order-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.admin-btn-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #f1f5f9;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.admin-btn-expand:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.admin-order-card-header.detail-open .admin-btn-expand {
+    background: #2575fc;
+    border-color: #2575fc;
+    color: white;
+    box-shadow: 0 2px 8px rgba(37,117,252,0.28);
+}
+
+.admin-expand-chevron {
+    font-size: 11px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-order-card-header.detail-open .admin-expand-chevron {
+    transform: rotate(180deg);
+}
+
+.admin-btn-edit {
+    white-space: nowrap;
+}
+
+/* ─── Panneau de détail (accordéon) ─── */
+
+.admin-order-detail-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    border-top: 0 solid transparent;
+}
+
+.admin-order-detail-panel.open {
+    max-height: 5000px;
+    border-top: 1px solid #eef0f5;
+}
+
+.admin-order-detail-inner {
+    padding: 16px 18px 18px 18px;
+}
+
+/* Sections d'articles */
+.admin-detail-items-section {
+    margin-bottom: 14px;
+}
+
+.admin-detail-category-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b6cb7;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 8px 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid #eef0f5;
+    margin-bottom: 6px;
+}
+
+.admin-detail-cat-pending {
+    color: #d97706;
+}
+
+.admin-detail-item-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8faff;
+    font-size: 13px;
+}
+
+.admin-detail-item-row:last-child {
+    border-bottom: none;
+}
+
+.admin-detail-item-pending {
+    opacity: 0.75;
+}
+
+.admin-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-item-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 13px;
+}
+
+.admin-item-unit {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.admin-item-qty {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.admin-item-total {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 13px;
+    min-width: 80px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.admin-item-total-pending {
+    color: #94a3b8;
+}
+
+/* Bannière articles en attente */
+.admin-detail-pending-banner {
+    background: #fffbf0;
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 6px 0 12px 0;
+    font-size: 12px;
+    color: #92400e;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Footer avec bouton facture */
+.admin-detail-footer {
+    padding-top: 14px;
+    border-top: 1px solid #eef0f5;
+    margin-top: 6px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.admin-download-invoice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(239,68,68,0.25);
+}
+
+.admin-download-invoice-btn:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 4px 12px rgba(239,68,68,0.35);
+    transform: translateY(-1px);
+}
+
+.admin-invoice-not-available {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* ─── Responsive cartes ─── */
+
+@media (max-width: 600px) {
+    .admin-order-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .admin-order-header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .admin-order-header-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .admin-btn-expand,
+    .admin-btn-edit {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+    }
+
+    .admin-order-detail-inner {
+        padding: 12px 12px 14px 12px;
+    }
+
+    .admin-detail-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-download-invoice-btn {
+        justify-content: center;
     }
 }
 

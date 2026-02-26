@@ -96,6 +96,31 @@
     transition: opacity 0.2s;
 }
 
+/* ===== BOUTON AJOUT AUTOMATIQUE ===== */
+.map-populate-btn {
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #38a169 0%, #276749 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.map-populate-btn:hover:not(:disabled) {
+    opacity: 0.85;
+}
+
+.map-populate-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
 /* ===== POPUP LEAFLET ===== */
 /* popup : bloc infos client */
 .map-popup-client {
@@ -168,11 +193,13 @@
     padding: 7px 14px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
+    border: none;
     border-radius: 6px;
     font-size: 12px;
     font-family: 'Inter', Arial, sans-serif;
     font-weight: 600;
     text-decoration: none;
+    cursor: pointer;
     transition: opacity 0.2s;
 }
 
@@ -364,6 +391,72 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     pointer-events: none;
 }
+
+/* ===== SÉLECTEUR D'ANNÉE ===== */
+.map-year-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.map-year-icon {
+    color: #667eea;
+    font-size: 14px;
+}
+
+.map-year-selector {
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-weight: 600;
+    color: #4a5568;
+    background: #f7fafc;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.map-year-selector:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+}
+
+/* ===== LÉGENDE CARTE ===== */
+.map-legend {
+    background: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 12px;
+    color: #4a5568;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.legend-title {
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.legend-item:last-child {
+    margin-bottom: 0;
+}
+
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {

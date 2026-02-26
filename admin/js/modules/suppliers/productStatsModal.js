@@ -129,6 +129,7 @@ class ProductStatsModal {
 		  select.appendChild(option);
 		});
 
+
 	  } catch (error) {
 		console.error('Error loading years:', error);
 	  }
@@ -253,6 +254,39 @@ class ProductStatsModal {
 							</div>
 						  </div>
 						`).join('')}
+					  </div>
+					</td>
+				  </tr>
+				</tbody>
+			  </table>
+			</div>
+		  `;
+		}
+
+		// Afficher le stock actuel si disponible
+		if (stats.current_stock !== null) {
+		  html += `
+			<div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-top: 16px;">
+			  <table style="width: 100%; border-collapse: collapse;">
+				<tbody>
+				  <tr>
+					<td style="padding: 8px 6px;">
+					  <div style="display: flex; align-items: center; gap: 8px;">
+						<div style="width: 30px; height: 30px; background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+						  <i class="fas fa-warehouse" style="color: white; font-size: 13px;"></i>
+						</div>
+						<div>
+						  <div style="font-weight: 600; color: #2d3748; font-size: 12px;">Stock actuel</div>
+						  <div style="font-size: 10px; color: #718096;">Disponible en stock</div>
+						</div>
+					  </div>
+					</td>
+					<td style="padding: 8px 6px; text-align: center;">
+					  <div style="font-size: 22px; font-weight: bold; color: ${stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e'};">${stats.current_stock}</div>
+					</td>
+					<td style="padding: 8px 6px; text-align: center;">
+					  <div style="font-size: 11px; font-weight: 600; color: ${stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e'};">
+						${stats.current_stock > 10 ? 'En stock' : stats.current_stock > 0 ? 'Stock bas' : 'Rupture'}
 					  </div>
 					</td>
 				  </tr>
@@ -423,10 +457,35 @@ class ProductStatsModal {
 				  </td>
 				</tr>
 			  ` : ''}
+
+			  <!-- Stock actuel -->
+			  ${stats.current_stock !== null ? `
+				<tr style="border-top: 2px solid #e2e8f0;">
+				  <td style="padding: 8px 6px;">
+					<div style="display: flex; align-items: center; gap: 8px;">
+					  <div style="width: 30px; height: 30px; background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+						<i class="fas fa-warehouse" style="color: white; font-size: 13px;"></i>
+					  </div>
+					  <div>
+						<div style="font-weight: 600; color: #2d3748; font-size: 12px;">Stock actuel</div>
+						<div style="font-size: 10px; color: #718096;">Disponible en stock</div>
+					  </div>
+					</div>
+				  </td>
+				  <td style="padding: 8px 6px; text-align: center;">
+					<div style="font-size: 22px; font-weight: bold; color: ${stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e'};">${stats.current_stock}</div>
+				  </td>
+				  <td style="padding: 8px 6px; text-align: center;">
+					<div style="font-size: 11px; font-weight: 600; color: ${stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e'};">
+					  ${stats.current_stock > 10 ? 'En stock' : stats.current_stock > 0 ? 'Stock bas' : 'Rupture'}
+					</div>
+				  </td>
+				</tr>
+			  ` : ''}
 			</tbody>
 		  </table>
 		</div>
-  
+
 		${stats.category ? `
 		  <div style="margin-top: 8px; padding: 8px 12px; background: #f7fafc; border-radius: 8px; font-size: 12px; color: #4a5568; display: flex; align-items: center; gap: 8px;">
 			<i class="fas fa-tag" style="color: #667eea;"></i>

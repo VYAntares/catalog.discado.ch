@@ -15,24 +15,24 @@ let clientDetailsTitle;
 let currentClientId;
 
 //Affiche les détails d'un client dans une modale
-async function viewClientDetails(clientId) {
+async function viewClientDetails(clientId, fromMap = false) {
     currentClientId = clientId;
     clientModal = document.getElementById('clientModal');
     clientDetailsContent = document.getElementById('clientDetailsContent');
     clientDetailsTitle = document.getElementById('clientDetailsTitle');
-    
+
     if (!clientModal || !clientDetailsContent) return;
-    
+
     clientDetailsContent.innerHTML = `<div class="loading">Chargement des détails...</div>`;
-    
+
     Modal.showModal(clientModal);
-    
+
     try {
         const clients = await API.fetchClientProfiles();
         const client = clients.find(c => c.clientId === clientId);
-        
+
         if (client) {
-            displayClientDetails(client);
+            displayClientDetails(client, fromMap);
         } else {
             clientDetailsContent.innerHTML = `
                 <div class="empty-state">
@@ -61,7 +61,7 @@ async function viewClientDetails(clientId) {
 }
 
 //Affiche les détails d'un client dans la modale
-async function displayClientDetails(client) {
+async function displayClientDetails(client, fromMap = false) {
     clientDetailsTitle.textContent = `Détails du client: ${client.clientId || 'N/A'}`;
     
     const lastUpdated = client.lastUpdated ? Formatter.formatDate(client.lastUpdated) : 'N/A';
@@ -71,6 +71,13 @@ async function displayClientDetails(client) {
             <div class="client-header">
                 <h2 class="client-title">Détails du client: ${client.clientId || 'N/A'}</h2>
                 <button class="client-close-btn" id="closeClientModal">&times;</button>
+            </div>
+            <div class="client-modal-actions">
+                <a href="/admin/client-invoices?client_id=${encodeURIComponent(client.clientId)}&year=all${fromMap ? '&from=map' : ''}"
+                   class="action-btn primary-btn btn-sm"
+                   title="Voir les factures de ce client en comptabilité">
+                    <i class="fas fa-file-invoice"></i> Voir factures compta
+                </a>
             </div>
 
             <!-- Section Informations personnelles -->
@@ -170,57 +177,71 @@ function displayPendingDelivery(container, pendingDelivery, clientId) {
     if (!pendingDelivery || !pendingDelivery.items || pendingDelivery.items.length === 0) {
         return;
     }
-    
+
+    const totalQty = pendingDelivery.items.reduce((sum, item) => sum + item.quantity, 0);
+
     const groupedItems = {};
     pendingDelivery.items.forEach(item => {
         const category = item.categorie || 'autres';
-        if (!groupedItems[category]) {
-            groupedItems[category] = [];
-        }
+        if (!groupedItems[category]) groupedItems[category] = [];
         groupedItems[category].push(item);
     });
-    
-    let html = `
-        <div class="delivery-section">
-            <h3 class="info-section-title">
-                <i class="fas fa-truck delivery-icon"></i>Articles en attente de livraison
-            </h3>
-            <div class="delivery-table-container">
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="select-all-pending" title="Sélectionner tout"></th>
-                            <th>Article</th>
-                            <th>Catégorie</th>
-                            <th>Quantité</th>
-                            <th>Prix unitaire</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'delivery-section';
+
+    // Bouton toggle accordéon
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'admin-pending-toggle-btn';
+    toggleBtn.innerHTML = `
+        <i class="fas fa-truck" style="color:#d97706; font-size:18px; flex-shrink:0;"></i>
+        <div class="admin-pending-toggle-label">
+            <span class="admin-pending-toggle-title">Articles en attente de livraison</span>
+            <small>${totalQty} article${totalQty > 1 ? 's' : ''} en attente de stock</small>
+        </div>
+        <span class="admin-pending-count-badge">${totalQty}</span>
+        <i class="fas fa-chevron-down admin-pending-chevron"></i>
     `;
-    
+    wrapper.appendChild(toggleBtn);
+
+    // Contenu collapsible
+    const collapse = document.createElement('div');
+    collapse.className = 'admin-pending-collapse';
+
     const sortedCategories = Object.keys(groupedItems).sort();
-    
     let itemCounter = 0;
-    
+    let tableHTML = `
+        <div class="delivery-table-container" style="margin-top:14px;">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all-pending" title="Sélectionner tout"></th>
+                        <th>Article</th>
+                        <th>Catégorie</th>
+                        <th>Quantité</th>
+                        <th>Prix unitaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
     sortedCategories.forEach(category => {
-        html += `
+        tableHTML += `
             <tr>
                 <td colspan="5" class="category-header">${category.charAt(0).toUpperCase() + category.slice(1)}</td>
             </tr>
         `;
-        
         groupedItems[category].forEach(item => {
             const itemId = `pending-item-${itemCounter++}`;
-            html += `
+            tableHTML += `
                 <tr>
                     <td>
-                        <input type="checkbox" 
-                               id="${itemId}" 
-                               class="select-pending-item" 
-                               data-name="${item.Nom}" 
-                               data-price="${item.prix}" 
-                               data-quantity="${item.quantity}" 
+                        <input type="checkbox"
+                               id="${itemId}"
+                               class="select-pending-item"
+                               data-name="${item.Nom}"
+                               data-price="${item.prix}"
+                               data-quantity="${item.quantity}"
                                data-category="${item.categorie || 'autres'}">
                     </td>
                     <td>${item.Nom}</td>
@@ -231,23 +252,31 @@ function displayPendingDelivery(container, pendingDelivery, clientId) {
             `;
         });
     });
-    
-    html += `
-        </tbody>
-    </table>
-    </div>
-    <div class="pending-actions" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px; width: 100%;">
-        <button id="delete-selected-items" class="action-btn delete-btn" data-client-id="${clientId}">
-            <i class="fas fa-trash"></i> Supprimer les articles sélectionnés
-        </button>
-        <button id="create-order-from-pending" class="action-btn primary-btn" data-client-id="${clientId}">
-            <i class="fas fa-shopping-cart"></i> Créer une commande
-        </button>
-    </div>
+
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+        <div class="pending-actions" style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px; width: 100%;">
+            <button id="delete-selected-items" class="action-btn delete-btn" data-client-id="${clientId}">
+                <i class="fas fa-trash"></i> Supprimer les articles sélectionnés
+            </button>
+            <button id="create-order-from-pending" class="action-btn primary-btn" data-client-id="${clientId}">
+                <i class="fas fa-shopping-cart"></i> Créer une commande
+            </button>
+        </div>
     `;
-    
-    container.innerHTML = html;
-    
+
+    collapse.innerHTML = tableHTML;
+    wrapper.appendChild(collapse);
+    container.appendChild(wrapper);
+
+    toggleBtn.addEventListener('click', () => {
+        const isOpen = collapse.classList.contains('open');
+        collapse.classList.toggle('open', !isOpen);
+        toggleBtn.classList.toggle('open', !isOpen);
+    });
+
     setupPendingDeliveryEvents(clientId);
 }
 
@@ -358,7 +387,7 @@ async function createOrderFromPendingItems(clientId, items) {
     }
 }
 
-//Affiche l'historique des commandes d'un client
+//Affiche l'historique des commandes d'un client sous forme de cartes extensibles
 function displayOrderHistory(container, orders, clientId) {
     if (!orders || orders.length === 0) {
         container.innerHTML = `
@@ -369,80 +398,203 @@ function displayOrderHistory(container, orders, clientId) {
         `;
         return;
     }
-    
+
     orders.sort((a, b) => new Date(b.lastProcessed || b.date) - new Date(a.lastProcessed || a.date));
-    
-    let html = `
-        <div class="orders-history-section">
-            <h3 class="info-section-title">Historique des commandes</h3>
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th>Commande #</th>
-                        <th>Date</th>
-                        <th>Statut</th>
-                        <th>Articles</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
+
+    const section = document.createElement('div');
+    section.className = 'orders-history-section';
+
+    const title = document.createElement('h3');
+    title.className = 'info-section-title';
+    title.innerHTML = '<i class="fas fa-history" style="margin-right:6px;"></i>Historique des commandes';
+    section.appendChild(title);
+
     orders.forEach(order => {
         if (order.orderId === 'pending-delivery') return;
-        
-        const orderDate = Formatter.formatDate(order.date);
-        const processDate = order.lastProcessed ? Formatter.formatDate(order.lastProcessed) : 'N/A';
-        
-        let statusText = 'EN ATTENTE';
-        let statusClass = 'status-pending';
-        
-        if (order.status === 'completed' || order.status === 'partial') {
-            statusText = 'COMPLÈTE';
-            statusClass = 'status-completed';
-        }
-        
-        const totalItems = (order.deliveredItems || order.items || []).reduce((sum, item) => sum + item.quantity, 0);
-        
-        html += `
-            <tr>
-                <td class="order-id">${order.orderId}</td>
-                <td class="order-date">
-                    Commandé: ${orderDate}<br>
-                    ${order.lastProcessed ? `Traité: ${processDate}` : ''}
-                </td>
-                <td><span class="order-status">${statusText}</span></td>
-                <td class="order-count">${totalItems} article${totalItems > 1 ? 's' : ''}</td>
-                <td>
-                    <button class="action-btn details-btn view-order-btn" data-order-id="${order.orderId}" data-user-id="${clientId}">
-                        <i class="fas fa-eye"></i> Détails
-                    </button>
-                </td>
-            </tr>
-        `;
+        section.appendChild(createAdminOrderCard(order, clientId));
     });
-    
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    container.innerHTML = html;
-    
-    // Ajouter les écouteurs d'événements pour les boutons de détails
-    setupOrderDetailButtonHandlers();
+
+    container.appendChild(section);
 }
 
-// Configurer les gestionnaires d'événements pour les boutons de détails de commande
-function setupOrderDetailButtonHandlers() {
-    document.querySelectorAll('.view-order-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const orderId = this.getAttribute('data-order-id');
-            const userId = this.getAttribute('data-user-id');
-            HistoryView.showOrderDetailsFromClientView(orderId, userId);
+// Crée une carte de commande extensible
+function createAdminOrderCard(order, clientId) {
+    const deliveredItems = order.deliveredItems || order.items || [];
+    const pendingItems   = order.remainingItems || [];
+    const allItems       = [...deliveredItems, ...pendingItems];
+    const totalQty       = allItems.reduce((s, i) => s + i.quantity, 0);
+    const totalHT        = deliveredItems.reduce((s, i) => s + parseFloat(i.prix) * i.quantity, 0);
+
+    const isComplete = ['completed', 'partial', 'shipped'].includes(order.status);
+    const statusText  = isComplete ? 'Complète' : 'En attente';
+    const statusClass = isComplete ? 'status-completed' : 'status-pending';
+    const barClass    = isComplete ? 'admin-order-bar-success' : 'admin-order-bar-pending';
+
+    const orderDate   = Formatter.formatDate(order.date);
+    const processDate = order.lastProcessed ? Formatter.formatDate(order.lastProcessed) : null;
+
+    const card = document.createElement('div');
+    card.className = 'admin-order-card';
+
+    // Barre colorée en haut
+    const topBar = document.createElement('div');
+    topBar.className = `admin-order-card-top-bar ${barClass}`;
+    card.appendChild(topBar);
+
+    // Header cliquable
+    const header = document.createElement('div');
+    header.className = 'admin-order-card-header';
+    header.innerHTML = `
+        <div class="admin-order-header-info">
+            <div class="admin-order-header-id">
+                <span class="admin-order-num">#${order.orderId}</span>
+                <span class="order-status ${statusClass}">${statusText}</span>
+            </div>
+            <div class="admin-order-header-meta">
+                <span><i class="fas fa-calendar-alt"></i> ${orderDate}</span>
+                <span><i class="fas fa-box"></i> ${totalQty} article${totalQty > 1 ? 's' : ''}</span>
+                ${processDate ? `<span><i class="fas fa-check-circle"></i> Traité le ${processDate}</span>` : ''}
+                ${order.reference ? `<span><i class="fas fa-tag"></i> ${order.reference}</span>` : ''}
+            </div>
+        </div>
+        <div class="admin-order-header-right">
+            <div class="admin-order-total">
+                <span class="admin-order-total-label">Total HT</span>
+                <span class="admin-order-total-value">${Formatter.formatPrice(totalHT)} CHF</span>
+            </div>
+            <div class="admin-order-header-actions">
+                <button class="admin-btn-expand">
+                    <i class="fas fa-list-ul"></i>
+                    <span>Voir les articles</span>
+                    <i class="fas fa-chevron-down admin-expand-chevron"></i>
+                </button>
+                <button class="admin-btn-edit action-btn details-btn">
+                    <i class="fas fa-edit"></i>
+                    <span>Modifier</span>
+                </button>
+            </div>
+        </div>
+    `;
+    card.appendChild(header);
+
+    // Panneau de détail extensible
+    const panel = createAdminOrderDetailPanel(order, clientId, deliveredItems, pendingItems);
+    card.appendChild(panel);
+
+    // Événements
+    header.querySelector('.admin-btn-expand').addEventListener('click', () => {
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open', !isOpen);
+        header.classList.toggle('detail-open', !isOpen);
+    });
+
+    header.querySelector('.admin-btn-edit').addEventListener('click', () => {
+        HistoryView.showOrderDetailsFromClientView(order.orderId, clientId);
+    });
+
+    return card;
+}
+
+// Crée le panneau de détail d'une commande (articles + facture)
+function createAdminOrderDetailPanel(order, clientId, deliveredItems, pendingItems) {
+    const panel = document.createElement('div');
+    panel.className = 'admin-order-detail-panel';
+
+    const inner = document.createElement('div');
+    inner.className = 'admin-order-detail-inner';
+
+    if (deliveredItems.length > 0) {
+        inner.appendChild(buildAdminItemsSection(deliveredItems, false));
+    }
+
+    if (pendingItems.length > 0) {
+        const banner = document.createElement('div');
+        banner.className = 'admin-detail-pending-banner';
+        banner.innerHTML = `<i class="fas fa-clock"></i> Articles en attente de stock — seront livrés dès disponibilité`;
+        inner.appendChild(banner);
+        inner.appendChild(buildAdminItemsSection(pendingItems, true));
+    }
+
+    inner.appendChild(buildAdminDetailFooter(order, clientId));
+    panel.appendChild(inner);
+    return panel;
+}
+
+// Construit une section d'articles groupés par catégorie
+function buildAdminItemsSection(items, isPending) {
+    const section = document.createElement('div');
+    section.className = 'admin-detail-items-section';
+
+    const grouped = {};
+    items.forEach(item => {
+        const cat = item.categorie || 'Autre';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(item);
+    });
+
+    Object.keys(grouped).sort().forEach(category => {
+        const catTitle = document.createElement('div');
+        catTitle.className = `admin-detail-category-title${isPending ? ' admin-detail-cat-pending' : ''}`;
+        catTitle.innerHTML = `<i class="fas fa-tag"></i> ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        section.appendChild(catTitle);
+
+        grouped[category].forEach(item => {
+            section.appendChild(buildAdminItemRow(item, isPending));
         });
     });
+
+    return section;
+}
+
+// Construit une ligne d'article
+function buildAdminItemRow(item, isPending) {
+    const row = document.createElement('div');
+    row.className = `admin-detail-item-row${isPending ? ' admin-detail-item-pending' : ''}`;
+
+    const total = parseFloat(item.prix) * item.quantity;
+    row.innerHTML = `
+        <div class="admin-item-info">
+            <div class="admin-item-name">${item.Nom}</div>
+            <div class="admin-item-unit">${isPending ? 'En attente de livraison' : `${Formatter.formatPrice(item.prix)} CHF / unité`}</div>
+        </div>
+        <div class="admin-item-qty">× ${item.quantity}</div>
+        <div class="admin-item-total ${isPending ? 'admin-item-total-pending' : ''}">
+            ${isPending ? '—' : `${Formatter.formatPrice(total)} CHF`}
+        </div>
+    `;
+    return row;
+}
+
+// Construit le footer avec bouton facture + modifier
+function buildAdminDetailFooter(order, clientId) {
+    const footer = document.createElement('div');
+    footer.className = 'admin-detail-footer';
+
+    const isInvoiceAvailable = !['pending', 'in progress'].includes(order.status);
+
+    if (isInvoiceAvailable) {
+        const invoiceBtn = document.createElement('button');
+        invoiceBtn.className = 'admin-download-invoice-btn';
+        invoiceBtn.innerHTML = `<i class="fas fa-file-pdf"></i><span>Télécharger la facture PDF</span>`;
+        invoiceBtn.addEventListener('click', async () => {
+            try {
+                await window.downloadOrShareFile(
+                    API.getInvoiceDownloadLink(order.orderId, clientId),
+                    `Facture_${order.orderId}.pdf`
+                );
+            } catch (err) {
+                Notification.showNotification('Erreur : ' + err.message, 'error');
+            }
+        });
+        footer.appendChild(invoiceBtn);
+    } else {
+        const notice = document.createElement('div');
+        notice.className = 'admin-invoice-not-available';
+        notice.innerHTML = `<i class="fas fa-clock"></i><span>Facture disponible une fois la commande traitée</span>`;
+        footer.appendChild(notice);
+    }
+
+    return footer;
 }
 
 export {

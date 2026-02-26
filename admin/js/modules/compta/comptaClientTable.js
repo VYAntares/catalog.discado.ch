@@ -18,6 +18,7 @@ class ComptaClientTable {
         const urlParams = new URLSearchParams(window.location.search);
         this.clientId = urlParams.get('client_id');
         this.year = urlParams.get('year') || new Date().getFullYear();
+        this.fromMap = urlParams.get('from') === 'map';
         this.notesTimeout = null;
 
         if (!this.clientId) {
@@ -26,10 +27,20 @@ class ComptaClientTable {
             return;
         }
 
-        // Mettre à jour le bouton retour avec l'année
+        // Mettre à jour le bouton retour selon le contexte d'origine
         const backBtn = document.querySelector('.back-btn');
         if (backBtn) {
-            backBtn.href = `/admin/compta?tab=clients&year=${this.year}`;
+            if (this.fromMap) {
+                backBtn.href = `/admin/clients-map?openClient=${encodeURIComponent(this.clientId)}`;
+                backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Retour à la carte';
+            } else {
+                // history.back() permet au navigateur (iOS inclus) de restaurer
+                // l'état exact de la page compta (scroll, filtres, etc.) via le bfcache
+                backBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    history.back();
+                });
+            }
         }
 
         this.setupEventListeners();
