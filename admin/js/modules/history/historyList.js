@@ -353,12 +353,10 @@ function initSearchEvents() {
     if (searchBtn) {
         searchBtn.addEventListener('click', searchOrders);
     }
-    
+
     if (searchInput) {
         searchInput.addEventListener('keyup', function(event) {
-            if (event.key === 'Enter') {
-                searchOrders();
-            }
+            if (event.key === 'Enter') searchOrders();
         });
     }
     
@@ -382,38 +380,71 @@ function initSearchEvents() {
 //Effectue une recherche dans les commandes
 function searchOrders() {
     const searchValue = searchInput.value.toLowerCase().trim();
-    
+
     if (!searchValue) {
         organizeOrdersByDate(allTreatedOrders);
         displayCalendar(currentYear, currentMonth);
         return;
     }
-    
+
+    // Chercher d'abord une correspondance exacte de numéro de facture
+    const exactMatch = allTreatedOrders.find(order =>
+        order.orderId.toLowerCase() === searchValue
+    );
+
     const filteredOrders = allTreatedOrders.filter(order => {
         if (order.orderId.toLowerCase().includes(searchValue)) return true;
         if (order.userId.toLowerCase().includes(searchValue)) return true;
-        
+
         const userProfile = order.userProfile || {};
         const fullName = (userProfile.fullName || '').toLowerCase();
         const shopName = (userProfile.shopName || '').toLowerCase();
         const email = (userProfile.email || '').toLowerCase();
         const phone = (userProfile.phone || '').toLowerCase();
-        
+
         const hasMatchingItem = (order.deliveredItems || []).some(item =>
             (item.Nom || '').toLowerCase().includes(searchValue)
         );
-        
+
         return fullName.includes(searchValue) ||
                shopName.includes(searchValue) ||
                email.includes(searchValue) ||
                phone.includes(searchValue) ||
                hasMatchingItem;
     });
-    
+
     if (filteredOrders.length > 0) {
+        // Cible : match exact sur num facture, sinon la commande la plus récente
+        const targetOrder = exactMatch || filteredOrders.reduce((latest, order) => {
+            const d = new Date(order.lastProcessed || order.date);
+            return d > new Date(latest.lastProcessed || latest.date) ? order : latest;
+        });
+
+        const targetDate = new Date(targetOrder.lastProcessed || targetOrder.date);
+        currentYear = targetDate.getFullYear();
+        currentMonth = targetDate.getMonth();
+        const targetDay = targetDate.getDate();
+
+        // Mettre à jour les sélecteurs de mois/année
+        const yearSel = document.getElementById('year-select');
+        const monthSel = document.getElementById('month-select');
+        if (yearSel) yearSel.value = currentYear;
+        if (monthSel) monthSel.value = currentMonth;
+
         organizeOrdersByDate(filteredOrders);
         displayCalendar(currentYear, currentMonth);
-        Notification.showNotification(`${filteredOrders.length} commande(s) trouvée(s) pour "${searchValue}"`, 'info');
+
+        // Sélectionner automatiquement le jour cible et afficher ses commandes
+        const dayEl = document.querySelector(
+            `.calendar-day[data-day="${targetDay}"][data-month="${currentMonth}"][data-year="${currentYear}"]`
+        );
+        if (dayEl) {
+            document.querySelectorAll('.calendar-day.selected').forEach(el => el.classList.remove('selected'));
+            dayEl.classList.add('selected');
+            displayDayOrders(currentYear, currentMonth, targetDay);
+        }
+
+        Notification.showNotification(`${filteredOrders.length} commande(s) trouvée(s)`, 'info');
     } else {
         const calendarContainer = document.getElementById('calendar-container');
         if (calendarContainer) {
@@ -424,7 +455,7 @@ function searchOrders() {
                     <button class="action-btn" id="resetSearch">Réinitialiser la recherche</button>
                 </div>
             `;
-            
+
             const resetButton = document.getElementById('resetSearch');
             if (resetButton) {
                 resetButton.addEventListener('click', function() {
@@ -434,7 +465,7 @@ function searchOrders() {
                 });
             }
         }
-        
+
         Notification.showNotification(`Aucune commande trouvée pour "${searchValue}"`, 'info');
     }
 }
