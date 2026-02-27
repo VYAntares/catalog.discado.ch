@@ -47,7 +47,7 @@ Ou manuellement : ouvrir **`ios/App/App.xcodeproj`** dans Xcode.
 1. Sélectionner le projet **App** dans le panneau de gauche
 2. Onglet **Signing & Capabilities**
 3. **Team** → Ajouter ton compte Apple (gratuit suffit)
-4. **Bundle Identifier** : `ch.discado.catalog` (déjà configuré)
+4. **Bundle Identifier** : `ch.discado.app` (déjà configuré)
 5. Laisser Xcode gérer automatiquement la signature
 
 ---
