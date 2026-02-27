@@ -13,8 +13,7 @@ class ComptaMain {
         this.partialInvoices = [];
         this.allInvoicesData = [];
         this.allInvoicesFiltered = [];
-        this.unpaidSortOrder = 'desc';
-		this.unpaidSortType = 'date';
+        this.unpaidSortOption = 'date_desc';
         this.unpaidOverdueFilter = false;
         this.partialSortOption = 'date_desc';
         this.partialPctFilter = 100;
@@ -22,6 +21,7 @@ class ComptaMain {
         this.selectedYear = new Date().getFullYear();
         this.currentSortOption = 'total_desc';
         this.allInvoicesSortOption = 'date_desc';
+        this.allInvoicesViewMode = 'all';
         this.viewMode = 'all';
         this.editingCells = new Map();
 		this.chart = null;
@@ -63,14 +63,16 @@ class ComptaMain {
             viewMode: this.viewMode,
             currentSortOption: this.currentSortOption,
             allInvoicesSortOption: this.allInvoicesSortOption,
-            unpaidSortOrder: this.unpaidSortOrder,
-            unpaidSortType: this.unpaidSortType,
+            allInvoicesViewMode: this.allInvoicesViewMode,
+            unpaidSortOption: this.unpaidSortOption,
             unpaidOverdueFilter: this.unpaidOverdueFilter,
             partialSortOption: this.partialSortOption,
             partialPctFilter: this.partialPctFilter,
             partialOverdueFilter: this.partialOverdueFilter,
             clientSearch: document.getElementById('clientSearchInput')?.value || '',
             allInvoicesSearch: document.getElementById('allInvoicesSearchInput')?.value || '',
+            unpaidSearch: document.getElementById('unpaidSearchInput')?.value || '',
+            partialSearch: document.getElementById('partialSearchInput')?.value || '',
             scrollY: window.scrollY
         };
         sessionStorage.setItem('comptaState', JSON.stringify(state));
@@ -110,14 +112,16 @@ class ComptaMain {
                 if (allInvSort) allInvSort.value = state.allInvoicesSortOption;
             }
 
-            if (state.unpaidSortOrder) {
-                this.unpaidSortOrder = state.unpaidSortOrder;
+            if (state.allInvoicesViewMode) {
+                this.allInvoicesViewMode = state.allInvoicesViewMode;
+                const sel = document.getElementById('allInvoicesViewModeSelect');
+                if (sel) sel.value = state.allInvoicesViewMode;
             }
 
-            if (state.unpaidSortType) {
-                this.unpaidSortType = state.unpaidSortType;
-                // Mettre à jour les boutons visuellement
-                this.updateUnpaidSortButtons();
+            if (state.unpaidSortOption) {
+                this.unpaidSortOption = state.unpaidSortOption;
+                const sel = document.getElementById('unpaidSortSelect');
+                if (sel) sel.value = state.unpaidSortOption;
             }
 
             if (state.unpaidOverdueFilter !== undefined) {
@@ -153,6 +157,14 @@ class ComptaMain {
                 const input = document.getElementById('allInvoicesSearchInput');
                 if (input) input.value = state.allInvoicesSearch;
             }
+            if (state.unpaidSearch) {
+                const input = document.getElementById('unpaidSearchInput');
+                if (input) input.value = state.unpaidSearch;
+            }
+            if (state.partialSearch) {
+                const input = document.getElementById('partialSearchInput');
+                if (input) input.value = state.partialSearch;
+            }
 
             // Restaurer l'onglet actif (sans déclencher le chargement des données)
             if (state.tab && state.tab !== 'overview') {
@@ -174,33 +186,9 @@ class ComptaMain {
         }
     }
 
-    updateUnpaidSortButtons() {
-        const sortBtn = document.getElementById('unpaidSortBtn');
-        const sortText = document.getElementById('unpaidSortText');
-        const sortClientBtn = document.getElementById('unpaidSortClientBtn');
-        const sortClientText = document.getElementById('unpaidSortClientText');
-
-        if (sortBtn && sortText) {
-            const icon = sortBtn.querySelector('i');
-            if (this.unpaidSortOrder === 'desc') {
-                if (icon) icon.className = 'fas fa-sort-amount-down';
-                sortText.textContent = 'Plus récente à plus ancienne';
-            } else {
-                if (icon) icon.className = 'fas fa-sort-amount-up';
-                sortText.textContent = 'Plus ancienne à plus récente';
-            }
-        }
-
-        if (sortClientBtn && sortClientText) {
-            const icon = sortClientBtn.querySelector('i');
-            if (this.unpaidSortType === 'client') {
-                if (icon) icon.className = 'fas fa-sort-alpha-down';
-                sortClientText.textContent = 'Trié par client (A-Z)';
-            } else {
-                if (icon) icon.className = 'fas fa-calendar-alt';
-                sortClientText.textContent = 'Trié par date';
-            }
-        }
+    updateUnpaidSortSelect() {
+        const sel = document.getElementById('unpaidSortSelect');
+        if (sel) sel.value = this.unpaidSortOption;
     }
 
     restoreScrollPosition() {
@@ -272,25 +260,33 @@ class ComptaMain {
             });
         });
 
-        // Recherche
-        document.getElementById('clientSearchBtn').addEventListener('click', () => this.searchClients());
-        document.getElementById('clientSearchInput').addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') this.searchClients();
+        // Recherche clients (live)
+        document.getElementById('clientSearchInput').addEventListener('input', () => {
+            this.saveState();
+            this.searchClients();
         });
 
         // Export CSV clients
         document.getElementById('exportClientsCSVBtn').addEventListener('click', () => this.exportClientsToCSV());
 
-        // Tri factures impayées
-        const unpaidSortBtn = document.getElementById('unpaidSortBtn');
-        if (unpaidSortBtn) {
-            unpaidSortBtn.addEventListener('click', () => this.toggleUnpaidSort());
+        // Recherche factures impayées (live)
+        const unpaidSearchInput = document.getElementById('unpaidSearchInput');
+        if (unpaidSearchInput) {
+            unpaidSearchInput.addEventListener('input', () => {
+                this.saveState();
+                this.displayUnpaidInvoices();
+            });
         }
 
-		const unpaidSortClientBtn = document.getElementById('unpaidSortClientBtn');
-		if (unpaidSortClientBtn) {
-			unpaidSortClientBtn.addEventListener('click', () => this.toggleUnpaidClientSort());
-		}
+        // Tri factures impayées
+        const unpaidSortSelect = document.getElementById('unpaidSortSelect');
+        if (unpaidSortSelect) {
+            unpaidSortSelect.addEventListener('change', (e) => {
+                this.unpaidSortOption = e.target.value;
+                this.saveState();
+                this.displayUnpaidInvoices();
+            });
+        }
 
         // Filtre "en retard" factures impayées
         const unpaidOverdueBtn = document.getElementById('unpaidOverdueBtn');
@@ -310,14 +306,11 @@ class ComptaMain {
         }
 
         // === Toutes les factures ===
-        const allInvoicesSearchBtn = document.getElementById('allInvoicesSearchBtn');
-        if (allInvoicesSearchBtn) {
-            allInvoicesSearchBtn.addEventListener('click', () => this.searchAllInvoices());
-        }
         const allInvoicesSearchInput = document.getElementById('allInvoicesSearchInput');
         if (allInvoicesSearchInput) {
-            allInvoicesSearchInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') this.searchAllInvoices();
+            allInvoicesSearchInput.addEventListener('input', () => {
+                this.saveState();
+                this.searchAllInvoices();
             });
         }
         const allInvoicesSortSelect = document.getElementById('allInvoicesSortSelect');
@@ -328,12 +321,28 @@ class ComptaMain {
                 this.displayAllInvoices();
             });
         }
+        const allInvoicesViewModeSelect = document.getElementById('allInvoicesViewModeSelect');
+        if (allInvoicesViewModeSelect) {
+            allInvoicesViewModeSelect.addEventListener('change', (e) => {
+                this.allInvoicesViewMode = e.target.value;
+                this.saveState();
+                this.displayAllInvoices();
+            });
+        }
         const exportAllInvoicesBtn = document.getElementById('exportAllInvoicesCSVBtn');
         if (exportAllInvoicesBtn) {
             exportAllInvoicesBtn.addEventListener('click', () => this.exportAllInvoicesToCSV());
         }
 
         // === Factures partielles ===
+        // Recherche partielles (live)
+        const partialSearchInput = document.getElementById('partialSearchInput');
+        if (partialSearchInput) {
+            partialSearchInput.addEventListener('input', () => {
+                this.saveState();
+                this.displayPartialInvoices();
+            });
+        }
         const partialSortSelect = document.getElementById('partialSortSelect');
         if (partialSortSelect) {
             partialSortSelect.addEventListener('change', (e) => {
@@ -587,8 +596,21 @@ class ComptaMain {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        let filtered = this.partialInvoices || [];
+
+        // Filtre de recherche
+        const searchTerm = (document.getElementById('partialSearchInput')?.value || '').toLowerCase().trim();
+        if (searchTerm) {
+            filtered = filtered.filter(inv => {
+                const name = (inv.client_full_name || '').toLowerCase();
+                const orderId = (inv.order_id || '').toLowerCase();
+                const userId = (inv.user_id || '').toLowerCase();
+                return name.includes(searchTerm) || orderId.includes(searchTerm) || userId.includes(searchTerm);
+            });
+        }
+
         // Filtrer par % payé
-        let filtered = this.partialInvoices.filter(inv => {
+        filtered = filtered.filter(inv => {
             const pct = inv.total_ttc > 0 ? (inv.amount_paid / inv.total_ttc) * 100 : 0;
             return pct < this.partialPctFilter;
         });
@@ -609,7 +631,14 @@ class ComptaMain {
             const pctB = b.total_ttc > 0 ? (b.amount_paid / b.total_ttc) * 100 : 0;
             switch (this.partialSortOption) {
                 case 'date_asc': return new Date(a.invoice_date) - new Date(b.invoice_date);
-                case 'client_asc': return (a.client_full_name || '').localeCompare(b.client_full_name || '');
+                case 'total_desc': return (b.total_ttc || 0) - (a.total_ttc || 0);
+                case 'total_asc': return (a.total_ttc || 0) - (b.total_ttc || 0);
+                case 'paid_desc': return (b.amount_paid || 0) - (a.amount_paid || 0);
+                case 'paid_asc': return (a.amount_paid || 0) - (b.amount_paid || 0);
+                case 'due_desc': return (b.amount_due || 0) - (a.amount_due || 0);
+                case 'due_asc': return (a.amount_due || 0) - (b.amount_due || 0);
+                case 'name_asc': return (a.client_full_name || '').localeCompare(b.client_full_name || '');
+                case 'name_desc': return (b.client_full_name || '').localeCompare(a.client_full_name || '');
                 case 'pct_asc': return pctA - pctB;
                 case 'pct_desc': return pctB - pctA;
                 default: return new Date(b.invoice_date) - new Date(a.invoice_date);
@@ -876,45 +905,6 @@ class ComptaMain {
         showNotification(`CSV export successful: ${fileName}`, 'success');
     }
 
-    toggleUnpaidSort() {
-        this.unpaidSortOrder = this.unpaidSortOrder === 'desc' ? 'asc' : 'desc';
-
-        const sortBtn = document.getElementById('unpaidSortBtn');
-        const sortText = document.getElementById('unpaidSortText');
-        const icon = sortBtn.querySelector('i');
-
-        if (this.unpaidSortOrder === 'desc') {
-            icon.className = 'fas fa-sort-amount-down';
-            sortText.textContent = 'Plus récente à plus ancienne';
-        } else {
-            icon.className = 'fas fa-sort-amount-up';
-            sortText.textContent = 'Plus ancienne à plus récente';
-        }
-
-        this.saveState();
-        this.displayUnpaidInvoices();
-    }
-
-	toggleUnpaidClientSort() {
-		this.unpaidSortType = this.unpaidSortType === 'date' ? 'client' : 'date';
-
-		const sortBtn = document.getElementById('unpaidSortClientBtn');
-		const sortText = document.getElementById('unpaidSortClientText');
-		const icon = sortBtn.querySelector('i');
-
-		if (this.unpaidSortType === 'client') {
-			icon.className = 'fas fa-sort-alpha-down';
-			sortText.textContent = 'Trié par client (A-Z)';
-			this.unpaidSortOrder = 'asc'; // Reset à alphabétique croissant
-		} else {
-			icon.className = 'fas fa-calendar-alt';
-			sortText.textContent = 'Trié par date';
-		}
-
-		this.saveState();
-		this.displayUnpaidInvoices();
-	}
-
     displayUnpaidInvoices() {
 		const tbody = document.getElementById('unpaidInvoicesTableBody');
 
@@ -922,27 +912,41 @@ class ComptaMain {
 		today.setHours(0, 0, 0, 0);
 
 		let invoices = this.unpaidInvoices || [];
+
+		// Filtre de recherche
+		const searchTerm = (document.getElementById('unpaidSearchInput')?.value || '').toLowerCase().trim();
+		if (searchTerm) {
+			invoices = invoices.filter(inv => {
+				const name = (inv.client_full_name || '').toLowerCase();
+				const orderId = (inv.order_id || '').toLowerCase();
+				const userId = (inv.user_id || '').toLowerCase();
+				return name.includes(searchTerm) || orderId.includes(searchTerm) || userId.includes(searchTerm);
+			});
+		}
+
+		// Filtre "en retard"
 		if (this.unpaidOverdueFilter) {
 			invoices = invoices.filter(inv => inv.due_date && new Date(inv.due_date) < today);
 		}
 
 		if (!invoices || invoices.length === 0) {
 			tbody.innerHTML = '<tr><td colspan="12" class="no-data">Aucune facture impayée trouvée</td></tr>';
+			this.renderInvoicesBadges([], 'unpaidBadgesContainer');
 			return;
 		}
 
-		// REMPLACER TOUTE LA LOGIQUE DE TRI PAR CECI :
 		const sortedInvoices = [...invoices].sort((a, b) => {
-			if (this.unpaidSortType === 'client') {
-				// Tri alphabétique par nom de client
-				const nameA = (a.client_full_name || '').toLowerCase();
-				const nameB = (b.client_full_name || '').toLowerCase();
-				return nameA.localeCompare(nameB);
-			} else {
-				// Tri par date
-				const dateA = new Date(a.invoice_date);
-				const dateB = new Date(b.invoice_date);
-				return this.unpaidSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+			switch (this.unpaidSortOption) {
+				case 'date_asc': return new Date(a.invoice_date) - new Date(b.invoice_date);
+				case 'total_desc': return (b.total_ttc || 0) - (a.total_ttc || 0);
+				case 'total_asc': return (a.total_ttc || 0) - (b.total_ttc || 0);
+				case 'paid_desc': return (b.amount_paid || 0) - (a.amount_paid || 0);
+				case 'paid_asc': return (a.amount_paid || 0) - (b.amount_paid || 0);
+				case 'due_desc': return (b.amount_due || 0) - (a.amount_due || 0);
+				case 'due_asc': return (a.amount_due || 0) - (b.amount_due || 0);
+				case 'name_asc': return (a.client_full_name || '').localeCompare(b.client_full_name || '');
+				case 'name_desc': return (b.client_full_name || '').localeCompare(a.client_full_name || '');
+				default: return new Date(b.invoice_date) - new Date(a.invoice_date);
 			}
 		});
 
@@ -1681,7 +1685,7 @@ class ComptaMain {
         const sortedInvoices = [...this.unpaidInvoices].sort((a, b) => {
             const dateA = new Date(a.invoice_date);
             const dateB = new Date(b.invoice_date);
-            return this.unpaidSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            return this.unpaidSortOption === 'date_asc' ? dateA - dateB : dateB - dateA;
         });
 
         // Calculer les totaux
@@ -1959,6 +1963,10 @@ class ComptaMain {
                 return sorted.sort((a, b) => (a.client_full_name || '').localeCompare(b.client_full_name || ''));
             case 'name_desc':
                 return sorted.sort((a, b) => (b.client_full_name || '').localeCompare(a.client_full_name || ''));
+            case 'source_asc':
+                return sorted.sort((a, b) => (a.referral_source || 'ZZZ').localeCompare(b.referral_source || 'ZZZ'));
+            case 'source_desc':
+                return sorted.sort((a, b) => (b.referral_source || '').localeCompare(a.referral_source || ''));
             default:
                 return sorted;
         }
@@ -1970,11 +1978,52 @@ class ComptaMain {
         if (!this.allInvoicesFiltered || this.allInvoicesFiltered.length === 0) {
             tbody.innerHTML = '<tr><td colspan="12" class="no-data">Aucune facture trouvée</td></tr>';
             this.updateAllInvoicesSummaryBar([]);
+            this.renderInvoicesBadges([], 'allInvoicesBadgesContainer');
             return;
         }
 
         const sorted = this.sortAllInvoices(this.allInvoicesFiltered);
-        tbody.innerHTML = sorted.map(invoice => this.createAllInvoiceRow(invoice)).join('');
+
+        if (this.allInvoicesViewMode === 'by_source') {
+            // Grouper par source
+            const groups = {};
+            sorted.forEach(inv => {
+                const src = inv.referral_source || 'Non défini';
+                if (!groups[src]) groups[src] = [];
+                groups[src].push(inv);
+            });
+            const sources = Object.keys(groups).sort((a, b) => {
+                if (a === 'Non défini') return 1;
+                if (b === 'Non défini') return -1;
+                return a.localeCompare(b);
+            });
+            let html = '';
+            sources.forEach(source => {
+                const groupInvoices = groups[source];
+                const groupTtc = groupInvoices.reduce((s, inv) => s + (parseFloat(inv.total_ttc) || 0), 0);
+                const groupPaid = groupInvoices.reduce((s, inv) => s + (parseFloat(inv.amount_paid) || 0), 0);
+                const groupDue = groupInvoices.reduce((s, inv) => s + (parseFloat(inv.amount_due) || 0), 0);
+                html += `<tr class="source-group-row">
+                    <td colspan="12">
+                        <div class="client-badge-group-header" style="margin:0;border-radius:4px;">
+                            <div class="group-header-title"><i class="fas fa-tag"></i> ${source} — ${groupInvoices.length} facture(s)</div>
+                            <div class="group-header-stats">
+                                <span>Total: ${formatCurrency(groupTtc)}</span>
+                                <span class="success">Payé: ${formatCurrency(groupPaid)}</span>
+                                <span class="danger">Dû: ${formatCurrency(groupDue)}</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+                groupInvoices.forEach(invoice => {
+                    html += this.createAllInvoiceRow(invoice);
+                });
+            });
+            tbody.innerHTML = html;
+        } else {
+            tbody.innerHTML = sorted.map(invoice => this.createAllInvoiceRow(invoice)).join('');
+        }
+
         this.updateAllInvoicesSummaryBar(this.allInvoicesFiltered);
 
         // Badges mobiles (AVANT listeners pour que les boutons existent dans le DOM)
@@ -2258,7 +2307,7 @@ class ComptaMain {
     }
 
     searchAllInvoices() {
-        const searchTerm = document.getElementById('allInvoicesSearchInput').value.toLowerCase().trim();
+        const searchTerm = (document.getElementById('allInvoicesSearchInput')?.value || '').toLowerCase().trim();
 
         if (!searchTerm) {
             this.allInvoicesFiltered = [...this.allInvoicesData];

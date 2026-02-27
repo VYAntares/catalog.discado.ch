@@ -7,13 +7,14 @@ const db = require('./db');
 function getAllInvoices(year = null) {
     try {
         let query = `
-            SELECT 
+            SELECT
                 i.*,
                 up.first_name,
                 up.last_name,
                 up.shop_name,
                 up.email,
                 up.phone,
+                up.referral_source,
                 o.date as order_date
             FROM invoices i
             LEFT JOIN user_profiles up ON i.user_id = up.username

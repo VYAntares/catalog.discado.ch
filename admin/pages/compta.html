@@ -138,16 +138,8 @@
         <!-- Tab: Par client -->
         <div id="clients-tab" class="compta-tab-content">
             <div class="search-container">
-                <input type="text" id="clientSearchInput" class="search-input" 
+                <input type="text" id="clientSearchInput" class="search-input"
                     placeholder="Rechercher un client par nom ou ID...">
-                <button id="clientSearchBtn" class="search-btn">
-                    <i class="fas fa-search"></i> Rechercher
-                </button>
-                
-                <select id="viewModeSelect" class="search-input" style="max-width: 200px;">
-                    <option value="all">Tous les clients</option>
-                    <option value="by_source">Groupé par source</option>
-                </select>
 
                 <select id="sortSelect" class="search-input" style="max-width: 220px;">
                     <option value="total_desc">Montant total ↓</option>
@@ -161,7 +153,12 @@
                     <option value="name_asc">Nom (A-Z)</option>
                     <option value="name_desc">Nom (Z-A)</option>
                 </select>
-                
+
+                <select id="viewModeSelect" class="search-input" style="max-width: 200px;">
+                    <option value="all">Tous les clients</option>
+                    <option value="by_source">Groupé par source</option>
+                </select>
+
                 <button id="exportClientsCSVBtn" class="export-btn">
                     <i class="fas fa-file-csv"></i>
                     Exporter en CSV
@@ -199,9 +196,6 @@
             <div class="search-container">
                 <input type="text" id="allInvoicesSearchInput" class="search-input"
                     placeholder="Rechercher par client, numéro de facture...">
-                <button id="allInvoicesSearchBtn" class="search-btn">
-                    <i class="fas fa-search"></i> Rechercher
-                </button>
 
                 <select id="allInvoicesSortSelect" class="search-input" style="max-width: 220px;">
                     <option value="date_desc">Date ↓ (récente)</option>
@@ -214,6 +208,13 @@
                     <option value="due_asc">Montant dû ↑</option>
                     <option value="name_asc">Client (A-Z)</option>
                     <option value="name_desc">Client (Z-A)</option>
+                    <option value="source_asc">Source (A-Z)</option>
+                    <option value="source_desc">Source (Z-A)</option>
+                </select>
+
+                <select id="allInvoicesViewModeSelect" class="search-input" style="max-width: 200px;">
+                    <option value="all">Toutes les factures</option>
+                    <option value="by_source">Groupé par source</option>
                 </select>
 
                 <button id="exportAllInvoicesCSVBtn" class="export-btn">
@@ -257,27 +258,31 @@
         <!-- Tab: Factures impayées -->
         <div id="unpaid-tab" class="compta-tab-content">
             <div class="search-container">
-                <div class="sort-controls">
-                    <button id="unpaidSortBtn" class="sort-btn" data-order="desc">
-                        <i class="fas fa-sort-amount-down"></i>
-                        <span id="unpaidSortText">Plus récente à plus ancienne</span>
-                    </button>
+                <input type="text" id="unpaidSearchInput" class="search-input"
+                    placeholder="Rechercher par client, numéro de facture...">
 
-					<button id="unpaidSortClientBtn" class="sort-btn">
-						<i class="fas fa-calendar-alt"></i>
-						<span id="unpaidSortClientText">Trié par date</span>
-					</button>
-                    
-                    <button id="unpaidOverdueBtn" class="sort-btn overdue-filter-btn" title="Afficher uniquement les factures dont la date d'échéance est dépassée">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>En retard</span>
-                    </button>
+                <select id="unpaidSortSelect" class="search-input" style="max-width: 220px;">
+                    <option value="date_desc">Date ↓ (récente)</option>
+                    <option value="date_asc">Date ↑ (ancienne)</option>
+                    <option value="total_desc">Montant TTC ↓</option>
+                    <option value="total_asc">Montant TTC ↑</option>
+                    <option value="paid_desc">Montant payé ↓</option>
+                    <option value="paid_asc">Montant payé ↑</option>
+                    <option value="due_desc">Montant dû ↓</option>
+                    <option value="due_asc">Montant dû ↑</option>
+                    <option value="name_asc">Client (A-Z)</option>
+                    <option value="name_desc">Client (Z-A)</option>
+                </select>
 
-                    <button id="exportUnpaidCSVBtn" class="export-btn">
-                        <i class="fas fa-file-csv"></i>
-                        Exporter en CSV
-                    </button>
-                </div>
+                <button id="unpaidOverdueBtn" class="sort-btn overdue-filter-btn" title="Afficher uniquement les factures dont la date d'échéance est dépassée">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>En retard</span>
+                </button>
+
+                <button id="exportUnpaidCSVBtn" class="export-btn">
+                    <i class="fas fa-file-csv"></i>
+                    Exporter en CSV
+                </button>
             </div>
 
             <!-- Badges mobiles factures impayées -->
@@ -315,33 +320,41 @@
         <!-- Tab: Factures partielles -->
         <div id="partial-tab" class="compta-tab-content">
             <div class="search-container">
-                <div class="sort-controls">
-                    <select id="partialSortSelect" class="search-input" style="max-width: 220px;">
-                        <option value="date_desc">Date ↓ (récente)</option>
-                        <option value="date_asc">Date ↑ (ancienne)</option>
-                        <option value="client_asc">Client (A-Z)</option>
-                        <option value="pct_asc">% payé ↑ (moins payé)</option>
-                        <option value="pct_desc">% payé ↓ (plus payé)</option>
-                    </select>
+                <input type="text" id="partialSearchInput" class="search-input"
+                    placeholder="Rechercher par client, numéro de facture...">
 
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <label style="font-size:13px;font-weight:600;white-space:nowrap;">Afficher &lt;</label>
-                        <input type="number" id="partialPctInput" class="search-input"
-                            min="1" max="100" step="1" placeholder="100"
-                            style="max-width:80px;" title="Afficher uniquement les factures payées à moins de X%">
-                        <label style="font-size:13px;font-weight:600;white-space:nowrap;">% payé</label>
-                    </div>
+                <select id="partialSortSelect" class="search-input" style="max-width: 220px;">
+                    <option value="date_desc">Date ↓ (récente)</option>
+                    <option value="date_asc">Date ↑ (ancienne)</option>
+                    <option value="total_desc">Montant TTC ↓</option>
+                    <option value="total_asc">Montant TTC ↑</option>
+                    <option value="paid_desc">Montant payé ↓</option>
+                    <option value="paid_asc">Montant payé ↑</option>
+                    <option value="due_desc">Montant dû ↓</option>
+                    <option value="due_asc">Montant dû ↑</option>
+                    <option value="name_asc">Client (A-Z)</option>
+                    <option value="name_desc">Client (Z-A)</option>
+                    <option value="pct_asc">% payé ↑ (moins payé)</option>
+                    <option value="pct_desc">% payé ↓ (plus payé)</option>
+                </select>
 
-                    <button id="partialOverdueBtn" class="sort-btn overdue-filter-btn" title="Afficher uniquement les factures dont la date d'échéance est dépassée">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>En retard</span>
-                    </button>
+                <button id="partialOverdueBtn" class="sort-btn overdue-filter-btn" title="Afficher uniquement les factures dont la date d'échéance est dépassée">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>En retard</span>
+                </button>
 
-                    <button id="exportPartialCSVBtn" class="export-btn">
-                        <i class="fas fa-file-csv"></i>
-                        Exporter en CSV
-                    </button>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-size:13px;font-weight:600;white-space:nowrap;">Afficher &lt;</label>
+                    <input type="number" id="partialPctInput" class="search-input"
+                        min="1" max="100" step="1" placeholder="100"
+                        style="max-width:80px;" title="Afficher uniquement les factures payées à moins de X%">
+                    <label style="font-size:13px;font-weight:600;white-space:nowrap;">% payé</label>
                 </div>
+
+                <button id="exportPartialCSVBtn" class="export-btn">
+                    <i class="fas fa-file-csv"></i>
+                    Exporter en CSV
+                </button>
             </div>
 
             <!-- Badges mobiles factures partielles -->
@@ -482,6 +495,6 @@
     </script>
 
     <!-- Scripts JS -->
-    <script type="module" src="/admin/js/modules/compta/comptaMain.js?v=5"></script>
+    <script type="module" src="/admin/js/modules/compta/comptaMain.js?v=6"></script>
 </body>
 </html>
