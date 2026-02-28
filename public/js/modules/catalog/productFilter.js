@@ -120,53 +120,73 @@ export function initHorizontalCategories(filterCallback) {
     }
 }
 
-// Create and configure category buttons for horizontal bar
+// Create and configure category buttons for horizontal bar + sidebar
 function setupCategoryButtons(categories, container, filterCallback) {
     container.innerHTML = '';
-    
+
+    // Also populate sidebar if present
+    const sidebarContainer = document.getElementById('sidebarCategories');
+    if (sidebarContainer) sidebarContainer.innerHTML = '';
+
     categories.forEach(category => {
-        const button = document.createElement('button');
-        button.className = 'category-button';
-        button.setAttribute('data-category', category.id);
-        button.textContent = category.name;
-        
-        // Default 'All Products' as active
-        if (category.id === 'all') {
-            button.classList.add('active');
+        const button = createCategoryButton(category, filterCallback);
+        container.appendChild(button);
+
+        // Clone for sidebar
+        if (sidebarContainer) {
+            const sidebarButton = createCategoryButton(category, filterCallback);
+            sidebarContainer.appendChild(sidebarButton);
         }
-        
-        button.addEventListener('click', function() {
-            const categoryId = category.id;
-            
-            // Update button states
-            document.querySelectorAll('.category-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            // Update hidden select
-            const categoryFilter = document.getElementById('categoryFilter');
-            if (categoryFilter) {
-                categoryFilter.value = categoryId;
-            }
-            
-            // Update menu items
-            const categoryItems = document.querySelectorAll('.category-item');
-            categoryItems.forEach(item => {
-                item.classList.toggle('active', item.getAttribute('data-category') === categoryId);
-            });
-            
-            // Apply filtering
-            if (typeof filterCallback === 'function') {
-                filterCallback(categoryId);
-            } else if (categoryFilter) {
-                const event = new Event('change');
-                categoryFilter.dispatchEvent(event);
+    });
+}
+
+// Create a single category button with click handler
+function createCategoryButton(category, filterCallback) {
+    const button = document.createElement('button');
+    button.className = 'category-button';
+    button.setAttribute('data-category', category.id);
+    button.textContent = category.name;
+
+    if (category.id === 'all') {
+        button.classList.add('active');
+    }
+
+    button.addEventListener('click', function() {
+        const categoryId = category.id;
+
+        // Update ALL category buttons (both bar + sidebar)
+        document.querySelectorAll('.category-button').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-category') === categoryId) {
+                btn.classList.add('active');
             }
         });
-        
-        container.appendChild(button);
+
+        // Update hidden select
+        const categoryFilter = document.getElementById('categoryFilter');
+        if (categoryFilter) {
+            categoryFilter.value = categoryId;
+        }
+
+        // Update menu items
+        const categoryItems = document.querySelectorAll('.category-item');
+        categoryItems.forEach(item => {
+            item.classList.toggle('active', item.getAttribute('data-category') === categoryId);
+        });
+
+        // Apply filtering
+        if (typeof filterCallback === 'function') {
+            filterCallback(categoryId);
+        } else if (categoryFilter) {
+            const event = new Event('change');
+            categoryFilter.dispatchEvent(event);
+        }
+
+        // Scroll to top of product list
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    return button;
 }
 
 // Update category button visual state

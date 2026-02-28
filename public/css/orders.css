@@ -150,7 +150,7 @@ main {
 .total-pill-ttc .total-pill-value {
     font-size: 1rem;
     font-weight: 700;
-    color: #2575fc;
+    color: #10b981;
 }
 
 .total-pill-sep {
@@ -225,10 +225,10 @@ main {
 }
 
 .btn-detail:hover {
-    background: #2575fc;
-    border-color: #2575fc;
+    background: #e9394f;
+    border-color: #e9394f;
     color: white;
-    box-shadow: 0 2px 10px rgba(37, 117, 252, 0.28);
+    box-shadow: 0 2px 10px rgba(233, 57, 79, 0.28);
 }
 
 .btn-detail-chevron {
@@ -242,10 +242,10 @@ main {
 }
 
 .order-card-header.detail-open .btn-detail {
-    background: #2575fc;
-    border-color: #2575fc;
+    background: #e9394f;
+    border-color: #e9394f;
     color: white;
-    box-shadow: 0 2px 10px rgba(37, 117, 252, 0.28);
+    box-shadow: 0 2px 10px rgba(233, 57, 79, 0.28);
 }
 
 /* =========================================
@@ -410,8 +410,8 @@ main {
     flex-shrink: 0;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #2575fc;
-    background: rgba(37, 117, 252, 0.08);
+    color: #1e293b;
+    background: #f1f5f9;
     padding: 4px 10px;
     border-radius: 20px;
     white-space: nowrap;
@@ -447,7 +447,7 @@ main {
     display: inline-flex;
     align-items: center;
     gap: 9px;
-    background: #2575fc;
+    background: #e9394f;
     color: white;
     border: none;
     padding: 10px 22px;
@@ -456,15 +456,15 @@ main {
     font-size: 0.85rem;
     font-weight: 600;
     transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-    box-shadow: 0 2px 10px rgba(37, 117, 252, 0.28);
+    box-shadow: 0 2px 10px rgba(233, 57, 79, 0.28);
     letter-spacing: 0.01em;
     text-decoration: none;
 }
 
 .download-invoice-btn:hover {
-    background: #1a5fd4;
+    background: #d42a3f;
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(37, 117, 252, 0.38);
+    box-shadow: 0 4px 16px rgba(233, 57, 79, 0.38);
 }
 
 .download-invoice-btn:active {
@@ -939,7 +939,7 @@ main {
 }
 
 .category-item:hover { background-color: #e0e0e0; }
-.category-item.active { background-color: #2575fc; color: white; }
+.category-item.active { background-color: #e9394f; color: white; }
 
 .order-summary-total {
     display: flex;

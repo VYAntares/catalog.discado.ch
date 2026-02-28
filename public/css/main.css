@@ -9,7 +9,7 @@
 }
 
 body {
-    background-color: #f5f5f5;
+    background-color: #f8f6f5;
     font-size: 14px;
     max-width: 100%;
     overflow-x: hidden;
@@ -97,7 +97,9 @@ main {
 :root {
     --header-height: 65px;
     --header-compact-height: 50px;
-    --primary-color: #f44336;
+    --primary-color: #e9394f;
+    --primary-light: #fde8eb;
+    --primary-dark: #d42a3f;
     --text-color: #333;
   }
   
@@ -108,13 +110,14 @@ main {
       left: 0;
       right: 0;
       background-color: #fff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       z-index: 1000;
       padding: env(safe-area-inset-top) 0 0;
       height: calc(var(--header-height) + env(safe-area-inset-top));
       display: flex;
       align-items: flex-end;
       transition: transform 0.3s ease, height 0.3s ease;
+      border-bottom: 2.5px solid var(--primary-color);
   }
   
   /* Ajustement du padding-top uniquement sur les pages avec header */
@@ -418,24 +421,24 @@ main {
       color: #b91c1c;
   }
 
-  /* Admin Panel link : accent bleu */
+  /* Admin Panel link : accent rouge Discado */
   .user-menu a.admin-panel-link {
-      color: #2575fc;
-      border-bottom: 2px solid #e8efff;
-      background-color: #f0f4ff;
+      color: var(--primary-color);
+      border-bottom: 2px solid var(--primary-light);
+      background-color: var(--primary-light);
   }
 
   .user-menu a.admin-panel-link i {
-      color: #2575fc;
+      color: var(--primary-color);
   }
 
   .user-menu a.admin-panel-link:hover {
-      background-color: #e0eaff;
-      color: #1a5cb8;
+      background-color: #fad1d6;
+      color: var(--primary-dark);
   }
 
   .user-menu a.admin-panel-link:hover i {
-      color: #1a5cb8;
+      color: var(--primary-dark);
   }
 
   .user-menu a:last-child {
@@ -622,7 +625,7 @@ main {
 }
 
 .footer-section a:hover {
-    color: #2575fc;
+    color: var(--primary-color);
 }
 
 .footer-bottom {
@@ -651,14 +654,14 @@ main {
 }
 
 .primary-btn {
-    background-color: #2575fc;
+    background: linear-gradient(135deg, #e9394f, #d42a3f);
     color: white;
 }
 
 .primary-btn:hover {
-    background-color: #1a5cb8;
+    background: linear-gradient(135deg, #d42a3f, #c0213a);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(233, 57, 79, 0.25);
 }
 
 .secondary-btn {
@@ -685,8 +688,8 @@ main {
 
 .input-field:focus {
     outline: none;
-    border-color: #2575fc;
-    box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(233, 57, 79, 0.1);
 }
 
 /* =========================================
@@ -878,7 +881,7 @@ main {
     width: 50px;
     height: 50px;
     border: 3px solid #f3f3f3;
-    border-top: 3px solid #2575fc;
+    border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 15px;
@@ -1005,12 +1008,14 @@ main {
 }
 
 .category-item:hover {
-    background-color: #e0e0e0;
+    background-color: #fde8eb;
+    color: var(--primary-color);
 }
 
 .category-item.active {
-    background-color: #2575fc;
+    background: linear-gradient(135deg, #e9394f, #d42a3f);
     color: white;
+    box-shadow: 0 2px 8px rgba(233, 57, 79, 0.25);
 }
 
   /* CSS pour une barre de recherche plus élégante */
@@ -1053,8 +1058,8 @@ main {
   #searchInput:focus,
   input[type="search"]:focus,
   input[type="text"].search-input:focus {
-    border-color: #2575fc;
-    box-shadow: 0 3px 10px rgba(37, 117, 252, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 3px 10px rgba(233, 57, 79, 0.1);
   }
   
   /* Bouton de recherche */
@@ -1081,7 +1086,7 @@ main {
   /* Style au survol du bouton */
   #searchButton:hover,
   .search-button:hover {
-    color: #2575fc;
+    color: var(--primary-color);
   }
   
   /* Placeholder style */

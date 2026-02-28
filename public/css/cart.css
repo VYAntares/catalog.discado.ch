@@ -457,7 +457,7 @@
 }
 
 .category-item.active {
-    background-color: #2575fc;
+    background: linear-gradient(135deg, #e9394f, #d42a3f);
     color: white;
 }
 
@@ -580,7 +580,7 @@
 .confirm-modal .confirm-btn {
     flex: 2;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #2575fc 0%, #1a5cb8 100%);
+    background: linear-gradient(135deg, #e9394f 0%, #d42a3f 100%);
     color: #fff;
     border: none;
     border-radius: 10px;
