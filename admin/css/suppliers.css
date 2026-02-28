@@ -1228,14 +1228,58 @@
     border-radius: 12px;
     margin-bottom: 24px;
     color: white;
+    gap: 16px;
   }
-  
+
+  .batch-toolbar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .batch-toolbar-left h3 {
     margin: 0;
     font-size: 20px;
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  /* Barre de recherche dans le toolbar */
+  .batch-search-wrapper {
+    position: relative;
+    width: 280px;
+  }
+
+  .batch-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .batch-search-input {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 8px;
+    color: white;
+    font-size: 13.5px;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .batch-search-input::placeholder {
+    color: rgba(255,255,255,0.6);
+  }
+
+  .batch-search-input:focus {
+    background: rgba(255,255,255,0.28);
+    border-color: rgba(255,255,255,0.7);
   }
   
   .batch-count-badge {
@@ -1384,11 +1428,63 @@
   
   .batch-item-info {
     display: grid;
-    grid-template-columns: 250px 200px 150px;
+    grid-template-columns: 1fr auto auto;
     gap: 20px;
     align-items: center;
   }
-  
+
+  /* Vue consolidée : colonnes fixes pour alignement visuel entre cartes */
+  .batch-item-info.consolidated-layout {
+    grid-template-columns: 1fr 34px 140px 105px 195px;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .consolidated-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .consolidated-name h5 {
+    margin: 0;
+    font-size: 15px;
+    color: #2d3748;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .consolidated-layout .quantity-badge {
+    display: inline-block;
+  }
+
+  .price-tag.consolidated-price {
+    text-align: left;
+  }
+
+  .consolidated-layout .batch-item-total {
+    text-align: right;
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  /* Select statut : ligne 2, colonne 1 uniquement */
+  .batch-status-cell {
+    grid-column: 1;
+    grid-row: 2;
+    padding-top: 2px;
+  }
+
+  /* Boutons d'actions : centrage vertical sur toute la hauteur de la carte */
+  .batch-item-actions {
+    align-self: center;
+  }
+
   .batch-item-info h5 {
     margin: 0;
     font-size: 15px;
@@ -1426,6 +1522,7 @@
     color: #2d3748;
     font-weight: 600;
     text-align: right;
+    white-space: nowrap;
   }
   
   .batch-item-total strong {

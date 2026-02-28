@@ -13,6 +13,7 @@ let currentBatches = [];
 let currentBatchFilter = 'all'; // 'all' ou numéro de batch
 let currentVisibleBatch = 0;
 let currentView = 'list'; // 'list' ou 'grid'
+let currentSearchQuery = '';
 
 /**
  * Initialise la vue batch dans la page orderDetails
@@ -86,12 +87,16 @@ function createBatchToolbar(batchStats) {
     <div class="batch-toolbar">
       <div class="batch-toolbar-left">
         <h3>
-          <i class="fas fa-boxes"></i> 
-          Gestion des Batch 
+          <i class="fas fa-boxes"></i>
+          Gestion des Batch
           <span class="batch-count-badge">${batchCount} batch${batchCount > 1 ? 'es' : ''}</span>
         </h3>
+        <div class="batch-search-wrapper">
+          <i class="fas fa-search batch-search-icon"></i>
+          <input type="text" id="batchItemSearch" class="batch-search-input" placeholder="Rechercher un article...">
+        </div>
       </div>
-      
+
       <div class="batch-toolbar-right">
         <div style="background: rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; color: white; font-weight: 600;">
           <span id="batchPositionIndicator">Tous les batch</span>
@@ -208,30 +213,24 @@ function createBatchItemCard(item, batchNumber) {
 
       <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image">
 
-      <div class="batch-item-info">
-        <!-- Header avec titre + icône stats -->
-        <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 8px;">
-          <h5 style="flex: 1; margin: 0;">${item.product_name}</h5>
-          <button class="product-stats-btn"
-                  data-product-name="${item.product_name}"
-                  title="Voir les statistiques"
-                  style="background: none; border: none; color: #4299e1; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; flex-shrink: 0; transition: all 0.2s ease;">
-            <i class="fas fa-question-circle"></i>
-          </button>
+      <div class="batch-item-info consolidated-layout">
+        <div class="consolidated-name">
+          <h5>${item.product_name}</h5>
         </div>
-
-        <p class="batch-item-details">
-          <span class="quantity-badge">${item.quantity} unités</span>
-          <span class="price-tag">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
-        </p>
-        <p class="batch-item-total">
-          Total: <strong>${Utils.formatSwissNumber(item.quantity * item.unit_price)} USD</strong>
-        </p>
-        <div style="margin-top: 6px;">
+        <button class="product-stats-btn"
+                data-product-name="${item.product_name}"
+                title="Voir les statistiques"
+                style="background:none;border:none;color:#4299e1;cursor:pointer;padding:4px;font-size:16px;line-height:1;justify-self:center;">
+          <i class="fas fa-question-circle"></i>
+        </button>
+        <span class="quantity-badge">${item.quantity} unités</span>
+        <span class="price-tag consolidated-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
+        <span class="batch-item-total">Total: <strong>${Utils.formatSwissNumber(item.quantity * item.unit_price)} USD</strong></span>
+        <div class="batch-status-cell">
           <select class="item-status-select" data-item-id="${item.id}"
-                  style="padding: 3px 8px; border-radius: 12px; border: 1px solid ${isLivre ? '#48bb78' : '#ed8936'};
-                         background: ${isLivre ? '#f0fff4' : '#fffaf0'}; color: ${isLivre ? '#276749' : '#9c4221'};
-                         font-size: 12px; font-weight: 600; cursor: pointer; outline: none;">
+                  style="padding:3px 8px;border-radius:12px;border:1px solid ${isLivre ? '#48bb78' : '#ed8936'};
+                         background:${isLivre ? '#f0fff4' : '#fffaf0'};color:${isLivre ? '#276749' : '#9c4221'};
+                         font-size:12px;font-weight:600;cursor:pointer;outline:none;">
             <option value="commandé" ${!isLivre ? 'selected' : ''}>Commandé</option>
             <option value="livré" ${isLivre ? 'selected' : ''}>Livré</option>
           </select>
@@ -258,6 +257,13 @@ function createBatchItemCard(item, batchNumber) {
  */
 function initBatchEventListeners(orderId) {
   
+  // Barre de recherche articles
+  const searchInput = document.getElementById('batchItemSearch');
+  if (searchInput) {
+    searchInput.value = currentSearchQuery;
+    searchInput.addEventListener('input', () => filterBatchItems(searchInput.value));
+  }
+
   // Bouton créer nouveau batch
   const createBatchBtn = document.getElementById('createNewBatchBtn');
   if (createBatchBtn) {
@@ -324,17 +330,24 @@ function applyCurrentView() {
 
 function navigateToBatch(batchNumber) {
 	currentVisibleBatch = batchNumber;
-	
-	// Mettre à jour l'indicateur
+
+	// Mettre à jour l'indicateur avec le total d'articles
 	const indicator = document.getElementById('batchPositionIndicator');
 	if (indicator) {
 	  if (batchNumber === 0) {
-		indicator.textContent = 'Tous les batch';
+		const allItems = State.getCurrentOrderItems();
+		const totalQty = allItems.reduce((s, i) => s + i.quantity, 0);
+		indicator.innerHTML = `Tous les batch &nbsp;·&nbsp; <strong>${allItems.length}</strong> réf. &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(totalQty, 0)}</strong> unités`;
 	  } else {
-		indicator.textContent = `Batch ${batchNumber}`;
+		const batchStat = currentBatches.find(b => b.batch_number === batchNumber);
+		if (batchStat) {
+		  indicator.innerHTML = `Batch ${batchNumber} &nbsp;·&nbsp; <strong>${batchStat.item_count}</strong> réf. &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(batchStat.total_quantity, 0)}</strong> unités`;
+		} else {
+		  indicator.textContent = `Batch ${batchNumber}`;
+		}
 	  }
 	}
-	
+
 	// Afficher le batch correspondant
 	if (batchNumber === 0) {
 	  showAllBatchesMerged();
@@ -343,6 +356,30 @@ function navigateToBatch(batchNumber) {
 	}
     reattachBatchItemListeners();
     applyCurrentView();
+    // Ré-appliquer la recherche après navigation
+    if (currentSearchQuery) filterBatchItems(currentSearchQuery);
+}
+
+/**
+ * Filtre les articles visibles selon la recherche
+ */
+function filterBatchItems(query) {
+  currentSearchQuery = query;
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.batch-item-card').forEach(card => {
+    const name = card.querySelector('h5')?.textContent?.toLowerCase() || '';
+    card.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+  // Masquer les séparateurs de batch si tous leurs items sont masqués
+  document.querySelectorAll('.batch-items-container > div[style*="background: #edf2f7"]').forEach(sep => {
+    const nextItems = [];
+    let el = sep.nextElementSibling;
+    while (el && el.classList.contains('batch-item-card')) {
+      nextItems.push(el);
+      el = el.nextElementSibling;
+    }
+    sep.style.display = nextItems.length && nextItems.some(i => i.style.display !== 'none') ? '' : 'none';
+  });
 }
 
 function reattachBatchItemListeners() {
@@ -479,36 +516,39 @@ function reattachBatchItemListeners() {
     const container = document.getElementById('batchContainersWrapper');
     const allItems = State.getCurrentOrderItems();
 
-    // Grouper les items par batch_number
-    const byBatch = {};
+    // Fusionner les lignes identiques par nom de produit
+    const merged = {};
     allItems.forEach(item => {
-      const b = item.batch_number || 1;
-      if (!byBatch[b]) byBatch[b] = [];
-      byBatch[b].push(item);
+      const key = item.product_name;
+      if (!merged[key]) {
+        merged[key] = {
+          ...item,
+          quantity: 0,
+          total_price: 0,
+          batch_count: 0
+        };
+      }
+      merged[key].quantity    += item.quantity;
+      merged[key].total_price += (item.total_price || item.quantity * item.unit_price);
+      merged[key].batch_count += 1;
     });
-    const sortedBatchNums = Object.keys(byBatch).map(Number).sort((a, b) => a - b);
 
-    const totalQty = allItems.reduce((s, i) => s + i.quantity, 0);
-    const totalAmount = allItems.reduce((s, i) => s + i.total_price, 0);
+    const mergedItems = Object.values(merged).sort((a, b) => a.product_name.localeCompare(b.product_name));
+    const totalQty    = mergedItems.reduce((s, i) => s + i.quantity, 0);
+    const totalAmount = mergedItems.reduce((s, i) => s + i.total_price, 0);
 
     const html = `
       <div class="batch-container">
         <div class="batch-header">
-          <h4><i class="fas fa-layer-group"></i> Tous les batch</h4>
+          <h4><i class="fas fa-layer-group"></i> Vue consolidée — toutes références</h4>
         </div>
         <div class="batch-items-container">
-          ${sortedBatchNums.map(bNum => `
-            <div style="padding: 8px 12px; background: #edf2f7; color: #4a5568; font-weight: 600; font-size: 13px; border-radius: 6px; margin: 8px 0 4px 0;">
-              <i class="fas fa-box"></i> Batch ${bNum}
-              <span style="font-weight: 400; color: #718096; margin-left: 8px;">${byBatch[bNum].length} article${byBatch[bNum].length > 1 ? 's' : ''}</span>
-            </div>
-            ${byBatch[bNum].map(item => createBatchItemCard(item, item.batch_number)).join('')}
-          `).join('')}
+          ${mergedItems.map(item => createConsolidatedItemCard(item)).join('')}
         </div>
         <div class="batch-footer">
           <div class="batch-stats">
-            <span><strong>${allItems.length}</strong> article${allItems.length > 1 ? 's' : ''}</span>
-            <span><strong>${totalQty}</strong> unités totales</span>
+            <span><strong>${mergedItems.length}</strong> référence${mergedItems.length > 1 ? 's' : ''}</span>
+            <span><strong>${Utils.formatSwissNumber(totalQty, 0)}</strong> unités totales</span>
             <span><strong>${Utils.formatAmount(totalAmount)}</strong> USD</span>
           </div>
         </div>
@@ -516,6 +556,38 @@ function reattachBatchItemListeners() {
     `;
 
     container.innerHTML = html;
+  }
+
+  /**
+   * Crée une carte consolidée (lecture seule, sans actions)
+   */
+  function createConsolidatedItemCard(item) {
+    const imageUrl = item.image_url || '/images/placeholder.png';
+    const batchBadge = item.batch_count > 1
+      ? `<span style="background:#e9d8fd;color:#553c9a;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-left:4px;">${item.batch_count} batchs</span>`
+      : '';
+
+    return `
+      <div class="batch-item-card" data-item-id="${item.id}" data-batch-number="0">
+        <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image"
+             onerror="this.src='/images/placeholder.png'">
+        <div class="batch-item-info consolidated-layout">
+          <div class="consolidated-name">
+            <h5>${item.product_name}</h5>
+            ${batchBadge}
+          </div>
+          <button class="product-stats-btn"
+                  data-product-name="${item.product_name}"
+                  title="Voir les statistiques"
+                  style="background:none;border:none;color:#4299e1;cursor:pointer;padding:4px;font-size:16px;line-height:1;justify-self:center;">
+            <i class="fas fa-question-circle"></i>
+          </button>
+          <span class="quantity-badge">${Utils.formatSwissNumber(item.quantity, 0)} unités</span>
+          <span class="price-tag consolidated-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
+          <span class="batch-item-total">Total: <strong>${Utils.formatSwissNumber(item.total_price)} USD</strong></span>
+        </div>
+      </div>
+    `;
   }
 /**
  * Gère la création d'un nouveau batch
