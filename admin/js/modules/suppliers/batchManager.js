@@ -493,6 +493,239 @@ function reattachBatchItemListeners() {
       }
     });
   });
+
+  // Bouton Déplacer (vue consolidée)
+  document.querySelectorAll('.consolidated-move-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDistributeModal(btn.dataset.productName);
+    });
+  });
+
+  // Bouton Modifier (vue consolidée)
+  document.querySelectorAll('.consolidated-edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openConsolidatedEdit(btn.dataset.productName);
+    });
+  });
+}
+
+/**
+ * Ouvre la modale de répartition des quantités par batch (vue consolidée)
+ */
+function openDistributeModal(productName) {
+  // Empêcher l'ouverture de plusieurs modales simultanées
+  if (document.getElementById('distributeModal')) return;
+
+  const allItems     = State.getCurrentOrderItems();
+  const orderId      = State.getCurrentOrderId();
+  const productItems = allItems.filter(i => i.product_name === productName);
+  const totalQty     = productItems.reduce((s, i) => s + i.quantity, 0);
+  const firstItem    = productItems[0];
+
+  // Map batch → {quantity, item_id}
+  const batchDistrib = {};
+  currentBatches.forEach(b => {
+    const found = productItems.find(i => i.batch_number === b.batch_number);
+    batchDistrib[b.batch_number] = {
+      quantity: found ? found.quantity : 0,
+      item_id:  found ? found.id       : null
+    };
+  });
+
+  const batchRows = currentBatches.map(b => `
+    <div class="distribute-row">
+      <span class="distribute-batch-label">Batch ${b.batch_number}</span>
+      <input type="number" class="distribute-qty-input"
+             data-batch="${b.batch_number}" min="0"
+             value="${batchDistrib[b.batch_number].quantity}">
+      <span class="distribute-batch-unit">unités</span>
+    </div>
+  `).join('');
+
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="distributeModal" style="display:flex;">
+      <div class="modal-content" style="max-width:420px;width:100%;">
+        <div class="modal-header">
+          <h2><i class="fas fa-layer-group"></i> Répartir les quantités</h2>
+          <button class="modal-close" id="closeDistributeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+
+          <p style="margin:0 0 20px 0;font-size:15px;font-weight:600;color:#2d3748;">${productName}</p>
+
+          <div style="background:#f7fafc;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+            <div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Quantité totale</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="number" id="distributeTotalQty" min="1" value="${totalQty}"
+                     style="width:100px;padding:6px 10px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e2e8f0;border-radius:8px;color:#2d3748;outline:none;-moz-appearance:textfield;appearance:textfield;">
+              <style>#distributeTotalQty::-webkit-outer-spin-button,#distributeTotalQty::-webkit-inner-spin-button,.distribute-qty-input::-webkit-outer-spin-button,.distribute-qty-input::-webkit-inner-spin-button{display:none;}</style>
+              <span style="color:#718096;font-size:14px;">unités au total</span>
+            </div>
+          </div>
+
+          <div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Répartition par batch</div>
+          <div id="distributeRows">${batchRows}</div>
+
+          <div id="distributePendingBox" style="margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid transparent;">
+            <span id="distributePendingText" style="font-size:13px;"></span>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-secondary" id="cancelDistribute">Annuler</button>
+          <button type="button" class="modal-btn modal-btn-primary" id="confirmDistribute">
+            <i class="fas fa-check"></i> Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const modal       = document.getElementById('distributeModal');
+  const totalInput  = document.getElementById('distributeTotalQty');
+  const pendingBox  = document.getElementById('distributePendingBox');
+  const pendingText = document.getElementById('distributePendingText');
+
+  // Handlers en premier — jamais bloqués par les calculs
+  document.getElementById('closeDistributeModal').onclick = () => modal.remove();
+  document.getElementById('cancelDistribute').onclick     = () => modal.remove();
+  document.getElementById('confirmDistribute').onclick    = () =>
+    handleConfirmDistribute(batchDistrib, orderId, firstItem);
+
+  function updatePending() {
+    const currentTotal = parseInt(totalInput.value) || 0;
+    const used = Array.from(modal.querySelectorAll('.distribute-qty-input'))
+                      .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
+    const pending = currentTotal - used;
+    if (pending > 0) {
+      pendingBox.style.cssText = 'margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid #ed8936;background:#fffaf0;';
+      pendingText.style.color = '#9c4221';
+      pendingText.innerHTML = `En attente : <strong>${Utils.formatSwissNumber(pending, 0)} unités</strong> à placer`;
+    } else if (pending < 0) {
+      pendingBox.style.cssText = 'margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid #fc8181;background:#fff5f5;';
+      pendingText.style.color = '#c53030';
+      pendingText.innerHTML = `Dépassement : <strong>${Utils.formatSwissNumber(Math.abs(pending), 0)} unités</strong> en trop`;
+    } else {
+      pendingBox.style.cssText = 'margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid #48bb78;background:#f0fff4;';
+      pendingText.style.color = '#276749';
+      pendingText.innerHTML = `<i class="fas fa-check-circle"></i> Toutes les unités réparties`;
+    }
+  }
+
+  [totalInput, ...modal.querySelectorAll('.distribute-qty-input')].forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', updatePending);
+  });
+  updatePending();
+}
+
+/**
+ * Valide et applique la répartition des quantités entre batchs
+ */
+async function handleConfirmDistribute(batchDistrib, orderId, firstItem) {
+  const modal      = document.getElementById('distributeModal');
+  const totalInput = modal ? modal.querySelector('#distributeTotalQty') : null;
+  const inputs     = modal ? modal.querySelectorAll('.distribute-qty-input') : [];
+
+  const newTotal      = parseInt(totalInput ? totalInput.value : 0) || 0;
+  const totalInputted = Array.from(inputs).reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
+
+  if (totalInputted !== newTotal) {
+    alert(`Total des batchs (${totalInputted}) ≠ quantité totale (${newTotal}). Ajustez la répartition.`);
+    return;
+  }
+
+  const promises = [];
+  inputs.forEach(inp => {
+    const batchNumber = parseInt(inp.dataset.batch);
+    const newQty      = parseInt(inp.value) || 0;
+    const existing    = batchDistrib[batchNumber];
+
+    if (newQty > 0 && existing.item_id) {
+      if (newQty !== existing.quantity) {
+        promises.push(API.updateSupplierOrderItem(existing.item_id, { quantity: newQty }));
+      }
+    } else if (newQty > 0 && !existing.item_id) {
+      promises.push(API.addSupplierOrderItem(orderId, {
+        product_name: firstItem.product_name,
+        quantity:     newQty,
+        unit_price:   firstItem.unit_price,
+        batch_number: batchNumber,
+        product_id:   firstItem.product_id || null,
+        image_url:    firstItem.image_url  || null,
+        category:     firstItem.category   || null
+      }));
+    } else if (newQty === 0 && existing.item_id) {
+      promises.push(API.deleteSupplierOrderItem(existing.item_id));
+    }
+  });
+
+  try {
+    await Promise.all(promises);
+    modal.remove();
+    const items = await API.fetchSupplierOrderItems(orderId);
+    State.setCurrentOrderItems(items);
+    await initBatchView(orderId, false);
+  } catch (err) {
+    console.error('Erreur répartition:', err);
+    alert('Erreur lors de la répartition des quantités.');
+  }
+}
+
+/**
+ * Édition inline depuis la vue consolidée (nom + prix, toutes occurrences)
+ */
+function openConsolidatedEdit(productName) {
+  const orderId      = State.getCurrentOrderId();
+  const allItems     = State.getCurrentOrderItems();
+  const productItems = allItems.filter(i => i.product_name === productName);
+  const firstItem    = productItems[0];
+
+  const editBtn  = Array.from(document.querySelectorAll('.consolidated-edit-btn'))
+                       .find(btn => btn.dataset.productName === productName);
+  const itemCard = editBtn ? editBtn.closest('.batch-item-card') : null;
+  if (!itemCard) return;
+
+  const itemInfo = itemCard.querySelector('.batch-item-info');
+  itemInfo.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;grid-column:1/-1;">
+      <label style="font-size:13px;flex-basis:100%;">Nom :
+        <input type="text" id="consolidatedEditName"
+               value="${firstItem.product_name}"
+               style="width:100%;padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;">
+      </label>
+      <label style="font-size:13px;">Prix unit. (USD) :
+        <input type="number" id="consolidatedEditPrice"
+               value="${firstItem.unit_price}" min="0" step="0.01"
+               style="width:100px;padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;">
+      </label>
+      <button class="btn btn-primary btn-sm" id="consolidatedSaveEdit">Enregistrer</button>
+      <button class="btn btn-sm" id="consolidatedCancelEdit"
+              style="background:#e2e8f0;color:#4a5568;">Annuler</button>
+    </div>
+  `;
+
+  document.getElementById('consolidatedSaveEdit').onclick = async () => {
+    const newName  = document.getElementById('consolidatedEditName').value.trim();
+    const newPrice = parseFloat(document.getElementById('consolidatedEditPrice').value);
+    if (!newName) { alert('Le nom ne peut pas être vide.'); return; }
+    try {
+      await Promise.all(productItems.map(i =>
+        API.updateSupplierOrderItem(i.id, { product_name: newName, unit_price: newPrice })
+      ));
+      const items = await API.fetchSupplierOrderItems(orderId);
+      State.setCurrentOrderItems(items);
+      await initBatchView(orderId, false);
+    } catch (err) {
+      console.error('Erreur modification consolidée:', err);
+    }
+  };
+
+  document.getElementById('consolidatedCancelEdit').onclick = async () => {
+    await initBatchView(orderId, false);
+  };
 }
 
   function showSingleBatchOnly(batchNumber) {
@@ -585,6 +818,21 @@ function reattachBatchItemListeners() {
           <span class="quantity-badge">${Utils.formatSwissNumber(item.quantity, 0)} unités</span>
           <span class="price-tag consolidated-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
           <span class="batch-item-total">Total: <strong>${Utils.formatSwissNumber(item.total_price)} USD</strong></span>
+        </div>
+        <div class="batch-item-actions">
+          <button class="batch-item-action-btn consolidated-move-btn"
+                  data-action="distribute"
+                  data-product-name="${item.product_name}"
+                  title="Répartir entre les batchs"
+                  style="background:#edf2f7;color:#4a5568;">
+            <i class="fas fa-arrows-alt"></i>
+          </button>
+          <button class="btn btn-sm consolidated-edit-btn"
+                  data-product-name="${item.product_name}"
+                  title="Modifier"
+                  style="background:#edf2f7;color:#4a5568;">
+            <i class="fas fa-edit"></i>
+          </button>
         </div>
       </div>
     `;

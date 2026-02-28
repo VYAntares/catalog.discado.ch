@@ -960,6 +960,48 @@
     background: #edf2f7;
 }
 
+/* Modale de répartition des quantités par batch */
+.distribute-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.distribute-row:last-child {
+  border-bottom: none;
+}
+
+.distribute-batch-label {
+  width: 70px;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.distribute-qty-input {
+  width: 90px !important;
+  text-align: center;
+  padding: 6px 8px !important;
+}
+
+.distribute-batch-unit {
+  color: #718096;
+  font-size: 13px;
+}
+
+.distribute-pending-box {
+  padding: 12px 16px;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 16px;
+  border-left: 3px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+  font-size: 14px;
+}
+
 .modal-btn-danger {
     background: #f56565;
     color: white;
