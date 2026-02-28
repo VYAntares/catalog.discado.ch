@@ -2,9 +2,9 @@
    Orders Page — Design épuré & moderne
    ========================================= */
 
-/* ─── Élargit le conteneur uniquement sur la page orders ─── */
+/* ─── Même largeur que la page profil ─── */
 main {
-    max-width: 1440px;
+    max-width: 1200px;
 }
 
 /* =========================================
@@ -73,9 +73,10 @@ main {
    ========================================= */
 .order-card-header {
     display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: 24px;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: start;
+    gap: 14px 24px;
     padding: 20px 28px;
     cursor: default;
 }
@@ -83,6 +84,8 @@ main {
 /* Zone info commande */
 .order-header-info {
     min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
 }
 
 .order-header-id {
@@ -117,14 +120,17 @@ main {
 .order-header-totals {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 10px 16px;
+    padding: 12px 20px;
+    grid-column: 1 / -1;
+    grid-row: 2;
 }
 
 .total-pill {
+    flex: 1;
     text-align: center;
     padding: 0 8px;
 }
@@ -137,6 +143,7 @@ main {
     letter-spacing: 0.07em;
     color: #94a3b8;
     margin-bottom: 2px;
+    white-space: nowrap;
 }
 
 .total-pill-value {
@@ -158,6 +165,7 @@ main {
     color: #cbd5e1;
     font-weight: 600;
     flex-shrink: 0;
+    padding: 0 4px;
 }
 
 /* Zone actions */
@@ -167,6 +175,9 @@ main {
     align-items: flex-end;
     gap: 8px;
     flex-shrink: 0;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
 }
 
 /* =========================================
@@ -792,87 +803,57 @@ main {
    Responsive
    ========================================= */
 
-/*
- * Tablette (≤ 900px) :
- * Colonne gauche : info + totaux empilés
- * Colonne droite : bouton centré verticalement
- */
+/* Tablette (≤ 900px) : légère réduction d'espacement */
 @media (max-width: 900px) {
     .order-card-header {
-        grid-template-columns: 1fr auto;
-        grid-template-rows: auto auto;
         gap: 10px 16px;
-        align-items: start;
-    }
-
-    .order-header-info {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    .order-header-totals {
-        grid-column: 1;
-        grid-row: 2;
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-
-    .order-header-actions {
-        grid-column: 2;
-        grid-row: 1 / 3;
-        justify-content: center;
-        align-self: center;
+        padding: 16px 20px;
     }
 }
 
 /*
  * Mobile (≤ 600px) :
- * Ligne 1 : info (gauche) + bouton (droite)
- * Ligne 2 : totaux pleine largeur
+ * Ajustements taille/espacement uniquement
+ * (placement grid géré en base)
  */
 @media (max-width: 600px) {
     .order-card-header {
-        grid-template-columns: 1fr auto;
-        grid-template-rows: auto auto;
         padding: 14px 16px;
         gap: 10px 10px;
-        align-items: start;
-    }
-
-    .order-header-info {
-        grid-column: 1;
-        grid-row: 1;
     }
 
     .order-header-actions {
-        grid-column: 2;
-        grid-row: 1;
         align-self: start;
         padding-top: 2px;
     }
 
     .order-header-totals {
-        grid-column: 1 / -1;   /* pleine largeur */
-        grid-row: 2;
-        padding: 8px 12px;
-        gap: 2px;
-        flex-wrap: wrap;
+        padding: 8px 10px;
+        gap: 0;
+        flex-wrap: nowrap;
+        justify-content: space-between;
     }
 
     .total-pill {
-        padding: 0 8px;
+        padding: 0 4px;
     }
 
     .total-pill-label {
-        font-size: 0.58rem;
+        font-size: 0.56rem;
     }
 
     .total-pill-value {
-        font-size: 0.8rem;
+        font-size: 0.76rem;
     }
 
     .total-pill-ttc .total-pill-value {
-        font-size: 0.88rem;
+        font-size: 0.82rem;
+    }
+
+    .total-pill-sep {
+        font-size: 0.65rem;
+        flex-shrink: 0;
+        padding: 0 2px;
     }
 
     .btn-detail {

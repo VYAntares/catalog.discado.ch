@@ -66,7 +66,6 @@ function updateCategoryUI(category, categoryItems = null) {
 // List of available product categories
 export function getAvailableCategories() {
     return [
-        { id: 'all', name: 'All Products' },
         { id: 'magnet', name: 'Magnets' },
         { id: 'keyring', name: 'Keyrings' },
         { id: 'bags', name: 'Bags & Totebags' },
@@ -94,7 +93,7 @@ export function getCurrentCategory() {
     const activeItem = document.querySelector('.category-item.active');
     if (activeItem) return activeItem.getAttribute('data-category');
     
-    return 'all';
+    return 'magnet';
 }
 
 // Initialize horizontal category bar with dynamic filtering
@@ -147,7 +146,7 @@ function createCategoryButton(category, filterCallback) {
     button.setAttribute('data-category', category.id);
     button.textContent = category.name;
 
-    if (category.id === 'all') {
+    if (category.id === 'magnet') {
         button.classList.add('active');
     }
 

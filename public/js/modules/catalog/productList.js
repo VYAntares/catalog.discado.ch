@@ -11,7 +11,7 @@ import { formatPrice } from '../../utils/formatter.js';
 let allProducts = [];
 let displayedProducts = [];
 let selectedProducts = [];
-let currentCategorySelected = 'all';
+let currentCategorySelected = 'magnet';
 
 // Initialize catalog page
 function initCatalog() {
@@ -42,8 +42,8 @@ async function loadProducts() {
         // Filter out invalid products
         allProducts = allProducts.filter(p => p.Nom && p.Nom.trim() !== "");
         
-        displayedProducts = [...allProducts];
-        displayProducts(allProducts);
+        displayedProducts = filterByCategory(allProducts, 'magnet');
+        displayProducts(displayedProducts);
         
         initImagePreview();
         
