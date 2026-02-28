@@ -96,6 +96,7 @@ function createOrderCard(order) {
   const unpaid = Utils.calculateRemaining(order.total_amount, order.amount_paid);
   const statusClass = Utils.getStatusClass(order.status);
   const itemCount = order.item_count || 0;
+  const itemCountFormatted = Utils.formatSwissNumber(itemCount, 0);
   const categories = order.categories ? order.categories.split(',').filter(c => c.trim()) : [];
 
   const categoriesHtml = categories.length > 0
@@ -107,7 +108,7 @@ function createOrderCard(order) {
       <div class="order-card-top">
         <div class="order-card-hero">
           <span class="order-card-total">${Utils.formatAmount(order.total_amount)}</span>
-          <span class="order-card-item-count">${itemCount} article${itemCount !== 1 ? 's' : ''}</span>
+          <span class="order-card-item-count">${itemCountFormatted} article${itemCount !== 1 ? 's' : ''}</span>
         </div>
         <div class="order-card-meta">
           <div class="order-card-header">

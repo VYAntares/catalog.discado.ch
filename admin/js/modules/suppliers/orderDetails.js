@@ -336,17 +336,19 @@ function renderPaymentsTable(payments) {
 
   container.innerHTML = `
     <h4 style="margin: 24px 0 12px 0; color: #4a5568;">Historique des paiements</h4>
-    <table class="payments-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Montant USD</th>
-          <th>Montant CHF</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Montant USD</th>
+            <th>Montant CHF</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   `;
 
   // Attach delete listeners
@@ -438,16 +440,18 @@ function renderTransportTable(transports) {
 
   container.innerHTML = `
     <h4 style="margin: 24px 0 12px 0; color: #4a5568;">Historique des frais de transport</h4>
-    <table class="payments-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Montant CHF</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Montant CHF</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   `;
 
   container.querySelectorAll('.delete-transport-btn').forEach(btn => {

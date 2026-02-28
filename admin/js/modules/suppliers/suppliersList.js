@@ -27,16 +27,31 @@ export function render() {
  * Crée le HTML d'une carte fournisseur
  */
 function createSupplierCard(supplier) {
-  const emails = supplier.emails || 'N/A';
-  const phones = supplier.phones || 'N/A';
-  
+  const emails  = Array.isArray(supplier.emails)  ? supplier.emails  : (supplier.emails  ? [supplier.emails]  : []);
+  const phones  = Array.isArray(supplier.phones)  ? supplier.phones  : (supplier.phones  ? [supplier.phones]  : []);
+  const wechats = Array.isArray(supplier.wechats) ? supplier.wechats : (supplier.wechats ? [supplier.wechats] : []);
+
+  const rows = (items, icon, cssClass) =>
+    items.map(v => `<div class="sc-contact-row sc-contact-${cssClass}">
+      <i class="${icon}"></i><span>${v}</span>
+    </div>`).join('');
+
+  const contactsHtml = [
+    rows(emails,  'fas fa-envelope', 'email'),
+    rows(phones,  'fas fa-phone',    'phone'),
+    rows(wechats, 'fab fa-weixin',   'wechat'),
+  ].join('');
+
   return `
     <div class="supplier-card" data-supplier-id="${supplier.id}">
-      <h3>${supplier.name}</h3>
-      <div class="supplier-card-stats">
-        <span>📧 ${emails}</span>
-        <span>📞 ${phones}</span>
+      <div class="sc-name">
+        <span class="sc-icon"><i class="fas fa-truck"></i></span>
+        <span>${supplier.name}</span>
       </div>
+      ${contactsHtml
+        ? `<div class="sc-contacts">${contactsHtml}</div>`
+        : `<p class="sc-empty">Aucun contact renseigné</p>`
+      }
     </div>
   `;
 }
