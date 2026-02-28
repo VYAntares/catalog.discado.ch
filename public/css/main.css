@@ -129,6 +129,30 @@ main {
   .has-header {
       padding-top: calc(var(--header-height) + env(safe-area-inset-top));
   }
+
+  /* Safari mobile (navigateur) — extra padding pour la barre de statut */
+  .safari-mobile .discado-header-initialized {
+      padding-top: calc(env(safe-area-inset-top) + 10px);
+      height: calc(var(--header-height) + env(safe-area-inset-top) + 10px);
+  }
+
+  .safari-mobile.has-header,
+  .safari-mobile:has(.discado-header-initialized) {
+      padding-top: calc(var(--header-height) + env(safe-area-inset-top) + 10px);
+  }
+
+  /* Safari mobile — décaler menu et sticky bar pour suivre le header */
+  .safari-mobile .user-menu {
+      top: calc(var(--header-height) + env(safe-area-inset-top) + 10px) !important;
+  }
+
+  .safari-mobile .sticky-filter-bar {
+      top: calc(var(--header-height) + env(safe-area-inset-top) + 10px);
+  }
+
+  .safari-mobile .menu-overlay {
+      top: calc(var(--header-height) + env(safe-area-inset-top) + 10px) !important;
+  }
   
   /* Structure de base du conteneur */
   .header-container {
@@ -445,10 +469,10 @@ main {
       border-bottom: none;
   }
   
-  /* Overlay */
+  /* Overlay — commence sous le header pour ne pas l'assombrir */
   .menu-overlay {
       position: fixed !important;
-      top: 0 !important;
+      top: calc(var(--header-height) + env(safe-area-inset-top)) !important;
       left: 0 !important;
       right: 0 !important;
       bottom: 0 !important;

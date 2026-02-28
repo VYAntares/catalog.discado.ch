@@ -4,6 +4,13 @@
 
 // Initialisation du header
 function initDiscadoHeader() {
+    // Détecte Safari mobile (pas l'app Capacitor) pour ajuster le header
+    var isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    var isSafariMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent) && !isCapacitor;
+    if (isSafariMobile && document.body) {
+        document.body.classList.add('safari-mobile');
+    }
+
     // Vérifier si le header existe déjà
     if (document.querySelector('.discado-header-initialized')) {
         return;

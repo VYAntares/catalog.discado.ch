@@ -478,58 +478,7 @@ input.password-mismatch {
     color: white;
 }
 
-.menu-overlay {
-    position: fixed;
-    top: 80px;
-    left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 1005;
-}
-
-.menu-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.user-menu {
-    position: fixed;
-    top: 80px;
-    right: 0;
-    background-color: white;
-    box-shadow: -2px 2px 10px rgba(0,0,0,0.2);
-    width: 200px;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-    z-index: 1020;
-    border-radius: 0 0 0 8px;
-    border-left: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-}
-
-.user-menu.open { max-height: 200px; overflow-y: auto; }
-
-.user-menu a {
-    display: block;
-    padding: 12px 15px;
-    text-decoration: none;
-    color: #333;
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
-    font-weight: 500;
-}
-
-.user-menu a:hover { background-color: #f5f5f5; color: #e9394f; }
-.user-menu a:last-child { border-bottom: none; }
-
-#userMenuToggle.active {
-    color: #e9394f;
-    background-color: rgba(37, 117, 252, 0.1);
-    border-radius: 50%;
-}
+/* Menu styles hérités de main.css — ne pas dupliquer ici */
 
 /* =========================================
    Animations
