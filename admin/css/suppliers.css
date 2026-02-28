@@ -1636,18 +1636,50 @@
     grid-template-columns: none;
     text-align: center;
   }
-  
+
+  /* Override consolidated-layout en vue grille : revenir au flex colonne */
+  .batch-grid-view .batch-item-info.consolidated-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .batch-grid-view .consolidated-name {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .batch-grid-view .consolidated-name h5 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .batch-grid-view .batch-status-cell {
+    grid-column: auto;
+    grid-row: auto;
+    padding-top: 0;
+  }
+
+  .batch-grid-view .consolidated-layout .batch-item-total {
+    text-align: center;
+  }
+
   .batch-grid-view .batch-item-info h5 {
     font-size: 14px;
     min-width: auto;
   }
-  
+
   .batch-grid-view .batch-item-details {
     flex-direction: column;
     gap: 4px;
     min-width: auto;
   }
-  
+
   .batch-grid-view .batch-item-total {
     text-align: center;
     font-size: 14px;
