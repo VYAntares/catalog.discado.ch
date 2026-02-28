@@ -328,7 +328,19 @@ async function saveOrderChanges() {
     }
 }
 
+/**
+ * Annule le mode édition sans sauvegarder
+ */
+function cancelOrderEditing() {
+    orderModifications.clear();
+    deletedItems.clear();
+    isEditing = false;
+    currentOrderId = null;
+    currentUserId = null;
+}
+
 export {
     enableOrderEditing,
+    cancelOrderEditing,
     saveOrderChanges
 };

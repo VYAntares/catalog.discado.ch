@@ -161,7 +161,10 @@ function displayOrderDetails(order, container) {
                     </div>
                     <div class="client-detail-item">
                         <span class="client-detail-label">Adresse</span>
-                        <span class="client-detail-value">${fullAddress || 'N/A'}</span>
+                        ${fullAddress
+                            ? `<a href="https://maps.apple.com/?daddr=${encodeURIComponent(fullAddress)}" class="client-detail-value client-address-link" target="_blank" rel="noopener">${fullAddress}</a>`
+                            : `<span class="client-detail-value">N/A</span>`
+                        }
                     </div>
                     ${fullAddress ? `
                     <div class="client-detail-item client-detail-map">
@@ -398,16 +401,23 @@ function displayOrderDetails(order, container) {
         editBtn.addEventListener('click', function() {
             const orderId = this.getAttribute('data-order-id');
             const userId = this.getAttribute('data-user-id');
-            
-            // Activer l'édition
-            OrderEdit.enableOrderEditing(orderId, userId);
-            
-            // Changer le texte du bouton
-            this.innerHTML = '<i class="fas fa-check"></i> Mode édition activé';
-            this.disabled = true;
-            this.style.backgroundColor = '#28a745';
-            
-            Notification.showNotification('Mode édition activé - Cliquez sur les cellules pour modifier', 'info');
+
+            const isCurrentlyEditing = this.classList.contains('editing-active');
+
+            if (!isCurrentlyEditing) {
+                // Activer le mode édition
+                OrderEdit.enableOrderEditing(orderId, userId);
+
+                this.innerHTML = '<i class="fas fa-times"></i> Annuler mode édition';
+                this.classList.add('editing-active');
+                this.style.backgroundColor = '#dc3545';
+
+                Notification.showNotification('Mode édition activé — Cliquez sur les cellules pour modifier', 'info');
+            } else {
+                // Annuler sans sauvegarder : réafficher la commande depuis les données originales
+                OrderEdit.cancelOrderEditing();
+                viewOrderDetails(orderId, userId);
+            }
         });
     }
     

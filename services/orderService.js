@@ -540,9 +540,7 @@ const orderService = {
 							);
 						}
 					} else {
-						// 🆕 Article non livré → stock à 0 SUPPRIMER CA SI ON NE VEUT PLUS LA LOGIQUE
-						this._setStockToZero(item.product_name);
-						
+						// Article non livré → stock inchangé
 						// Aucune livraison
 						dbModule.updateOrderItemStatus.run('remaining', orderId, item.product_name);
 						
@@ -1045,7 +1043,7 @@ const orderService = {
 		try {
 			const updateStock = dbModule.db.prepare(`
 				UPDATE products 
-				SET stock = stock - ? 
+				SET stock = MAX(0, stock - ?) 
 				WHERE name = ?
 			`);
 			
