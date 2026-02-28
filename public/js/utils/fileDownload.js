@@ -15,29 +15,34 @@ async function downloadOrShareFile(url, filename, mimeType = 'application/pdf') 
     }
     const blob = await res.blob();
 
+    const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isMobile = isIOS || /Android/i.test(navigator.userAgent);
 
-    // Mobile: try native share sheet
-    if (isMobile && navigator.share) {
+    // Mobile or Capacitor: try native share sheet
+    if ((isMobile || isCapacitorNative) && navigator.share) {
         try {
             const file = new File([blob], filename, { type: mimeType });
             await navigator.share({ files: [file], title: filename });
             return;
         } catch (err) {
             if (err.name === 'AbortError') return;
-            // share failed — fall through to overlay on iOS, download on Android
+            // share failed — show overlay only for Capacitor native
+            if (isCapacitorNative) {
+                _showPdfOverlay(blob, filename, mimeType);
+                return;
+            }
         }
     }
 
-    // iOS without working share: show in-app PDF overlay with share button
-    if (isIOS) {
+    // Capacitor without share API: show in-app PDF overlay
+    if (isCapacitorNative) {
         _showPdfOverlay(blob, filename, mimeType);
         return;
     }
 
-    // Desktop / Android fallback: trigger browser download
+    // Desktop + iOS Safari fallback: browser download / open
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = objectUrl;

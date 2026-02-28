@@ -802,7 +802,7 @@ function applyFilters() {
       const barcode = (p.barcode || '').toLowerCase();
       const category = (p.category || '').toLowerCase();
       const supplier = (p.supplier || '').toLowerCase();
-      const numberMatch = p.name.match(/\d+/g);
+      const numberMatch = (p.name || '').match(/\d+/g);
       const numbers = numberMatch ? numberMatch.join(' ') : '';
       
       return name.includes(searchTerm) ||
@@ -901,7 +901,6 @@ function renderProductsList(products) {
   
   // Attacher les event listeners
   attachAddItemButtonsListeners();
-  attachQuantityInputListeners();
 }
 
 /**
@@ -977,6 +976,7 @@ function setupAddItemModalListeners() {
   supplierSelect.onchange = () => applyFilters();
   categorySelect.onchange = () => applyFilters();
   
-  // Focus automatique sur la recherche
-  searchInput.focus();
+  // Focus automatique sur la recherche (désactivé sur mobile pour éviter le zoom iOS)
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (!isMobile) searchInput.focus();
 }

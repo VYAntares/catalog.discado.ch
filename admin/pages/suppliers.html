@@ -387,10 +387,14 @@
                 <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                     <!-- Recherche -->
                     <div class="form-group" style="margin: 0;">
-                        <input type="text" 
-                            id="searchProductInput" 
+                        <input type="text"
+                            id="searchProductInput"
                             placeholder="🔍 Rechercher par nom, numéro ou code-barres..."
-                            style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; font-size: 14px;">
+                            autocomplete="off"
+                            autocorrect="off"
+                            autocapitalize="off"
+                            spellcheck="false"
+                            style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 100%; font-size: 16px;">
                     </div>
                     
                     <!-- Filtre Fournisseur -->
@@ -472,7 +476,7 @@
     </script>
 
     <script type="module">
-        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js?v=5';
+        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js?v=6';
 
         document.addEventListener('DOMContentLoaded', () => {
           SuppliersModule.init();
