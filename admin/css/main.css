@@ -163,8 +163,8 @@ body.capacitor-ios .admin-tabs {
 
 /* ===== TABS NAVIGATION (sticky avec scroll horizontal) ===== */
 .admin-tabs {
-    background-color: #2575fc;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    background: linear-gradient(135deg, #1a5cb8 0%, #2575fc 50%, #4a90ff 100%);
+    box-shadow: 0 4px 15px rgba(37, 117, 252, 0.3);
     position: sticky;
     top: 0;
     z-index: 99;
@@ -173,8 +173,8 @@ body.capacitor-ios .admin-tabs {
 .tabs-container {
     display: flex;
     justify-content: flex-start;
-    gap: 0;
-    padding: 0 20px;
+    gap: 2px;
+    padding: 6px 20px;
     max-width: 1400px;
     margin: 0 auto;
     overflow-x: auto;
@@ -188,45 +188,49 @@ body.capacitor-ios .admin-tabs {
 }
 
 .tab {
-    padding: 18px 30px;
-    color: white;
+    padding: 12px 22px;
+    color: rgba(255, 255, 255, 0.75);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     position: relative;
-    opacity: 0.8;
-    transition: opacity 0.2s ease, background-color 0.2s ease;
-    font-size: 16px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
     letter-spacing: 0.3px;
     white-space: nowrap;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 8px;
+    border-radius: 8px;
 }
 
 .tab:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .tab.active {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .tab.active::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
     background-color: white;
-    border-radius: 4px 4px 0 0;
+    border-radius: 3px;
 }
 
 .tab i {
-    font-size: 1.1em;
+    font-size: 1em;
+    opacity: 0.9;
 }
 
 /* Main content */
@@ -511,26 +515,31 @@ main {
         padding: 0 10px;
     }
 
+    .tabs-container {
+        padding: 4px 10px;
+        gap: 1px;
+    }
+
     .tab {
-        padding: 15px 20px;
-        font-size: 14px;
+        padding: 10px 16px;
+        font-size: 13px;
         gap: 6px;
-        transition: none;
+        border-radius: 6px;
     }
 
     .tab i {
-        font-size: 1em;
+        font-size: 0.95em;
     }
 
     /* Désactiver hover sur mobile */
     .tab:hover {
-        opacity: 0.8;
+        color: rgba(255, 255, 255, 0.75);
         background-color: transparent;
     }
 
     .tab.active:hover {
-        opacity: 1;
-        background-color: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        background-color: rgba(255, 255, 255, 0.18);
     }
 
     /* Main content mobile */
@@ -570,8 +579,9 @@ main {
     }
 
     .tab {
-        padding: 12px 15px;
-        font-size: 13px;
+        padding: 8px 12px;
+        font-size: 12px;
+        border-radius: 5px;
     }
 
     .logout-btn {
@@ -582,8 +592,9 @@ main {
 
 @media (max-width: 375px) {
     .tab {
-        padding: 10px 12px;
-        font-size: 12px;
+        padding: 7px 10px;
+        font-size: 11px;
+        border-radius: 4px;
     }
 }
 
