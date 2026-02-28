@@ -108,6 +108,22 @@ function displayOrderDetails(order, container) {
         statusClass = 'status-partial';
     }
     
+    // Build shop address string
+    const shopAddress = order.userProfile?.shopAddress || '';
+    const shopCity = order.userProfile?.shopCity || '';
+    const shopZipCode = order.userProfile?.shopZipCode || '';
+    const fullAddress = [shopAddress, shopZipCode, shopCity].filter(Boolean).join(', ');
+
+    // Count items
+    const deliveredCount = (order.deliveredItems || []).length;
+    const pendingCount = (order.remainingItems || []).length;
+
+    const pendingTotalAmount = Formatter.formatSwissNumber(
+        (order.remainingItems || []).reduce((total, item) => {
+            return total + (parseFloat(item.prix) * item.quantity);
+        }, 0)
+    );
+
     let detailsHTML = `
         <div class="order-detail-header">
             <div class="order-detail-title">
@@ -120,158 +136,6 @@ function displayOrderDetails(order, container) {
             </div>
             <div class="order-status">
                 <span class="status-badge ${statusClass}">${statusText}</span>
-            </div>
-        </div>
-
-        <div class="order-items-section">
-            <h3 class="section-title">Articles livrés</h3>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th class="qty-column">Qté</th>
-                        <th class="product-column">Produit</th>
-                        <th class="unit-price-column">Prix Unitaire</th>
-                        <th class="total-column">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    if (order.deliveredItems && order.deliveredItems.length > 0) {
-        const groupedItems = {};
-        order.deliveredItems.forEach(item => {
-            const category = item.categorie || 'autres';
-            if (!groupedItems[category]) {
-                groupedItems[category] = [];
-            }
-            groupedItems[category].push(item);
-        });
-        
-        const sortedCategories = Object.keys(groupedItems).sort();
-        
-        sortedCategories.forEach(category => {
-            detailsHTML += `
-                <tr class="category-header">
-                    <td colspan="4" class="category-section">
-                        ${category.charAt(0).toUpperCase() + category.slice(1)}
-                    </td>
-                </tr>
-            `;
-            
-            groupedItems[category].forEach(item => {
-                const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
-
-                detailsHTML += `
-                    <tr data-product-name="${item.Nom}">
-                        <td class="qty-column">${item.quantity}</td>
-                        <td class="product-column">
-                            <span class="product-name">${item.Nom}</span>
-                        </td>
-                        <td class="unit-price-column">${Formatter.formatPrice(item.prix)} CHF</td>
-                        <td class="total-column">${itemTotal} CHF</td>
-                    </tr>
-                `;
-            });
-        });
-    } else {
-        detailsHTML += `
-            <tr>
-                <td colspan="4" class="no-items">Aucun article livré</td>
-            </tr>
-        `;
-    }
-    
-    detailsHTML += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    if (order.remainingItems && order.remainingItems.length > 0) {
-        detailsHTML += `
-            <div class="pending-items-section">
-                <h3 class="section-title pending-title">Articles en attente</h3>
-                <table class="items-table pending-table">
-                    <thead>
-                        <tr>
-                            <th class="qty-column">Qté</th>
-                            <th class="product-column">Produit</th>
-                            <th class="unit-price-column">Prix Unitaire</th>
-                            <th class="total-column">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        const groupedRemainingItems = {};
-        order.remainingItems.forEach(item => {
-            const category = item.categorie || 'autres';
-            if (!groupedRemainingItems[category]) {
-                groupedRemainingItems[category] = [];
-            }
-            groupedRemainingItems[category].push(item);
-        });
-        
-        const sortedRemainingCategories = Object.keys(groupedRemainingItems).sort();
-        
-        sortedRemainingCategories.forEach(category => {
-            detailsHTML += `
-                <tr>
-                    <td colspan="4" class="category-section pending-category">
-                        ${category.charAt(0).toUpperCase() + category.slice(1)}
-                    </td>
-                </tr>
-            `;
-            
-            groupedRemainingItems[category].forEach(item => {
-                const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
-                detailsHTML += `
-                    <tr class="pending-item">
-                        <td class="qty-column">${item.quantity}</td>
-                        <td class="product-column">
-                            <span class="product-name">${item.Nom}</span>
-                        </td>
-                        <td class="unit-price-column">${Formatter.formatPrice(item.prix)} CHF</td>
-                        <td class="total-column">${itemTotal} CHF</td>
-                    </tr>
-                `;
-            });
-        });
-        
-        detailsHTML += `
-                    </tbody>
-                </table>
-                <div class="pending-notice">
-                    <i class="fas fa-info-circle"></i> 
-                    Ces articles seront livrés ultérieurement lorsqu'ils seront disponibles.
-                </div>
-            </div>
-        `;
-    }
-    
-    const pendingTotalAmount = Formatter.formatSwissNumber(
-        (order.remainingItems || []).reduce((total, item) => {
-            return total + (parseFloat(item.prix) * item.quantity);
-        }, 0)
-    );
-
-    detailsHTML += `
-        <div class="order-summary">
-    `;
-
-    if (order.remainingItems && order.remainingItems.length > 0) {
-        detailsHTML += `
-            <div class="order-total pending-total">
-                <span class="order-total-label">Total en attente</span>
-                <span class="order-total-amount pending-amount">${pendingTotalAmount} CHF</span>
-            </div>
-        `;
-    }
-
-    detailsHTML += `
-            <div class="order-total">
-                <span class="order-total-label">Total livré</span>
-                <span class="order-total-amount">${totalAmount} CHF</span>
             </div>
         </div>
 
@@ -295,7 +159,182 @@ function displayOrderDetails(order, container) {
                         <span class="client-detail-label">Boutique</span>
                         <span class="client-detail-value">${order.userProfile?.shopName || 'N/A'}</span>
                     </div>
+                    <div class="client-detail-item">
+                        <span class="client-detail-label">Adresse</span>
+                        <span class="client-detail-value">${fullAddress || 'N/A'}</span>
+                    </div>
+                    ${fullAddress ? `
+                    <div class="client-detail-item client-detail-map">
+                        <a href="/admin/clients-map?openClient=${encodeURIComponent(order.userId)}" class="btn-view-on-map" target="_blank">
+                            <i class="fas fa-map-marker-alt"></i> Voir sur la carte
+                        </a>
+                    </div>
+                    ` : ''}
                 </div>
+            </div>
+        </div>
+
+        <div class="collapsible-section">
+            <div class="collapsible-header" data-target="delivered-items-content">
+                <div class="collapsible-title">
+                    <i class="fas fa-chevron-right collapsible-icon"></i>
+                    <h3 class="section-title">Articles livrés</h3>
+                    <span class="collapsible-badge delivered-badge">${deliveredCount}</span>
+                    <span class="collapsible-total">${totalAmount} CHF</span>
+                </div>
+            </div>
+            <div class="collapsible-content" id="delivered-items-content" style="display:none;">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th class="qty-column">Qté</th>
+                            <th class="product-column">Produit</th>
+                            <th class="unit-price-column">Prix Unitaire</th>
+                            <th class="total-column">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    if (order.deliveredItems && order.deliveredItems.length > 0) {
+        const groupedItems = {};
+        order.deliveredItems.forEach(item => {
+            const category = item.categorie || 'autres';
+            if (!groupedItems[category]) {
+                groupedItems[category] = [];
+            }
+            groupedItems[category].push(item);
+        });
+
+        const sortedCategories = Object.keys(groupedItems).sort();
+
+        sortedCategories.forEach(category => {
+            detailsHTML += `
+                <tr class="category-header">
+                    <td colspan="4" class="category-section">
+                        ${category.charAt(0).toUpperCase() + category.slice(1)}
+                    </td>
+                </tr>
+            `;
+
+            groupedItems[category].forEach(item => {
+                const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
+
+                detailsHTML += `
+                    <tr data-product-name="${item.Nom}">
+                        <td class="qty-column">${item.quantity}</td>
+                        <td class="product-column">
+                            <span class="product-name">${item.Nom}</span>
+                        </td>
+                        <td class="unit-price-column">${Formatter.formatPrice(item.prix)} CHF</td>
+                        <td class="total-column">${itemTotal} CHF</td>
+                    </tr>
+                `;
+            });
+        });
+    } else {
+        detailsHTML += `
+            <tr>
+                <td colspan="4" class="no-items">Aucun article livré</td>
+            </tr>
+        `;
+    }
+
+    detailsHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    if (order.remainingItems && order.remainingItems.length > 0) {
+        detailsHTML += `
+            <div class="collapsible-section">
+                <div class="collapsible-header" data-target="pending-items-content">
+                    <div class="collapsible-title">
+                        <i class="fas fa-chevron-right collapsible-icon"></i>
+                        <h3 class="section-title pending-title">Articles en attente</h3>
+                        <span class="collapsible-badge pending-badge">${pendingCount}</span>
+                        <span class="collapsible-total pending-total-inline">${pendingTotalAmount} CHF</span>
+                    </div>
+                </div>
+                <div class="collapsible-content" id="pending-items-content" style="display:none;">
+                    <table class="items-table pending-table">
+                        <thead>
+                            <tr>
+                                <th class="qty-column">Qté</th>
+                                <th class="product-column">Produit</th>
+                                <th class="unit-price-column">Prix Unitaire</th>
+                                <th class="total-column">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+
+        const groupedRemainingItems = {};
+        order.remainingItems.forEach(item => {
+            const category = item.categorie || 'autres';
+            if (!groupedRemainingItems[category]) {
+                groupedRemainingItems[category] = [];
+            }
+            groupedRemainingItems[category].push(item);
+        });
+
+        const sortedRemainingCategories = Object.keys(groupedRemainingItems).sort();
+
+        sortedRemainingCategories.forEach(category => {
+            detailsHTML += `
+                <tr>
+                    <td colspan="4" class="category-section pending-category">
+                        ${category.charAt(0).toUpperCase() + category.slice(1)}
+                    </td>
+                </tr>
+            `;
+
+            groupedRemainingItems[category].forEach(item => {
+                const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
+                detailsHTML += `
+                    <tr class="pending-item">
+                        <td class="qty-column">${item.quantity}</td>
+                        <td class="product-column">
+                            <span class="product-name">${item.Nom}</span>
+                        </td>
+                        <td class="unit-price-column">${Formatter.formatPrice(item.prix)} CHF</td>
+                        <td class="total-column">${itemTotal} CHF</td>
+                    </tr>
+                `;
+            });
+        });
+
+        detailsHTML += `
+                        </tbody>
+                    </table>
+                    <div class="pending-notice">
+                        <i class="fas fa-info-circle"></i>
+                        Ces articles seront livrés ultérieurement lorsqu'ils seront disponibles.
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    detailsHTML += `
+        <div class="order-summary">
+    `;
+
+    if (order.remainingItems && order.remainingItems.length > 0) {
+        detailsHTML += `
+            <div class="order-total pending-total">
+                <span class="order-total-label">Total en attente</span>
+                <span class="order-total-amount pending-amount">${pendingTotalAmount} CHF</span>
+            </div>
+        `;
+    }
+
+    detailsHTML += `
+            <div class="order-total">
+                <span class="order-total-label">Total livré</span>
+                <span class="order-total-amount">${totalAmount} CHF</span>
             </div>
         </div>
 
@@ -310,9 +349,27 @@ function displayOrderDetails(order, container) {
     `;
     
     container.innerHTML = detailsHTML;
-    
+
     // Marquer le conteneur avec l'ID de commande pour l'édition
     container.setAttribute('data-order-id', order.orderId);
+
+    // Collapsible sections toggle
+    container.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const targetId = header.getAttribute('data-target');
+            const content = document.getElementById(targetId);
+            const icon = header.querySelector('.collapsible-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.classList.replace('fa-chevron-right', 'fa-chevron-down');
+                header.classList.add('collapsible-open');
+            } else {
+                content.style.display = 'none';
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-right');
+                header.classList.remove('collapsible-open');
+            }
+        });
+    });
 
     // Bouton facture PDF — créé en DOM avec listener direct (comme public/orderList.js)
     const actionsFooter = container.querySelector('.order-actions-footer');

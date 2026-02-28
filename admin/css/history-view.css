@@ -326,6 +326,115 @@
     50% { opacity: 0.7; }
 }
 
+/* Collapsible sections */
+.collapsible-section {
+    margin-bottom: 10px;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.collapsible-header {
+    cursor: pointer;
+    padding: 14px 18px;
+    background-color: #f8f9fa;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.collapsible-header:hover {
+    background-color: #eef1f5;
+}
+
+.collapsible-header.collapsible-open {
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.collapsible-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.collapsible-title .section-title {
+    margin: 0;
+    font-size: 16px;
+}
+
+.collapsible-icon {
+    color: #666;
+    font-size: 14px;
+    transition: transform 0.2s;
+    width: 16px;
+    text-align: center;
+}
+
+.collapsible-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.delivered-badge {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.pending-badge {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.collapsible-total {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 15px;
+    color: #28a745;
+}
+
+.pending-total-inline {
+    color: #e67e22;
+}
+
+.collapsible-content {
+    padding: 0;
+}
+
+.collapsible-content .items-table {
+    margin-bottom: 0;
+}
+
+/* Map button in client info */
+.client-detail-map {
+    display: flex;
+    align-items: center;
+}
+
+.btn-view-on-map {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: #2575fc;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-view-on-map:hover {
+    background-color: #1a5cb8;
+    transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
     .order-detail-header {
         flex-direction: column;
