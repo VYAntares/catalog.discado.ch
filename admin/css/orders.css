@@ -203,18 +203,6 @@
     }
 }
 
-/* ===== STYLES MODALES DE COMMANDE ===== */
-
-.order-details-title {
-    margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e1e8ed;
-    font-size: 24px;
-    color: #2575fc;
-    font-weight: 600;
-}
-
-/* Styles améliorés pour le traitement de commande */
 .order-process-container {
     display: flex;
     flex-direction: column;
@@ -467,42 +455,6 @@
     color: #333;
 }
 
-.order-details-title {
-    font-size: 22px;
-    color: #2575fc;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e1e8ed;
-}
-
-.loading {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-    font-size: 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-
-.loading::before {
-    content: '';
-    display: block;
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e1e8ed;
-    border-top: 3px solid #2575fc;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Styles pour le message d'erreur */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
