@@ -9,6 +9,11 @@
     z-index: 100000 !important;
 }
 
+/* Classe utilitaire de filtrage - !important pour passer outre les règles mobiles */
+.batch-item-hidden {
+    display: none !important;
+}
+
 /* ===== CONTAINER PRINCIPAL ===== */
 .suppliers-container {
     max-width: 1400px;
@@ -1759,14 +1764,8 @@
     background: #e2e8f0;
   }
   
-  .batch-item-actions .delete-item-btn {
-    background: #fff5f5;
-    color: #e53e3e;
-    border: 1px solid #fc8181;
-  }
-  
   .batch-item-actions .delete-item-btn:hover {
-    background: #fed7d7;
+    background: #e53e3e;
   }
   
   /* Footer Batch */
@@ -2000,8 +1999,21 @@
       padding: 12px;
     }
     
+    .batch-toolbar-left {
+      width: 100%;
+    }
+
     .batch-toolbar-left h3 {
       font-size: 16px;
+    }
+
+    .batch-search-wrapper {
+      width: 100% !important;
+    }
+
+    .batch-search-input {
+      font-size: 16px !important;   /* évite le zoom iOS sur focus */
+      padding: 10px 12px 10px 34px !important;
     }
     
     .batch-toolbar-right {

@@ -211,11 +211,21 @@ function createBatchItemCard(item, batchNumber) {
 		   data-item-id="${item.id}"
 		   data-batch-number="${batchNumber}">
 
-      <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image">
+      <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image"
+           onerror="this.src='/images/placeholder.png'">
 
       <div class="batch-item-info consolidated-layout">
         <div class="consolidated-name">
           <h5>${item.product_name}</h5>
+          <div class="batch-status-cell" style="margin-top: 4px;">
+            <select class="item-status-select" data-item-id="${item.id}"
+                    style="padding:3px 8px;border-radius:12px;border:1px solid ${isLivre ? '#48bb78' : '#ed8936'};
+                           background:${isLivre ? '#f0fff4' : '#fffaf0'};color:${isLivre ? '#276749' : '#9c4221'};
+                           font-size:12px;font-weight:600;cursor:pointer;outline:none;">
+              <option value="commandé" ${!isLivre ? 'selected' : ''}>Commandé</option>
+              <option value="livré" ${isLivre ? 'selected' : ''}>Livré</option>
+            </select>
+          </div>
         </div>
         <button class="product-stats-btn"
                 data-product-name="${item.product_name}"
@@ -226,15 +236,6 @@ function createBatchItemCard(item, batchNumber) {
         <span class="quantity-badge">${item.quantity} unités</span>
         <span class="price-tag consolidated-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
         <span class="batch-item-total">Total: <strong>${Utils.formatSwissNumber(item.quantity * item.unit_price)} USD</strong></span>
-        <div class="batch-status-cell">
-          <select class="item-status-select" data-item-id="${item.id}"
-                  style="padding:3px 8px;border-radius:12px;border:1px solid ${isLivre ? '#48bb78' : '#ed8936'};
-                         background:${isLivre ? '#f0fff4' : '#fffaf0'};color:${isLivre ? '#276749' : '#9c4221'};
-                         font-size:12px;font-weight:600;cursor:pointer;outline:none;">
-            <option value="commandé" ${!isLivre ? 'selected' : ''}>Commandé</option>
-            <option value="livré" ${isLivre ? 'selected' : ''}>Livré</option>
-          </select>
-        </div>
       </div>
       
       <div class="batch-item-actions">
@@ -368,7 +369,8 @@ function filterBatchItems(query) {
   const q = query.toLowerCase().trim();
   document.querySelectorAll('.batch-item-card').forEach(card => {
     const name = card.querySelector('h5')?.textContent?.toLowerCase() || '';
-    card.style.display = (!q || name.includes(q)) ? '' : 'none';
+    const visible = !q || name.includes(q);
+    card.classList.toggle('batch-item-hidden', !visible);
   });
   // Masquer les séparateurs de batch si tous leurs items sont masqués
   document.querySelectorAll('.batch-items-container > div[style*="background: #edf2f7"]').forEach(sep => {
@@ -507,6 +509,29 @@ function reattachBatchItemListeners() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       openConsolidatedEdit(btn.dataset.productName);
+    });
+  });
+
+  // Bouton Supprimer (vue consolidée)
+  document.querySelectorAll('.consolidated-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const productName = e.currentTarget.dataset.productName;
+      if (!confirm(`Supprimer TOUTES les occurrences de "${productName}" dans TOUS les batchs ?`)) return;
+
+      const orderId = State.getCurrentOrderId();
+      const allItems = State.getCurrentOrderItems();
+      const productItems = allItems.filter(i => i.product_name === productName);
+
+      try {
+        await Promise.all(productItems.map(i => API.deleteSupplierOrderItem(i.id)));
+        const items = await API.fetchSupplierOrderItems(orderId);
+        State.setCurrentOrderItems(items);
+        await initBatchView(orderId, false);
+      } catch (err) {
+        console.error('Erreur suppression consolidée:', err);
+        alert('Erreur lors de la suppression de l\'article.');
+      }
     });
   });
 }
@@ -832,6 +857,11 @@ function openConsolidatedEdit(productName) {
                   title="Modifier"
                   style="background:#edf2f7;color:#4a5568;">
             <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-danger btn-sm consolidated-delete-btn"
+                  data-product-name="${item.product_name}"
+                  title="Tout supprimer">
+            <i class="fas fa-trash"></i>
           </button>
         </div>
       </div>
