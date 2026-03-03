@@ -36,6 +36,8 @@ export const AppConfig = {
         { id: 'bells', name: 'Bells' },
         { id: 'softtoy', name: 'Soft-Toys' },
         { id: 'tshirt', name: 'T-Shirts' },
+        { id: 'hoodie', name: 'Hoodies' },
+        { id: 'socks', name: 'Socks' },
         { id: 'lighter', name: 'Lighters' },
         { id: 'gadget', name: 'Gadgets' },
         { id: 'farceattrape', name: 'Farce & Attrape' }

@@ -127,7 +127,11 @@ class StockManager {
     }
 
     renderCategoryTabs() {
-        const categories = this.getCategories();
+        const dbCategories = this.getCategories();
+        const allCategories = ['tshirt', 'hoodie', 'socks', 'caps', 'bags', 'keyring', 'pens', 'lifestyle',
+                               'gadget', 'patches', 'cloths', 'lighter', 'magnet',
+                               'bells', 'plates', 'softtoy', 'hats', 'farceattrape'];
+        const categories = [...new Set([...dbCategories, ...allCategories])].sort();
         const tabsContainer = document.querySelector('.category-tabs');
         
         if (!tabsContainer) return;
@@ -169,6 +173,8 @@ class StockManager {
     getCategoryIcon(category) {
         const icons = {
             'tshirt': 'fas fa-tshirt',
+            'hoodie': 'fas fa-tshirt',
+            'socks': 'fas fa-socks',
             'caps': 'fas fa-hat-cowboy',
             'bags': 'fas fa-shopping-bag',
             'keyring': 'fas fa-key',
@@ -191,6 +197,8 @@ class StockManager {
     formatCategoryName(category) {
         const names = {
             'tshirt': 'T-Shirt',
+            'hoodie': 'Hoodie',
+            'socks': 'Socks',
             'caps': 'Caps',
             'bags': 'Bags',
             'keyring': 'Keyrings',
@@ -677,8 +685,8 @@ class StockManager {
 
     getCategoryOptions(currentCategory) {
         const categories = this.getCategories();
-        const allCategories = ['tshirt', 'caps', 'bags', 'keyring', 'pens', 'lifestyle', 
-                               'gadget', 'patches', 'cloths', 'lighter', 'magnet', 
+        const allCategories = ['tshirt', 'hoodie', 'socks', 'caps', 'bags', 'keyring', 'pens', 'lifestyle',
+                               'gadget', 'patches', 'cloths', 'lighter', 'magnet',
                                'bells', 'plates', 'softtoy', 'hats', 'farceattrape'];
         
         // Fusionner les catégories existantes avec toutes les catégories possibles
@@ -1117,6 +1125,8 @@ class StockManager {
     getCategoryOptionsForAdd() {
         const categories = [
             { value: 'tshirt', label: 'T-Shirts' },
+            { value: 'hoodie', label: 'Hoodies' },
+            { value: 'socks', label: 'Chaussettes' },
             { value: 'caps', label: 'Casquettes' },
             { value: 'bags', label: 'Sacs' },
             { value: 'keyring', label: 'Porte-clés' },

@@ -1510,9 +1510,9 @@ app.delete('/api/products/:id', requireLogin, requireAdmin, requirePermission('s
 // ADD product (CREATE)
 app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock'), async (req, res) => {
   try {
-    const { name, price, category, supplier, image_url, stock, barcode } = req.body;
+    const { name, price, origin_price, category, supplier, image_url, stock, barcode } = req.body;
 
-    console.log(`➕ Ajout nouveau produit:`, { name, price, category, supplier, image_url, stock, barcode });
+    console.log(`➕ Ajout nouveau produit:`, { name, price, origin_price, category, supplier, image_url, stock, barcode });
 
     // Validation
     if (!name || !price || !category) {
@@ -1521,6 +1521,7 @@ app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock')
 
     const priceNum = Number(price);
     const stockNum = Number(stock);
+    const originPriceNum = Number(origin_price) || 0;
 
     if (isNaN(priceNum) || priceNum < 0) {
       return res.status(400).json({ error: 'Prix invalide' });
@@ -1532,11 +1533,11 @@ app.post('/api/products', requireLogin, requireAdmin, requirePermission('stock')
 
     // Insérer le nouveau produit
     const insertStmt = dbModule.db.prepare(`
-      INSERT INTO products (name, price, category, supplier, image_url, stock, barcode)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (name, price, origin_price, category, supplier, image_url, stock, barcode)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const result = insertStmt.run(name, priceNum, category, supplier || null, image_url || null, stockNum, barcode || '');
+    const result = insertStmt.run(name, priceNum, originPriceNum, category, supplier || null, image_url || null, stockNum, barcode || '');
 
     // Récupérer le produit créé
     const newProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
