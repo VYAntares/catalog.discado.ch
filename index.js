@@ -2583,13 +2583,32 @@ app.get('/api/order-suppliers/:id/export-pdf', requireLogin, requireAdmin, async
       }
     });
 
-    // Grouper les items par batch
-    const batches = {};
+    // Consolider les items par produit (vue "all batch")
+    const merged = {};
     items.forEach(item => {
-      const batch = item.batch_number || 1;
-      if (!batches[batch]) batches[batch] = [];
-      batches[batch].push(item);
+      const key = item.product_name;
+      if (!merged[key]) {
+        merged[key] = { ...item, quantity: 0, total_price: 0, batch_quantities: {} };
+      }
+      merged[key].quantity += (item.quantity || 0);
+      merged[key].total_price += (item.unit_price || 0) * (item.quantity || 0);
+      const bn = item.batch_number || 1;
+      merged[key].batch_quantities[bn] = (merged[key].batch_quantities[bn] || 0) + (item.quantity || 0);
     });
+    const mergedItems = Object.values(merged);
+
+    // Stats par batch pour le résumé en haut
+    const batchStats = {};
+    items.forEach(item => {
+      const bn = item.batch_number || 1;
+      if (!batchStats[bn]) batchStats[bn] = { qty: 0, amount: 0, refs: new Set() };
+      batchStats[bn].qty += (item.quantity || 0);
+      batchStats[bn].amount += (item.unit_price || 0) * (item.quantity || 0);
+      batchStats[bn].refs.add(item.product_name);
+    });
+    const sortedBatchNums = Object.keys(batchStats).map(Number).sort((a, b) => a - b);
+    const grandTotal = mergedItems.reduce((s, i) => s + i.total_price, 0);
+    const grandQty   = mergedItems.reduce((s, i) => s + i.quantity, 0);
 
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const invoiceNum = order.invoice_number || `CMD-${orderId}`;
@@ -2616,120 +2635,117 @@ app.get('/api/order-suppliers/:id/export-pdf', requireLogin, requireAdmin, async
     // Ligne séparatrice
     doc.moveTo(40, 120).lineTo(555, 120).lineWidth(1).stroke('#e2e8f0');
 
-    // ===== TABLEAU =====
-    const colX = { img: 40, name: 95, qty: 310, price: 370, total: 440, batch: 510 };
-    const colW = { img: 50, name: 210, qty: 55, price: 65, total: 65, batch: 45 };
+    // ===== RÉSUMÉ EN HAUT =====
     const pageBottom = doc.page.height - 60;
     let y = 130;
 
-    // Fonction pour dessiner l'en-tête du tableau
+    // Ligne résumé global
+    doc.rect(40, y, 515, 22).fill('#2d3748');
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('white');
+    doc.text('RÉSUMÉ GLOBAL', 48, y + 6, { width: 150 });
+    doc.text(`${mergedItems.length} réf.`, 210, y + 6, { width: 90, align: 'center' });
+    doc.text(`${formatSwissNumber(grandQty, 0)} unités`, 305, y + 6, { width: 105, align: 'center' });
+    doc.text(`${formatSwissNumber(grandTotal)} USD`, 415, y + 6, { width: 135, align: 'right' });
+    doc.fillColor('black');
+    y += 22;
+
+    // Détail par batch
+    sortedBatchNums.forEach((bn, idx) => {
+      const stat = batchStats[bn];
+      doc.rect(40, y, 515, 18).fill(idx % 2 === 0 ? '#ebf4ff' : '#f0f4ff');
+      doc.font('Helvetica').fontSize(9).fillColor('#4a5568');
+      doc.text(`Batch ${bn}`, 48, y + 4, { width: 150 });
+      doc.text(`${stat.refs.size} réf.`, 210, y + 4, { width: 90, align: 'center' });
+      doc.text(`${formatSwissNumber(stat.qty, 0)} unités`, 305, y + 4, { width: 105, align: 'center' });
+      doc.text(`${formatSwissNumber(stat.amount)} USD`, 415, y + 4, { width: 135, align: 'right' });
+      doc.fillColor('black');
+      y += 18;
+    });
+
+    y += 14;
+
+    // ===== TABLEAU CONSOLIDÉ =====
+    const colX = { img: 40, name: 95, qty: 325, price: 383, total: 450 };
+    const colW = { img: 50, name: 225, qty: 53, price: 62, total: 105 };
+
     const drawTableHeader = () => {
       doc.rect(40, y, 515, 22).fill('#4299e1');
       doc.font('Helvetica-Bold').fontSize(9).fillColor('white');
       doc.text('Image', colX.img + 4, y + 6, { width: colW.img });
       doc.text('Produit', colX.name + 4, y + 6, { width: colW.name });
-      doc.text('Qté', colX.qty + 4, y + 6, { width: colW.qty, align: 'center' });
-      doc.text('Prix unit.', colX.price + 4, y + 6, { width: colW.price, align: 'right' });
-      doc.text('Total', colX.total + 4, y + 6, { width: colW.total, align: 'right' });
-      doc.text('Batch', colX.batch + 4, y + 6, { width: colW.batch, align: 'center' });
+      doc.text('Qté tot.', colX.qty + 4, y + 6, { width: colW.qty, align: 'center' });
+      doc.text('Prix unit.', colX.price + 4, y + 6, { width: colW.price - 4, align: 'right' });
+      doc.text('Total USD', colX.total + 4, y + 6, { width: colW.total - 8, align: 'right' });
       doc.fillColor('black');
       y += 22;
     };
 
-    const sortedBatches = Object.keys(batches).sort((a, b) => a - b);
-    let grandTotal = 0;
+    drawTableHeader();
 
-    for (const batchNum of sortedBatches) {
-      const batchItems = batches[batchNum];
+    for (let i = 0; i < mergedItems.length; i++) {
+      const item = mergedItems[i];
+      const batchDetailStr = Object.entries(item.batch_quantities)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([b, q]) => `Batch ${b}: ${formatSwissNumber(q, 0)}`)
+        .join('  |  ');
+      const rowHeight = 62;
 
-      // Titre du batch si plusieurs batches
-      if (sortedBatches.length > 1) {
-        if (y + 70 > pageBottom) {
-          doc.addPage();
-          y = 40;
-        }
-        doc.rect(40, y, 515, 20).fill('#f7fafc');
-        doc.font('Helvetica-Bold').fontSize(10).fillColor('#4a5568');
-        doc.text(`Batch ${batchNum}`, 48, y + 5);
+      if (y + rowHeight > pageBottom) {
+        doc.addPage();
+        y = 40;
+        drawTableHeader();
+      }
+
+      if (i % 2 === 0) {
+        doc.rect(40, y, 515, rowHeight).fill('#fafbfc');
         doc.fillColor('black');
-        y += 20;
       }
 
-      drawTableHeader();
+      doc.moveTo(40, y + rowHeight).lineTo(555, y + rowHeight).lineWidth(0.5).stroke('#e2e8f0');
 
-      for (let i = 0; i < batchItems.length; i++) {
-        const item = batchItems[i];
-        const rowHeight = 50;
-
-        // Vérifier si on a besoin d'une nouvelle page
-        if (y + rowHeight > pageBottom) {
-          doc.addPage();
-          y = 40;
-          drawTableHeader();
-        }
-
-        // Fond alterné
-        if (i % 2 === 0) {
-          doc.rect(40, y, 515, rowHeight).fill('#fafbfc');
-          doc.fillColor('black');
-        }
-
-        // Bordure basse
-        doc.moveTo(40, y + rowHeight).lineTo(555, y + rowHeight).lineWidth(0.5).stroke('#e2e8f0');
-
-        // Image
-        if (item.image_url) {
-          try {
-            let imagePath = item.image_url;
-            if (imagePath.startsWith('/')) {
-              imagePath = path.join(rootDir, 'public', imagePath);
-            }
-            if (fs.existsSync(imagePath)) {
-              doc.image(imagePath, colX.img + 4, y + 3, { width: 42, height: 42, fit: [42, 42] });
-            }
-          } catch (imgErr) {
-            // Image non disponible, on continue
+      // Image
+      if (item.image_url) {
+        try {
+          let imagePath = item.image_url;
+          if (imagePath.startsWith('/')) {
+            imagePath = path.join(rootDir, 'public', imagePath);
           }
+          if (fs.existsSync(imagePath)) {
+            doc.image(imagePath, colX.img + 3, y + 4, { width: 46, height: 46, fit: [46, 46] });
+          }
+        } catch (imgErr) {
+          // Image non disponible, on continue
         }
-
-        // Nom du produit
-        doc.font('Helvetica-Bold').fontSize(9).fillColor('black');
-        doc.text(item.product_name || 'N/A', colX.name + 4, y + 6, { width: colW.name - 8 });
-
-        // Code-barres sous le nom
-        if (item.barcode) {
-          doc.font('Helvetica').fontSize(7).fillColor('#718096');
-          doc.text(`CB: ${item.barcode}`, colX.name + 4, y + 20, { width: colW.name - 8 });
-          doc.fillColor('black');
-        }
-
-        // Catégorie
-        if (item.category) {
-          doc.font('Helvetica').fontSize(7).fillColor('#a0aec0');
-          doc.text(item.category, colX.name + 4, y + 32, { width: colW.name - 8 });
-          doc.fillColor('black');
-        }
-
-        // Quantité
-        doc.font('Helvetica-Bold').fontSize(10).fillColor('black');
-        doc.text(String(item.quantity || 0), colX.qty + 4, y + 16, { width: colW.qty - 8, align: 'center' });
-
-        // Prix unitaire
-        doc.font('Helvetica').fontSize(9);
-        doc.text(formatSwissNumber(item.unit_price || 0), colX.price + 4, y + 16, { width: colW.price - 8, align: 'right' });
-
-        // Total
-        const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
-        grandTotal += itemTotal;
-        doc.font('Helvetica-Bold').fontSize(9);
-        doc.text(formatSwissNumber(itemTotal), colX.total + 4, y + 16, { width: colW.total - 8, align: 'right' });
-
-        // Batch
-        doc.font('Helvetica').fontSize(9);
-        doc.text(String(item.batch_number || 1), colX.batch + 4, y + 16, { width: colW.batch - 8, align: 'center' });
-
-        y += rowHeight;
       }
+
+      // Nom du produit
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('black');
+      doc.text(item.product_name || 'N/A', colX.name + 4, y + 5, { width: colW.name - 8 });
+
+      // Code-barres
+      if (item.barcode) {
+        doc.font('Helvetica').fontSize(7).fillColor('#718096');
+        doc.text(`CB: ${item.barcode}`, colX.name + 4, y + 19, { width: colW.name - 8 });
+      }
+
+      // Détail par batch (petit, violet)
+      doc.font('Helvetica').fontSize(6.5).fillColor('#553c9a');
+      doc.text(batchDetailStr, colX.name + 4, y + 32, { width: colW.name - 8 });
+      doc.fillColor('black');
+
+      // Quantité totale
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('black');
+      doc.text(formatSwissNumber(item.quantity, 0), colX.qty + 4, y + 22, { width: colW.qty - 8, align: 'center' });
+
+      // Prix unitaire
+      doc.font('Helvetica').fontSize(9);
+      doc.text(formatSwissNumber(item.unit_price || 0), colX.price + 4, y + 22, { width: colW.price - 8, align: 'right' });
+
+      // Total
+      doc.font('Helvetica-Bold').fontSize(9);
+      doc.text(formatSwissNumber(item.total_price), colX.total + 4, y + 22, { width: colW.total - 8, align: 'right' });
+
+      y += rowHeight;
     }
 
     // ===== TOTAL GÉNÉRAL =====

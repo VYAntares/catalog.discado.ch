@@ -1624,21 +1624,22 @@
     align-items: center;
   }
 
-  /* Vue consolidée : colonnes fixes pour alignement visuel entre cartes */
+  /* Vue consolidée : [nom+prix] [?] [qté] [badges batch] [total] */
   .batch-item-info.consolidated-layout {
-    grid-template-columns: 1fr 34px 140px 105px 195px;
-    gap: 16px;
+    grid-template-columns: minmax(160px, 1.5fr) 32px 110px minmax(120px, 1fr) 130px;
+    gap: 12px;
     align-items: center;
   }
 
-  .consolidated-name {
+  .consolidated-name-block {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 3px;
     min-width: 0;
+    overflow: hidden;
   }
 
-  .consolidated-name h5 {
+  .consolidated-name-block h5 {
     margin: 0;
     font-size: 15px;
     color: #2d3748;
@@ -1648,12 +1649,46 @@
     white-space: nowrap;
   }
 
-  .consolidated-layout .quantity-badge {
-    display: inline-block;
+  .consolidated-unit-price {
+    font-size: 12px;
+    color: #718096;
+    white-space: nowrap;
   }
 
-  .price-tag.consolidated-price {
-    text-align: left;
+  .consolidated-batch-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .consolidated-batch-badge {
+    background: #e9d8fd;
+    color: #553c9a;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .product-stats-btn {
+    background: none;
+    border: none;
+    color: #4299e1;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 16px;
+    line-height: 1;
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .consolidated-layout .quantity-badge {
+    display: inline-block;
+    text-align: center;
   }
 
   .consolidated-layout .batch-item-total {
@@ -1831,17 +1866,22 @@
     text-align: center;
   }
 
-  .batch-grid-view .consolidated-name {
+  .batch-grid-view .consolidated-name-block {
     width: 100%;
-    justify-content: center;
+    align-items: center;
+    text-align: center;
   }
 
-  .batch-grid-view .consolidated-name h5 {
+  .batch-grid-view .consolidated-name-block h5 {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
     text-align: center;
     font-size: 14px;
+  }
+
+  .batch-grid-view .consolidated-batch-badges {
+    justify-content: center;
   }
 
   .batch-grid-view .batch-status-cell {

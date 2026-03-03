@@ -26,7 +26,7 @@ async function loadClients() {
     
     clientTableBody.innerHTML = `
         <tr>
-            <td colspan="4" class="loading">Chargement des clients...</td>
+            <td colspan="2" class="loading">Chargement des clients...</td>
         </tr>
     `;
     
@@ -45,7 +45,7 @@ async function loadClients() {
     } catch (error) {
         clientTableBody.innerHTML = `
             <tr>
-                <td colspan="4" class="loading">
+                <td colspan="2" class="loading">
                     Erreur lors du chargement des clients. Veuillez réessayer.
                     <br><button class="action-btn" id="retryLoadClients">Réessayer</button>
                 </td>
@@ -64,7 +64,7 @@ function displayClients(clients) {
     if (!clients || clients.length === 0) {
         clientTableBody.innerHTML = `
             <tr>
-                <td colspan="4" class="empty-state">
+                <td colspan="2" class="empty-state">
                     <i class="fas fa-users-slash"></i>
                     <p>Aucun client trouvé.</p>
                 </td>
@@ -79,34 +79,22 @@ function displayClients(clients) {
         const clientId = client.clientId || 'N/A';
         const fullName = `${client.firstName || ''} ${client.lastName || ''}`.trim() || 'N/A';
         const shopName = client.shopName || 'N/A';
-        const email = client.email || 'N/A';
-        const phone = client.phone || 'N/A';
-        const referralSource = client.referralSource || '';
-        
+        const shopAddress = [client.shopAddress, client.shopZipCode, client.shopCity]
+            .filter(Boolean).join(', ');
+
         const row = document.createElement('tr');
+        row.className = 'client-row';
+        row.setAttribute('data-client-id', clientId);
         row.innerHTML = `
-            <td>
-                <span class="client-id">${clientId}</span>
-            </td>
-            <td>
+            <td class="col-identity">
                 <div class="client-info">
                     <span class="client-name">${fullName}</span>
                     <span class="client-shop">${shopName}</span>
-                    <div class="client-contact">
-                        <a href="mailto:${email}" class="contact-link" title="Envoyer un email">
-                            <i class="fas fa-envelope"></i> ${email}
-                        </a>
-                        <a href="tel:${phone}" class="contact-link" title="Appeler">
-                            <i class="fas fa-phone"></i> ${phone}
-                        </a>
-                        ${referralSource ? `<div class="client-referral" title="Source"><i class="fas fa-user-tag"></i> ${referralSource}</div>` : ''}
-                    </div>
+                    <span class="client-id-inline">${clientId}</span>
                 </div>
             </td>
-            <td style="text-align: center;">
-                <button class="action-btn details-btn view-client-btn" data-client-id="${clientId}">
-                    <i class="fas fa-eye"></i> Voir détails
-                </button>
+            <td class="col-address">
+                ${shopAddress ? `<a href="/admin/clients-map?address=${encodeURIComponent(shopAddress)}&client=${encodeURIComponent(clientId)}" class="client-address" title="Voir sur la carte"><i class="fas fa-map-marker-alt"></i> ${shopAddress}</a>` : '<span class="client-address-empty">—</span>'}
             </td>
         `;
         
@@ -126,7 +114,7 @@ function searchClients() {
     
     clientTableBody.innerHTML = `
         <tr>
-            <td colspan="4" class="loading">Recherche en cours...</td>
+            <td colspan="2" class="loading">Recherche en cours...</td>
         </tr>
     `;
     
@@ -161,12 +149,12 @@ function searchClients() {
     }
 }
 
-//Configure les écouteurs d'événements pour les boutons "Voir détails"
+//Rend chaque ligne de la table cliquable pour ouvrir le détail client
 function setupViewButtons() {
-    document.querySelectorAll('.view-client-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const clientId = this.getAttribute('data-client-id');
-            ClientView.viewClientDetails(clientId);
+    document.querySelectorAll('.client-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.client-address')) return;
+            ClientView.viewClientDetails(this.getAttribute('data-client-id'));
         });
     });
 }

@@ -337,12 +337,13 @@ function navigateToBatch(batchNumber) {
 	if (indicator) {
 	  if (batchNumber === 0) {
 		const allItems = State.getCurrentOrderItems();
-		const totalQty = allItems.reduce((s, i) => s + i.quantity, 0);
-		indicator.innerHTML = `Tous les batch &nbsp;·&nbsp; <strong>${allItems.length}</strong> réf. &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(totalQty, 0)}</strong> unités`;
+		const totalQty    = allItems.reduce((s, i) => s + i.quantity, 0);
+		const totalAmount = allItems.reduce((s, i) => s + (i.unit_price || 0) * (i.quantity || 0), 0);
+		indicator.innerHTML = `Tous les batch &nbsp;·&nbsp; <strong>${allItems.length}</strong> réf. &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(totalQty, 0)}</strong> unités &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(totalAmount)} USD</strong>`;
 	  } else {
 		const batchStat = currentBatches.find(b => b.batch_number === batchNumber);
 		if (batchStat) {
-		  indicator.innerHTML = `Batch ${batchNumber} &nbsp;·&nbsp; <strong>${batchStat.item_count}</strong> réf. &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(batchStat.total_quantity, 0)}</strong> unités`;
+		  indicator.innerHTML = `Batch ${batchNumber} &nbsp;·&nbsp; <strong>${batchStat.item_count}</strong> réf. &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(batchStat.total_quantity, 0)}</strong> unités &nbsp;·&nbsp; <strong>${Utils.formatSwissNumber(batchStat.total_amount)} USD</strong>`;
 		} else {
 		  indicator.textContent = `Batch ${batchNumber}`;
 		}
@@ -783,12 +784,14 @@ function openConsolidatedEdit(productName) {
           ...item,
           quantity: 0,
           total_price: 0,
-          batch_count: 0
+          batch_count: 0,
+          batch_quantities: {}
         };
       }
       merged[key].quantity    += item.quantity;
       merged[key].total_price += (item.total_price || item.quantity * item.unit_price);
       merged[key].batch_count += 1;
+      merged[key].batch_quantities[item.batch_number] = item.quantity;
     });
 
     const mergedItems = Object.values(merged).sort((a, b) => a.product_name.localeCompare(b.product_name));
@@ -821,41 +824,40 @@ function openConsolidatedEdit(productName) {
    */
   function createConsolidatedItemCard(item) {
     const imageUrl = item.image_url || '/images/placeholder.png';
-    const batchBadge = item.batch_count > 1
-      ? `<span style="background:#e9d8fd;color:#553c9a;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-left:4px;">${item.batch_count} batchs</span>`
-      : '';
+    const batchBadges = Object.entries(item.batch_quantities)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([b, q]) =>
+        `<span class="consolidated-batch-badge">Batch ${b}&nbsp;: ${Utils.formatSwissNumber(q, 0)}</span>`
+      ).join('');
 
     return `
       <div class="batch-item-card" data-item-id="${item.id}" data-batch-number="0">
         <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image"
              onerror="this.src='/images/placeholder.png'">
         <div class="batch-item-info consolidated-layout">
-          <div class="consolidated-name">
+          <div class="consolidated-name-block">
             <h5>${item.product_name}</h5>
-            ${batchBadge}
+            <span class="consolidated-unit-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
           </div>
           <button class="product-stats-btn"
                   data-product-name="${item.product_name}"
-                  title="Voir les statistiques"
-                  style="background:none;border:none;color:#4299e1;cursor:pointer;padding:4px;font-size:16px;line-height:1;justify-self:center;">
+                  title="Voir les statistiques">
             <i class="fas fa-question-circle"></i>
           </button>
           <span class="quantity-badge">${Utils.formatSwissNumber(item.quantity, 0)} unités</span>
-          <span class="price-tag consolidated-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
-          <span class="batch-item-total">Total: <strong>${Utils.formatSwissNumber(item.total_price)} USD</strong></span>
+          <div class="consolidated-batch-badges">${batchBadges}</div>
+          <span class="batch-item-total"><strong>${Utils.formatSwissNumber(item.total_price)} USD</strong></span>
         </div>
         <div class="batch-item-actions">
           <button class="batch-item-action-btn consolidated-move-btn"
                   data-action="distribute"
                   data-product-name="${item.product_name}"
-                  title="Répartir entre les batchs"
-                  style="background:#edf2f7;color:#4a5568;">
+                  title="Répartir entre les batchs">
             <i class="fas fa-arrows-alt"></i>
           </button>
           <button class="btn btn-sm consolidated-edit-btn"
                   data-product-name="${item.product_name}"
-                  title="Modifier"
-                  style="background:#edf2f7;color:#4a5568;">
+                  title="Modifier">
             <i class="fas fa-edit"></i>
           </button>
           <button class="btn btn-danger btn-sm consolidated-delete-btn"

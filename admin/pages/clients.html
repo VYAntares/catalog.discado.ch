@@ -74,31 +74,28 @@
             <i class="fas fa-database"></i> Base de données clients
         </h1>
 
+        <!-- Actions -->
+        <div class="client-actions-bar">
+            <button id="createClientBtn" class="client-action-btn client-action-create">
+                <i class="fas fa-plus"></i> Créer un client
+            </button>
+            <a href="/admin/clients-map" class="client-action-btn client-action-map">
+                <i class="fas fa-map-marked-alt"></i> Carte des magasins
+            </a>
+        </div>
+
         <!-- Search bar -->
         <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" 
-                placeholder="Rechercher un client par nom, email, boutique...">
+            <input type="text" id="searchInput" class="search-input"
+                placeholder="Rechercher un client par nom, boutique, ville...">
             <button id="searchBtn" class="search-btn">
                 <i class="fas fa-search"></i> Rechercher
             </button>
-            <button id="createClientBtn" class="create-btn action-btn">
-                <i class="fas fa-plus"></i> Créer client
-            </button>
-            <a href="/admin/clients-map" class="create-btn action-btn" style="text-decoration: none;">
-                <i class="fas fa-map-marked-alt"></i> Carte
-            </a>
         </div>
 
         <!-- Client List -->
         <div class="client-list">
             <table class="client-table">
-                <thead>
-                    <tr>
-                        <th>ID Client</th>
-                        <th>Nom / Boutique</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
                 <tbody id="clientTableBody">
                     <tr>
                         <td colspan="3" class="loading">Chargement des clients...</td>

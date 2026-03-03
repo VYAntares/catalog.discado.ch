@@ -23,14 +23,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     bindPopulateBtn();
     bindYearSelector();
 
-    // Ré-ouvrir la fiche client si on revient depuis les factures (param ?openClient=)
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Ré-ouvrir la fiche client si on revient depuis les factures (param ?openClient=)
     const openClientId = urlParams.get('openClient');
     if (openClientId) {
         viewClientDetails(openClientId, true);
-        // Nettoyer l'URL sans recharger la page
-        const cleanUrl = window.location.pathname;
-        history.replaceState(null, '', cleanUrl);
+        history.replaceState(null, '', window.location.pathname);
+    }
+
+    // Rechercher une adresse si on arrive depuis la liste clients (param ?address=&client=)
+    const addressParam = urlParams.get('address');
+    const clientParam  = urlParams.get('client');
+    if (addressParam) {
+        history.replaceState(null, '', window.location.pathname);
+
+        // Si un marqueur permanent existe déjà pour ce client, l'ouvrir directement
+        if (clientParam) {
+            const existing = markers.find(m => m.location.client_id === clientParam);
+            if (existing) {
+                map.setView([existing.location.latitude, existing.location.longitude], 16);
+                existing.marker.openPopup();
+                return;
+            }
+        }
+
+        // Sinon, lancer la recherche d'adresse (point gris pour ajouter)
+        const input = document.getElementById('addressSearch');
+        if (input) {
+            input.value = addressParam;
+            handleSearch();
+        }
     }
 });
 
