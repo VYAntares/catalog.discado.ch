@@ -60,9 +60,7 @@ function displayOrders(orders) {
         
         const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
         
-        const itemsPreview = order.items.slice(0, 3).map(item => {
-            return item.Nom.split(' - ')[0];
-        }).join(', ');
+        const itemsPreview = order.items.slice(0, 3).map(item => item.Nom).join(', ');
         
         const userProfile = order.userProfile || {};
         const customerName = userProfile.fullName || order.userId;

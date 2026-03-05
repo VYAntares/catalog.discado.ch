@@ -341,6 +341,10 @@ function initDatabase() {
     )
     `);
 
+    // Migration : ajout product_id aux tables existantes (nullable pour compatibilité)
+    try { db.exec('ALTER TABLE order_items ADD COLUMN product_id INTEGER REFERENCES products(id)'); } catch(e) { /* colonne déjà présente */ }
+    try { db.exec('ALTER TABLE pending_deliveries ADD COLUMN product_id INTEGER REFERENCES products(id)'); } catch(e) { /* colonne déjà présente */ }
+
     // Création de la table invoices
     db.exec(`
     CREATE TABLE IF NOT EXISTS invoices (
@@ -834,31 +838,29 @@ module.exports = {
     // Requêtes liées aux articles de commande
     orderItems: {
         add: db.prepare(`
-            INSERT INTO order_items (order_id, product_name, product_price, quantity, category, status) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, category, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `),
         getByOrder: db.prepare('SELECT * FROM order_items WHERE order_id = ?'),
         getByOrderAndStatus: db.prepare('SELECT * FROM order_items WHERE order_id = ? AND status = ?'),
-        updateStatus: db.prepare('UPDATE order_items SET status = ? WHERE order_id = ? AND product_name = ?'),
-        updateQuantity: db.prepare(`
-            UPDATE order_items 
-            SET quantity = ? 
-            WHERE order_id = ? AND product_name = ? AND category = ?
-        `)
+        updateStatus: db.prepare('UPDATE order_items SET status = ? WHERE id = ?'),
+        updateQuantity: db.prepare('UPDATE order_items SET quantity = ? WHERE id = ?'),
+        updateQuantityAndStatus: db.prepare('UPDATE order_items SET quantity = ?, status = ? WHERE id = ?'),
+        deleteById: db.prepare('DELETE FROM order_items WHERE id = ?')
     },
-    
+
     // Requêtes liées aux livraisons en attente
     pendingDeliveries: {
         add: db.prepare(`
-            INSERT INTO pending_deliveries (user_id, product_name, product_price, quantity, category) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO pending_deliveries (user_id, product_id, product_name, product_price, quantity, category)
+            VALUES (?, ?, ?, ?, ?, ?)
         `),
         getByUser: db.prepare('SELECT * FROM pending_deliveries WHERE user_id = ?'),
         remove: db.prepare('DELETE FROM pending_deliveries WHERE id = ?'),
         updateQuantity: db.prepare('UPDATE pending_deliveries SET quantity = ? WHERE id = ?'),
         findItem: db.prepare(`
-            SELECT * FROM pending_deliveries 
-            WHERE user_id = ? AND product_name = ? AND category = ?
+            SELECT * FROM pending_deliveries
+            WHERE user_id = ? AND product_id = ?
         `)
     },
     
@@ -897,29 +899,25 @@ module.exports = {
     getTreatedOrders: db.prepare("SELECT * FROM orders WHERE status IN ('completed', 'partial') ORDER BY date DESC"),
     updateOrderStatus: db.prepare('UPDATE orders SET status = ?, last_processed = ? WHERE order_id = ?'),
     addOrderItem: db.prepare(`
-        INSERT INTO order_items (order_id, product_name, product_price, quantity, category, status) 
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, category, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `),
     getOrderItems: db.prepare('SELECT * FROM order_items WHERE order_id = ?'),
     getOrderItemsByStatus: db.prepare('SELECT * FROM order_items WHERE order_id = ? AND status = ?'),
-    updateOrderItemStatus: db.prepare('UPDATE order_items SET status = ? WHERE order_id = ? AND product_name = ?'),
-    updateOrderItemQuantity: db.prepare(`
-        UPDATE order_items 
-        SET quantity = ? 
-        WHERE order_id = ? AND product_name = ? AND category = ?
-    `),
+    updateOrderItemStatus: db.prepare('UPDATE order_items SET status = ? WHERE id = ?'),
+    updateOrderItemQuantity: db.prepare('UPDATE order_items SET quantity = ? WHERE id = ?'),
     updateOrderDate: db.prepare('UPDATE orders SET date = ? WHERE order_id = ?'),
     updateOrderDateAndReference: db.prepare('UPDATE orders SET date = ?, reference = ? WHERE order_id = ?'),
     addPendingDelivery: db.prepare(`
-        INSERT INTO pending_deliveries (user_id, product_name, product_price, quantity, category) 
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO pending_deliveries (user_id, product_id, product_name, product_price, quantity, category)
+        VALUES (?, ?, ?, ?, ?, ?)
     `),
     getUserPendingDeliveries: db.prepare('SELECT * FROM pending_deliveries WHERE user_id = ?'),
     removePendingDelivery: db.prepare('DELETE FROM pending_deliveries WHERE id = ?'),
     updatePendingDeliveryQuantity: db.prepare('UPDATE pending_deliveries SET quantity = ? WHERE id = ?'),
     findPendingDeliveryItem: db.prepare(`
-        SELECT * FROM pending_deliveries 
-        WHERE user_id = ? AND product_name = ? AND category = ?
+        SELECT * FROM pending_deliveries
+        WHERE user_id = ? AND product_id = ?
     `),
 
     // Requêtes liées aux dépenses

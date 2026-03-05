@@ -57,8 +57,14 @@ async function showProcessOrderModal(order, clientProfile) {
             const products = await response.json();
             
             // Enrichir chaque item avec l'image_url du produit correspondant
+            // Pour les textiles, le Nom contient la taille (ex: "Hoodie 1 - M"),
+            // on cherche d'abord en exact puis avec le nom de base (avant " - ")
             enrichedItems = order.items.map(item => {
-                const product = products.find(p => p.name === item.Nom || p.Nom === item.Nom);
+                const baseName = item.Nom.includes(' - ')
+                    ? item.Nom.substring(0, item.Nom.lastIndexOf(' - '))
+                    : item.Nom;
+                const product = products.find(p => p.name === item.Nom || p.Nom === item.Nom)
+                             || products.find(p => p.name === baseName || p.Nom === baseName);
                 return {
                     ...item,
                     image_url: product?.image_url || product?.imageUrl || null,
@@ -289,8 +295,13 @@ async function validateDelivery() {
             const quantity = parseInt(input.value, 10);
             if (quantity > 0) {
                 hasDeliveredItems = true;
+                const orderItemIdRaw = input.getAttribute('data-order-item-id');
+                const itemIdRaw = input.getAttribute('data-item-id');
                 deliveredItems.push({
                     Nom: input.getAttribute('data-item-name'),
+                    categorie: input.getAttribute('data-item-categorie') || '',
+                    order_item_id: orderItemIdRaw ? parseInt(orderItemIdRaw, 10) : null,
+                    product_id: itemIdRaw ? parseInt(itemIdRaw, 10) : null,
                     quantity: quantity,
                     prix: input.getAttribute('data-item-price')
                 });
@@ -394,27 +405,25 @@ function generateItemsByCategory(items) {
         `;
         
         groupedItems[category].forEach(item => {
-            const shortName = item.Nom.split(' - ')[0];
-            
             // ✅ UTILISER L'IMAGE_URL DE LA BASE DE DONNÉES
             const productImage = item.image_url || '/images/products/placeholder.jpg';
-            
+
             const isOutOfStock = item.stock === 0;
 
             html += `
                 <tr data-item-name="${item.Nom}" class="${isOutOfStock ? 'item-unavailable' : ''}"${isOutOfStock ? ' data-unavailable="true"' : ''}>
                     <td class="product-image-cell">
                         <img src="${productImage}"
-                            alt="${shortName}"
+                            alt="${item.Nom}"
                             class="product-thumbnail"
                             onerror="this.src='/images/products/placeholder.jpg';this.onerror='';"
-                            onclick="showProductImage('${productImage}', '${shortName}')"
+                            onclick="showProductImage('${productImage}', '${item.Nom}')"
                             title="${item.Nom}"
                         >
                     </td>
                     <td>
                         <div class="item-details">
-                            <span class="item-name" title="${item.Nom}">${shortName}</span>
+                            <span class="item-name" title="${item.Nom}">${item.Nom}</span>
                             <span class="item-price">${Formatter.formatPrice(item.prix)} CHF</span>
                         </div>
                     </td>
@@ -426,6 +435,9 @@ function generateItemsByCategory(items) {
                             value="0"
                             class="delivered-quantity"
                             data-item-name="${item.Nom}"
+                            data-item-id="${item.product_id || ''}"
+                            data-order-item-id="${item.order_item_id || ''}"
+                            data-item-categorie="${item.categorie || ''}"
                             data-item-price="${item.prix}"
                             data-max-quantity="${item.quantity}"
                             pattern="[0-9]*"

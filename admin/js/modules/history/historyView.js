@@ -224,7 +224,7 @@ function displayOrderDetails(order, container) {
                 const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
 
                 detailsHTML += `
-                    <tr data-product-name="${item.Nom}">
+                    <tr data-product-name="${item.Nom}" data-product-id="${item.product_id || ''}" data-order-item-id="${item.order_item_id || ''}">
                         <td class="qty-column">${item.quantity}</td>
                         <td class="product-column">
                             <span class="product-name">${item.Nom}</span>

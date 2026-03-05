@@ -99,30 +99,35 @@ export function getCurrentCategory() {
 }
 
 // Initialize horizontal category bar with dynamic filtering
-export function initHorizontalCategories(filterCallback) {
+// allowedCategories: optional array of category ids to restrict the bar (e.g. ['hoodie','tshirt'])
+// initialCategory: category to mark as active on load (default: 'magnet')
+export function initHorizontalCategories(filterCallback, allowedCategories = null, initialCategory = 'magnet') {
     const categoriesBar = document.getElementById('categoriesBar');
     if (!categoriesBar) return;
-    
-    const categories = getAvailableCategories();
-    
+
+    let categories = getAvailableCategories();
+    if (allowedCategories) {
+        categories = categories.filter(c => allowedCategories.includes(c.id));
+    }
+
     if (!filterCallback) {
         try {
             import('./productList.js')
                 .then(module => {
                     const filter = module.filterProducts || null;
-                    setupCategoryButtons(categories, categoriesBar, filter);
+                    setupCategoryButtons(categories, categoriesBar, filter, initialCategory);
                 })
-                .catch(() => setupCategoryButtons(categories, categoriesBar));
+                .catch(() => setupCategoryButtons(categories, categoriesBar, null, initialCategory));
         } catch {
-            setupCategoryButtons(categories, categoriesBar);
+            setupCategoryButtons(categories, categoriesBar, null, initialCategory);
         }
     } else {
-        setupCategoryButtons(categories, categoriesBar, filterCallback);
+        setupCategoryButtons(categories, categoriesBar, filterCallback, initialCategory);
     }
 }
 
 // Create and configure category buttons for horizontal bar + sidebar
-function setupCategoryButtons(categories, container, filterCallback) {
+function setupCategoryButtons(categories, container, filterCallback, initialCategory = 'magnet') {
     container.innerHTML = '';
 
     // Also populate sidebar if present
@@ -130,30 +135,35 @@ function setupCategoryButtons(categories, container, filterCallback) {
     if (sidebarContainer) sidebarContainer.innerHTML = '';
 
     categories.forEach(category => {
-        const button = createCategoryButton(category, filterCallback);
+        const button = createCategoryButton(category, filterCallback, initialCategory);
         container.appendChild(button);
 
         // Clone for sidebar
         if (sidebarContainer) {
-            const sidebarButton = createCategoryButton(category, filterCallback);
+            const sidebarButton = createCategoryButton(category, filterCallback, initialCategory);
             sidebarContainer.appendChild(sidebarButton);
         }
     });
 }
 
 // Create a single category button with click handler
-function createCategoryButton(category, filterCallback) {
+function createCategoryButton(category, filterCallback, initialCategory = 'magnet') {
     const button = document.createElement('button');
     button.className = 'category-button';
     button.setAttribute('data-category', category.id);
     button.textContent = category.name;
 
-    if (category.id === 'magnet') {
+    if (category.id === initialCategory) {
         button.classList.add('active');
     }
 
     button.addEventListener('click', function() {
         const categoryId = category.id;
+
+        // Update URL to reflect the selected category
+        const url = new URL(window.location.href);
+        url.searchParams.set('category', categoryId);
+        history.replaceState(null, '', url.toString());
 
         // Update ALL category buttons (both bar + sidebar)
         document.querySelectorAll('.category-button').forEach(btn => {

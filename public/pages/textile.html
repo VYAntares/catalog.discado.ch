@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Discado - Product Catalog</title>
+<title>Discado - Textile</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <!-- CSS -->
@@ -24,7 +24,6 @@
 
 <!-- Sticky search + categories bar -->
 <div class="sticky-filter-bar">
-  <!-- Sur desktop : bouton Catégories + barre de recherche côte à côte -->
   <div class="filter-row">
     <button class="categories-toggle-btn" id="categoriesToggleBtn" aria-label="Categories">
       <i class="fas fa-th-large"></i>
@@ -36,19 +35,15 @@
       <button id="searchButton" aria-label="Search"><i class="fas fa-search"></i></button>
     </div>
   </div>
-  <!-- Sur mobile : barre de catégories horizontale scrollable
-       Sur desktop : dropdown masqué, affiché par le bouton ci-dessus -->
   <div class="categories-bar" id="categoriesBar"></div>
 </div>
 
 <!-- Catalog Layout (sidebar + products) -->
 <div class="catalog-layout">
-  <!-- Sidebar desktop (catégories uniquement) -->
   <aside class="catalog-sidebar" id="catalogSidebar">
     <div class="sidebar-categories" id="sidebarCategories"></div>
   </aside>
 
-  <!-- Main Content -->
   <main>
     <ul id="productList"></ul>
   </main>
@@ -68,11 +63,10 @@
   <option value="all" selected>All Products</option>
 </select>
 
-<!-- Comportement de la sticky bar + dropdown catégories (desktop) -->
+<!-- Sticky bar behaviour (same as catalog.html) -->
 <script>
 (function () {
     document.addEventListener('DOMContentLoaded', function () {
-        // ── Masquer / afficher la barre au scroll ──
         const filterBar = document.querySelector('.sticky-filter-bar');
         if (filterBar) {
             let lastScrollY = window.scrollY;
@@ -96,19 +90,16 @@
             }, { passive: true });
         }
 
-        // ── Dropdown catégories (desktop uniquement) ──
         const toggleBtn  = document.getElementById('categoriesToggleBtn');
         const categoriesBar = document.getElementById('categoriesBar');
 
         if (toggleBtn && categoriesBar) {
-            // Ouvrir / fermer au clic sur le bouton
             toggleBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 const isOpen = categoriesBar.classList.toggle('dropdown-open');
                 toggleBtn.classList.toggle('active', isOpen);
             });
 
-            // Fermer si clic en dehors
             document.addEventListener('click', function (e) {
                 if (!categoriesBar.contains(e.target) && !toggleBtn.contains(e.target)) {
                     categoriesBar.classList.remove('dropdown-open');
@@ -116,7 +107,6 @@
                 }
             });
 
-            // Fermer + mettre à jour le label du bouton quand on choisit une catégorie
             categoriesBar.addEventListener('click', function (e) {
                 const btn = e.target.closest('.category-button');
                 if (btn) {
@@ -131,10 +121,13 @@
 })();
 </script>
 
-<!-- Scripts -->
+<!-- Scripts: textile-only categories -->
 <script type="module">
 import { initCatalog, filterProducts } from '/js/modules/catalog/productList.js';
 import { initHorizontalCategories } from '/js/modules/catalog/productFilter.js';
+
+const TEXTILE_CATEGORIES = ['hoodie', 'tshirt', 'hats', 'socks'];
+const TEXTILE_DEFAULT = 'hoodie';
 
 document.addEventListener('DOMContentLoaded', function() {
     if (window.DiscadoHeader) {
@@ -154,12 +147,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading footer:', error);
         });
 
-    // Lire le paramètre ?category= depuis l'URL (vient de la page home)
-    const urlParams = new URLSearchParams(window.location.search);
-    const categoryParam = urlParams.get('category') || 'magnet';
-
-    initCatalog({ defaultCategory: categoryParam });
-    initHorizontalCategories(filterProducts, null, categoryParam);
+    initCatalog({ defaultCategory: TEXTILE_DEFAULT });
+    initHorizontalCategories(filterProducts, TEXTILE_CATEGORIES);
 });
 </script>
 </body>

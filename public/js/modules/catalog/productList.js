@@ -13,21 +13,43 @@ let displayedProducts = [];
 let selectedProducts = [];
 let currentCategorySelected = 'magnet';
 
+// Textile size configuration
+const TEXTILE_CATEGORIES = ['tshirt', 'hoodie'];
+const ADULT_SIZES = ['S', 'M', 'L', 'XL', '2XL'];
+const KID_SIZES = ['2-4ans', '6-8ans', '10-12ans'];
+
+function isTextile(product) {
+    if (!product.categorie) return false;
+    return TEXTILE_CATEGORIES.includes(product.categorie.toLowerCase());
+}
+
+function isKidProduct(product) {
+    return product.Nom && /kid/i.test(product.Nom);
+}
+
+function getSizes(product) {
+    return isKidProduct(product) ? KID_SIZES : ADULT_SIZES;
+}
+
 // Initialize catalog page
-function initCatalog() {
+// options.defaultCategory: first category to display (default: 'magnet')
+function initCatalog(options = {}) {
+    const defaultCategory = options.defaultCategory || 'magnet';
+    currentCategorySelected = defaultCategory;
+
     createFloatingButton();
-    
-    loadProducts().then(() => {
+
+    loadProducts(defaultCategory).then(() => {
         setupSearch();
         initProductFilter(filterProducts);
     });
 }
 
 // Fetch and load products from API
-async function loadProducts() {
+async function loadProducts(defaultCategory = 'magnet') {
     try {
         const productList = document.getElementById('productList');
-        
+
         if (productList) {
             productList.innerHTML = `
                 <div class="loading-container">
@@ -36,19 +58,19 @@ async function loadProducts() {
                 </div>
             `;
         }
-        
+
         allProducts = await fetchProducts();
-        
+
         // Filter out invalid products
         allProducts = allProducts.filter(p => p.Nom && p.Nom.trim() !== "");
-        
-        displayedProducts = filterByCategory(allProducts, 'magnet');
+
+        displayedProducts = filterByCategory(allProducts, defaultCategory);
         displayProducts(displayedProducts);
-        
+
         initImagePreview();
-        
+
         return allProducts;
-        
+
     } catch (error) {
         handleProductLoadError();
         return [];
@@ -93,14 +115,39 @@ function filterByCategory(products, category) {
     });
 }
 
+// Build display list for a category: mix of real products and hero image placeholders
+// Hero placeholders have { _hero: true, src, cls }
+function applyCategorySort(products, category) {
+    if (category === 'tshirt') {
+        const kids  = products.filter(p => p.Nom && /kid/i.test(p.Nom));
+        const others = products
+            .filter(p => !p.Nom || !/kid/i.test(p.Nom))
+            .sort((a, b) => (a.prix || 0) - (b.prix || 0));
+
+        const beforeSeven = others.filter(p => (p.prix || 0) < 7);
+        const sevenPlus   = others.filter(p => (p.prix || 0) >= 7);
+
+        return [
+            { _hero: true, src: '/images/lifestyle/kid.jpg',         cls: 'hero-contain' },
+            ...kids,
+            { _hero: true, src: '/images/lifestyle/unisex.jpg',      cls: 'hero-newline' },
+            ...beforeSeven,
+            { _hero: true, src: '/images/lifestyle/Tshirt_face.jpg', cls: 'hero-2x2' },
+            ...sevenPlus
+        ];
+    }
+    return products;
+}
+
 // Display products in the list
 function displayProducts(products) {
     const list = document.getElementById("productList");
     if (!list) return;
-    
-    displayedProducts = products;
-    
-    if (products.length === 0) {
+
+    const displayList = applyCategorySort(products, currentCategorySelected);
+    displayedProducts = displayList.filter(p => !p._hero);
+
+    if (displayedProducts.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
                 <p>No products found in this category</p>
@@ -108,14 +155,37 @@ function displayProducts(products) {
         `;
         return;
     }
-    
+
     list.innerHTML = "";
 
-    products.forEach((product, index) => {
-        const li = createProductElement(product, index);
-        list.appendChild(li);
+    // Explicitly-placed hero images (prepended, use CSS grid-column/row)
+    const explicitHeroes = {
+        hoodie: [
+            { src: '/images/lifestyle/hoodie_profile.jpg', cls: 'hero-right' }
+        ]
+    };
+    if (explicitHeroes[currentCategorySelected]) {
+        explicitHeroes[currentCategorySelected].forEach(({ src, cls }) => {
+            const heroLi = document.createElement('li');
+            heroLi.className = `product-item lifestyle-hero ${cls}`;
+            heroLi.innerHTML = `<img src="${src}" alt="Lifestyle" class="lifestyle-hero-img">`;
+            list.appendChild(heroLi);
+        });
+    }
+
+    // Render the display list in order (products + inline hero images)
+    let productIndex = 0;
+    displayList.forEach(item => {
+        if (item._hero) {
+            const heroLi = document.createElement('li');
+            heroLi.className = `product-item lifestyle-hero${item.cls ? ' ' + item.cls : ''}`;
+            heroLi.innerHTML = `<img src="${item.src}" alt="Lifestyle" class="lifestyle-hero-img">`;
+            list.appendChild(heroLi);
+        } else {
+            list.appendChild(createProductElement(item, productIndex++));
+        }
     });
-    
+
     document.dispatchEvent(new CustomEvent('productsLoaded'));
 }
 
@@ -164,20 +234,62 @@ function createInfoContainer(product) {
     return infoContainer;
 }
 
-// Create product action container with quantity input
+// Create product action container with quantity input (or size selector for textiles)
 function createActionContainer(product) {
     const actionContainer = document.createElement("div");
     actionContainer.className = "product-actions";
 
-    const quantityContainer = document.createElement("div");
-    quantityContainer.className = "quantity-container";
-
-    const quantityInput = createQuantityInput(product);
-    
-    quantityContainer.appendChild(quantityInput);
-    actionContainer.appendChild(quantityContainer);
+    if (isTextile(product)) {
+        actionContainer.appendChild(createSizeSelectorContainer(product));
+    } else {
+        const quantityContainer = document.createElement("div");
+        quantityContainer.className = "quantity-container";
+        quantityContainer.appendChild(createQuantityInput(product));
+        actionContainer.appendChild(quantityContainer);
+    }
 
     return actionContainer;
+}
+
+// Create size selector grid for textile products
+function createSizeSelectorContainer(product) {
+    const sizes = getSizes(product);
+    const sizeSelector = document.createElement("div");
+    sizeSelector.className = "size-selector";
+
+    sizes.forEach(size => {
+        const sizeCol = document.createElement("div");
+        sizeCol.className = "size-col";
+
+        const label = document.createElement("span");
+        label.className = "size-label";
+        label.textContent = size;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.pattern = "[0-9]*";
+        input.value = "0";
+        input.className = "quantity-input size-qty";
+
+        input.addEventListener('focus', () => {
+            if (input.value === "0") input.value = "";
+        });
+        input.addEventListener('blur', () => {
+            if (input.value === "") input.value = "0";
+        });
+        input.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') addAllSelectedToCart();
+        });
+        input.addEventListener('change', () => {
+            updateSelectedProducts(product, parseInt(input.value) || 0, product.imageUrl, size);
+        });
+
+        sizeCol.append(label, input);
+        sizeSelector.appendChild(sizeCol);
+    });
+
+    return sizeSelector;
 }
 
 // Create quantity input with event listeners
@@ -296,13 +408,16 @@ function setupSearch() {
 }
 
 // Update selected products list
-function updateSelectedProducts(product, quantity, imageUrl) {
+// For textile products, size is appended to Nom to create distinct cart entries
+function updateSelectedProducts(product, quantity, imageUrl, size = null) {
     quantity = parseInt(quantity) || 0;
-    
-    const existingProductIndex = selectedProducts.findIndex(item => 
-        item.Nom === product.Nom && item.categorie === product.categorie
+
+    const nomKey = size ? `${product.Nom} - ${size}` : product.Nom;
+
+    const existingProductIndex = selectedProducts.findIndex(item =>
+        item.Nom === nomKey && item.categorie === product.categorie
     );
-    
+
     if (quantity <= 0) {
         if (existingProductIndex !== -1) {
             selectedProducts.splice(existingProductIndex, 1);
@@ -313,12 +428,13 @@ function updateSelectedProducts(product, quantity, imageUrl) {
         } else {
             selectedProducts.push({
                 ...product,
+                Nom: nomKey,
                 quantity: quantity,
                 imageUrl: imageUrl
             });
         }
     }
-    
+
     updateFloatingButtonCounter();
 }
 

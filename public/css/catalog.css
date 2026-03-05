@@ -286,6 +286,64 @@ li.product-item:hover {
 }
 
 /* =========================================
+   Size Selector (textile: tshirt, hoodie)
+   ========================================= */
+.size-selector {
+    display: flex;
+    gap: 3px;
+    width: 100%;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.size-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.size-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #8892a4;
+    text-transform: uppercase;
+    letter-spacing: 0.1px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.size-qty {
+    width: 100%;
+    height: 30px;
+    border: 1.5px solid #e0e4ef;
+    border-radius: 6px;
+    background: #f7f8fa;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a2e;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    padding: 0;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.size-qty::-webkit-inner-spin-button,
+.size-qty::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.size-qty:focus {
+    outline: none;
+    border-color: #e9394f;
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(233, 57, 79, 0.12);
+}
+
+/* =========================================
    Floating Add to Cart Button
    ========================================= */
 .floating-add-to-cart-btn {
@@ -702,6 +760,52 @@ li.product-item:hover {
         border-color: rgba(233, 57, 79, 0.18);
     }
 }
+
+/* =========================================
+   Lifestyle hero images (ex: hoodie)
+   Placées explicitement dans le grid CSS
+   ========================================= */
+#productList .lifestyle-hero {
+    padding: 0 !important;
+    overflow: hidden;
+    border-top: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07), 0 6px 20px rgba(0, 0, 0, 0.05) !important;
+    background: #f5f7fc;
+}
+
+#productList .lifestyle-hero .lifestyle-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    cursor: default;
+}
+
+/* Droite : dernière colonne, lignes 1-2 (hoodie_profile) */
+#productList .hero-right {
+    grid-column: -2;
+    grid-row: 1 / span 2;
+}
+
+/* Carré 2×2 (Tshirt_face) */
+#productList .hero-2x2 {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+/* Image affichée en entier sans recadrage (kid.jpg) */
+#productList .hero-contain .lifestyle-hero-img {
+    object-fit: contain;
+    background: #fff;
+    padding: 8px;
+}
+
+/* Force un retour à la colonne 1 = nouvelle ligne (unisex.jpg) */
+#productList .hero-newline {
+    grid-column: 1;
+}
+
 
 /* Tablette : 2 colonnes de produits */
 @media (min-width: 769px) and (max-width: 1100px) {

@@ -6,7 +6,8 @@
 class ProductStatsModal {
 	constructor() {
 	  this.modal = null;
-	  this.currentProduct = null;
+	  this.currentProductId = null;
+	  this.currentProductName = null;
 	  this.currentYear = 'all';
 	  // 💾 Cache pour stocker les stats et années déjà chargées
 	  this.statsCache = new Map();
@@ -17,8 +18,9 @@ class ProductStatsModal {
 	 * Ouvre la modale de stats pour un produit
 	 * ⚡ Optimisé : Affiche la modale immédiatement, charge les données après
 	 */
-	async open(productName) {
-	  this.currentProduct = productName;
+	async open(productId, productName) {
+	  this.currentProductId = productId;
+	  this.currentProductName = productName;
 	  this.currentYear = 'all';
 
 	  // ⚡ SOLUTION 1 : Créer et afficher la modale IMMÉDIATEMENT avec le loader
@@ -99,12 +101,12 @@ class ProductStatsModal {
 		let years;
 
 		// 💾 Vérifier si les années sont en cache
-		if (this.yearsCache.has(this.currentProduct)) {
-		  years = this.yearsCache.get(this.currentProduct);
+		if (this.yearsCache.has(this.currentProductId)) {
+		  years = this.yearsCache.get(this.currentProductId);
 		  console.log('✅ Années chargées depuis le cache');
 		} else {
 		  // Sinon, charger depuis l'API
-		  const response = await fetch(`/api/stats/product/${encodeURIComponent(this.currentProduct)}/years`);
+		  const response = await fetch(`/api/stats/product/${this.currentProductId}/years`);
 
 		  if (!response.ok) {
 			throw new Error('Failed to load years');
@@ -112,7 +114,7 @@ class ProductStatsModal {
 
 		  years = await response.json();
 		  // 💾 Stocker en cache
-		  this.yearsCache.set(this.currentProduct, years);
+		  this.yearsCache.set(this.currentProductId, years);
 		  console.log('📥 Années chargées depuis l\'API et mises en cache');
 		}
 
@@ -149,7 +151,7 @@ class ProductStatsModal {
 	  `;
 
 	  try {
-		const cacheKey = `${this.currentProduct}_${this.currentYear}`;
+		const cacheKey = `${this.currentProductId}_${this.currentYear}`;
 		let stats;
 
 		// 💾 Vérifier si les stats sont en cache
@@ -159,8 +161,8 @@ class ProductStatsModal {
 		} else {
 		  // Sinon, charger depuis l'API
 		  const url = this.currentYear === 'all'
-			? `/api/stats/product/${encodeURIComponent(this.currentProduct)}`
-			: `/api/stats/product/${encodeURIComponent(this.currentProduct)}?year=${this.currentYear}`;
+			? `/api/stats/product/${this.currentProductId}`
+			: `/api/stats/product/${this.currentProductId}?year=${this.currentYear}`;
 
 		  const response = await fetch(url);
 
@@ -175,7 +177,7 @@ class ProductStatsModal {
 		}
 
 		// Mettre à jour le titre
-		document.getElementById('productStatsTitle').textContent = this.currentProduct;
+		document.getElementById('productStatsTitle').textContent = this.currentProductName;
 
 		// Afficher les stats
 		this.renderStats(stats);

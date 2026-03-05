@@ -340,7 +340,7 @@ class StockManager {
 						</h3>
 
 						<button class="product-stats-btn"
-								ontouchstart="if(window.ProductStatsModal) window.ProductStatsModal.open('${this.escapeHtml(name)}'); return false;" onclick="if(window.ProductStatsModal) window.ProductStatsModal.open('${this.escapeHtml(name)}'); return false;"
+								ontouchstart="if(window.ProductStatsModal) window.ProductStatsModal.open(${product.id}, '${this.escapeHtml(name)}'); return false;" onclick="if(window.ProductStatsModal) window.ProductStatsModal.open(${product.id}, '${this.escapeHtml(name)}'); return false;"
 								title="Voir les statistiques"
 								aria-label="Voir les statistiques">
 							<i class="fas fa-question-circle"></i>

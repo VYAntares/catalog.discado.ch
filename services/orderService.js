@@ -110,17 +110,19 @@ const orderService = {
             dbModule.createOrder.run(orderId, userId, 'pending', date, reference);
             
             cartItems.forEach(item => {
-                const pendingItem = pendingDeliveries.find(
-                    pending => pending.product_name === item.Nom && 
-                            pending.category === item.categorie
+                const pendingItem = pendingDeliveries.find(pending =>
+                    (item.id && pending.product_id)
+                        ? pending.product_id === item.id
+                        : pending.product_name === item.Nom && pending.category === item.categorie
                 );
-                
+
                 if (pendingItem) {
                     if (pendingItem.quantity <= item.quantity) {
                         dbModule.removePendingDelivery.run(pendingItem.id);
-                        
+
                         dbModule.addOrderItem.run(
                             orderId,
+                            item.id || null,
                             item.Nom,
                             parseFloat(item.prix),
                             item.quantity,
@@ -133,9 +135,10 @@ const orderService = {
                             newPendingQuantity,
                             pendingItem.id
                         );
-                        
+
                         dbModule.addOrderItem.run(
                             orderId,
+                            item.id || null,
                             item.Nom,
                             parseFloat(item.prix),
                             item.quantity,
@@ -146,6 +149,7 @@ const orderService = {
                 } else {
                     dbModule.addOrderItem.run(
                         orderId,
+                        item.id || null,
                         item.Nom,
                         parseFloat(item.prix),
                         item.quantity,
@@ -154,7 +158,7 @@ const orderService = {
                     );
                 }
             });
-            
+
             return { success: true, orderId, message: 'New order created successfully' };
         });
     },
@@ -166,11 +170,12 @@ const orderService = {
             const existingItems = dbModule.getOrderItems.all(orderId);
             
             cartItems.forEach(item => {
-                const pendingItem = pendingDeliveries.find(
-                    pending => pending.product_name === item.Nom && 
-                            pending.category === item.categorie
+                const pendingItem = pendingDeliveries.find(pending =>
+                    (item.id && pending.product_id)
+                        ? pending.product_id === item.id
+                        : pending.product_name === item.Nom && pending.category === item.categorie
                 );
-                
+
                 if (pendingItem) {
                     if (pendingItem.quantity <= item.quantity) {
                         dbModule.removePendingDelivery.run(pendingItem.id);
@@ -182,24 +187,25 @@ const orderService = {
                         );
                     }
                 }
-                
-                const existingItem = existingItems.find(
-                    existing => existing.product_name === item.Nom && 
-                                existing.category === item.categorie
+
+                const existingItem = existingItems.find(existing =>
+                    (item.id && existing.product_id)
+                        ? existing.product_id === item.id
+                        : existing.product_name === item.Nom && existing.category === item.categorie
                 );
-                
+
                 if (existingItem) {
                     const newQuantity = existingItem.quantity + item.quantity;
-                    
+
                     dbModule.updateOrderItemQuantity.run(
                         newQuantity,
                         orderId,
-                        item.Nom,
-                        item.categorie
+                        item.id || null
                     );
                 } else {
                     dbModule.addOrderItem.run(
                         orderId,
+                        item.id || null,
                         item.Nom,
                         parseFloat(item.prix),
                         item.quantity,
@@ -208,7 +214,7 @@ const orderService = {
                     );
                 }
             });
-            
+
             if (reference) {
                 dbModule.updateOrderDateAndReference.run(new Date().toISOString(), reference, orderId);
             } else {
@@ -293,7 +299,9 @@ const orderService = {
             Nom: item.product_name,
             prix: item.product_price.toString(),
             quantity: item.quantity,
-            categorie: item.category
+            categorie: item.category,
+            product_id: item.product_id || null,
+            order_item_id: item.id || null
         };
     },
     
@@ -485,78 +493,79 @@ const orderService = {
 				console.log(`📋 ${allItems.length} articles dans la commande`);
 				
 				allItems.forEach(item => {
-					const deliveredItem = deliveredItems.find(d => d.Nom === item.product_name);
-					
+					// Matcher par order_item_id (unique par ligne, gère les multi-tailles)
+					const deliveredItem = deliveredItems.find(d =>
+						d.order_item_id ? d.order_item_id === item.id : d.Nom === item.product_name && d.categorie === item.category
+					);
+
 					if (deliveredItem && deliveredItem.quantity > 0) {
-						// 🆕 Décrémenter le stock
-						this._decrementStock(item.product_name, deliveredItem.quantity);
-						
+						// Décrémenter le stock
+						this._decrementStock(item.product_id, deliveredItem.quantity);
+
 						if (deliveredItem.quantity >= item.quantity) {
-							// Livraison complète
-							dbModule.updateOrderItemQuantity.run(
+							// Livraison complète : mettre à jour quantité + statut en une fois
+							dbModule.orderItems.updateQuantityAndStatus.run(
 								deliveredItem.quantity,
-								orderId,
-								item.product_name,
-								item.category
+								'delivered',
+								item.id
 							);
-							
-							dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
 						} else {
 							// Livraison partielle
 							const remainingQuantity = item.quantity - deliveredItem.quantity;
-							
-							dbModule.updateOrderItemQuantity.run(
+
+							// Mettre à jour la ligne existante avec la quantité livrée
+							dbModule.orderItems.updateQuantityAndStatus.run(
 								deliveredItem.quantity,
-								orderId,
-								item.product_name,
-								item.category
+								'delivered',
+								item.id
 							);
-							
-							dbModule.updateOrderItemStatus.run('delivered', orderId, item.product_name);
-							
+
+							// Créer une nouvelle ligne pour le reste
 							dbModule.addOrderItem.run(
 								orderId,
+								item.product_id || null,
 								item.product_name,
 								item.product_price,
 								remainingQuantity,
 								item.category,
 								'remaining'
 							);
-							
+
 							remainingItems.push({
 								Nom: item.product_name,
 								prix: item.product_price.toString(),
 								quantity: remainingQuantity,
 								categorie: item.category
 							});
-							
+
 							this._updatePendingDeliveryItem(
-								userId, 
-								item.product_name, 
-								item.category, 
-								remainingQuantity, 
-								item.product_price, 
+								userId,
+								item.product_id || null,
+								item.product_name,
+								item.category,
+								remainingQuantity,
+								item.product_price,
 								existingPendingDeliveries
 							);
 						}
 					} else {
 						// Article non livré → stock inchangé
-						// Aucune livraison
-						dbModule.updateOrderItemStatus.run('remaining', orderId, item.product_name);
-						
+						dbModule.orderItems.updateStatus.run('remaining', item.id);
+
 						remainingItems.push({
 							Nom: item.product_name,
 							prix: item.product_price.toString(),
 							quantity: item.quantity,
 							categorie: item.category
 						});
-						
+
 						this._updatePendingDeliveryItem(
-							userId, 
-							item.product_name, 
-							item.category, 
-							item.quantity, 
-							item.product_price, 
+							userId,
+							item.product_id || null,
+							item.product_name,
+							item.category,
+							item.quantity,
+							item.product_price,
 							existingPendingDeliveries
 						);
 					}
@@ -790,11 +799,13 @@ const orderService = {
 	},
     
     // Mise à jour des articles en attente de livraison
-    _updatePendingDeliveryItem(userId, productName, category, quantity, price, existingPendingDeliveries) {
-        const existingItem = existingPendingDeliveries.find(
-            p => p.product_name === productName && p.category === category
+    _updatePendingDeliveryItem(userId, productId, productName, category, quantity, price, existingPendingDeliveries) {
+        const existingItem = existingPendingDeliveries.find(p =>
+            (productId && p.product_id)
+                ? p.product_id === productId
+                : p.product_name === productName && p.category === category
         );
-        
+
         if (existingItem) {
             const updatedQuantity = existingItem.quantity + quantity;
             dbModule.updatePendingDeliveryQuantity.run(
@@ -804,6 +815,7 @@ const orderService = {
         } else {
             dbModule.addPendingDelivery.run(
                 userId,
+                productId,
                 productName,
                 price,
                 quantity,
@@ -817,12 +829,11 @@ const orderService = {
         try {
             return dbModule.transaction(() => {
                 let totalDeleted = 0;
-                
+
                 items.forEach(item => {
                     const pendingItem = dbModule.findPendingDeliveryItem.get(
                         userId,
-                        item.Nom,
-                        item.categorie
+                        item.id || item.product_id
                     );
                     
                     if (pendingItem) {
@@ -864,78 +875,51 @@ const orderService = {
                     throw new Error('Commande non trouvée');
                 }
                 
-                // Gérer les suppressions d'abord
+                // Gérer les suppressions d'abord (par order_item_id — unique même pour multi-tailles)
                 if (deletions && deletions.length > 0) {
-                    deletions.forEach(productName => {
-                        // Récupérer la quantité avant suppression
-                        const deletedItem = dbModule.db.prepare(`
-                            SELECT quantity FROM order_items 
-                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-                        `).get(orderId, productName);
-                        
+                    deletions.forEach(deletion => {
+                        const orderItemId = deletion.order_item_id;
+
+                        const deletedItem = dbModule.db.prepare(
+                            `SELECT quantity, product_id FROM order_items WHERE id = ? AND status = 'delivered'`
+                        ).get(orderItemId);
+
                         if (deletedItem && deletedItem.quantity > 0) {
-                            // Remettre la quantité dans le stock
-                            this._incrementStock(productName, deletedItem.quantity);
+                            this._incrementStock(deletedItem.product_id, deletedItem.quantity);
                         }
-                        
-                        // Supprimer l'article de la commande
-                        dbModule.db.prepare(`
-                            DELETE FROM order_items 
-                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-                        `).run(orderId, productName);
+
+                        dbModule.orderItems.deleteById.run(orderItemId);
                     });
                 }
-                
-                // Traiter les modifications
+
+                // Traiter les modifications (par order_item_id)
                 if (modifications && modifications.length > 0) {
                     modifications.forEach(mod => {
-                        const originalProductName = mod.productName;
-                        const newProductName = mod.product_name;
+                        const orderItemId = mod.order_item_id;
                         const newQuantity = mod.quantity;
                         const newPrice = mod.unit_price;
-                        
-                        // Récupérer l'article actuel avec le nom original
-                        const currentItem = dbModule.db.prepare(`
-                            SELECT * FROM order_items 
-                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-                        `).get(orderId, originalProductName);
-                        
-                        if (!currentItem) {
-                            return;
-                        }
-                        
-                        // Déterminer les nouvelles valeurs
-                        const finalProductName = newProductName || currentItem.product_name;
+
+                        const currentItem = dbModule.db.prepare(
+                            `SELECT * FROM order_items WHERE id = ? AND status = 'delivered'`
+                        ).get(orderItemId);
+
+                        if (!currentItem) return;
+
                         const finalQuantity = newQuantity !== undefined ? newQuantity : currentItem.quantity;
                         const finalPrice = newPrice !== undefined ? newPrice : currentItem.product_price;
-                        
-                        // Gestion du stock si quantité change
+
                         if (finalQuantity !== currentItem.quantity) {
                             const quantityDiff = finalQuantity - currentItem.quantity;
-                            
                             if (quantityDiff > 0) {
-                                // Augmentation : soustraire du stock
-                                this._decrementStock(originalProductName, quantityDiff);
-                            } else if (quantityDiff < 0) {
-                                // Diminution : ajouter au stock
-                                this._incrementStock(originalProductName, Math.abs(quantityDiff));
+                                this._decrementStock(currentItem.product_id, quantityDiff);
+                            } else {
+                                this._incrementStock(currentItem.product_id, Math.abs(quantityDiff));
                             }
                         }
-                        
-                        // Mise à jour avec le nom original dans le WHERE
-                        const updateStmt = dbModule.db.prepare(`
-                            UPDATE order_items 
-                            SET product_name = ?, quantity = ?, product_price = ?
-                            WHERE order_id = ? AND product_name = ? AND status = 'delivered'
-                        `);
-                        
-                        updateStmt.run(
-                            finalProductName,
-                            finalQuantity,
-                            finalPrice,
-                            orderId,
-                            originalProductName
-                        );
+
+                        dbModule.db.prepare(
+                            `UPDATE order_items SET quantity = ?, product_price = ? WHERE id = ?`
+                        ).run(finalQuantity, finalPrice, orderItemId);
                     });
                 }
                 
@@ -1000,13 +984,14 @@ const orderService = {
                     items.forEach(item => {
                         dbModule.addOrderItem.run(
                             orderId,
+                            item.id || null,
                             item.Nom,
                             parseFloat(item.prix),
                             item.quantity,
                             item.categorie,
                             'pending'
                         );
-                        
+
                         const pendingDeliveryItem = dbModule.findPendingDeliveryItem.get(
                             userId,
                             item.Nom,
@@ -1039,63 +1024,55 @@ const orderService = {
     },
 
 	// Décrémente le stock d'un produit
-	_decrementStock(productName, quantity) {
+	_decrementStock(productId, quantity) {
 		try {
-			const updateStock = dbModule.db.prepare(`
-				UPDATE products 
-				SET stock = MAX(0, stock - ?) 
-				WHERE name = ?
-			`);
-			
-			const result = updateStock.run(quantity, productName);
-			
+			const result = dbModule.db.prepare(`
+				UPDATE products
+				SET stock = MAX(0, stock - ?)
+				WHERE id = ?
+			`).run(quantity, productId);
+
 			if (result.changes > 0) {
-				// Récupérer le nouveau stock pour logging
-				const product = dbModule.db.prepare('SELECT stock FROM products WHERE name = ?').get(productName);
-				console.log(`📦 Stock mis à jour: ${productName} → ${product.stock} (${quantity} livrés)`);
+				const product = dbModule.db.prepare('SELECT stock, name FROM products WHERE id = ?').get(productId);
+				console.log(`📦 Stock mis à jour: ${product.name} → ${product.stock} (${quantity} livrés)`);
 			}
 		} catch (error) {
-			console.error(`⚠️ Erreur décrément stock pour ${productName}:`, error);
+			console.error(`⚠️ Erreur décrément stock pour product_id=${productId}:`, error);
 		}
 	},
 
-	// Met le stock d'un produit à 0 (article indisponible) METTRE EN COMMENTAIRE LE TRY SI ON A PLUS BESOIN
-	_setStockToZero(productName) {
+	// Met le stock d'un produit à 0 (article indisponible)
+	_setStockToZero(productId) {
 		try {
-			const updateStock = dbModule.db.prepare(`
-				UPDATE products 
-				SET stock = 0 
-				WHERE name = ? AND stock > 0
-			`);
-			
-			const result = updateStock.run(productName);
-			
+			const result = dbModule.db.prepare(`
+				UPDATE products
+				SET stock = 0
+				WHERE id = ? AND stock > 0
+			`).run(productId);
+
 			if (result.changes > 0) {
-				console.log(`❌ Stock mis à 0: ${productName} (article indisponible)`);
+				console.log(`❌ Stock mis à 0: product_id=${productId} (article indisponible)`);
 			}
 		} catch (error) {
-			console.error(`⚠️ Erreur mise à 0 stock pour ${productName}:`, error);
+			console.error(`⚠️ Erreur mise à 0 stock pour product_id=${productId}:`, error);
 		}
 	},
 
 	// Incrémente le stock d'un produit (lors d'annulation/diminution)
-	_incrementStock(productName, quantity) {
+	_incrementStock(productId, quantity) {
 		try {
-			const updateStock = dbModule.db.prepare(`
-				UPDATE products 
-				SET stock = stock + ? 
-				WHERE name = ?
-			`);
-			
-			const result = updateStock.run(quantity, productName);
-			
+			const result = dbModule.db.prepare(`
+				UPDATE products
+				SET stock = stock + ?
+				WHERE id = ?
+			`).run(quantity, productId);
+
 			if (result.changes > 0) {
-				// Récupérer le nouveau stock pour logging
-				const product = dbModule.db.prepare('SELECT stock FROM products WHERE name = ?').get(productName);
-				console.log(`📦 Stock restauré: ${productName} → ${product.stock} (+${quantity} remis)`);
+				const product = dbModule.db.prepare('SELECT stock, name FROM products WHERE id = ?').get(productId);
+				console.log(`📦 Stock restauré: ${product.name} → ${product.stock} (+${quantity} remis)`);
 			}
 		} catch (error) {
-			console.error(`⚠️ Erreur incrément stock pour ${productName}:`, error);
+			console.error(`⚠️ Erreur incrément stock pour product_id=${productId}:`, error);
 		}
 	}
 	

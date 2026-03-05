@@ -67,9 +67,10 @@ function addDeleteButton(row) {
     
     deleteBtn.onclick = function() {
         const productName = row.querySelector('td:nth-child(2)').textContent.trim();
+        const orderItemId = parseInt(row.getAttribute('data-order-item-id'), 10) || null;
         if (confirm(`Êtes-vous sûr de vouloir supprimer "${productName}" de cette commande ?`)) {
-            deletedItems.add(productName);
-            orderModifications.delete(productName);
+            deletedItems.add(JSON.stringify({ order_item_id: orderItemId, product_name: productName }));
+            orderModifications.delete(orderItemId || productName);
             
             row.style.opacity = '0.5';
             row.style.textDecoration = 'line-through';
@@ -105,6 +106,8 @@ function makeEditable(cell, fieldType, row) {
         const currentValue = cell.textContent.trim().replace(' CHF', '');
         const originalValue = currentValue;
         const originalProductName = row.querySelector('td:nth-child(2)').textContent.trim();
+        const orderItemId = parseInt(row.getAttribute('data-order-item-id'), 10) || null;
+        const mapKey = orderItemId || originalProductName;
         
         let input;
         if (fieldType === 'quantity') {
@@ -136,14 +139,11 @@ function makeEditable(cell, fieldType, row) {
             const newValue = input.value.trim();
             
             if (newValue && newValue !== originalValue) {
-                // Enregistrer la modification
-                const productName = originalProductName;
-                           
-                if (!orderModifications.has(productName)) {
-                    orderModifications.set(productName, {});
+                if (!orderModifications.has(mapKey)) {
+                    orderModifications.set(mapKey, { order_item_id: orderItemId, productName: originalProductName });
                 }
-                
-                const modifications = orderModifications.get(productName);
+
+                const modifications = orderModifications.get(mapKey);
                 modifications[fieldType] = newValue;
                 
                 // Mettre à jour l'affichage
@@ -249,29 +249,25 @@ async function saveOrderChanges() {
     }
     
     try {
-        // ✅ CORRECTION : Construire les modifications correctement
         const modifications = [];
-        
-        for (const [originalProductName, changes] of orderModifications.entries()) {
+
+        for (const [, changes] of orderModifications.entries()) {
             const modif = {
-                productName: originalProductName  // ← Nom ORIGINAL pour identifier la ligne
+                order_item_id: changes.order_item_id,
+                productName: changes.productName
             };
-            
-            // Ajouter les changements
-            if (changes.product_name !== undefined) {
-                modif.product_name = changes.product_name;  // ← Nouveau nom
-            }
+
             if (changes.quantity !== undefined) {
                 modif.quantity = parseInt(changes.quantity);
             }
             if (changes.unit_price !== undefined) {
                 modif.unit_price = parseFloat(changes.unit_price);
             }
-            
+
             modifications.push(modif);
         }
-        
-        const deletions = Array.from(deletedItems);
+
+        const deletions = Array.from(deletedItems).map(s => JSON.parse(s));
         
         console.log('📤 Envoi au serveur:', {
             orderId: currentOrderId,

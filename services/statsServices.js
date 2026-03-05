@@ -75,43 +75,47 @@ class StatsService {
     
         params.push(limit);
     
+        // Groupement par product_id quand disponible (aggrège les variantes de taille),
+        // sinon par product_name (anciennes commandes sans product_id)
         const query = `
             SELECT
-                oi.product_name,
+                COALESCE(p.name, oi.product_name) AS product_name,
+                oi.product_id,
                 oi.category,
-                -- Quantité livrée depuis order_items
                 SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
-                -- Prix livré
                 SUM(CASE WHEN oi.status = 'delivered' THEN oi.product_price * oi.quantity ELSE 0 END) AS sum_total_delivered_price,
-                ROUND(oi.product_price, 2) as unit_price
+                ROUND(AVG(oi.product_price), 2) as unit_price
             FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
             INNER JOIN orders o ON oi.order_id = o.order_id
             WHERE 1=1 ${whereClause}
-            GROUP BY oi.product_name, oi.category, oi.product_price
+            GROUP BY COALESCE(CAST(oi.product_id AS TEXT), oi.product_name), oi.category
         `;
-        
+
         const deliveredStmt = dbModule.db.prepare(query);
         const deliveredRows = deliveredStmt.all(...params.slice(0, -1)); // Sans le limit
-        
+
         // Pour chaque produit, récupérer les pending_deliveries
+        // Utilise product_id quand disponible pour aggrèger toutes les tailles
         const results = deliveredRows.map(row => {
             let pendingWhereClause = '';
-            const pendingParams = [row.product_name];
-            
+            const hasPid = !!row.product_id;
+            const pendingParams = hasPid ? [row.product_id] : [row.product_name];
+
             // 🆕 Ajouter le filtre année si nécessaire
             if (year) {
                 pendingWhereClause = ` AND strftime('%Y', created_at) = ?`;
                 pendingParams.push(year.toString());
             }
-            
+
             const pendingQuery = `
-                SELECT 
+                SELECT
                     SUM(quantity) as total_remaining,
                     SUM(product_price * quantity) as sum_total_remaining_price
                 FROM pending_deliveries
-                WHERE product_name = ? ${pendingWhereClause}
+                WHERE ${hasPid ? 'product_id = ?' : 'product_name = ?'} ${pendingWhereClause}
             `;
-            
+
             const pendingStmt = dbModule.db.prepare(pendingQuery);
             const pendingResult = pendingStmt.get(...pendingParams);
             

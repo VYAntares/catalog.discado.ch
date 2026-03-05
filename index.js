@@ -383,7 +383,7 @@ app.use('/pages/', (req, res, next) => {
 
   // Block catalog and orders for users with weak password (password === username)
   if (req.session.user.role !== 'admin') {
-    const blockedPages = ['/catalog.html', '/orders.html'];
+    const blockedPages = ['/home.html', '/catalog.html', '/textile.html', '/orders.html'];
     if (blockedPages.includes(requestPath)) {
       if (userService.isPasswordSameAsUsername(req.session.user.username)) {
         return res.redirect('/pages/profile.html');
@@ -702,8 +702,16 @@ app.delete('/api/expenses/:id', requireLogin, requireAdmin, (req, res) => {
 });
 
 // ===== ROUTES CLIENT PROTÉGÉES =====
+app.get('/pages/home.html', requireLogin, requireSecurePassword, requireCompleteProfile, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'home.html'));
+});
+
 app.get('/pages/catalog.html', requireLogin, requireSecurePassword, requireCompleteProfile, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'catalog.html'));
+});
+
+app.get('/pages/textile.html', requireLogin, requireSecurePassword, requireCompleteProfile, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'textile.html'));
 });
 
 app.get('/profile', requireLogin, (req, res) => {
@@ -1085,20 +1093,20 @@ app.get('/api/products/stats/stock', requireLogin, requireAdmin, async (req, res
 });
 
 // Statistiques pour un produit spécifique (utilisé dans l'édition de batch)
-app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/stats/product/:productId', requireLogin, requireAdmin, (req, res) => {
   try {
-    const { productName } = req.params;
+    const productId = parseInt(req.params.productId, 10);
     const { year } = req.query;
-    
+
     let whereClause = '';
-    const params = [productName];
-    
+    const params = [productId];
+
     if (year && year !== 'all') {
       whereClause += ` AND strftime('%Y', o.date) = ?`;
       params.push(year.toString());
     }
-    
-    // 🆕 Requête pour les quantités livrées (order_items avec status='delivered')
+
+    // Requête pour les quantités livrées (order_items avec status='delivered')
     const deliveredQuery = `
       SELECT
         SUM(CASE WHEN oi.status = 'delivered' THEN oi.quantity ELSE 0 END) AS total_delivered,
@@ -1108,16 +1116,16 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
         oi.category
       FROM order_items oi
       INNER JOIN orders o ON oi.order_id = o.order_id
-      WHERE oi.product_name = ? ${whereClause}
+      WHERE oi.product_id = ? ${whereClause}
       GROUP BY oi.category
     `;
 
     const deliveredStmt = dbModule.db.prepare(deliveredQuery);
     const deliveredResult = deliveredStmt.get(...params);
-    
-    // 🆕 Requête pour les quantités à livrer (pending_deliveries avec filtre année)
+
+    // Requête pour les quantités à livrer (pending_deliveries avec filtre année)
     let remainingWhereClause = '';
-    const remainingParams = [productName];
+    const remainingParams = [productId];
 
     if (year && year !== 'all') {
         remainingWhereClause = ` AND strftime('%Y', created_at) = ?`;
@@ -1129,16 +1137,15 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
         SUM(quantity) AS total_remaining,
         SUM(product_price * quantity) AS sum_total_remaining_price
       FROM pending_deliveries
-      WHERE product_name = ? ${remainingWhereClause}
+      WHERE product_id = ? ${remainingWhereClause}
     `;
 
     const remainingStmt = dbModule.db.prepare(remainingQuery);
     const remainingResult = remainingStmt.get(...remainingParams);
 
-    // 🆕 Requête pour les quantités en commande fournisseur non livrée
-    // ⚡ OPTIMISATION : Ajout du filtre année
+    // Requête pour les quantités en commande fournisseur non livrée
     let supplierWhereClause = '';
-    const supplierParams = [productName];
+    const supplierParams = [productId];
 
     if (year && year !== 'all') {
       supplierWhereClause = ` AND strftime('%Y', os.order_date) = ?`;
@@ -1150,15 +1157,13 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
         SUM(osi.quantity) AS supplier_order_quantity
       FROM order_supplier_items osi
       INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
-      WHERE osi.product_name = ?
+      WHERE osi.product_id = ?
         AND os.status != 'Livrée'${supplierWhereClause}
     `;
 
     const supplierOrderStmt = dbModule.db.prepare(supplierOrderQuery);
     const supplierOrderResult = supplierOrderStmt.get(...supplierParams);
 
-    // 🆕 Requête pour le détail des commandes fournisseurs non livrées
-    // ⚡ OPTIMISATION : Ajout du filtre année
     const supplierOrderDetailsQuery = `
       SELECT
         os.id,
@@ -1168,7 +1173,7 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
         SUM(osi.quantity) as quantity
       FROM order_supplier_items osi
       INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
-      WHERE osi.product_name = ?
+      WHERE osi.product_id = ?
         AND os.status != 'Livrée'${supplierWhereClause}
       GROUP BY os.id, os.invoice_number, os.order_date, os.status
       ORDER BY os.order_date DESC
@@ -1183,14 +1188,13 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
     const sum_total_remaining_price = remainingResult?.sum_total_remaining_price || 0;
     const supplier_order_quantity = supplierOrderResult?.supplier_order_quantity || 0;
 
-    // 🆕 Récupération du stock actuel du produit
-    const stockQuery = `SELECT stock FROM products WHERE name = ? LIMIT 1`;
-    const stockStmt = dbModule.db.prepare(stockQuery);
-    const stockResult = stockStmt.get(productName);
-    const current_stock = stockResult?.stock ?? null;
+    // Récupération du stock actuel et du nom du produit
+    const productQuery = `SELECT stock, name FROM products WHERE id = ? LIMIT 1`;
+    const productStmt = dbModule.db.prepare(productQuery);
+    const productResult = productStmt.get(productId);
 
     const result = {
-      product_name: productName,
+      product_name: productResult?.name || null,
       category: deliveredResult?.category || null,
       total_delivered: total_delivered,
       total_remaining: total_remaining,
@@ -1202,11 +1206,11 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
       order_count: deliveredResult?.order_count || 0,
       supplier_order_quantity: supplier_order_quantity,
       supplier_order_details: supplierOrderDetails,
-      current_stock: current_stock
+      current_stock: productResult?.stock ?? null
     };
-    
+
     res.json(result);
-    
+
   } catch (error) {
     console.error('Error fetching product stats:', error);
     res.status(500).json({ error: 'Failed to fetch product stats' });
@@ -1214,23 +1218,23 @@ app.get('/api/stats/product/:productName', requireLogin, requireAdmin, (req, res
 });
 
 // Récupérer les années disponibles pour les stats produit
-app.get('/api/stats/product/:productName/years', requireLogin, requireAdmin, (req, res) => {
+app.get('/api/stats/product/:productId/years', requireLogin, requireAdmin, (req, res) => {
   try {
-    const { productName } = req.params;
-    
+    const productId = parseInt(req.params.productId, 10);
+
     const query = `
       SELECT DISTINCT strftime('%Y', o.date) as year
       FROM order_items oi
       INNER JOIN orders o ON oi.order_id = o.order_id
-      WHERE oi.product_name = ?
+      WHERE oi.product_id = ?
       ORDER BY year DESC
     `;
-    
+
     const stmt = dbModule.db.prepare(query);
-    const rows = stmt.all(productName);
-    
+    const rows = stmt.all(productId);
+
     res.json(rows.map(r => r.year));
-    
+
   } catch (error) {
     console.error('Error fetching product years:', error);
     res.status(500).json({ error: 'Failed to fetch years' });
@@ -1437,12 +1441,7 @@ app.put('/api/products/:id', requireLogin, requireAdmin, requirePermission('stoc
 
     updateStmt.run(name, priceNum, originPriceNum, category, supplier || null, image_url || null, stockNum, barcode || null, id);
 
-    // Si le nom a changé, mettre à jour order_items et pending_deliveries
-    if (oldName && oldName !== name) {
-      dbModule.db.prepare('UPDATE order_items SET product_name = ? WHERE product_name = ?').run(name, oldName);
-      dbModule.db.prepare('UPDATE pending_deliveries SET product_name = ? WHERE product_name = ?').run(name, oldName);
-      console.log(`✅ Nom propagé: "${oldName}" → "${name}" dans order_items et pending_deliveries`);
-    }
+    // Les jointures utilisent product_id — product_name dans order_items/pending_deliveries reste figé à la date de commande
 
     // Récupérer le produit mis à jour
     const updatedProduct = dbModule.db.prepare('SELECT * FROM products WHERE id = ?').get(id);

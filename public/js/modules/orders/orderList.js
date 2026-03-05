@@ -35,12 +35,13 @@ export async function initOrdersList() {
 async function loadProductImages() {
     try {
         const products = await fetchProducts();
-        // /api/products returns { Nom, imageUrl } via productService
+        // /api/products returns { id, Nom, imageUrl } via productService
         (Array.isArray(products) ? products : []).forEach(p => {
             const name     = p.Nom || p.name;
             const imageUrl = p.imageUrl || p.image_url;
-            if (name && imageUrl) {
-                productImageCache.set(name.toLowerCase().trim(), imageUrl);
+            if (imageUrl) {
+                if (p.id) productImageCache.set(`id:${p.id}`, imageUrl);
+                if (name) productImageCache.set(name.toLowerCase().trim(), imageUrl);
             }
         });
     } catch (e) {
@@ -48,7 +49,11 @@ async function loadProductImages() {
     }
 }
 
-function getProductImage(productName) {
+function getProductImage(productName, productId) {
+    if (productId) {
+        const byId = productImageCache.get(`id:${productId}`);
+        if (byId) return byId;
+    }
     if (!productName) return null;
     return productImageCache.get(productName.toLowerCase().trim()) || null;
 }
@@ -262,7 +267,7 @@ function buildItemRow(item, isPending) {
     const row = document.createElement('div');
     row.className = `detail-item-row ${isPending ? 'detail-item-pending' : ''}`;
 
-    const imageUrl = getProductImage(item.Nom);
+    const imageUrl = getProductImage(item.Nom, item.product_id);
     const initial  = (item.Nom || '?').charAt(0).toUpperCase();
     const color    = avatarColor(item.Nom || '');
     const total    = parseFloat(item.prix) * item.quantity;
