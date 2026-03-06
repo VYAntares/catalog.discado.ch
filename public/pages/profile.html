@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="/css/cart.css">
     <link rel="stylesheet" href="/css/profile-extra.css">
     
+    <!-- i18n engine -->
+    <script src="/js/core/i18n.js"></script>
     <!-- Enhanced Header Script -->
     <script src="/js/components/DiscadoHeader.js"></script>
     <!-- Cart Integration Script -->
@@ -26,13 +28,13 @@
     <!-- Main Content -->
     <main>
         <div class="page-header">
-            <h2>My Profile</h2>
+            <h2 data-i18n="profile.title">My Profile</h2>
         </div>
         
         <div class="profile-form">
             <form id="profileForm">
                 <div class="profile-section">
-                    <h3>Personal Information</h3>
+                    <h3 data-i18n="profile.personalInfo">Personal Information</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="firstName">First Name*</label>
@@ -70,7 +72,7 @@
                 </div>
                 
                 <div class="profile-section">
-                    <h3>Shop Information</h3>
+                    <h3 data-i18n="profile.shopInfo">Shop Information</h3>
                     <div class="form-group">
                         <label for="shopName">Shop's Name*</label>
                         <input type="text" id="shopName" name="shopName" placeholder="Your shop name" required>
@@ -100,7 +102,7 @@
                     </div>
                 </div>
                 <div class="profile-section">
-                    <h3>Password Management</h3>
+                    <h3 data-i18n="profile.passwordMgmt">Password Management</h3>
                     <div class="form-group">
                         <label for="currentPassword">Current Password</label>
                         <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password">

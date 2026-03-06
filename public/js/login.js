@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
         shakeField(passwordField);
         shakeField(usernameField);
       } else {
-        showError('Invalid username or password.');
+        showError((window.t && window.t('login.invalidCredentials')) || 'Invalid username or password.');
         shakeField(passwordField);
 
         if (typeof data.remainingAttempts === 'number') {
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (remaining <= 0) {
       attemptsText.textContent = 'Account locked. Try again in 15 minutes.';
     } else {
-      attemptsText.textContent = `${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`;
+      attemptsText.textContent = `${remaining} ${(window.t && window.t('login.attemptsWarning')) || 'attempts remaining before temporary lockout.'}`;
     }
     attemptsWarning.classList.add('visible');
   }

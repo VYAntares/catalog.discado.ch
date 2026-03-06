@@ -17,6 +17,7 @@ function loadCartModal() {
         .then(response => response.text())
         .then(data => {
             cartModalContainer.innerHTML = data;
+            if (window.i18n) window.i18n.applyAll(cartModalContainer);
             setupCartCloseButton();
             initializeCartManager();
         })

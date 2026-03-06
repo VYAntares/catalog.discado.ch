@@ -28,8 +28,21 @@ function initDiscadoHeader() {
     <!-- Header -->
     <header class="discado-header-initialized">
         <div class="header-container">
-            <!-- Section gauche vide (équilibre le logo centré) -->
-            <div class="left-section"></div>
+            <!-- Section gauche : sélecteur de langue -->
+            <div class="left-section">
+                <div class="lang-switcher" id="langSwitcher">
+                    <button class="lang-btn" id="langBtn" aria-label="Select language">
+                        <i class="fas fa-globe"></i>
+                        <span id="langCurrent">EN</span>
+                    </button>
+                    <div class="lang-dropdown" id="langDropdown">
+                        <button class="lang-option" data-lang="en">🇬🇧 English</button>
+                        <button class="lang-option" data-lang="fr">🇫🇷 Français</button>
+                        <button class="lang-option" data-lang="de">🇩🇪 Deutsch</button>
+                        <button class="lang-option" data-lang="it">🇮🇹 Italiano</button>
+                    </div>
+                </div>
+            </div>
             
             <!-- Logo, centré -->
             <div class="logo-container">
@@ -40,15 +53,15 @@ function initDiscadoHeader() {
             
             <!-- Section droite pour panier et utilisateur -->
             <div class="header-right">
-                <button id="wishlistToggle" class="icon-btn" aria-label="My favourites">
+                <button id="wishlistToggle" class="icon-btn" data-i18n-aria="header.wishlist" aria-label="My favourites">
                     <i class="fas fa-heart"></i>
                     <span id="wishlistCountBadge" class="cart-count-badge" style="display:none;">0</span>
                 </button>
-                <button id="cartToggle" class="icon-btn" aria-label="Shopping cart">
+                <button id="cartToggle" class="icon-btn" data-i18n-aria="header.cart" aria-label="Shopping cart">
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cartCountBadge" class="cart-count-badge">0</span>
                 </button>
-                <button id="userMenuToggle" class="icon-btn menu-toggle-btn" aria-label="User menu" aria-expanded="false" aria-controls="userMenu">
+                <button id="userMenuToggle" class="icon-btn menu-toggle-btn" data-i18n-aria="header.menu" aria-label="User menu" aria-expanded="false" aria-controls="userMenu">
                     <span class="hamburger-icon" aria-hidden="true">
                         <span class="hamburger-line"></span>
                         <span class="hamburger-line"></span>
@@ -60,20 +73,29 @@ function initDiscadoHeader() {
     </header>
     <!-- Menu Utilisateur -->
     <div id="userMenu" class="user-menu">
-        <a href="/pages/profile.html"><i class="fas fa-user"></i> Profile</a>
-        <a href="/pages/orders.html"><i class="fas fa-box"></i> My Orders</a>
-        <a href="/pages/my-invoices.html"><i class="fas fa-file-invoice"></i> My Invoices</a>
-        <a href="/logout" class="menu-logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+        <a href="/pages/profile.html"><i class="fas fa-user"></i> <span data-i18n="header.profile">Profile</span></a>
+        <a href="/pages/orders.html"><i class="fas fa-box"></i> <span data-i18n="header.orders">My Orders</span></a>
+        <a href="/pages/my-invoices.html"><i class="fas fa-file-invoice"></i> <span data-i18n="header.invoices">My Invoices</span></a>
+        <a href="/logout" class="menu-logout"><i class="fas fa-arrow-right-from-bracket"></i> <span data-i18n="header.logout">Logout</span></a>
     </div>
     <!-- Overlay du Menu -->
     <div id="menuOverlay" class="menu-overlay"></div>
     `;
 
+    // Apply i18n translations to header + update lang badge
+    if (window.i18n) {
+        window.i18n.applyAll(headerContainer);
+        const langCurrent = document.getElementById('langCurrent');
+        if (langCurrent) langCurrent.textContent = window.i18n.getLang().toUpperCase();
+    }
+
     // Initialiser les fonctionnalités
     setupUserMenu();
+    setupLangSwitcher();
     setupPdfCatalog();
     setupCartEvents();
     setupClickOutsideListener();
+    setupContactScroll();
 
     // Mettre à jour le badge du panier
     updateCartCountBadge();
@@ -99,7 +121,7 @@ function injectAdminPanelLink() {
                 const link = document.createElement('a');
                 link.href = '/admin/orders';
                 link.className = 'admin-panel-link';
-                link.innerHTML = '<i class="fas fa-user-shield"></i> Admin Panel';
+                link.innerHTML = '<i class="fas fa-user-shield"></i> ' + (window.t ? window.t('header.adminPanel') : 'Admin Panel');
                 userMenu.insertBefore(link, userMenu.firstChild);
             }
         })
@@ -246,6 +268,48 @@ function closeAllMenus() {
     if (menuOverlay) {
         menuOverlay.classList.remove('active');
     }
+}
+
+// Scroll vers le footer au clic sur Contact
+function setupContactScroll() {
+    const btn = document.getElementById('contactScrollBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+        const footer = document.getElementById('site-footer');
+        if (footer) {
+            footer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    });
+}
+
+// Sélecteur de langue
+function setupLangSwitcher() {
+    const langBtn = document.getElementById('langBtn');
+    const langDropdown = document.getElementById('langDropdown');
+    const langSwitcher = document.getElementById('langSwitcher');
+    if (!langBtn || !langDropdown) return;
+
+    langBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        langDropdown.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.lang-option').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var lang = this.getAttribute('data-lang');
+            if (window.i18n) {
+                window.i18n.setLang(lang);
+            }
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (langSwitcher && !langSwitcher.contains(e.target)) {
+            langDropdown.classList.remove('open');
+        }
+    });
 }
 
 // Configuration du catalogue PDF

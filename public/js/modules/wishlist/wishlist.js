@@ -17,7 +17,7 @@ async function loadWishlist() {
     container.innerHTML = `
         <div class="loading-container">
             <div class="loading-spinner"></div>
-            <p>Loading your favourites...</p>
+            <p>${window.t ? window.t('wishlist.loading') : 'Loading your favourites...'}</p>
         </div>
     `;
 
@@ -27,7 +27,7 @@ async function loadWishlist() {
     } catch (error) {
         container.innerHTML = `
             <div class="empty-state">
-                <p>Error loading your favourites. Please try again.</p>
+                <p>${window.t ? window.t('wishlist.empty') : 'Error loading your favourites. Please try again.'}</p>
             </div>
         `;
     }
@@ -43,9 +43,9 @@ function renderWishlist() {
         container.innerHTML = `
             <div class="wishlist-empty">
                 <i class="fas fa-heart wishlist-empty-icon"></i>
-                <h3>Your favourites list is empty</h3>
-                <p>Add products from the catalogue by clicking the heart icon on each item.</p>
-                <a href="/pages/catalog.html" class="primary-btn">Browse catalogue</a>
+                <h3>${window.t ? window.t('wishlist.empty') : 'Your favourites list is empty'}</h3>
+                <p>${window.t ? window.t('wishlist.emptyHint') : 'Add products from the catalogue by clicking the heart icon on each item.'}</p>
+                <a href="/pages/catalog.html" class="primary-btn">${window.t ? window.t('wishlist.browseCatalog') : 'Browse catalogue'}</a>
             </div>
         `;
         return;
@@ -93,7 +93,7 @@ function createWishlistItem(item) {
             categorie: item.category,
             imageUrl: item.image_url
         }, 1);
-        showNotification(`${item.product_name} added to cart!`, 'success');
+        showNotification(`${item.product_name} ${window.t ? window.t('cart.addedNotif') : 'added to cart!'}`, 'success');
         document.dispatchEvent(new CustomEvent('cartUpdated'));
     });
 

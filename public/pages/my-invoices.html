@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/shared-invoices.css">
     <link rel="stylesheet" href="/css/cart.css">
+    <script src="/js/core/i18n.js"></script>
     <script src="/js/components/DiscadoHeader.js"></script>
     <script src="/js/components/CartIntegration.js"></script>
 </head>
@@ -24,7 +25,7 @@
         <div class="shared-page-header">
             <h1 class="shared-page-title">
                 <i class="fas fa-file-invoice"></i>
-                My Invoices
+                <span data-i18n="invoices.title">My Invoices</span>
             </h1>
         </div>
 
@@ -33,28 +34,28 @@
             <div class="shared-summary-card">
                 <div class="shared-summary-icon"><i class="fas fa-file-alt"></i></div>
                 <div class="shared-summary-info">
-                    <span class="shared-summary-label">Total Invoices</span>
+                    <span class="shared-summary-label" data-i18n="invoices.totalInvoices">Total Invoices</span>
                     <span class="shared-summary-value" id="totalInvoices">0</span>
                 </div>
             </div>
             <div class="shared-summary-card">
                 <div class="shared-summary-icon total"><i class="fas fa-coins"></i></div>
                 <div class="shared-summary-info">
-                    <span class="shared-summary-label">Total Amount</span>
+                    <span class="shared-summary-label" data-i18n="invoices.totalAmount">Total Amount</span>
                     <span class="shared-summary-value" id="totalAmount">0.00 CHF</span>
                 </div>
             </div>
             <div class="shared-summary-card">
                 <div class="shared-summary-icon paid"><i class="fas fa-check-circle"></i></div>
                 <div class="shared-summary-info">
-                    <span class="shared-summary-label">Total Paid</span>
+                    <span class="shared-summary-label" data-i18n="invoices.totalPaid">Total Paid</span>
                     <span class="shared-summary-value text-success" id="totalPaid">0.00 CHF</span>
                 </div>
             </div>
             <div class="shared-summary-card">
                 <div class="shared-summary-icon due"><i class="fas fa-exclamation-circle"></i></div>
                 <div class="shared-summary-info">
-                    <span class="shared-summary-label">Balance Due</span>
+                    <span class="shared-summary-label" data-i18n="invoices.balanceDue">Balance Due</span>
                     <span class="shared-summary-value text-danger" id="totalDue">0.00 CHF</span>
                 </div>
             </div>

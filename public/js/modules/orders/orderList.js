@@ -17,7 +17,7 @@ export async function initOrdersList() {
     container.innerHTML = `
         <div class="loading-container">
             <div class="loading-spinner"></div>
-            <p>Loading your orders…</p>
+            <p>${window.t ? window.t('orders.loadingOrders') : 'Loading your orders…'}</p>
         </div>
     `;
 
@@ -71,9 +71,9 @@ function handleOrderLoadError(container) {
     container.innerHTML = `
         <div class="empty-state">
             <div class="empty-state-icon"><i class="fas fa-exclamation-circle"></i></div>
-            <h3>Unable to load your orders</h3>
-            <p>An error occurred. Please try again.</p>
-            <button id="retry-orders-btn" class="primary-btn">Retry</button>
+            <h3>${window.t ? window.t('orders.errorLoad') : 'Unable to load your orders'}</h3>
+            <p>${window.t ? window.t('orders.retry') : 'An error occurred. Please try again.'}</p>
+            <button id="retry-orders-btn" class="primary-btn">${window.t ? window.t('orders.retry') : 'Retry'}</button>
         </div>
     `;
     document.getElementById('retry-orders-btn')?.addEventListener('click', () => initOrdersList());
@@ -88,9 +88,9 @@ function displayOrders(orders, container) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-box-open"></i></div>
-                <h3>No orders yet</h3>
-                <p>Your orders will appear here once you have placed an order.</p>
-                <a href="/pages/catalog.html" class="primary-btn">Browse catalog</a>
+                <h3>${window.t ? window.t('orders.noOrders') : 'No orders yet'}</h3>
+                <p>${window.t ? window.t('orders.noOrders') : 'Your orders will appear here once you have placed an order.'}</p>
+                <a href="/pages/catalog.html" class="primary-btn">${window.t ? window.t('orders.browsecatalog') : 'Browse catalog'}</a>
             </div>
         `;
         return;

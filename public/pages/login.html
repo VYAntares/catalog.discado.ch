@@ -21,37 +21,37 @@
       <div class="logo-container">
         <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo">
       </div>
-      <p class="login-subtitle">Sign in to your account</p>
+      <p class="login-subtitle" data-i18n="login.subtitle">Sign in to your account</p>
     </div>
 
     <div class="login-divider"></div>
 
     <form id="loginForm" action="/login" method="POST" autocomplete="on">
       <div class="input-group">
-        <label for="username">Username or email</label>
+        <label for="username" data-i18n="login.usernameLabel">Username or email</label>
         <div class="input-wrapper">
-          <input type="text" id="username" name="username" placeholder="Enter your username or email" required autocomplete="username">
+          <input type="text" id="username" name="username" data-i18n-ph="login.usernamePlaceholder" placeholder="Enter your username or email" required autocomplete="username">
           <i class="fas fa-user field-icon"></i>
         </div>
       </div>
 
       <div class="input-group">
-        <label for="password">Password</label>
+        <label for="password" data-i18n="login.passwordLabel">Password</label>
         <div class="input-wrapper">
-          <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+          <input type="password" id="password" name="password" data-i18n-ph="login.passwordPlaceholder" placeholder="Enter your password" required autocomplete="current-password">
           <i class="fas fa-lock field-icon"></i>
-          <button type="button" class="input-action" id="password-toggle" aria-label="Show password">
+          <button type="button" class="input-action" id="password-toggle" data-i18n-aria="login.showPassword" aria-label="Show password">
             <i class="fas fa-eye-slash"></i>
           </button>
         </div>
       </div>
 
       <button type="submit" class="login-button">
-        <span class="btn-text">Sign In</span>
+        <span class="btn-text" data-i18n="login.signIn">Sign In</span>
       </button>
 
       <div class="forgot-password-link">
-        <a href="/pages/forgot-password.html">Forgot your password?</a>
+        <a href="/pages/forgot-password.html" data-i18n="login.forgotPassword">Forgot your password?</a>
       </div>
 
       <div id="error-message" class="error-message">
@@ -70,6 +70,7 @@
     </form>
   </div>
   
+  <script src="/js/core/i18n.js"></script>
   <script src="/js/login.js"></script>
   <script>
     // iOS only: block horizontal swipe/scroll on login page

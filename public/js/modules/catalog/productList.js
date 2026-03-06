@@ -567,7 +567,7 @@ function addAllSelectedToCart() {
     });
     
     const totalItems = selectedProducts.reduce((total, item) => total + item.quantity, 0);
-    showNotification(`${totalItems} items added to cart!`, 'success');
+            showNotification(`${totalItems} ${window.t ? window.t('cart.addedNotif') : 'items added to cart!'}`, 'success');
     
     resetAllQuantities();
     document.dispatchEvent(new CustomEvent('cartUpdated'));

@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="/css/cart.css">
     <link rel="stylesheet" href="/css/wishlist.css">
 
+    <!-- i18n engine -->
+    <script src="/js/core/i18n.js"></script>
     <!-- Header & Cart -->
     <script src="/js/components/DiscadoHeader.js"></script>
     <script src="/js/components/CartIntegration.js"></script>
@@ -23,7 +25,7 @@
     <main>
         <div class="order-page-header">
             <h2><i class="fas fa-heart" style="color:#e9394f; margin-right:8px;"></i>My Favourites <span id="wishlistCount" class="wishlist-header-count"></span></h2>
-            <p class="order-page-subtitle">Your saved products for quick ordering</p>
+            <p class="order-page-subtitle" data-i18n="wishlist.subtitle">Your saved products for quick ordering</p>
         </div>
 
         <ul id="wishlistContainer" class="wishlist-list">
@@ -49,7 +51,9 @@
             fetch('/components/footer.html')
                 .then(r => r.text())
                 .then(data => {
-                    document.getElementById('footer-container').innerHTML = data;
+                    const fc = document.getElementById('footer-container');
+                    fc.innerHTML = data;
+                    if (window.i18n) window.i18n.applyAll(fc);
                 })
                 .catch(() => {});
 

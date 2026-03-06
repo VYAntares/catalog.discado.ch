@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="/css/orders.css">
     <link rel="stylesheet" href="/css/cart.css">
     
+    <!-- i18n engine -->
+    <script src="/js/core/i18n.js"></script>
     <!-- Enhanced Header Script -->
     <script src="/js/components/DiscadoHeader.js"></script>
     <!-- Cart Integration Script -->
@@ -25,8 +27,8 @@
     <!-- Main Content -->
     <main>
         <div class="order-page-header">
-            <h2>My Orders</h2>
-            <p class="order-page-subtitle">View your order history and download your invoices</p>
+            <h2 data-i18n="orders.title">My Orders</h2>
+            <p class="order-page-subtitle" data-i18n="orders.subtitle">View your order history and download your invoices</p>
         </div>
 
         <!-- Pending Deliveries Section -->
@@ -86,7 +88,9 @@
             fetch('/components/footer.html')
                 .then(response => response.text())
                 .then(data => {
-                    document.getElementById('footer-container').innerHTML = data;
+                    const fc = document.getElementById('footer-container');
+                    fc.innerHTML = data;
+                    if (window.i18n) window.i18n.applyAll(fc);
                 });
             
             // Initialize orders list

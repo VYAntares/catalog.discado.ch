@@ -6,29 +6,29 @@
         <div class="cart-modal-header">
             <div class="cart-modal-title">
                 <i class="fas fa-shopping-cart"></i>
-                <h2>Your Cart</h2>
+                <h2 data-i18n="cart.title">Your Cart</h2>
             </div>
             <span class="close-modal" aria-label="Close">&times;</span>
         </div>
 
         <!-- Items list -->
         <div id="cart-items" class="cart-items-list">
-            <p class="empty-cart"><i class="fas fa-shopping-basket"></i><br>Your cart is empty</p>
+            <p class="empty-cart"><i class="fas fa-shopping-basket"></i><br><span data-i18n="cart.empty">Your cart is empty</span></p>
         </div>
 
         <!-- Total -->
         <div class="cart-total">
-            <span class="cart-total-label">Total</span>
+            <span class="cart-total-label" data-i18n="cart.total">Total</span>
             <span class="cart-total-value"><span id="cart-total-amount">0.00</span> CHF</span>
         </div>
 
         <!-- Actions -->
         <div class="cart-actions">
             <button id="clear-cart-btn" class="secondary-btn">
-                <i class="fas fa-trash-alt"></i> Clear Cart
+                <i class="fas fa-trash-alt"></i> <span data-i18n="cart.clearCart">Clear Cart</span>
             </button>
             <button id="checkout-btn" class="primary-btn">
-                <i class="fas fa-check"></i> Order Now
+                <i class="fas fa-check"></i> <span data-i18n="cart.orderNow">Order Now</span>
             </button>
         </div>
 
@@ -37,11 +37,11 @@
             <div class="cart-confirmation-icon">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <h3>Order Placed!</h3>
-            <p>Your order has been placed successfully!</p>
-            <p class="cart-confirmation-note">You can track your order status in "My Orders"</p>
+            <h3 data-i18n="cart.orderPlaced">Order Placed!</h3>
+            <p data-i18n="cart.orderPlacedDesc">Your order has been placed successfully!</p>
+            <p class="cart-confirmation-note" data-i18n="cart.orderPlacedNote">You can track your order status in "My Orders"</p>
             <button id="view-orders-btn" class="view-orders-btn">
-                <i class="fas fa-receipt"></i> View My Orders
+                <i class="fas fa-receipt"></i> <span data-i18n="cart.viewOrders">View My Orders</span>
             </button>
         </div>
 

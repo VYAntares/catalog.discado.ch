@@ -170,8 +170,79 @@ main {
       display: flex;
       align-items: center;
   }
-  
-  /* PDF Catalog Button */
+
+  /* ── Language Switcher ── */
+  .lang-switcher {
+      position: relative;
+  }
+
+  .lang-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-color);
+      transition: background-color 0.15s;
+      letter-spacing: 0.03em;
+  }
+
+  .lang-btn i {
+      font-size: 15px;
+  }
+
+  .lang-btn:hover {
+      background-color: #f3f4f6;
+  }
+
+  .lang-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(15,23,42,0.10);
+      overflow: hidden;
+      z-index: 1100;
+      min-width: 130px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-4px);
+      transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  }
+
+  .lang-dropdown.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+  }
+
+  .lang-option {
+      display: block;
+      width: 100%;
+      padding: 9px 14px;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #374151;
+      transition: background-color 0.12s;
+      white-space: nowrap;
+  }
+
+  .lang-option:hover {
+      background-color: #f8f9fa;
+  }
+
+
   .pdf-catalog-container {
       display: flex;
       align-items: center;
@@ -265,6 +336,30 @@ main {
       transition: height 0.3s ease;
   }
   
+  /* Contact scroll button (left section) */
+  .contact-scroll-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--text-color);
+      font-size: 14px;
+      font-family: inherit;
+      transition: background-color 0.2s;
+  }
+
+  .contact-scroll-btn i {
+      font-size: 16px;
+  }
+
+  .contact-scroll-btn:hover {
+      background-color: #f5f5f5;
+  }
+
   /* Right Icons */
   .header-right {
       display: flex;
@@ -598,6 +693,14 @@ main {
       
       .left-section {
           gap: 5px;
+      }
+
+      .contact-btn-label {
+          display: none;
+      }
+
+      .contact-scroll-btn {
+          padding: 6px;
       }
       
       .cart-count-badge {

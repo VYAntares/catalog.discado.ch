@@ -357,6 +357,7 @@ app.use('/fonts', express.static(path.join(__dirname, 'public/fonts')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/components', express.static(path.join(__dirname, 'public/components')));
+app.use('/i18n', express.static(path.join(__dirname, 'public/i18n')));
 
 app.use('/admin/css', express.static(path.join(__dirname, 'admin/css')));
 

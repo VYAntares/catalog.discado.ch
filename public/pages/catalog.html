@@ -13,6 +13,8 @@
 <link rel="stylesheet" href="/css/catalog.css">
 <link rel="stylesheet" href="/css/cart.css">
 
+<!-- i18n engine -->
+<script src="/js/core/i18n.js"></script>
 <!-- Enhanced Header Script -->
 <script src="/js/components/DiscadoHeader.js"></script>
 <!-- Cart Integration Script -->
@@ -28,11 +30,11 @@
   <div class="filter-row">
     <button class="categories-toggle-btn" id="categoriesToggleBtn" aria-label="Categories">
       <i class="fas fa-th-large"></i>
-      <span class="btn-label">Categories</span>
+      <span class="btn-label" data-i18n="catalog.categories">Categories</span>
       <i class="fas fa-chevron-down categories-chevron"></i>
     </button>
     <div class="search-wrapper">
-      <input type="text" id="searchInput" placeholder="Search for a product..." aria-label="Search">
+      <input type="text" id="searchInput" data-i18n-ph="catalog.searchPlaceholder" placeholder="Search for a product..." aria-label="Search">
       <button id="searchButton" aria-label="Search"><i class="fas fa-search"></i></button>
     </div>
   </div>
