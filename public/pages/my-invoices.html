@@ -143,6 +143,20 @@
         </div>
     </div>
 
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
     <script type="module" src="/js/modules/myInvoices.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/components/footer.html')
+                .then(response => response.text())
+                .then(data => {
+                    const fc = document.getElementById('footer-container');
+                    fc.innerHTML = data;
+                    if (window.i18n) window.i18n.applyAll(fc);
+                });
+        });
+    </script>
 </body>
 </html>
