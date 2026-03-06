@@ -893,10 +893,10 @@ app.get('/api/my-invoices/pdf/:invoiceId', requireLogin, async (req, res) => {
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, invoice.order_id, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, invoice.order_id);
     const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count - 1; i++) {
+    for (let i = 0; i < range.count; i++) {
       doc.switchToPage(range.start + i);
       doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
-      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 65, { width: doc.page.width - 100, align: 'center', lineBreak: false });
     }
     doc.flushPages();
     doc.end();
@@ -1842,10 +1842,10 @@ app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
     const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count - 1; i++) {
+    for (let i = 0; i < range.count; i++) {
       doc.switchToPage(range.start + i);
       doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
-      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 65, { width: doc.page.width - 100, align: 'center', lineBreak: false });
     }
     doc.flushPages();
     doc.end();
@@ -1979,10 +1979,10 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
     const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count - 1; i++) {
+    for (let i = 0; i < range.count; i++) {
       doc.switchToPage(range.start + i);
       doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
-      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 65, { width: doc.page.width - 100, align: 'center', lineBreak: false });
     }
     doc.flushPages();
     doc.end();
@@ -2142,7 +2142,7 @@ app.get('/api/admin/download-invoice-eur/:orderId/:userId', requireLogin, requir
     for (let i = 0; i < rangeEur.count; i++) {
       doc.switchToPage(rangeEur.start + i);
       doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
-      doc.text(`Page ${i + 1} / ${rangeEur.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+      doc.text(`Page ${i + 1} / ${rangeEur.count}`, 50, doc.page.height - 65, { width: doc.page.width - 100, align: 'center', lineBreak: false });
     }
     doc.flushPages();
     doc.end();
@@ -4446,10 +4446,10 @@ app.get('/api/public/shared-invoices/:token/pdf/:invoiceId', async (req, res) =>
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, invoice.order_id, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, invoice.order_id);
     const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count - 1; i++) {
+    for (let i = 0; i < range.count; i++) {
       doc.switchToPage(range.start + i);
       doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
-      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 65, { width: doc.page.width - 100, align: 'center', lineBreak: false });
     }
     doc.flushPages();
     doc.end();
