@@ -2,6 +2,8 @@
 // Connecte les fonctionnalités du panier à n'importe quelle page
 //public/js/components/CartIntegration.js
 
+let _cartIntegrationInitialized = false;
+
 // Chargement du HTML du modal panier
 function loadCartModal() {
     // Création du conteneur si nécessaire
@@ -143,6 +145,9 @@ function importModalUtils() {
 
 // Initialisation globale
 function init() {
+    if (_cartIntegrationInitialized) return;
+    _cartIntegrationInitialized = true;
+
     importModalUtils()
         .then(() => {
             loadCartModal();
