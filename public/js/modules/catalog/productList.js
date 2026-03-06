@@ -1,5 +1,5 @@
 //public/js/modules/catalog/productList.js
-import { fetchProducts } from '../../core/api.js';
+import { fetchProducts, fetchWishlist, addToWishlistApi, removeFromWishlistApi } from '../../core/api.js';
 import { addToCart } from '../../core/storage.js';
 import { showNotification } from '../../utils/notification.js';
 import { initImagePreview } from './imagePreview.js';
@@ -12,6 +12,10 @@ let allProducts = [];
 let displayedProducts = [];
 let selectedProducts = [];
 let currentCategorySelected = 'magnet';
+
+// Wishlist state: Map of product_id => wishlist item id
+let wishlistMap = new Map();
+let favouritesFilterActive = false;
 
 // Textile size configuration
 const TEXTILE_CATEGORIES = ['tshirt', 'hoodie'];
@@ -31,6 +35,82 @@ function getSizes(product) {
     return isKidProduct(product) ? KID_SIZES : ADULT_SIZES;
 }
 
+// Load wishlist state from server
+async function loadWishlistState() {
+    try {
+        const items = await fetchWishlist();
+        wishlistMap.clear();
+        if (Array.isArray(items)) {
+            items.forEach(item => wishlistMap.set(String(item.product_id), item.id));
+        }
+    } catch (e) {
+        // non bloquant
+    }
+}
+
+// Toggle wishlist for a product
+async function toggleWishlist(product, btn) {
+    const productId = String(product.id);
+    const isInWishlist = wishlistMap.has(productId);
+
+    if (isInWishlist) {
+        try {
+            await removeFromWishlistApi(productId);
+            wishlistMap.delete(productId);
+            btn.classList.remove('active');
+            btn.title = 'Add to favourites';
+            updateWishlistBadge();
+        } catch (e) {
+            showNotification('Error removing from favourites', 'error');
+        }
+    } else {
+        try {
+            const result = await addToWishlistApi({
+                product_id: productId,
+                product_name: product.Nom,
+                product_price: parseFloat(product.prix) || 0,
+                category: product.categorie,
+                image_url: product.imageUrl
+            });
+            if (result && result.item) {
+                wishlistMap.set(productId, result.item.id);
+            }
+            btn.classList.add('active');
+            btn.title = 'Remove from favourites';
+            updateWishlistBadge();
+        } catch (e) {
+            showNotification('Error adding to favourites', 'error');
+        }
+    }
+}
+
+// Update the header wishlist badge
+function updateWishlistBadge() {
+    if (window.DiscadoHeader && window.DiscadoHeader.updateWishlistBadge) {
+        window.DiscadoHeader.updateWishlistBadge(wishlistMap.size);
+    }
+}
+
+// Applique les filtres actifs (catégorie + favoris si actif)
+function applyFilters(category) {
+    const categoryFiltered = filterByCategory(allProducts, category);
+    return favouritesFilterActive
+        ? categoryFiltered.filter(p => wishlistMap.has(String(p.id)))
+        : categoryFiltered;
+}
+
+// Handle wishlist filter toggle from header
+function handleWishlistFilterToggle() {
+    favouritesFilterActive = !favouritesFilterActive;
+    if (window.DiscadoHeader && window.DiscadoHeader.setWishlistFilterActive) {
+        window.DiscadoHeader.setWishlistFilterActive(favouritesFilterActive);
+    }
+    const searchInput = document.getElementById('searchInput');
+    const searchQuery = searchInput?.value?.trim() || '';
+    const filtered = applyFilters(currentCategorySelected);
+    displayProducts(searchQuery ? searchProducts(searchQuery, filtered) : filtered);
+}
+
 // Initialize catalog page
 // options.defaultCategory: first category to display (default: 'magnet')
 function initCatalog(options = {}) {
@@ -39,9 +119,23 @@ function initCatalog(options = {}) {
 
     createFloatingButton();
 
-    loadProducts(defaultCategory).then(() => {
-        setupSearch();
-        initProductFilter(filterProducts);
+    document.addEventListener('wishlistFilterToggle', handleWishlistFilterToggle);
+
+    loadWishlistState().then(() => {
+        loadProducts(defaultCategory).then(() => {
+            setupSearch();
+            initProductFilter(filterProducts);
+
+            // Activer le filtre favoris si demandé via URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('filter') === 'favourites') {
+                favouritesFilterActive = true;
+                if (window.DiscadoHeader && window.DiscadoHeader.setWishlistFilterActive) {
+                    window.DiscadoHeader.setWishlistFilterActive(true);
+                }
+                displayProducts(applyFilters(currentCategorySelected));
+            }
+        });
     });
 }
 
@@ -150,7 +244,7 @@ function displayProducts(products) {
     if (displayedProducts.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
-                <p>No products found in this category</p>
+                <p>No products found in this category, like a product to add it</p>
             </div>
         `;
         return;
@@ -189,6 +283,22 @@ function displayProducts(products) {
     document.dispatchEvent(new CustomEvent('productsLoaded'));
 }
 
+// Create wishlist heart button
+function createWishlistButton(product) {
+    const btn = document.createElement('button');
+    btn.className = 'wishlist-btn' + (wishlistMap.has(String(product.id)) ? ' active' : '');
+    btn.title = wishlistMap.has(String(product.id)) ? 'Remove from favourites' : 'Add to favourites';
+    btn.setAttribute('aria-label', 'Toggle favourite');
+    btn.innerHTML = '<i class="fas fa-heart"></i>';
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleWishlist(product, btn);
+    });
+
+    return btn;
+}
+
 // Create individual product element
 function createProductElement(product, index) {
     const li = document.createElement("li");
@@ -198,8 +308,9 @@ function createProductElement(product, index) {
     const imgContainer = createImageContainer(product);
     const infoContainer = createInfoContainer(product);
     const actionContainer = createActionContainer(product);
+    const wishlistBtn = createWishlistButton(product);
 
-    li.append(imgContainer, infoContainer, actionContainer);
+    li.append(imgContainer, infoContainer, actionContainer, wishlistBtn);
     return li;
 }
 
@@ -207,12 +318,12 @@ function createProductElement(product, index) {
 function createImageContainer(product) {
     const imgContainer = document.createElement("div");
     imgContainer.className = "product-img-container";
-    
+
     const img = document.createElement("img");
     img.src = product.imageUrl;
     img.alt = product.Nom || "Product image";
     img.className = "product-img";
-    
+
     imgContainer.appendChild(img);
     return imgContainer;
 }
@@ -335,18 +446,12 @@ function createQuantityInput(product) {
 function filterProducts(category) {
     currentCategorySelected = category;
     updateCategorySelection(category);
-    
+
     const searchInput = document.getElementById('searchInput');
     const searchQuery = searchInput?.value?.trim() || '';
-    
-    const categoryFiltered = filterByCategory(allProducts, category);
-    
-    if (searchQuery) {
-        const searchResults = searchProducts(searchQuery, categoryFiltered);
-        displayProducts(searchResults);
-    } else {
-        displayProducts(categoryFiltered);
-    }
+
+    const filtered = applyFilters(category);
+    displayProducts(searchQuery ? searchProducts(searchQuery, filtered) : filtered);
 }
 
 // Update category selection in UI
@@ -380,14 +485,8 @@ function setupSearch() {
     
     if (searchInput) {
         const performSearch = (query) => {
-            const categoryFiltered = filterByCategory(allProducts, currentCategorySelected);
-            
-            if (!query) {
-                displayProducts(categoryFiltered);
-            } else {
-                const searchResults = searchProducts(query, categoryFiltered);
-                displayProducts(searchResults);
-            }
+            const filtered = applyFilters(currentCategorySelected);
+            displayProducts(query ? searchProducts(query, filtered) : filtered);
         };
         
         searchInput.addEventListener('input', () => performSearch(searchInput.value.trim()));

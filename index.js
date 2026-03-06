@@ -513,7 +513,7 @@ app.post('/login', (req, res) => {
       }
 
       if (userService.isProfileComplete(username)) {
-        return res.json({ success: true, redirect: '/pages/catalog.html' });
+        return res.json({ success: true, redirect: '/pages/home.html' });
       } else {
         return res.json({ success: true, redirect: '/pages/profile.html' });
       }
@@ -728,6 +728,10 @@ app.get('/orders', requireLogin, requireSecurePassword, (req, res) => {
 
 app.get('/pages/orders.html', requireLogin, requireSecurePassword, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pages', 'orders.html'));
+});
+
+app.get('/pages/wishlist.html', requireLogin, requireSecurePassword, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'wishlist.html'));
 });
 
 // ===== MY INVOICES (authenticated client view) =====
@@ -1736,6 +1740,64 @@ app.get('/api/user-orders', requireLogin, (req, res) => {
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: 'Error getting user orders' });
+  }
+});
+
+// ===== WISHLIST =====
+
+// GET /api/wishlist — Liste des favoris de l'utilisateur connecté
+app.get('/api/wishlist', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  try {
+    const items = dbModule.wishlists.getByUser.all(userId);
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching wishlist:', error);
+    res.status(500).json({ error: 'Error fetching wishlist' });
+  }
+});
+
+// POST /api/wishlist — Ajouter un produit aux favoris
+app.post('/api/wishlist', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  const { product_id, product_name, product_price, category, image_url } = req.body;
+
+  if (!product_id || !product_name) {
+    return res.status(400).json({ error: 'product_id and product_name are required' });
+  }
+
+  try {
+    dbModule.wishlists.add.run(userId, product_id, product_name, product_price || null, category || null, image_url || null);
+    const item = dbModule.wishlists.findItem.get(userId, product_id);
+    res.json({ success: true, item });
+  } catch (error) {
+    console.error('Error adding to wishlist:', error);
+    res.status(500).json({ error: 'Error adding to wishlist' });
+  }
+});
+
+// DELETE /api/wishlist/:productId — Retirer un produit des favoris
+app.delete('/api/wishlist/:productId', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  const { productId } = req.params;
+
+  try {
+    dbModule.wishlists.removeByProductId.run(userId, productId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error removing from wishlist:', error);
+    res.status(500).json({ error: 'Error removing from wishlist' });
+  }
+});
+
+// GET /api/wishlist/count — Nombre de favoris de l'utilisateur
+app.get('/api/wishlist/count', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  try {
+    const { count } = dbModule.wishlists.countByUser.get(userId);
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching wishlist count' });
   }
 });
 

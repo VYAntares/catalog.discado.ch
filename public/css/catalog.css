@@ -172,6 +172,7 @@ li.product-item {
     transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
     border: 1px solid rgba(0, 0, 0, 0.04);
     list-style: none;
+    position: relative;
 }
 
 li.product-item:hover {
@@ -242,6 +243,50 @@ li.product-item:hover {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* Coeur header actif (filtre favoris activé) */
+#wishlistToggle.wishlist-filter-active {
+    color: #e9394f;
+    background: #ffe5e8;
+}
+
+/* =========================================
+   Wishlist Heart Button (on product card)
+   ========================================= */
+.wishlist-btn {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: #f5f7fc;
+    color: #ccc;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    z-index: 1;
+}
+
+.wishlist-btn:hover {
+    color: #e9394f;
+    background: #ffe5e8;
+    transform: scale(1.15);
+}
+
+.wishlist-btn.active {
+    color: #e9394f;
+    background: #ffe5e8;
+}
+
+.wishlist-btn.active:hover {
+    transform: scale(1.15);
 }
 
 .quantity-container {

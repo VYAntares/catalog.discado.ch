@@ -66,6 +66,7 @@ function updateCategoryUI(category, categoryItems = null) {
 // List of available product categories
 export function getAvailableCategories() {
     return [
+        { id: 'all', name: 'Toutes les catégories' },
         { id: 'magnet', name: 'Magnets' },
         { id: 'keyring', name: 'Keyrings' },
         { id: 'bags', name: 'Bags & Totebags' },

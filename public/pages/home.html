@@ -26,6 +26,15 @@
 <div id="header-container"></div>
 
 <main class="home-main">
+
+  <!-- Hero image -->
+  <img src="/images/lifestyle/lausanne.jpg" alt="Lausanne" class="home-hero-img">
+
+  <!-- Texte de présentation -->
+  <p class="home-intro">
+    Depuis 2008, nous créons et distribuons un large assortiment d'articles souvenirs, gadgets et textiles pour toute la Suisse. Vous avez ici accès à notre catalogue avec plus de 2&nbsp;000 références.
+  </p>
+
   <h2 class="home-section-title">Nos catégories</h2>
   <div class="categories-grid" id="categoriesGrid">
     <div class="categories-loading">
@@ -33,6 +42,18 @@
       <p>Chargement...</p>
     </div>
   </div>
+
+  <!-- Texte intermédiaire -->
+  <p class="home-intro">
+    Notre catalogue estrégulièrement alimenté de nouvelles références, à prix imbattables.
+  </p>
+
+  <!-- Vitrine -->
+  <div class="home-vitrine">
+    <img src="/images/lifestyle/vitrine1.jpg" alt="Vitrine Discado 1" class="vitrine-img">
+    <img src="/images/lifestyle/vitrine2.jpg" alt="Vitrine Discado 2" class="vitrine-img">
+  </div>
+
 </main>
 
 <div id="footer-container"></div>
@@ -70,9 +91,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         const categories = getAvailableCategories();
 
         grid.innerHTML = '';
-        let hasAny = false;
+        let hasAny = true;
+
+        // Card "Tout le catalogue"
+        const allCard = document.createElement('a');
+        allCard.href = '/pages/catalog.html?category=all';
+        allCard.className = 'category-card';
+        allCard.innerHTML = `
+            <div class="category-card-img">
+                <img src="/images/lifestyle/catalog_2025.jpg" alt="Tout le catalogue" loading="lazy">
+            </div>
+            <div class="category-card-label">Tout le catalogue</div>
+        `;
+        grid.appendChild(allCard);
 
         categories.forEach(cat => {
+            if (cat.id === 'all') return;
             const firstProduct = products.find(p => matchesCategory(p.categorie, cat.id));
             if (!firstProduct) return;
 

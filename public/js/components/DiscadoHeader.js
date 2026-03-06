@@ -28,37 +28,22 @@ function initDiscadoHeader() {
     <!-- Header -->
     <header class="discado-header-initialized">
         <div class="header-container">
-            <!-- Section gauche: Catalogue PDF & Informations de contact -->
-            <div class="left-section">
-                <div class="pdf-catalog-container">
-                    <button id="pdfCatalogToggle" class="icon-btn-with-text" aria-label="PDF Catalog">
-                        <i class="fas fa-file-pdf"></i>
-                        <span>Catalog PDF</span>
-                    </button>
-                </div>
-                
-                <!-- Informations de contact avec icônes -->
-                <div class="contact-info">
-                    <div class="contact-details">
-                        <div class="contact-item">
-                            <a href="tel:+41783433631"><i class="fas fa-phone"></i><span>+41 78 343 36 31</span></a>
-                        </div>
-                        <div class="contact-item">
-                            <a href="mailto:catalog.discado@gmail.com"><i class="fas fa-envelope"></i><span>catalog.discado@gmail.com</span></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Section gauche vide (équilibre le logo centré) -->
+            <div class="left-section"></div>
             
             <!-- Logo, centré -->
             <div class="logo-container">
-                <a href="/pages/catalog.html">
+                <a href="/pages/home.html">
                     <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo" id="logo">
                 </a>
             </div>
             
             <!-- Section droite pour panier et utilisateur -->
             <div class="header-right">
+                <button id="wishlistToggle" class="icon-btn" aria-label="My favourites">
+                    <i class="fas fa-heart"></i>
+                    <span id="wishlistCountBadge" class="cart-count-badge" style="display:none;">0</span>
+                </button>
                 <button id="cartToggle" class="icon-btn" aria-label="Shopping cart">
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cartCountBadge" class="cart-count-badge">0</span>
@@ -92,6 +77,12 @@ function initDiscadoHeader() {
 
     // Mettre à jour le badge du panier
     updateCartCountBadge();
+
+    // Charger le count wishlist
+    loadWishlistCount();
+
+    // Gérer le clic sur le bouton wishlist
+    setupWishlistToggle();
 
     // Injecter le lien Admin Panel si l'utilisateur est admin
     injectAdminPanelLink();
@@ -300,11 +291,58 @@ function connectCartToHeader() {
     updateCartCountBadge();
 }
 
+// Gérer le clic sur le bouton wishlist du header
+function setupWishlistToggle() {
+    const btn = document.getElementById('wishlistToggle');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+        const isCatalog = window.location.pathname.includes('/pages/catalog.html') ||
+                          window.location.pathname.includes('/pages/textile.html');
+        if (isCatalog) {
+            document.dispatchEvent(new CustomEvent('wishlistFilterToggle'));
+        } else {
+            window.location.href = '/pages/catalog.html?filter=favourites&category=all';
+        }
+    });
+}
+
+// Activer/désactiver le highlight du coeur header (filtre actif)
+function setWishlistFilterActive(active) {
+    const btn = document.getElementById('wishlistToggle');
+    if (btn) btn.classList.toggle('wishlist-filter-active', active);
+}
+
+// Mettre à jour le badge wishlist
+function updateWishlistBadge(count) {
+    const badge = document.getElementById('wishlistCountBadge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// Charger le count wishlist depuis le serveur
+function loadWishlistCount() {
+    fetch('/api/wishlist/count', { credentials: 'same-origin' })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && typeof data.count === 'number') {
+                updateWishlistBadge(data.count);
+            }
+        })
+        .catch(function() { /* non connecté ou erreur réseau */ });
+}
+
 // Exporter les fonctions
 window.DiscadoHeader = {
     init: initDiscadoHeader,
     connectCart: connectCartToHeader,
-    updateCartBadge: updateCartCountBadge
+    updateCartBadge: updateCartCountBadge,
+    updateWishlistBadge: updateWishlistBadge,
+    setWishlistFilterActive: setWishlistFilterActive
 };
 
 // Initialiser le header au chargement

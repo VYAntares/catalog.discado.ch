@@ -133,6 +133,43 @@ export async function checkAuthentication() {
   }
 }
 
+export async function fetchWishlist() {
+  try {
+    const response = await fetch('/api/wishlist', API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching wishlist:', error);
+    throw error;
+  }
+}
+
+export async function addToWishlistApi(product) {
+  try {
+    const response = await fetch('/api/wishlist', {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify(product)
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error adding to wishlist:', error);
+    throw error;
+  }
+}
+
+export async function removeFromWishlistApi(productId) {
+  try {
+    const response = await fetch(`/api/wishlist/${productId}`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error removing from wishlist:', error);
+    throw error;
+  }
+}
+
 export async function saveUserPassword(passwordData) {
   try {
     const response = await fetch('/api/change-password', {

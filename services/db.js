@@ -19,7 +19,7 @@ db.pragma('foreign_keys = ON');
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses', 'client_locations'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses', 'client_locations', 'wishlists'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -344,6 +344,22 @@ function initDatabase() {
     // Migration : ajout product_id aux tables existantes (nullable pour compatibilité)
     try { db.exec('ALTER TABLE order_items ADD COLUMN product_id INTEGER REFERENCES products(id)'); } catch(e) { /* colonne déjà présente */ }
     try { db.exec('ALTER TABLE pending_deliveries ADD COLUMN product_id INTEGER REFERENCES products(id)'); } catch(e) { /* colonne déjà présente */ }
+
+    // Création de la table wishlists
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS wishlists (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        product_price REAL,
+        category TEXT,
+        image_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(username),
+        UNIQUE(user_id, product_id)
+    )
+    `);
 
     // Création de la table invoices
     db.exec(`
@@ -980,6 +996,19 @@ module.exports = {
             WHERE id = ?
         `),
         delete: db.prepare('DELETE FROM client_locations WHERE id = ?')
+    },
+
+    // Requêtes liées à la wishlist
+    wishlists: {
+        getByUser: db.prepare('SELECT * FROM wishlists WHERE user_id = ? ORDER BY created_at DESC'),
+        add: db.prepare(`
+            INSERT OR IGNORE INTO wishlists (user_id, product_id, product_name, product_price, category, image_url)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `),
+        remove: db.prepare('DELETE FROM wishlists WHERE id = ? AND user_id = ?'),
+        removeByProductId: db.prepare('DELETE FROM wishlists WHERE user_id = ? AND product_id = ?'),
+        findItem: db.prepare('SELECT * FROM wishlists WHERE user_id = ? AND product_id = ?'),
+        countByUser: db.prepare('SELECT COUNT(*) as count FROM wishlists WHERE user_id = ?')
     },
 
     // Requêtes liées aux tokens de réinitialisation de mot de passe
