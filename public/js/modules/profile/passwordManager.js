@@ -48,7 +48,7 @@ function checkPasswordMatch(shouldShowError = false) {
         // (typically on blur or submission)
         if (shouldShowError) {
             confirmField.classList.add('input-error');
-            showErrorMessage(confirmField, 'Passwords do not match');
+            showErrorMessage(confirmField, window.t ? window.t('profile.errorPwdMismatch') : 'Passwords do not match');
             
             // Block submission if passwords don't match
             if (submitButton) {
@@ -165,23 +165,23 @@ function updateStrengthMeter(score) {
     strengthBar.className = 'strength-indicator';
     
     if (score === 0) {
-        strengthText.textContent = 'Password strength';
+        strengthText.textContent = window.t ? window.t('profile.passwordStrength') : 'Password strength';
         return;
     }
     
     // Add appropriate class
     if (score < 40) {
         strengthBar.classList.add('strength-weak');
-        strengthText.textContent = 'Weak password';
+        strengthText.textContent = window.t ? window.t('profile.pwdWeak') : 'Weak password';
     } else if (score < 70) {
         strengthBar.classList.add('strength-fair');
-        strengthText.textContent = 'Fair password';
+        strengthText.textContent = window.t ? window.t('profile.pwdFair') : 'Fair password';
     } else if (score < 90) {
         strengthBar.classList.add('strength-good');
-        strengthText.textContent = 'Good password';
+        strengthText.textContent = window.t ? window.t('profile.pwdGood') : 'Good password';
     } else {
         strengthBar.classList.add('strength-strong');
-        strengthText.textContent = 'Strong password';
+        strengthText.textContent = window.t ? window.t('profile.pwdStrong') : 'Strong password';
     }
     
     // Set bar width

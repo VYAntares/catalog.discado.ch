@@ -35,7 +35,7 @@ function validateForm() {
         const field = document.getElementById(fieldId);
         if (!field || !field.value.trim()) {
             field.classList.add('input-error');
-            showErrorMessage(field, 'This field is required');
+            showErrorMessage(field, window.t ? window.t('profile.errorRequired') : 'This field is required');
             isValid = false;
         } else {
             switch(fieldId) {
@@ -60,21 +60,21 @@ function validateForm() {
         if (!currentPassword) {
             const field = document.getElementById('currentPassword');
             field.classList.add('input-error');
-            showErrorMessage(field, 'Current password is required to change password');
+            showErrorMessage(field, window.t ? window.t('profile.errorCurrentPwdRequired') : 'Current password is required to change password');
             isValid = false;
         }
 
         if (!newPassword) {
             const field = document.getElementById('newPassword');
             field.classList.add('input-error');
-            showErrorMessage(field, 'New password is required');
+            showErrorMessage(field, window.t ? window.t('profile.errorNewPwdRequired') : 'New password is required');
             isValid = false;
         }
 
         if (!confirmPassword) {
             const field = document.getElementById('confirmPassword');
             field.classList.add('input-error');
-            showErrorMessage(field, 'Please confirm your new password');
+            showErrorMessage(field, window.t ? window.t('profile.errorConfirmPwdRequired') : 'Please confirm your new password');
             isValid = false;
         }
 
@@ -88,7 +88,7 @@ function validateForm() {
                 const field = document.getElementById('confirmPassword');
                 field.classList.add('input-error', 'password-mismatch');
                 field.classList.remove('password-match');
-                showErrorMessage(field, 'Passwords do not match');
+                showErrorMessage(field, window.t ? window.t('profile.errorPwdMismatch') : 'Passwords do not match');
                 isValid = false;
             }
         }
@@ -107,7 +107,7 @@ async function handleProfileSubmit(event) {
     const saveBtn = document.querySelector('.save-btn');
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving...';
+        saveBtn.textContent = window.t ? window.t('profile.saving') : 'Saving...';
     }
 
     try {
@@ -137,9 +137,9 @@ async function handleProfileSubmit(event) {
                 alertContainer.innerHTML = `
                     <div class="alert-icon">⚠️</div>
                     <div class="alert-content">
-                        <h4>Action required for your security</h4>
-                        <p>Your password is the same as your username, which is a security risk.</p>
-                        <p>Please set a new secure password before continuing.</p>
+                        <h4>${window.t ? window.t('profile.securityTitle') : 'Action required for your security'}</h4>
+                        <p>${window.t ? window.t('profile.securityMsg1') : 'Your password is the same as your username, which is a security risk.'}</p>
+                        <p>${window.t ? window.t('profile.securityMsg2') : 'Please set a new secure password before continuing.'}</p>
                     </div>
                 `;
                 
@@ -156,19 +156,19 @@ async function handleProfileSubmit(event) {
                     passwordSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 
-                showNotification('For security reasons, you must change your password', 'warning', 8000);
+                showNotification(window.t ? window.t('profile.securityNotif') : 'For security reasons, you must change your password', 'warning', 8000);
                 
                 const currentPasswordField = document.getElementById('currentPassword');
                 if (currentPasswordField) {
                     currentPasswordField.classList.add('input-error');
-                    showErrorMessage(currentPasswordField, 'For security reasons, you must change your password because it is the same as your username');
+                    showErrorMessage(currentPasswordField, window.t ? window.t('profile.errorPwdSameAsUsername') : 'For security reasons, you must change your password because it is the same as your username');
                     currentPasswordField.focus();
                 }
                 
                 const newPasswordField = document.getElementById('newPassword');
                 if (newPasswordField) {
                     newPasswordField.classList.add('required-field');
-                    showErrorMessage(newPasswordField, 'Please set a new password different from your username');
+                    showErrorMessage(newPasswordField, window.t ? window.t('profile.errorSetNewPwd') : 'Please set a new password different from your username');
                 }
                 
                 function setupPasswordFieldListeners() {
@@ -207,7 +207,7 @@ async function handleProfileSubmit(event) {
                 
                 setupPasswordFieldListeners();
             } else {
-                showNotification('Profile saved successfully', 'success');
+                showNotification(window.t ? window.t('profile.successMsg') : 'Profile saved successfully', 'success');
                 
                 if (document.getElementById('currentPassword')) document.getElementById('currentPassword').value = '';
                 if (document.getElementById('newPassword')) document.getElementById('newPassword').value = '';
@@ -216,7 +216,7 @@ async function handleProfileSubmit(event) {
                 const passwordStrength = document.getElementById('passwordStrength');
                 if (passwordStrength) passwordStrength.style.width = '0%';
                 const passwordStrengthText = document.getElementById('passwordStrengthText');
-                if (passwordStrengthText) passwordStrengthText.textContent = 'Password strength';
+                if (passwordStrengthText) passwordStrengthText.textContent = window.t ? window.t('profile.passwordStrength') : 'Password strength';
                 
                 document.querySelectorAll('.password-requirements li').forEach(li => {
                     li.classList.remove('valid');
@@ -232,18 +232,18 @@ async function handleProfileSubmit(event) {
             if (result.code === 'INVALID_CURRENT_PASSWORD') {
                 const field = document.getElementById('currentPassword');
                 field.classList.add('input-error');
-                showErrorMessage(field, 'Current password is incorrect');
+                showErrorMessage(field, window.t ? window.t('profile.errorCurrentPwdIncorrect') : 'Current password is incorrect');
             } else {
-                showNotification(result.message || 'Error saving profile', 'error');
+                showNotification(result.message || (window.t ? window.t('profile.errorMsg') : 'Error saving profile'), 'error');
             }
         }
     } catch (error) {
         console.error('Error saving profile:', error);
-        showNotification('Unable to save profile. Please try again.', 'error');
+        showNotification(window.t ? window.t('profile.errorSaveFailed') : 'Unable to save profile. Please try again.', 'error');
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Save';
+            saveBtn.textContent = window.t ? window.t('profile.save') : 'Save';
         }
     }
 }
@@ -343,7 +343,7 @@ function setupRealTimeSubmitButton() {
         
         if (!isValid) {
             saveButton.classList.add('disabled-submit');
-            saveButton.title = 'Please fill in all password fields correctly';
+            saveButton.title = window.t ? window.t('profile.pwdFieldsHint') : 'Please fill in all password fields correctly';
         } else {
             saveButton.classList.remove('disabled-submit');
             saveButton.title = '';
@@ -388,7 +388,7 @@ async function loadUserProfile() {
         hideLoadingIndicator(profileForm);
 
         if (!profileData || Object.keys(profileData).length === 0) {
-            showNotification('Please complete your profile information', 'info');
+            showNotification(window.t ? window.t('profile.infoComplete') : 'Please complete your profile information', 'info');
             resetFormFields();
             return;
         }
@@ -403,12 +403,12 @@ async function loadUserProfile() {
         if (profileData.passwordSameAsUsername) {
             showForcedPasswordChangeUI();
         } else {
-            showNotification('Profile loaded successfully', 'success');
+            showNotification(window.t ? window.t('profile.loadedSuccess') : 'Profile loaded successfully', 'success');
         }
 
     } catch (error) {
         console.error('Error loading profile:', error);
-        showNotification('Unable to load profile. Please try again.', 'error');
+        showNotification(window.t ? window.t('profile.errorLoadFailed') : 'Unable to load profile. Please try again.', 'error');
         resetFormFields();
     }
 }
@@ -440,13 +440,13 @@ function showForcedPasswordChangeUI() {
         passwordSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     
-    showNotification('For security reasons, you must change your password', 'warning', 8000);
+    showNotification(window.t ? window.t('profile.securityNotif') : 'For security reasons, you must change your password', 'warning', 8000);
     
     // Mark current password field with error
     const currentPasswordField = document.getElementById('currentPassword');
     if (currentPasswordField) {
         currentPasswordField.classList.add('input-error');
-        showErrorMessage(currentPasswordField, 'For security reasons, you must change your password because it is the same as your username');
+        showErrorMessage(currentPasswordField, window.t ? window.t('profile.errorPwdSameAsUsername') : 'For security reasons, you must change your password because it is the same as your username');
         currentPasswordField.focus();
     }
     
@@ -454,7 +454,7 @@ function showForcedPasswordChangeUI() {
     const newPasswordField = document.getElementById('newPassword');
     if (newPasswordField) {
         newPasswordField.classList.add('required-field');
-        showErrorMessage(newPasswordField, 'Please set a new password different from your username');
+        showErrorMessage(newPasswordField, window.t ? window.t('profile.errorSetNewPwd') : 'Please set a new password different from your username');
     }
     
     // Disable save button until password fields are properly filled
@@ -471,7 +471,7 @@ function showLoadingIndicator(profileForm) {
     loadingMessage.className = 'loading-container';
     loadingMessage.innerHTML = `
         <div class="loading-spinner"></div>
-        <p>Loading your data...</p>
+        <p>${window.t ? window.t('profile.loadingData') : 'Loading your data...'}</p>
     `;
     profileForm.parentNode.insertBefore(loadingMessage, profileForm);
 }
@@ -589,7 +589,7 @@ function validateField(field, showErrors = true) {
                 if (field.value && !isValidEmail(field.value)) {
                     if (showErrors) {
                         field.classList.add('input-error');
-                        showErrorMessage(field, 'Please enter a valid email address');
+                        showErrorMessage(field, window.t ? window.t('profile.errorEmail') : 'Please enter a valid email address');
                     }
                     isValid = false;
                 } else {
@@ -602,7 +602,7 @@ function validateField(field, showErrors = true) {
                 if (field.value && !isValidPhone(field.value)) {
                     if (showErrors) {
                         field.classList.add('input-error');
-                        showErrorMessage(field, 'Please enter a valid phone number');
+                        showErrorMessage(field, window.t ? window.t('profile.errorPhone') : 'Please enter a valid phone number');
                     }
                     isValid = false;
                 } else {
@@ -615,7 +615,7 @@ function validateField(field, showErrors = true) {
                 if (field.value && !isValidZipCode(field.value)) {
                     if (showErrors) {
                         field.classList.add('input-error');
-                        showErrorMessage(field, 'Please enter a valid zip code');
+                        showErrorMessage(field, window.t ? window.t('profile.errorZip') : 'Please enter a valid zip code');
                     }
                     isValid = false;
                 } else {
@@ -637,7 +637,7 @@ function validateField(field, showErrors = true) {
 function validateEmailField(emailField) {
     if (emailField.value && !isValidEmail(emailField.value)) {
         emailField.classList.add('input-error');
-        showErrorMessage(emailField, 'Please enter a valid email address');
+        showErrorMessage(emailField, window.t ? window.t('profile.errorEmail') : 'Please enter a valid email address');
         return false;
     }
     emailField.classList.remove('input-error');
@@ -648,7 +648,7 @@ function validateEmailField(emailField) {
 function validatePhoneField(phoneField) {
     if (phoneField.value && !isValidPhone(phoneField.value)) {
         phoneField.classList.add('input-error');
-        showErrorMessage(phoneField, 'Please enter a valid phone number (10 digits)');
+        showErrorMessage(phoneField, window.t ? window.t('profile.errorPhone') : 'Please enter a valid phone number (10 digits)');
         return false;
     }
     phoneField.classList.remove('input-error');
@@ -659,7 +659,7 @@ function validatePhoneField(phoneField) {
 function validateZipCodeField(zipCodeField) {
     if (zipCodeField.value && !isValidZipCode(zipCodeField.value)) {
         zipCodeField.classList.add('input-error');
-        showErrorMessage(zipCodeField, 'Please enter a valid zip code');
+        showErrorMessage(zipCodeField, window.t ? window.t('profile.errorZip') : 'Please enter a valid zip code');
         return false;
     }
     zipCodeField.classList.remove('input-error');

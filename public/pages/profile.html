@@ -37,57 +37,59 @@
                     <h3 data-i18n="profile.personalInfo">Personal Information</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="firstName">First Name*</label>
-                            <input type="text" id="firstName" name="firstName" placeholder="Your first name" required>
+                            <label for="firstName" data-i18n="profile.firstNameLabel">First Name*</label>
+                            <input type="text" id="firstName" name="firstName" data-i18n-ph="profile.firstNamePlaceholder" placeholder="Your first name" required>
                         </div>
                         <div class="form-group">
-                            <label for="lastName">Last Name*</label>
-                            <input type="text" id="lastName" name="lastName" placeholder="Your last name" required>
+                            <label for="lastName" data-i18n="profile.lastNameLabel">Last Name*</label>
+                            <input type="text" id="lastName" name="lastName" data-i18n-ph="profile.lastNamePlaceholder" placeholder="Your last name" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="email">Email*</label>
+                        <label for="email" data-i18n="profile.emailLabel">Email*</label>
                         <input 
                             type="email" 
                             id="email" 
                             name="email" 
+                            data-i18n-ph="profile.emailPlaceholder"
                             placeholder="Your email address" 
                             required
                         >
                     </div>
                     <div class="form-group">
-                        <label for="phone">Phone Number*</label>
+                        <label for="phone" data-i18n="profile.phoneLabel">Phone Number*</label>
                         <input 
                             type="tel" 
                             id="phone" 
                             name="phone" 
+                            data-i18n-ph="profile.phonePlaceholder"
                             placeholder="0780123456" 
                             pattern="[0-9]{10}" 
                             maxlength="10"
                             inputmode="numeric"
                             required
                         >
-                        <p class="format-hint">Format: 10 digits only (e.g. 0780123456)</p>
+                        <p class="format-hint" data-i18n="profile.phoneHint">Format: 10 digits only (e.g. 0780123456)</p>
                     </div>
                 </div>
                 
                 <div class="profile-section">
                     <h3 data-i18n="profile.shopInfo">Shop Information</h3>
                     <div class="form-group">
-                        <label for="shopName">Shop's Name*</label>
-                        <input type="text" id="shopName" name="shopName" placeholder="Your shop name" required>
+                        <label for="shopName" data-i18n="profile.shopNameLabel">Shop's Name*</label>
+                        <input type="text" id="shopName" name="shopName" data-i18n-ph="profile.shopNamePlaceholder" placeholder="Your shop name" required>
                     </div>
                     <div class="form-group">
-                        <label for="shopAddress">Shop Address*</label>
-                        <input type="text" id="shopAddress" name="shopAddress" placeholder="Shop street address" required>
+                        <label for="shopAddress" data-i18n="profile.shopAddressLabel">Shop Address*</label>
+                        <input type="text" id="shopAddress" name="shopAddress" data-i18n-ph="profile.shopAddressPlaceholder" placeholder="Shop street address" required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="shopCity">Shop City*</label>
-                            <input type="text" id="shopCity" name="shopCity" placeholder="Shop city" required>
+                            <label for="shopCity" data-i18n="profile.shopCityLabel">Shop City*</label>
+                            <input type="text" id="shopCity" name="shopCity" data-i18n-ph="profile.shopCityPlaceholder" placeholder="Shop city" required>
                         </div>
                         <div class="form-group">
-                            <label for="shopZipCode">Shop Zip Code*</label>
+                            <label for="shopZipCode" data-i18n="profile.shopZipLabel">Shop Zip Code*</label>
                             <input 
                                 type="text" 
                                 id="shopZipCode" 
@@ -97,44 +99,44 @@
                                 inputmode="numeric"
                                 required
                             >
-                            <p class="format-hint">Numbers only</p>
+                            <p class="format-hint" data-i18n="profile.zipHint">Numbers only</p>
                         </div>
                     </div>
                 </div>
                 <div class="profile-section">
                     <h3 data-i18n="profile.passwordMgmt">Password Management</h3>
                     <div class="form-group">
-                        <label for="currentPassword">Current Password</label>
-                        <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password">
-                        <p class="format-hint">Leave empty if you don't want to change your password</p>
+                        <label for="currentPassword" data-i18n="profile.currentPasswordLabel">Current Password</label>
+                        <input type="password" id="currentPassword" name="currentPassword" data-i18n-ph="profile.currentPasswordPlaceholder" placeholder="Enter your current password">
+                        <p class="format-hint" data-i18n="profile.currentPasswordHint">Leave empty if you don't want to change your password</p>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="newPassword">New Password</label>
-                            <input type="password" id="newPassword" name="newPassword" placeholder="Enter your new password">
+                            <label for="newPassword" data-i18n="profile.newPasswordLabel">New Password</label>
+                            <input type="password" id="newPassword" name="newPassword" data-i18n-ph="profile.newPasswordPlaceholder" placeholder="Enter your new password">
                         </div>
                         <div class="form-group">
-                            <label for="confirmPassword">Confirm New Password</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your new password">
+                            <label for="confirmPassword" data-i18n="profile.confirmPasswordLabel">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" data-i18n-ph="profile.confirmPlaceholder" placeholder="Confirm your new password">
                         </div>
                     </div>
                     <div class="password-strength-meter">
                         <div class="password-strength-bar">
                             <div class="strength-indicator" id="passwordStrength"></div>
                         </div>
-                        <p class="password-strength-text" id="passwordStrengthText">Password strength</p>
+                        <p class="password-strength-text" id="passwordStrengthText" data-i18n="profile.passwordStrength">Password strength</p>
                     </div>
                     <ul class="password-requirements">
-                        <li id="req-length">At least 8 characters</li>
-                        <li id="req-uppercase">At least one uppercase letter</li>
-                        <li id="req-lowercase">At least one lowercase letter</li>
-                        <li id="req-number">At least one number</li>
-                        <li id="req-special">At least one special character</li>
+                        <li id="req-length" data-i18n="profile.reqLength">At least 8 characters</li>
+                        <li id="req-uppercase" data-i18n="profile.reqUpper">At least one uppercase letter</li>
+                        <li id="req-lowercase" data-i18n="profile.reqLower">At least one lowercase letter</li>
+                        <li id="req-number" data-i18n="profile.reqNumber">At least one number</li>
+                        <li id="req-special" data-i18n="profile.reqSpecial">At least one special character</li>
                     </ul>
                 </div>
                 
-                <p class="required-fields-note">* All fields are required</p>
-                <button type="submit" class="save-btn">Save Profile</button>
+                <p class="required-fields-note" data-i18n="profile.required">* All fields are required</p>
+                <button type="submit" class="save-btn" data-i18n="profile.save">Save Profile</button>
             </form>
         </div>
     </main>
