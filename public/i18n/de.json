@@ -205,6 +205,13 @@
     "oldestFirst": "Älteste zuerst",
     "export": "Als Excel exportieren"
   },
+  "welcome": {
+    "title": "Willkommen bei Discado",
+    "subtitle": "Melden Sie sich an, um unseren Katalog mit Werbeprodukten für Ihr Geschäft zu durchsuchen.",
+    "loginBtn": "Anmelden",
+    "requestBtn": "Konto beantragen",
+    "infoText": "Noch kein Konto? Klicken Sie auf \"Konto beantragen\" und wir erstellen eines für Sie."
+  },
   "cart": {
     "title": "Ihr Warenkorb",
     "empty": "Ihr Warenkorb ist leer",

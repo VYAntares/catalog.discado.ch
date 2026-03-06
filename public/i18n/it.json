@@ -205,6 +205,13 @@
     "oldestFirst": "Più vecchie prima",
     "export": "Esporta in Excel"
   },
+  "welcome": {
+    "title": "Benvenuto su Discado",
+    "subtitle": "Accedi per sfogliare il nostro catalogo di prodotti promozionali per il tuo negozio.",
+    "loginBtn": "Accedi",
+    "requestBtn": "Richiedi un account",
+    "infoText": "Non hai ancora un account? Clicca su \"Richiedi un account\" e ne creeremo uno per te."
+  },
   "cart": {
     "title": "Il Tuo Carrello",
     "empty": "Il carrello è vuoto",

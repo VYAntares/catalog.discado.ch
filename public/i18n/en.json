@@ -205,6 +205,13 @@
     "oldestFirst": "Oldest first",
     "export": "Export to Excel"
   },
+  "welcome": {
+    "title": "Welcome to Discado",
+    "subtitle": "Log in to browse our catalog of promotional products for your business.",
+    "loginBtn": "Log In",
+    "requestBtn": "Request Account",
+    "infoText": "Don't have an account yet? Click \"Request Account\" and we'll create one for you."
+  },
   "cart": {
     "title": "Your Cart",
     "empty": "Your cart is empty",

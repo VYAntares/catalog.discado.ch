@@ -14,8 +14,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/welcome.css">
+    <script src="/js/core/i18n.js"></script>
 </head>
 <body class="welcome-page">
+    <!-- Floating Language Switcher -->
+    <div class="page-lang-switcher" id="pageLangSwitcher">
+        <button class="page-lang-btn" id="pageLangBtn" aria-label="Select language">
+            <i class="fas fa-globe"></i>
+            <span id="pageLangCurrent">EN</span>
+        </button>
+        <div class="page-lang-dropdown" id="pageLangDropdown">
+            <button class="page-lang-option" data-lang="en">🇬🇧 English</button>
+            <button class="page-lang-option" data-lang="fr">🇫🇷 Français</button>
+            <button class="page-lang-option" data-lang="de">🇩🇪 Deutsch</button>
+            <button class="page-lang-option" data-lang="it">🇮🇹 Italiano</button>
+        </div>
+    </div>
     <div class="welcome-container">
         <div class="logo-container">
             <img src="/images/logo/logo_discado_noir.png" alt="Discado Logo">
@@ -23,26 +37,47 @@
 
         <div class="welcome-divider"></div>
 
-        <h1>Welcome to Discado</h1>
+        <h1 data-i18n="welcome.title">Welcome to Discado</h1>
 
-        <p class="welcome-subtitle">Log in to browse our catalog of promotional products for your business.</p>
+        <p class="welcome-subtitle" data-i18n="welcome.subtitle">Log in to browse our catalog of promotional products for your business.</p>
 
         <div class="button-container">
             <a href="/pages/login.html" id="login-btn" class="button primary-btn">
-                <i class="fas fa-sign-in-alt"></i> Log In
+                <i class="fas fa-sign-in-alt"></i> <span data-i18n="welcome.loginBtn">Log In</span>
             </a>
             <a href="mailto:catalog.discado@gmail.com?subject=Account%20Request&body=Hello%20Discado%20Team,%0A%0AI%20am%20interested%20in%20creating%20an%20account%20to%20access%20your%20catalog.%0A%0AShop%20name:%20%0AContact%20person:%20%0APhone:%20%0A%0AThank%20you." id="request-btn" class="button secondary-btn">
-                <i class="fas fa-envelope"></i> Request Account
+                <i class="fas fa-envelope"></i> <span data-i18n="welcome.requestBtn">Request Account</span>
             </a>
         </div>
 
-        <p class="info-text">Don't have an account yet? Click "Request Account" and we'll create one for you.</p>
+        <p class="info-text" data-i18n="welcome.infoText">Don't have an account yet? Click "Request Account" and we'll create one for you.</p>
 
         <div id="auth-status" class="auth-status"></div>
     </div>
 
     <script src="/js/welcome.js"></script>
     <script>
+      // Language switcher
+      (function() {
+        var btn = document.getElementById('pageLangBtn');
+        var dropdown = document.getElementById('pageLangDropdown');
+        var switcher = document.getElementById('pageLangSwitcher');
+        var current = document.getElementById('pageLangCurrent');
+        if (current && window.i18n) current.textContent = window.i18n.getLang().toUpperCase();
+        if (btn) btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+        });
+        document.querySelectorAll('.page-lang-option').forEach(function(el) {
+          el.addEventListener('click', function() {
+            if (window.i18n) window.i18n.setLang(this.getAttribute('data-lang'));
+          });
+        });
+        document.addEventListener('click', function(e) {
+          if (switcher && !switcher.contains(e.target)) dropdown.classList.remove('open');
+        });
+      })();
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
