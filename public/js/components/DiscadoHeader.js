@@ -42,6 +42,7 @@ function initDiscadoHeader() {
                         <button class="lang-option" data-lang="it">🇮🇹 Italiano</button>
                     </div>
                 </div>
+                <button id="contactScrollBtn" class="contact-scroll-btn"><i class="fas fa-envelope"></i> <span class="contact-btn-label" data-i18n="header.contact">Contact</span></button>
             </div>
             
             <!-- Logo, centré -->
