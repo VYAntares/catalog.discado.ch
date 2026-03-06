@@ -886,12 +886,19 @@ app.get('/api/my-invoices/pdf/:invoiceId', requireLogin, async (req, res) => {
     const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
     const remainingItems = orderDetails.remainingItems || [];
 
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Invoice_${invoice.order_id}.pdf`);
     doc.pipe(res);
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, invoice.order_id, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, invoice.order_id);
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count - 1; i++) {
+      doc.switchToPage(range.start + i);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+    }
+    doc.flushPages();
     doc.end();
   } catch (error) {
     console.error('Error generating my invoice PDF:', error);
@@ -1825,7 +1832,7 @@ app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
     const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
     const remainingItems = orderDetails.remainingItems || [];
     
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Invoice_${userId}_${orderId}.pdf`);
@@ -1834,7 +1841,13 @@ app.get('/api/download-invoice/:orderId', requireLogin, async (req, res) => {
     
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
-    
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count - 1; i++) {
+      doc.switchToPage(range.start + i);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+    }
+    doc.flushPages();
     doc.end();
   } catch (error) {
     res.status(500).json({ error: 'Error generating invoice' });
@@ -1956,7 +1969,7 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
     const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
     const remainingItems = orderDetails.remainingItems || [];
     
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Invoice_${userId}_${orderId}.pdf`);
@@ -1965,7 +1978,13 @@ app.get('/api/admin/download-invoice/:orderId/:userId', requireLogin, requireAdm
     
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, orderId, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, orderId);
-    
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count - 1; i++) {
+      doc.switchToPage(range.start + i);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+    }
+    doc.flushPages();
     doc.end();
   } catch (error) {
     res.status(500).json({ error: 'Error generating invoice' });
@@ -2032,7 +2051,7 @@ app.get('/api/admin/download-invoice-eur/:orderId/:userId', requireLogin, requir
     }
 
     // ── PAGE 1 : items ──
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Invoice_EUR_${orderId}.pdf`);
     doc.pipe(res);
@@ -2119,6 +2138,13 @@ app.get('/api/admin/download-invoice-eur/:orderId/:userId', requireLogin, requir
     doc.font('Helvetica-Bold').fontSize(9).fillColor(PRIMARY).text('PAYMENT TERMS: NET 30 DAYS', ML, bY, { width:CW, align:'center', characterSpacing:0.8 }); bY += 16;
     doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(`Payment due date: ${dueDateStr}`, ML, bY, { width:CW, align:'center' });
 
+    const rangeEur = doc.bufferedPageRange();
+    for (let i = 0; i < rangeEur.count; i++) {
+      doc.switchToPage(rangeEur.start + i);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
+      doc.text(`Page ${i + 1} / ${rangeEur.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+    }
+    doc.flushPages();
     doc.end();
   } catch (err) {
     console.error('EUR invoice error:', err);
@@ -4413,12 +4439,19 @@ app.get('/api/public/shared-invoices/:token/pdf/:invoiceId', async (req, res) =>
     const orderDate = new Date(orderDetails.lastProcessed || orderDetails.date);
     const remainingItems = orderDetails.remainingItems || [];
 
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Invoice_${invoice.order_id}.pdf`);
     doc.pipe(res);
     await deliveryNoteService.generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, invoice.order_id, remainingItems, false);
     await invoiceService.generateInvoicePDF(doc, orderItems, userProfile, orderDate, invoice.order_id);
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count - 1; i++) {
+      doc.switchToPage(range.start + i);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#888888');
+      doc.text(`Page ${i + 1} / ${range.count}`, 50, doc.page.height - 28, { width: doc.page.width - 100, align: 'center' });
+    }
+    doc.flushPages();
     doc.end();
   } catch (error) {
     console.error('Error generating shared PDF:', error);
