@@ -228,6 +228,7 @@ function createBatchItemCard(item, batchNumber) {
           </div>
         </div>
         <button class="product-stats-btn"
+                data-product-id="${item.product_id}"
                 data-product-name="${item.product_name}"
                 title="Voir les statistiques"
                 style="background:none;border:none;color:#4299e1;cursor:pointer;padding:4px;font-size:16px;line-height:1;justify-self:center;">
@@ -488,9 +489,10 @@ function reattachBatchItemListeners() {
    document.querySelectorAll('.product-stats-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation(); // Empêcher la propagation de l'événement
+      const productId = btn.getAttribute('data-product-id');
       const productName = btn.getAttribute('data-product-name');
       if (window.ProductStatsModal) {
-        window.ProductStatsModal.open(productName);
+        window.ProductStatsModal.open(productId, productName);
       } else {
         console.error('ProductStatsModal not loaded');
       }
@@ -840,6 +842,7 @@ function openConsolidatedEdit(productName) {
             <span class="consolidated-unit-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
           </div>
           <button class="product-stats-btn"
+                  data-product-id="${item.product_id}"
                   data-product-name="${item.product_name}"
                   title="Voir les statistiques">
             <i class="fas fa-question-circle"></i>
