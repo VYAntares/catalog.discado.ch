@@ -578,21 +578,21 @@ main {
       }
 
       .header-right {
-          gap: 2px;
+          gap: 5px;
       }
 
       .icon-btn {
-          width: 30px;
-          height: 30px;
+          width: 34px;
+          height: 34px;
       }
 
       .icon-btn i {
-          font-size: 15px;
+          font-size: 17px;
       }
 
       .hamburger-icon {
-          width: 14px;
-          height: 11px;
+          width: 16px;
+          height: 12px;
           gap: 3px;
       }
       
