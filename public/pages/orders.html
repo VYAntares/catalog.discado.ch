@@ -36,8 +36,8 @@
             <button id="pendingDeliveriesBtn" class="pending-deliveries-btn" style="display:none;">
                 <i class="fas fa-truck"></i>
                 <span class="pending-btn-label">
-                    Pending deliveries
-                    <small>Loading…</small>
+                    <span data-i18n="orders.pendingDeliveries">Pending deliveries</span>
+                    <small data-i18n="orders.loading">Loading…</small>
                 </span>
                 <span id="pendingItemsCount" class="pending-items-count hidden">0</span>
                 <i class="fas fa-chevron-down pending-chevron"></i>
@@ -53,7 +53,7 @@
         <div id="ordersList" class="orders-list">
             <div class="loading-container">
                 <div class="loading-spinner"></div>
-                <p>Loading your orders...</p>
+                <p data-i18n="orders.loadingOrders">Loading your orders...</p>
             </div>
         </div>
     </main>

@@ -100,8 +100,8 @@ function updatePendingItemsButton(pendingOrder) {
         const label = btn.querySelector('.pending-btn-label');
         if (label) {
             label.innerHTML = `
-                Pending deliveries
-                <small>${total} item${total > 1 ? 's' : ''} awaiting stock availability</small>
+                ${window.t ? window.t('orders.pendingDeliveries') : 'Pending deliveries'}
+                <small>${total} ${total > 1 ? (window.t ? window.t('orders.itemsPlural') : 'items') : (window.t ? window.t('orders.itemsSingular') : 'item')} ${window.t ? window.t('orders.awaitingStockSuffix') : 'awaiting stock availability'}</small>
             `;
         }
 
@@ -137,12 +137,12 @@ function createPendingDeliveryCard(pendingOrder) {
     header.className = 'pending-delivery-header';
     header.innerHTML = `
         <div class="pending-delivery-header-info">
-            <h3><i class="fas fa-truck" style="margin-right:8px;color:#d97706;"></i>Items awaiting delivery</h3>
-            <p>These items will be shipped as soon as stock is available</p>
+            <h3><i class="fas fa-truck" style="margin-right:8px;color:#d97706;"></i>${window.t ? window.t('orders.pendingHeader') : 'Items awaiting delivery'}</h3>
+            <p>${window.t ? window.t('orders.pendingSubtitle') : 'These items will be shipped as soon as stock is available'}</p>
         </div>
         <span class="pending-delivery-badge">
             <i class="fas fa-box"></i>
-            ${totalQty} item${totalQty > 1 ? 's' : ''}
+            ${totalQty} ${totalQty > 1 ? (window.t ? window.t('orders.itemsPlural') : 'items') : (window.t ? window.t('orders.itemsSingular') : 'item')}
         </span>
     `;
     card.appendChild(header);
@@ -171,7 +171,7 @@ function createPendingDeliveryCard(pendingOrder) {
     footer.className = 'pending-delivery-footer';
     footer.innerHTML = `
         <i class="fas fa-info-circle"></i>
-        <span>No action required. You will be notified when these items are shipped.</span>
+        <span>${window.t ? window.t('orders.pendingFooter') : 'No action required. You will be notified when these items are shipped.'}</span>
     `;
     card.appendChild(footer);
 
@@ -209,7 +209,7 @@ function createItemRow(item) {
         <div class="item-img-wrap">${imgHTML}</div>
         <div class="pending-item-name">${item.Nom}</div>
         <div class="pending-item-qty">× ${item.quantity}</div>
-        <div class="pending-item-status-tag">Awaiting stock</div>
+        <div class="pending-item-status-tag">${window.t ? window.t('orders.awaitingStock') : 'Awaiting stock'}</div>
     `;
     return row;
 }

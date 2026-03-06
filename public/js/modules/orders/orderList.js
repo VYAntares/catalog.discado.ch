@@ -138,9 +138,9 @@ function createOrderCard(order, index) {
 
 function determineOrderStatus(order) {
     if (['completed', 'shipped', 'partial'].includes(order.status)) {
-        return { statusText: 'Delivered', statusClass: 'status-shipped', barClass: 'bar-success' };
+        return { statusText: window.t ? window.t('orders.statusDelivered') : 'Delivered', statusClass: 'status-shipped', barClass: 'bar-success' };
     }
-    return { statusText: 'Processing', statusClass: 'status-processing', barClass: 'bar-processing' };
+    return { statusText: window.t ? window.t('orders.statusProcessing') : 'Processing', statusClass: 'status-processing', barClass: 'bar-processing' };
 }
 
 function calculateOrderTotal(order) {
@@ -170,25 +170,25 @@ function buildHeaderHTML(order, index, statusText, statusClass, totalHT, tva, to
             </div>
             <div class="order-header-meta">
                 <span><i class="fas fa-calendar-alt"></i> ${date}</span>
-                <span><i class="fas fa-box"></i> ${itemCount} item${itemCount > 1 ? 's' : ''}</span>
-                ${processed ? `<span><i class="fas fa-check-circle"></i> Processed on ${processed}</span>` : ''}
+                <span><i class="fas fa-box"></i> ${itemCount} ${itemCount > 1 ? (window.t ? window.t('orders.itemsPlural') : 'items') : (window.t ? window.t('orders.itemsSingular') : 'item')}</span>
+                ${processed ? `<span><i class="fas fa-check-circle"></i> ${window.t ? window.t('orders.processedOn') : 'Processed on'} ${processed}</span>` : ''}
                 ${order.reference ? `<span><i class="fas fa-tag"></i> ${order.reference}</span>` : ''}
             </div>
         </div>
 
         <div class="order-header-totals">
             <div class="total-pill">
-                <span class="total-pill-label">Excl. VAT</span>
+                <span class="total-pill-label">${window.t ? window.t('orders.exclVAT') : 'Excl. VAT'}</span>
                 <span class="total-pill-value">${formatPrice(totalHT)} CHF</span>
             </div>
             <span class="total-pill-sep">+</span>
             <div class="total-pill">
-                <span class="total-pill-label">VAT 8.1%</span>
+                <span class="total-pill-label">${window.t ? window.t('orders.vatLabel') : 'VAT 8.1%'}</span>
                 <span class="total-pill-value">${formatPrice(tva)} CHF</span>
             </div>
             <span class="total-pill-sep">=</span>
             <div class="total-pill total-pill-ttc">
-                <span class="total-pill-label">Total incl. VAT</span>
+                <span class="total-pill-label">${window.t ? window.t('orders.inclVAT') : 'Total incl. VAT'}</span>
                 <span class="total-pill-value">${formatPrice(totalTTC)} CHF</span>
             </div>
         </div>
@@ -196,7 +196,7 @@ function buildHeaderHTML(order, index, statusText, statusClass, totalHT, tva, to
         <div class="order-header-actions">
             <button class="btn-detail">
                 <i class="fas fa-list-ul"></i>
-                <span>View details</span>
+                <span>${window.t ? window.t('orders.viewDetails') : 'View details'}</span>
                 <i class="fas fa-chevron-down btn-detail-chevron"></i>
             </button>
         </div>
@@ -232,7 +232,7 @@ function createDetailPanel(order) {
         pendingBanner.className = 'detail-pending-banner';
         pendingBanner.innerHTML = `
             <i class="fas fa-clock"></i>
-            <span>Pending items — will be delivered as soon as stock is available</span>
+            <span>${window.t ? window.t('orders.pendingItemsBanner') : 'Pending items — will be delivered as soon as stock is available'}</span>
         `;
         inner.appendChild(pendingBanner);
         inner.appendChild(buildItemsSection(pendingItems, true));
@@ -282,7 +282,7 @@ function buildItemRow(item, isPending) {
         <div class="item-img-wrap">${imgHTML}</div>
         <div class="item-info">
             <div class="item-name">${item.Nom}</div>
-            <div class="item-unit-price">${isPending ? 'Awaiting delivery' : `${formatPrice(item.prix)} CHF / unit`}</div>
+            <div class="item-unit-price">${isPending ? (window.t ? window.t('orders.awaitingDelivery') : 'Awaiting delivery') : `${formatPrice(item.prix)} ${window.t ? window.t('orders.unitPrice') : 'CHF / unit'}`}</div>
         </div>
         <div class="item-qty">× ${item.quantity}</div>
         <div class="item-total-price ${isPending ? 'item-total-pending' : ''}">
@@ -301,7 +301,7 @@ function buildDetailFooter(order) {
     if (isInvoiceAvailable) {
         const btn = document.createElement('button');
         btn.className = 'download-invoice-btn';
-        btn.innerHTML = `<i class="fas fa-file-pdf"></i><span>Download invoice PDF</span>`;
+        btn.innerHTML = `<i class="fas fa-file-pdf"></i><span>${window.t ? window.t('orders.downloadInvoicePdf') : 'Download invoice PDF'}</span>`;
         btn.addEventListener('click', async () => {
             try {
                 await downloadOrShareFile(
@@ -317,7 +317,7 @@ function buildDetailFooter(order) {
         footer.innerHTML = `
             <div class="invoice-not-available">
                 <i class="fas fa-clock"></i>
-                <span>Invoice available once the order has been processed</span>
+                <span>${window.t ? window.t('orders.invoiceNotAvailable') : 'Invoice available once the order has been processed'}</span>
             </div>
         `;
     }
