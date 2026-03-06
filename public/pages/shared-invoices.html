@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="/css/shared-invoices.css">
+    <script src="/js/core/i18n.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -75,7 +76,7 @@
         <div class="shared-controls">
             <button id="sortBtn" class="shared-sort-btn" data-order="desc">
                 <i class="fas fa-sort-amount-down"></i>
-                <span id="sortText">Newest first</span>
+                <span id="sortText" data-i18n="sharedInvoices.newestFirst">Newest first</span>
             </button>
             <button id="exportXlsxBtn" class="shared-export-btn">
                 <i class="fas fa-file-excel"></i>
@@ -92,23 +93,23 @@
                 <table class="shared-table" id="invoicesTable">
                     <thead>
                         <tr>
-                            <th>Invoice #</th>
-                            <th>Date</th>
-                            <th>Client</th>
-                            <th>Amount excl. VAT</th>
-                            <th>VAT</th>
-                            <th>Amount incl. VAT</th>
-                            <th>Due Date</th>
-                            <th>Amount Paid</th>
-                            <th>Balance</th>
-                            <th>Payment Date</th>
-                            <th>Status</th>
-                            <th>Details</th>
+                            <th data-i18n="sharedInvoices.colInvoice">Invoice #</th>
+                            <th data-i18n="sharedInvoices.colDate">Date</th>
+                            <th data-i18n="sharedInvoices.colClient">Client</th>
+                            <th data-i18n="sharedInvoices.colAmountHT">Amount excl. VAT</th>
+                            <th data-i18n="sharedInvoices.colVAT">VAT</th>
+                            <th data-i18n="sharedInvoices.colAmountTTC">Amount incl. VAT</th>
+                            <th data-i18n="sharedInvoices.colDueDate">Due Date</th>
+                            <th data-i18n="sharedInvoices.colPaid">Amount Paid</th>
+                            <th data-i18n="sharedInvoices.colBalance">Balance</th>
+                            <th data-i18n="sharedInvoices.colPaymentDate">Payment Date</th>
+                            <th data-i18n="sharedInvoices.colStatus">Status</th>
+                            <th data-i18n="sharedInvoices.colDetails">Details</th>
                         </tr>
                     </thead>
                     <tbody id="invoicesTableBody">
                         <tr>
-                            <td colspan="12" class="loading">Loading invoices...</td>
+                            <td colspan="12" class="loading" data-i18n="sharedInvoices.loadingTable">Loading invoices...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -121,7 +122,7 @@
         <div class="shared-modal">
             <div class="shared-modal-header">
                 <div>
-                    <h3 id="paymentsModalTitle">Payment Details</h3>
+                    <h3 id="paymentsModalTitle" data-i18n="sharedInvoices.paymentDetails">Payment Details</h3>
                     <span id="paymentsModalSubtitle" class="shared-modal-subtitle"></span>
                 </div>
                 <button class="shared-modal-close" id="paymentsModalClose"><i class="fas fa-times"></i></button>
@@ -136,16 +137,16 @@
                         </tr>
                     </thead>
                     <tbody id="paymentsHistoryBody">
-                        <tr><td colspan="3" class="no-data">No payments recorded</td></tr>
+                        <tr><td colspan="3" class="no-data" data-i18n="sharedInvoices.noPayments">No payments recorded</td></tr>
                     </tbody>
                 </table>
                 <div class="shared-payments-summary">
                     <div class="shared-payments-summary-row">
-                        <span>Total Paid</span>
+                        <span data-i18n="sharedInvoices.totalPaidLabel">Total Paid</span>
                         <span id="paymentsTotalPaid" class="text-success">0.00 CHF</span>
                     </div>
                     <div class="shared-payments-summary-row">
-                        <span>Balance Due</span>
+                        <span data-i18n="sharedInvoices.balanceDueLabel">Balance Due</span>
                         <span id="paymentsBalanceDue" class="text-danger">0.00 CHF</span>
                     </div>
                 </div>
@@ -156,12 +157,11 @@
     <!-- Footer -->
     <footer class="shared-footer">
         <div class="shared-footer-content">
-            <p>&copy; 2025 Discado — All rights reserved</p>
-            <p>Questions? Contact us at <a href="mailto:catalog.discado@gmail.com">catalog.discado@gmail.com</a></p>
+            <p data-i18n="sharedInvoices.copyright">&copy; 2025 Discado — All rights reserved</p>
+            <p><span data-i18n="sharedInvoices.contactText">Questions? Contact us at</span> <a href="mailto:catalog.discado@gmail.com">catalog.discado@gmail.com</a></p>
         </div>
     </footer>
 
-    <script src="/js/core/i18n.js"></script>
     <script type="module" src="/js/modules/sharedInvoices.js"></script>
 </body>
 </html>

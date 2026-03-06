@@ -69,10 +69,10 @@ class MyInvoicesView {
 
         if (this.sortOrder === 'desc') {
             icon.className = 'fas fa-sort-amount-down';
-            sortText.textContent = 'Newest first';
+            sortText.textContent = window.t ? window.t('invoices.newestFirst') : 'Newest first';
         } else {
             icon.className = 'fas fa-sort-amount-up';
-            sortText.textContent = 'Oldest first';
+            sortText.textContent = window.t ? window.t('invoices.oldestFirst') : 'Oldest first';
         }
         this.displayInvoices();
     }
@@ -81,7 +81,7 @@ class MyInvoicesView {
         const tbody = document.getElementById('invoicesTableBody');
 
         if (!this.invoices || this.invoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="12" class="no-data">No invoices found</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="12" class="no-data">${window.t ? window.t('invoices.noInvoices') : 'No invoices found'}</td></tr>`;
             this.renderMobileBadges([]);
             return;
         }
@@ -137,7 +137,7 @@ class MyInvoicesView {
         if (!container) return;
 
         if (!invoices || invoices.length === 0) {
-            container.innerHTML = '<p class="no-data">No invoices found</p>';
+            container.innerHTML = `<p class="no-data">${window.t ? window.t('invoices.noInvoices') : 'No invoices found'}</p>`;
             return;
         }
 
@@ -160,7 +160,7 @@ class MyInvoicesView {
                 <div class="inv-date-block inv-date-due ${isOverdue ? 'inv-overdue' : ''}">
                     <span class="inv-date-icon"><i class="fas fa-calendar-times"></i></span>
                     <div>
-                        <span class="inv-date-label">Due date</span>
+                        <span class="inv-date-label">${window.t ? window.t('invoices.dueDate') : 'Due date'}</span>
                         <span class="inv-date-value">${this.formatDateShort(invoice.due_date)}</span>
                     </div>
                 </div>`;
@@ -172,7 +172,7 @@ class MyInvoicesView {
                 <div class="inv-date-block inv-date-paid-on">
                     <span class="inv-date-icon"><i class="fas fa-check-circle"></i></span>
                     <div>
-                        <span class="inv-date-label">Paid on</span>
+                        <span class="inv-date-label">${window.t ? window.t('invoices.paidOn') : 'Paid on'}</span>
                         <span class="inv-date-value">${this.formatDateShort(invoice.paid_date)}</span>
                     </div>
                 </div>`;
@@ -188,7 +188,7 @@ class MyInvoicesView {
                             <div class="inv-date-block inv-date-invoice">
                                 <span class="inv-date-icon"><i class="fas fa-calendar-alt"></i></span>
                                 <div>
-                                    <span class="inv-date-label">Invoice date</span>
+                                    <span class="inv-date-label">${window.t ? window.t('invoices.invoiceDate') : 'Invoice date'}</span>
                                     <span class="inv-date-value">${this.formatDateShort(invoice.invoice_date)}</span>
                                 </div>
                             </div>
@@ -203,25 +203,25 @@ class MyInvoicesView {
                         <div class="inv-card-amounts">
                             <div class="inv-amounts-left">
                                 <div class="inv-amount-item">
-                                    <span class="inv-amount-label">Excl. VAT</span>
+                                    <span class="inv-amount-label">${window.t ? window.t('invoices.exclVAT') : 'Excl. VAT'}</span>
                                     <span class="inv-amount-value">${this.formatCurrency(invoice.subtotal_ht)}</span>
                                 </div>
                                 <div class="inv-amount-item">
-                                    <span class="inv-amount-label">VAT</span>
+                                    <span class="inv-amount-label">${window.t ? window.t('invoices.vat') : 'VAT'}</span>
                                     <span class="inv-amount-value">${this.formatCurrency(invoice.vat_amount)}</span>
                                 </div>
                             </div>
                             <div class="inv-amounts-right">
                                 <div class="inv-amount-item inv-amount-total">
-                                    <span class="inv-amount-label">Total</span>
+                                    <span class="inv-amount-label">${window.t ? window.t('invoices.totalLabel') : 'Total'}</span>
                                     <span class="inv-amount-value">${this.formatCurrency(invoice.total_ttc)}</span>
                                 </div>
                                 <div class="inv-amount-item inv-amount-paid">
-                                    <span class="inv-amount-label">Paid</span>
+                                    <span class="inv-amount-label">${window.t ? window.t('invoices.paidLabel') : 'Paid'}</span>
                                     <span class="inv-amount-value">${this.formatCurrency(invoice.amount_paid)}</span>
                                 </div>
                                 <div class="inv-amount-item ${invoice.amount_due > 0 ? 'inv-amount-due' : 'inv-amount-clear'}">
-                                    <span class="inv-amount-label">Balance</span>
+                                    <span class="inv-amount-label">${window.t ? window.t('invoices.balance') : 'Balance'}</span>
                                     <span class="inv-amount-value">${this.formatCurrency(invoice.amount_due)}</span>
                                 </div>
                             </div>
@@ -230,10 +230,10 @@ class MyInvoicesView {
                 </div>
                 <div class="inv-card-actions">
                     <button class="inv-view-btn" data-invoice-id="${invoice.id}">
-                        <i class="fas fa-eye"></i> View Payments
+                        <i class="fas fa-eye"></i> ${window.t ? window.t('invoices.viewPayments') : 'View Payments'}
                     </button>
                     <button class="inv-pdf-btn" data-invoice-id="${invoice.id}">
-                        <i class="fas fa-file-pdf"></i> PDF
+                        <i class="fas fa-file-pdf"></i> ${window.t ? window.t('invoices.pdfBtn') : 'PDF'}
                     </button>
                 </div>
             </div>
@@ -261,8 +261,8 @@ class MyInvoicesView {
         const invoice = this.invoices.find(inv => inv.id == invoiceId);
         if (!invoice) return;
 
-        document.getElementById('paymentsModalTitle').textContent = `Payment Details — ${invoice.order_id}`;
-        document.getElementById('paymentsModalSubtitle').textContent = `Invoice total: ${this.formatCurrency(invoice.total_ttc)}`;
+        document.getElementById('paymentsModalTitle').textContent = `${window.t ? window.t('invoices.paymentDetails') : 'Payment Details'} — ${invoice.order_id}`;
+        document.getElementById('paymentsModalSubtitle').textContent = `${window.t ? window.t('invoices.invoiceTotal') : 'Invoice total'}: ${this.formatCurrency(invoice.total_ttc)}`;
 
         const modal = document.getElementById('paymentsModal');
         modal.style.display = 'flex';
@@ -281,7 +281,7 @@ class MyInvoicesView {
     renderPayments(payments, invoice) {
         const tbody = document.getElementById('paymentsHistoryBody');
         if (!payments || payments.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="no-data">No payments recorded</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="3" class="no-data">${window.t ? window.t('invoices.noPayments') : 'No payments recorded'}</td></tr>`;
         } else {
             tbody.innerHTML = payments.map((p, i) => `
                 <tr>
@@ -430,7 +430,12 @@ class MyInvoicesView {
     }
 
     getStatusText(status) {
-        return { paid: 'Paid', partial: 'Partial', unpaid: 'Unpaid' }[status] || 'Unpaid';
+        const t = window.t;
+        return {
+            paid: t ? t('invoices.statusPaid') : 'Paid',
+            partial: t ? t('invoices.statusPartial') : 'Partial',
+            unpaid: t ? t('invoices.statusUnpaid') : 'Unpaid'
+        }[status] || (t ? t('invoices.statusUnpaid') : 'Unpaid');
     }
 }
 

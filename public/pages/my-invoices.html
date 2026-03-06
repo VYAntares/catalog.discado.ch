@@ -65,11 +65,11 @@
         <div class="shared-controls">
             <button id="sortBtn" class="shared-sort-btn" data-order="desc">
                 <i class="fas fa-sort-amount-down"></i>
-                <span id="sortText">Newest first</span>
+                <span id="sortText" data-i18n="invoices.newestFirst">Newest first</span>
             </button>
             <button id="exportXlsxBtn" class="shared-export-btn">
                 <i class="fas fa-file-excel"></i>
-                Export to Excel
+                <span data-i18n="invoices.export">Export to Excel</span>
             </button>
         </div>
 
@@ -82,23 +82,23 @@
                 <table class="shared-table" id="invoicesTable">
                     <thead>
                         <tr>
-                            <th>Invoice #</th>
-                            <th>Date</th>
-                            <th>Client</th>
-                            <th>Amount excl. VAT</th>
-                            <th>VAT</th>
-                            <th>Amount incl. VAT</th>
-                            <th>Due Date</th>
-                            <th>Amount Paid</th>
-                            <th>Balance</th>
-                            <th>Payment Date</th>
-                            <th>Status</th>
-                            <th>Details</th>
+                            <th data-i18n="invoices.colInvoice">Invoice #</th>
+                            <th data-i18n="invoices.colDate">Date</th>
+                            <th data-i18n="invoices.colClient">Client</th>
+                            <th data-i18n="invoices.colAmountHT">Amount excl. VAT</th>
+                            <th data-i18n="invoices.colVAT">VAT</th>
+                            <th data-i18n="invoices.colAmountTTC">Amount incl. VAT</th>
+                            <th data-i18n="invoices.colDueDate">Due Date</th>
+                            <th data-i18n="invoices.colPaid">Amount Paid</th>
+                            <th data-i18n="invoices.colBalance">Balance</th>
+                            <th data-i18n="invoices.colPaymentDate">Payment Date</th>
+                            <th data-i18n="invoices.colStatus">Status</th>
+                            <th data-i18n="invoices.colDetails">Details</th>
                         </tr>
                     </thead>
                     <tbody id="invoicesTableBody">
                         <tr>
-                            <td colspan="12" class="loading">Loading invoices...</td>
+                            <td colspan="12" class="loading" data-i18n="invoices.loadingTable">Loading invoices...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -111,7 +111,7 @@
         <div class="shared-modal">
             <div class="shared-modal-header">
                 <div>
-                    <h3 id="paymentsModalTitle">Payment Details</h3>
+                    <h3 id="paymentsModalTitle" data-i18n="invoices.paymentDetails">Payment Details</h3>
                     <span id="paymentsModalSubtitle" class="shared-modal-subtitle"></span>
                 </div>
                 <button class="shared-modal-close" id="paymentsModalClose"><i class="fas fa-times"></i></button>
@@ -126,16 +126,16 @@
                         </tr>
                     </thead>
                     <tbody id="paymentsHistoryBody">
-                        <tr><td colspan="3" class="no-data">No payments recorded</td></tr>
+                        <tr><td colspan="3" class="no-data" data-i18n="invoices.noPayments">No payments recorded</td></tr>
                     </tbody>
                 </table>
                 <div class="shared-payments-summary">
                     <div class="shared-payments-summary-row">
-                        <span>Total Paid</span>
+                        <span data-i18n="invoices.totalPaidLabel">Total Paid</span>
                         <span id="paymentsTotalPaid" class="text-success">0.00 CHF</span>
                     </div>
                     <div class="shared-payments-summary-row">
-                        <span>Balance Due</span>
+                        <span data-i18n="invoices.balanceDueLabel">Balance Due</span>
                         <span id="paymentsBalanceDue" class="text-danger">0.00 CHF</span>
                     </div>
                 </div>
