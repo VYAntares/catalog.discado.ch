@@ -254,15 +254,21 @@ li.product-item:hover {
 /* =========================================
    Wishlist Heart Button (on product card)
    ========================================= */
+.product-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    width: 100%;
+}
+
 .wishlist-btn {
-    position: absolute;
-    top: 14px;
-    right: 12px;
+    flex-shrink: 0;
     width: 26px;
     height: 26px;
     border-radius: 50%;
     border: none;
-    background: #f5f7fc;
+    background: transparent;
     color: #ccc;
     font-size: 13px;
     display: flex;
@@ -270,8 +276,6 @@ li.product-item:hover {
     justify-content: center;
     cursor: pointer;
     transition: color 0.2s ease, transform 0.2s ease, background 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    z-index: 1;
 }
 
 .wishlist-btn:hover {

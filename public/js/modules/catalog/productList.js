@@ -308,9 +308,8 @@ function createProductElement(product, index) {
     const imgContainer = createImageContainer(product);
     const infoContainer = createInfoContainer(product);
     const actionContainer = createActionContainer(product);
-    const wishlistBtn = createWishlistButton(product);
 
-    li.append(imgContainer, infoContainer, actionContainer, wishlistBtn);
+    li.append(imgContainer, infoContainer, actionContainer);
     return li;
 }
 
@@ -333,15 +332,23 @@ function createInfoContainer(product) {
     const infoContainer = document.createElement("div");
     infoContainer.className = "product-info";
 
+    // Name row: product name + wishlist heart side by side
+    const nameRow = document.createElement("div");
+    nameRow.className = "product-name-row";
+
     const nameSpan = document.createElement("span");
     nameSpan.textContent = product.Nom || "Product without name";
     nameSpan.className = "product-name";
+
+    const wishlistBtn = createWishlistButton(product);
+
+    nameRow.append(nameSpan, wishlistBtn);
 
     const priceSpan = document.createElement("span");
     priceSpan.textContent = `${formatPrice(product.prix || 0)} CHF`;
     priceSpan.className = "product-price";
 
-    infoContainer.append(nameSpan, priceSpan);
+    infoContainer.append(nameRow, priceSpan);
     return infoContainer;
 }
 
