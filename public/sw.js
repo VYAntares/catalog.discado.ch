@@ -1,5 +1,5 @@
 // Service Worker - Discado PWA
-const CACHE_NAME = 'discado-v6';
+const CACHE_NAME = 'discado-v7';
 
 // Ressources à mettre en cache lors de l'installation
 const PRECACHE_URLS = [
@@ -12,6 +12,8 @@ const PRECACHE_URLS = [
   '/i18n/it.json',
   '/css/welcome.css',
   '/css/login.css',
+  '/css/main.css',
+  '/manifest.json',
   '/css/main.css',
   '/css/catalog.css',
   '/css/cart.css',

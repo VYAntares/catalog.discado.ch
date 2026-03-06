@@ -8,6 +8,10 @@
     font-family: 'Inter', Arial, sans-serif;
 }
 
+html {
+    background-color: #fff;
+}
+
 body {
     background-color: #fff;
     font-size: 14px;
