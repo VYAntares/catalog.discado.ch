@@ -115,7 +115,7 @@ main {
       padding: env(safe-area-inset-top) 0 0;
       height: calc(var(--header-height) + env(safe-area-inset-top));
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       transition: transform 0.3s ease, height 0.3s ease;
       border-bottom: 2.5px solid var(--primary-color);
   }

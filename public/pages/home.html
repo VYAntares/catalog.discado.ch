@@ -32,20 +32,20 @@
 
   <!-- Texte de présentation -->
   <p class="home-intro">
-    Depuis 2008, nous créons et distribuons un large assortiment d'articles souvenirs, gadgets et textiles pour toute la Suisse. Vous avez ici accès à notre catalogue avec plus de 2&nbsp;000 références.
+    Since 2008, we create and distribute a wide range of souvenir items, gadgets and textiles throughout Switzerland. You have access to our catalogue with more than 2,000 references.
   </p>
 
-  <h2 class="home-section-title">Nos catégories</h2>
+  <h2 class="home-section-title">Our categories</h2>
   <div class="categories-grid" id="categoriesGrid">
     <div class="categories-loading">
       <div class="loading-spinner"></div>
-      <p>Chargement...</p>
+      <p>Loading...</p>
     </div>
   </div>
 
   <!-- Texte intermédiaire -->
   <p class="home-intro">
-    Notre catalogue estrégulièrement alimenté de nouvelles références, à prix imbattables.
+    Our catalogue is regularly updated with new items, at unbeatable prices.
   </p>
 
   <!-- Vitrine -->
@@ -99,9 +99,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         allCard.className = 'category-card';
         allCard.innerHTML = `
             <div class="category-card-img">
-                <img src="/images/lifestyle/catalog_2025.jpg" alt="Tout le catalogue" loading="lazy">
+                <img src="/images/lifestyle/catalog_2025.jpg" alt="Full catalogue" loading="lazy">
             </div>
-            <div class="category-card-label">Tout le catalogue</div>
+            <div class="category-card-label">Full catalogue</div>
         `;
         grid.appendChild(allCard);
 
@@ -124,10 +124,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 
         if (!hasAny) {
-            grid.innerHTML = '<p class="categories-empty">Aucune catégorie disponible.</p>';
+            grid.innerHTML = '<p class="categories-empty">No categories available.</p>';
         }
     } catch (e) {
-        grid.innerHTML = '<p class="categories-empty">Erreur lors du chargement.</p>';
+        grid.innerHTML = '<p class="categories-empty">Error loading categories.</p>';
     }
 });
 </script>
