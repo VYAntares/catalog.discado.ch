@@ -576,9 +576,24 @@ main {
       .logo-container img {
           height: 28px;
       }
-      
+
+      .header-right {
+          gap: 2px;
+      }
+
+      .icon-btn {
+          width: 30px;
+          height: 30px;
+      }
+
       .icon-btn i {
-          font-size: 18px;
+          font-size: 15px;
+      }
+
+      .hamburger-icon {
+          width: 14px;
+          height: 11px;
+          gap: 3px;
       }
       
       .left-section {
