@@ -514,14 +514,12 @@ function setupSearch() {
 }
 
 // Update selected products list
-// For textile products, size is appended to Nom to create distinct cart entries
+// size est stocké séparément (plus intégré dans le Nom)
 function updateSelectedProducts(product, quantity, imageUrl, size = null) {
     quantity = parseInt(quantity) || 0;
 
-    const nomKey = size ? `${product.Nom} - ${size}` : product.Nom;
-
     const existingProductIndex = selectedProducts.findIndex(item =>
-        item.Nom === nomKey && item.categorie === product.categorie
+        item.Nom === product.Nom && item.categorie === product.categorie && item.size === size
     );
 
     if (quantity <= 0) {
@@ -534,7 +532,8 @@ function updateSelectedProducts(product, quantity, imageUrl, size = null) {
         } else {
             selectedProducts.push({
                 ...product,
-                Nom: nomKey,
+                Nom: product.Nom,
+                size: size,
                 quantity: quantity,
                 imageUrl: imageUrl
             });

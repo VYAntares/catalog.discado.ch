@@ -1,9 +1,22 @@
 // Stock Management Module
+const TEXTILE_CATEGORIES_STOCK = ['tshirt', 'hoodie'];
+const ADULT_SIZES_STOCK = ['S', 'M', 'L', 'XL', '2XL'];
+const KID_SIZES_STOCK = ['2-4ans', '6-8ans', '10-12ans'];
+
+function isTextileProduct(product) {
+    return TEXTILE_CATEGORIES_STOCK.includes((product.category || product.categorie || '').toLowerCase());
+}
+
+function getSizesForProduct(product) {
+    return /kid/i.test(product.name || '') ? KID_SIZES_STOCK : ADULT_SIZES_STOCK;
+}
+
 class StockManager {
     constructor() {
 		this.products = [];
 		this.filteredProducts = [];
-		this.suppliers = []; // NOUVEAU: Liste des fournisseurs
+		this.suppliers = [];
+		this.sizeStocks = {}; // { productId: [{ size, stock }] }
 		this.currentCategory = 'all';
 		this.searchTerm = '';
 		this.stockFilter = 'all';
@@ -29,15 +42,25 @@ class StockManager {
             const response = await fetch('/api/products/stock');
             if (!response.ok) throw new Error('Erreur de chargement des produits');
             this.products = await response.json();
-			console.log('Produits chargés:', this.products);
-			if (!Array.isArray(this.products)) {
-				this.products = [];
-			}
+            if (!Array.isArray(this.products)) this.products = [];
             this.filteredProducts = [...this.products];
+            await this.loadAllSizeStocks();
         } catch (error) {
             console.error('Erreur:', error);
             this.showNotification('Erreur de chargement des produits', 'error');
         }
+    }
+
+    async loadAllSizeStocks() {
+        const textileProducts = this.products.filter(p => isTextileProduct(p));
+        await Promise.all(textileProducts.map(async (p) => {
+            try {
+                const res = await fetch(`/api/products/${p.id}/size-stock`);
+                if (res.ok) {
+                    this.sizeStocks[p.id] = await res.json();
+                }
+            } catch (e) { /* silencieux */ }
+        }));
     }
 
 	async loadSuppliers() {
@@ -359,6 +382,7 @@ class StockManager {
 					</div>
 
 					<div class="stock-control">
+						${isTextileProduct(product) ? this.createSizeStockControl(product) : `
 						<div class="stock-display">
 							<span class="stock-label">Stock actuel :</span>
 							<span class="stock-value" id="stock-value-${product.id}">
@@ -382,13 +406,15 @@ class StockManager {
 								<i class="fas fa-sync"></i> Mettre à jour
 							</button>
 						</div>
-						
+						`}
+
 						<div class="product-actions">
    							<button class="stock-btn secondary edit-product-btn"
             						data-product-id="${product.id}">
         						<i class="fas fa-edit"></i> Modifier le produit
     						</button>
     						<button class="stock-btn primary add-to-order-btn"
+            						data-product-id="${product.id}"
             						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         						<i class="fas fa-truck-loading"></i> Ajouter à commande
    							</button>
@@ -411,6 +437,40 @@ class StockManager {
         }
     }
 
+    createSizeStockControl(product) {
+        const sizes = getSizesForProduct(product);
+        const sizeData = this.sizeStocks[product.id] || [];
+        const inputs = sizes.map(size => {
+            const entry = sizeData.find(s => s.size === size);
+            const val = entry ? entry.stock : 0;
+            return `
+                <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                    <label style="font-size:11px; font-weight:600; color:#718096;">${size}</label>
+                    <input type="number"
+                        class="size-stock-input stock-input"
+                        data-product-id="${product.id}"
+                        data-size="${size}"
+                        value="${val}"
+                        min="0"
+                        inputmode="numeric"
+                        style="width:55px; text-align:center; padding:4px 2px;"
+                        onfocus="this.select()">
+                </div>`;
+        }).join('');
+        const total = sizeData.reduce((s, e) => s + (e.stock || 0), 0);
+        return `
+            <div class="stock-display">
+                <span class="stock-label">Stock total :</span>
+                <span class="stock-value" id="stock-value-${product.id}">${total}</span>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; align-items:flex-end;">
+                ${inputs}
+            </div>
+            <button class="stock-btn primary update-size-stock-btn" data-product-id="${product.id}">
+                <i class="fas fa-sync"></i> Mettre à jour les tailles
+            </button>`;
+    }
+
     attachUpdateListeners() {
         document.querySelectorAll('.update-stock-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
@@ -419,7 +479,14 @@ class StockManager {
             });
         });
 
-        document.querySelectorAll('.stock-input').forEach(input => {
+        document.querySelectorAll('.update-size-stock-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const productId = e.currentTarget.dataset.productId;
+                await this.updateSizeStock(productId);
+            });
+        });
+
+        document.querySelectorAll('.stock-input:not(.size-stock-input)').forEach(input => {
             input.addEventListener('keypress', async (e) => {
                 if (e.key === 'Enter') {
                     const productId = e.target.id.replace('stock-input-', '');
@@ -977,6 +1044,47 @@ class StockManager {
 
 		} catch (error) {
 			console.error('❌ Erreur complète:', error);
+			this.showNotification('Erreur: ' + error.message, 'error');
+		}
+	}
+
+	async updateSizeStock(productId) {
+		const inputs = document.querySelectorAll(`.size-stock-input[data-product-id="${productId}"]`);
+		const sizes = [];
+		let valid = true;
+		inputs.forEach(input => {
+			const val = parseInt(input.value);
+			if (isNaN(val) || val < 0) { valid = false; return; }
+			sizes.push({ size: input.dataset.size, stock: val });
+		});
+
+		if (!valid || sizes.length === 0) {
+			this.showNotification('Valeurs invalides', 'error');
+			return;
+		}
+
+		try {
+			const response = await fetch(`/api/products/${productId}/size-stock`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sizes })
+			});
+
+			if (!response.ok) throw new Error('Erreur de mise à jour');
+
+			// Mettre à jour le cache local
+			this.sizeStocks[productId] = sizes;
+			const total = sizes.reduce((s, e) => s + e.stock, 0);
+
+			const stockValueEl = document.getElementById(`stock-value-${productId}`);
+			if (stockValueEl) stockValueEl.textContent = total;
+
+			const productIndex = this.products.findIndex(p => p.id == productId);
+			if (productIndex !== -1) this.products[productIndex].stock = total;
+
+			this.showNotification('Stock par taille mis à jour', 'success');
+			this.filterProducts();
+		} catch (error) {
 			this.showNotification('Erreur: ' + error.message, 'error');
 		}
 	}

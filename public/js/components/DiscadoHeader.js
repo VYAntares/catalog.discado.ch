@@ -42,6 +42,9 @@ function initDiscadoHeader() {
                         <button class="lang-option" data-lang="it">🇮🇹 Italiano</button>
                     </div>
                 </div>
+                <button id="pdfCatalogToggle" class="icon-btn" aria-label="PDF Catalog" title="Télécharger le catalogue PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
                 <button id="contactScrollBtn" class="contact-scroll-btn"><i class="fas fa-envelope"></i> <span class="contact-btn-label" data-i18n="header.contact">Contact</span></button>
             </div>
             

@@ -6,7 +6,7 @@
 import * as API from '../../core/api.js';
 import * as State from './state.js';
 import * as Utils from './utils.js';
-import '../suppliers/productStatsModal.js?v=9';
+import '../suppliers/productStatsModal.js?v=10';
 
 // État local pour les batch
 let currentBatches = [];
@@ -14,6 +14,29 @@ let currentBatchFilter = 'all'; // 'all' ou numéro de batch
 let currentVisibleBatch = 0;
 let currentView = 'list'; // 'list' ou 'grid'
 let currentSearchQuery = '';
+
+// Textile
+const TEXTILE_CATEGORIES = ['tshirt', 'hoodie'];
+const ADULT_SIZES = ['S', 'M', 'L', 'XL', '2XL'];
+const KID_SIZES = ['2-4ans', '6-8ans', '10-12ans'];
+
+function isTextileItem(item) {
+  if (TEXTILE_CATEGORIES.includes((item.category || '').toLowerCase())) return true;
+  // Fallback: check product name for textile keywords
+  const name = (item.product_name || '').toLowerCase();
+  return name.includes('hoodie') || name.includes('tshirt') || name.includes('t-shirt');
+}
+
+function getSizesForItem(item) {
+  return /kid/i.test(item.product_name) ? KID_SIZES : ADULT_SIZES;
+}
+
+// Taille effective : item.size en priorité, sinon extrait du nom produit
+function getEffectiveSize(item) {
+  if (item.size) return item.size;
+  const match = (item.product_name || '').match(/\s*-\s*(S|M|L|XL|2XL|2-4ans|6-8ans|10-12ans)$/i);
+  return match ? match[1] : null;
+}
 
 /**
  * Initialise la vue batch dans la page orderDetails
@@ -193,9 +216,108 @@ function createEmptyBatchZone(batchNumber) {
 
 /**
  * Crée les cartes des articles d'un batch
+ * Groupe les articles textiles (même product_id) en une seule carte
  */
 function createBatchItems(items, batchNumber) {
-  return items.map(item => createBatchItemCard(item, batchNumber)).join('');
+  const usedIds = new Set();
+  const cards = [];
+
+  items.forEach(item => {
+    if (usedIds.has(item.id)) return;
+
+    if (isTextileItem(item) && item.product_id) {
+      // Grouper tous les items du même produit dans ce batch
+      const group = items.filter(i => i.product_id === item.product_id);
+      group.forEach(i => usedIds.add(i.id));
+      cards.push(createGroupedBatchItemCard(group, batchNumber));
+    } else {
+      usedIds.add(item.id);
+      cards.push(createBatchItemCard(item, batchNumber));
+    }
+  });
+
+  return cards.join('');
+}
+
+/**
+ * Crée une carte groupée pour un produit textile (toutes tailles en une carte)
+ */
+function createGroupedBatchItemCard(items, batchNumber) {
+  const first = items[0];
+  const imageUrl = first.image_url || '/images/placeholder.png';
+  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
+  const baseName = first.product_name.replace(/\s*-\s*(S|M|L|XL|2XL|2-4ans|6-8ans|10-12ans)$/i, '');
+  const itemStatus = first.item_status || 'commandé';
+  const isLivre = itemStatus === 'livré';
+  const allItemIds = items.map(i => i.id).join(',');
+
+  // Badges tailles (seulement les tailles avec quantité > 0)
+  const sizes = getSizesForItem(first);
+  const sizeParts = sizes
+    .map(size => {
+      const found = items.find(i => getEffectiveSize(i) === size);
+      return found ? `${size}: <strong>${found.quantity}</strong>` : null;
+    })
+    .filter(Boolean);
+
+  // Items sans taille détectable
+  const unsized = items.filter(i => !getEffectiveSize(i));
+  if (unsized.length > 0) {
+    const unsizedQty = unsized.reduce((s, i) => s + i.quantity, 0);
+    sizeParts.unshift(`<span style="color:#ed8936;">Non réparti: <strong>${unsizedQty}</strong></span>`);
+  }
+
+  const sizeBreakdown = sizeParts.length > 0
+    ? `<div style="grid-column:1/-1;font-size:11px;color:#718096;margin-top:3px;line-height:1.6;">
+        ${sizeParts.join(' &nbsp;·&nbsp; ')}
+       </div>`
+    : '';
+
+  return `
+    <div class="batch-item-card"
+         data-item-id="${first.id}"
+         data-all-item-ids="${allItemIds}"
+         data-batch-number="${batchNumber}">
+
+      <img src="${imageUrl}" alt="${baseName}" class="batch-item-image"
+           onerror="this.src='/images/placeholder.png'">
+
+      <div class="batch-item-info consolidated-layout">
+        <div class="consolidated-name">
+          <h5>${baseName}</h5>
+          <div class="batch-status-cell" style="margin-top: 4px;">
+            <select class="item-status-select" data-item-id="${first.id}"
+                    style="padding:3px 8px;border-radius:12px;border:1px solid ${isLivre ? '#48bb78' : '#ed8936'};
+                           background:${isLivre ? '#f0fff4' : '#fffaf0'};color:${isLivre ? '#276749' : '#9c4221'};
+                           font-size:12px;font-weight:600;cursor:pointer;outline:none;">
+              <option value="commandé" ${!isLivre ? 'selected' : ''}>Commandé</option>
+              <option value="livré" ${isLivre ? 'selected' : ''}>Livré</option>
+            </select>
+          </div>
+        </div>
+        <button class="product-stats-btn"
+                data-product-id="${first.product_id}"
+                data-product-name="${baseName}"
+                title="Voir les statistiques"
+                style="background:none;border:none;color:#4299e1;cursor:pointer;padding:4px;font-size:16px;line-height:1;justify-self:center;">
+          <i class="fas fa-question-circle"></i>
+        </button>
+        <span class="quantity-badge">${totalQty} unités</span>
+        <span class="price-tag consolidated-price">${Utils.formatSwissNumber(first.unit_price)} USD/u</span>
+        <span class="batch-item-total">Total: <strong>${Utils.formatSwissNumber(totalQty * first.unit_price)} USD</strong></span>
+        ${sizeBreakdown}
+      </div>
+
+      <div class="batch-item-actions">
+        <button class="btn btn-sm size-distribute-btn" data-item-id="${first.id}" title="Répartir par taille" style="background:#ebf4ff; color:#2b6cb0;">
+          <i class="fas fa-ruler"></i>
+        </button>
+        <button class="btn btn-danger btn-sm delete-grouped-btn" data-all-item-ids="${allItemIds}" title="Supprimer">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -243,6 +365,10 @@ function createBatchItemCard(item, batchNumber) {
         <button class="batch-item-action-btn" data-action="move" data-item-id="${item.id}" title="Déplacer">
           <i class="fas fa-arrows-alt"></i>
         </button>
+        ${isTextileItem(item) ? `
+        <button class="btn btn-sm size-distribute-btn" data-item-id="${item.id}" title="Répartir par taille" style="background:#ebf4ff; color:#2b6cb0;">
+          <i class="fas fa-ruler"></i>
+        </button>` : ''}
         <button class="btn btn-sm edit-item-btn" data-item-id="${item.id}" title="Modifier" style="background:#edf2f7; color:#4a5568;">
           <i class="fas fa-edit"></i>
         </button>
@@ -391,10 +517,36 @@ function reattachBatchItemListeners() {
   document.querySelectorAll('.batch-item-action-btn').forEach(btn => {
     btn.addEventListener('click', handleItemAction);
   });
-  
-  // Réattacher les event listeners d'origine pour edit/delete
+
+  // Bouton répartir par taille
   const orderId = State.getCurrentOrderId();
-  
+  document.querySelectorAll('.size-distribute-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = e.currentTarget.dataset.itemId;
+      const item = State.getCurrentOrderItems().find(i => i.id == itemId);
+      if (item) openSizeDistributeModal(item);
+    });
+  });
+
+  // Supprimer un groupe de tailles (textile groupé)
+  document.querySelectorAll('.delete-grouped-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      if (!confirm('Supprimer cet article et toutes ses tailles dans ce batch ?')) return;
+      const ids = e.currentTarget.dataset.allItemIds.split(',').map(Number);
+      try {
+        await Promise.all(ids.map(id => API.deleteSupplierOrderItem(id)));
+        const items = await API.fetchSupplierOrderItems(orderId);
+        State.setCurrentOrderItems(items);
+        await initBatchView(orderId, false);
+      } catch (err) {
+        console.error('Erreur suppression groupée:', err);
+      }
+    });
+  });
+
+  // Réattacher les event listeners d'origine pour edit/delete
+
   document.querySelectorAll('.edit-item-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       const itemId = e.currentTarget.dataset.itemId;
@@ -703,6 +855,173 @@ async function handleConfirmDistribute(batchDistrib, orderId, firstItem) {
 }
 
 /**
+ * Ouvre la modale de répartition des quantités par taille (textile uniquement)
+ */
+function openSizeDistributeModal(item) {
+  if (document.getElementById('sizeDistributeModal')) return;
+
+  const allItems   = State.getCurrentOrderItems();
+  const orderId    = State.getCurrentOrderId();
+  const sizes      = getSizesForItem(item);
+
+  // Tous les items du même produit dans le même batch
+  const batchItems = allItems.filter(i =>
+    i.product_id === item.product_id && i.batch_number === item.batch_number
+  );
+  const totalQty = batchItems.reduce((s, i) => s + i.quantity, 0);
+
+  // Map size → {quantity, item_id}
+  const sizeDistrib = {};
+  sizes.forEach(size => {
+    const found = batchItems.find(i => i.size === size);
+    sizeDistrib[size] = { quantity: found ? found.quantity : 0, item_id: found ? found.id : null };
+  });
+  // Items sans taille explicite (ex: item original non encore réparti)
+  const unsizedTotal = batchItems.filter(i => !i.size).reduce((s, i) => s + i.quantity, 0);
+
+  const sizeRows = sizes.map(size => `
+    <div class="distribute-row">
+      <span class="distribute-batch-label" style="min-width:60px;">${size}</span>
+      <input type="number" class="distribute-qty-input size-qty-input"
+             data-size="${size}" min="0"
+             value="${sizeDistrib[size].quantity}">
+      <span class="distribute-batch-unit">unités</span>
+    </div>
+  `).join('');
+
+  const baseName = item.product_name.replace(/\s*-\s*(S|M|L|XL|2XL|2-4ans|6-8ans|10-12ans)$/i, '');
+
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="sizeDistributeModal" style="display:flex;">
+      <div class="modal-content" style="max-width:420px;width:100%;">
+        <div class="modal-header">
+          <h2><i class="fas fa-ruler"></i> Répartir par taille</h2>
+          <button class="modal-close" id="closeSizeDistributeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+
+          <p style="margin:0 0 4px 0;font-size:15px;font-weight:600;color:#2d3748;">${baseName}</p>
+          <p style="margin:0 0 20px 0;font-size:12px;color:#718096;">Batch ${item.batch_number}</p>
+
+          <div style="background:#f7fafc;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+            <div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Quantité totale dans ce batch</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="number" id="sizeTotalQty" min="1" value="${totalQty}"
+                     style="width:100px;padding:6px 10px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e2e8f0;border-radius:8px;color:#2d3748;outline:none;-moz-appearance:textfield;appearance:textfield;">
+              <style>#sizeTotalQty::-webkit-outer-spin-button,#sizeTotalQty::-webkit-inner-spin-button,.size-qty-input::-webkit-outer-spin-button,.size-qty-input::-webkit-inner-spin-button{display:none;}</style>
+              <span style="color:#718096;font-size:14px;">unités au total</span>
+            </div>
+            ${unsizedTotal > 0 ? `<p style="margin:8px 0 0 0;font-size:12px;color:#ed8936;"><i class="fas fa-info-circle"></i> ${unsizedTotal} unité(s) non encore réparties par taille</p>` : ''}
+          </div>
+
+          <div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Répartition par taille</div>
+          <div id="sizeDistributeRows">${sizeRows}</div>
+
+          <div id="sizePendingBox" style="margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid transparent;">
+            <span id="sizePendingText" style="font-size:13px;"></span>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-secondary" id="cancelSizeDistribute">Annuler</button>
+          <button type="button" class="modal-btn modal-btn-primary" id="confirmSizeDistribute">
+            <i class="fas fa-check"></i> Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const modal      = document.getElementById('sizeDistributeModal');
+  const totalInput = document.getElementById('sizeTotalQty');
+  const pendingBox = document.getElementById('sizePendingBox');
+  const pendingText= document.getElementById('sizePendingText');
+
+  document.getElementById('closeSizeDistributeModal').onclick = () => modal.remove();
+  document.getElementById('cancelSizeDistribute').onclick     = () => modal.remove();
+  document.getElementById('confirmSizeDistribute').onclick    = () =>
+    handleConfirmSizeDistribute(sizeDistrib, orderId, item, batchItems);
+
+  function updatePending() {
+    const currentTotal = parseInt(totalInput.value) || 0;
+    const used = Array.from(modal.querySelectorAll('.size-qty-input'))
+                      .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
+    const pending = currentTotal - used;
+    if (pending > 0) {
+      pendingBox.style.cssText = 'margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid #ed8936;background:#fffaf0;';
+      pendingText.style.color = '#9c4221';
+      pendingText.innerHTML = `En attente : <strong>${Utils.formatSwissNumber(pending, 0)} unités</strong> à placer`;
+    } else if (pending < 0) {
+      pendingBox.style.cssText = 'margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid #fc8181;background:#fff5f5;';
+      pendingText.style.color = '#c53030';
+      pendingText.innerHTML = `Dépassement : <strong>${Utils.formatSwissNumber(Math.abs(pending), 0)} unités</strong> en trop`;
+    } else {
+      pendingBox.style.cssText = 'margin-top:14px;padding:10px 14px;border-radius:6px;border-left:3px solid #48bb78;background:#f0fff4;';
+      pendingText.style.color = '#276749';
+      pendingText.innerHTML = `<i class="fas fa-check-circle"></i> Toutes les unités réparties`;
+    }
+  }
+
+  [totalInput, ...modal.querySelectorAll('.size-qty-input')].forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', updatePending);
+  });
+  updatePending();
+}
+
+/**
+ * Valide et applique la répartition par taille
+ */
+async function handleConfirmSizeDistribute(sizeDistrib, orderId, referenceItem, batchItems) {
+  const modal      = document.getElementById('sizeDistributeModal');
+  const totalInput = modal ? modal.querySelector('#sizeTotalQty') : null;
+  const inputs     = modal ? modal.querySelectorAll('.size-qty-input') : [];
+
+  const newTotal      = parseInt(totalInput ? totalInput.value : 0) || 0;
+  const totalInputted = Array.from(inputs).reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
+
+  if (totalInputted !== newTotal) {
+    alert(`Total des tailles (${totalInputted}) ≠ quantité totale (${newTotal}). Ajustez la répartition.`);
+    return;
+  }
+
+  // Supprimer tous les items existants pour ce produit dans ce batch (pour repartir proprement)
+  const deletePromises = batchItems.map(i => API.deleteSupplierOrderItem(i.id));
+
+  try {
+    await Promise.all(deletePromises);
+
+    // Créer les nouvelles lignes par taille (uniquement les tailles > 0)
+    const createPromises = [];
+    inputs.forEach(inp => {
+      const size   = inp.dataset.size;
+      const newQty = parseInt(inp.value) || 0;
+      if (newQty > 0) {
+        createPromises.push(API.addSupplierOrderItem(orderId, {
+          product_name: referenceItem.product_name.replace(/\s*-\s*(S|M|L|XL|2XL|2-4ans|6-8ans|10-12ans)$/i, ''),
+          quantity:     newQty,
+          unit_price:   referenceItem.unit_price,
+          batch_number: referenceItem.batch_number,
+          product_id:   referenceItem.product_id || null,
+          image_url:    referenceItem.image_url  || null,
+          category:     referenceItem.category   || null,
+          size:         size
+        }));
+      }
+    });
+
+    await Promise.all(createPromises);
+    modal.remove();
+    const items = await API.fetchSupplierOrderItems(orderId);
+    State.setCurrentOrderItems(items);
+    await initBatchView(orderId, false);
+  } catch (err) {
+    console.error('Erreur répartition par taille:', err);
+    alert('Erreur lors de la répartition par taille.');
+  }
+}
+
+/**
  * Édition inline depuis la vue consolidée (nom + prix, toutes occurrences)
  */
 function openConsolidatedEdit(productName) {
@@ -716,6 +1035,8 @@ function openConsolidatedEdit(productName) {
   const itemCard = editBtn ? editBtn.closest('.batch-item-card') : null;
   if (!itemCard) return;
 
+  const totalQty = productItems.reduce((s, i) => s + i.quantity, 0);
+
   const itemInfo = itemCard.querySelector('.batch-item-info');
   itemInfo.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;grid-column:1/-1;">
@@ -723,6 +1044,11 @@ function openConsolidatedEdit(productName) {
         <input type="text" id="consolidatedEditName"
                value="${firstItem.product_name}"
                style="width:100%;padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;">
+      </label>
+      <label style="font-size:13px;">Qté totale :
+        <input type="number" id="consolidatedEditQty"
+               value="${totalQty}" min="1"
+               style="width:80px;padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;">
       </label>
       <label style="font-size:13px;">Prix unit. (USD) :
         <input type="number" id="consolidatedEditPrice"
@@ -738,11 +1064,27 @@ function openConsolidatedEdit(productName) {
   document.getElementById('consolidatedSaveEdit').onclick = async () => {
     const newName  = document.getElementById('consolidatedEditName').value.trim();
     const newPrice = parseFloat(document.getElementById('consolidatedEditPrice').value);
+    const newTotalQty = parseInt(document.getElementById('consolidatedEditQty').value);
     if (!newName) { alert('Le nom ne peut pas être vide.'); return; }
+    if (!newTotalQty || newTotalQty < 1) { alert('La quantité doit être au moins 1.'); return; }
     try {
-      await Promise.all(productItems.map(i =>
-        API.updateSupplierOrderItem(i.id, { product_name: newName, unit_price: newPrice })
-      ));
+      if (productItems.length === 1) {
+        await API.updateSupplierOrderItem(productItems[0].id, { product_name: newName, unit_price: newPrice, quantity: newTotalQty });
+      } else {
+        // Distribuer proportionnellement
+        let remaining = newTotalQty;
+        const updates = productItems.map((item, idx) => {
+          let qty;
+          if (idx === productItems.length - 1) {
+            qty = remaining;
+          } else {
+            qty = Math.round(newTotalQty * item.quantity / totalQty);
+            remaining -= qty;
+          }
+          return API.updateSupplierOrderItem(item.id, { product_name: newName, unit_price: newPrice, quantity: qty });
+        });
+        await Promise.all(updates);
+      }
       const items = await API.fetchSupplierOrderItems(orderId);
       State.setCurrentOrderItems(items);
       await initBatchView(orderId, false);
@@ -777,23 +1119,38 @@ function openConsolidatedEdit(productName) {
     const container = document.getElementById('batchContainersWrapper');
     const allItems = State.getCurrentOrderItems();
 
-    // Fusionner les lignes identiques par nom de produit
+    // Fusionner les lignes par produit
+    // Textiles (product_id) → groupés par product_id pour cumuler les tailles
+    // Autres → groupés par product_name
     const merged = {};
     allItems.forEach(item => {
-      const key = item.product_name;
+      const key = (isTextileItem(item) && item.product_id) ? `pid_${item.product_id}` : `name_${item.product_name}`;
       if (!merged[key]) {
         merged[key] = {
           ...item,
           quantity: 0,
           total_price: 0,
           batch_count: 0,
-          batch_quantities: {}
+          batch_quantities: {},
+          size_quantities: {},
+          originalItems: []
         };
       }
       merged[key].quantity    += item.quantity;
       merged[key].total_price += (item.total_price || item.quantity * item.unit_price);
       merged[key].batch_count += 1;
-      merged[key].batch_quantities[item.batch_number] = item.quantity;
+      merged[key].originalItems.push(item);
+
+      // Cumuler par batch
+      merged[key].batch_quantities[item.batch_number] =
+        (merged[key].batch_quantities[item.batch_number] || 0) + item.quantity;
+
+      // Cumuler par taille (textiles seulement)
+      const effectiveSize = getEffectiveSize(item);
+      if (effectiveSize) {
+        merged[key].size_quantities[effectiveSize] =
+          (merged[key].size_quantities[effectiveSize] || 0) + item.quantity;
+      }
     });
 
     const mergedItems = Object.values(merged).sort((a, b) => a.product_name.localeCompare(b.product_name));
@@ -822,34 +1179,63 @@ function openConsolidatedEdit(productName) {
   }
 
   /**
-   * Crée une carte consolidée (lecture seule, sans actions)
+   * Crée une carte consolidée
    */
   function createConsolidatedItemCard(item) {
     const imageUrl = item.image_url || '/images/placeholder.png';
+    const isTextile = isTextileItem(item);
+    const baseName = isTextile
+      ? item.product_name.replace(/\s*-\s*(S|M|L|XL|2XL|2-4ans|6-8ans|10-12ans)$/i, '')
+      : item.product_name;
+
     const batchBadges = Object.entries(item.batch_quantities)
       .sort(([a], [b]) => Number(a) - Number(b))
       .map(([b, q]) =>
         `<span class="consolidated-batch-badge">Batch ${b}&nbsp;: ${Utils.formatSwissNumber(q, 0)}</span>`
       ).join('');
 
+    // Détail par taille (textiles)
+    let sizeBreakdown = '';
+    if (isTextile && Object.keys(item.size_quantities).length > 0) {
+      const sizes = getSizesForItem(item);
+      const sizeParts = sizes
+        .map(size => item.size_quantities[size]
+          ? `${size}: <strong>${item.size_quantities[size]}</strong>`
+          : null)
+        .filter(Boolean);
+      if (sizeParts.length > 0) {
+        sizeBreakdown = `<div style="grid-column:1/-1;font-size:11px;color:#718096;margin-top:3px;line-height:1.6;">
+          ${sizeParts.join(' &nbsp;·&nbsp; ')}
+        </div>`;
+      }
+    }
+
+    // Bouton taille (textile seulement, utilise le premier item comme référence)
+    const firstItem = item.originalItems ? item.originalItems[0] : item;
+    const sizeBtn = isTextile ? `
+      <button class="btn btn-sm size-distribute-btn" data-item-id="${firstItem.id}" title="Répartir par taille" style="background:#ebf4ff; color:#2b6cb0;">
+        <i class="fas fa-ruler"></i>
+      </button>` : '';
+
     return `
       <div class="batch-item-card" data-item-id="${item.id}" data-batch-number="0">
-        <img src="${imageUrl}" alt="${item.product_name}" class="batch-item-image"
+        <img src="${imageUrl}" alt="${baseName}" class="batch-item-image"
              onerror="this.src='/images/placeholder.png'">
         <div class="batch-item-info consolidated-layout">
           <div class="consolidated-name-block">
-            <h5>${item.product_name}</h5>
+            <h5>${baseName}</h5>
             <span class="consolidated-unit-price">${Utils.formatSwissNumber(item.unit_price)} USD/u</span>
           </div>
           <button class="product-stats-btn"
                   data-product-id="${item.product_id}"
-                  data-product-name="${item.product_name}"
+                  data-product-name="${baseName}"
                   title="Voir les statistiques">
             <i class="fas fa-question-circle"></i>
           </button>
           <span class="quantity-badge">${Utils.formatSwissNumber(item.quantity, 0)} unités</span>
           <div class="consolidated-batch-badges">${batchBadges}</div>
           <span class="batch-item-total"><strong>${Utils.formatSwissNumber(item.total_price)} USD</strong></span>
+          ${sizeBreakdown}
         </div>
         <div class="batch-item-actions">
           <button class="batch-item-action-btn consolidated-move-btn"
@@ -858,6 +1244,7 @@ function openConsolidatedEdit(productName) {
                   title="Répartir entre les batchs">
             <i class="fas fa-arrows-alt"></i>
           </button>
+          ${sizeBtn}
           <button class="btn btn-sm consolidated-edit-btn"
                   data-product-name="${item.product_name}"
                   title="Modifier">

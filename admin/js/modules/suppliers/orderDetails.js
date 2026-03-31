@@ -89,6 +89,7 @@ function createItemCard(item) {
   const totalPrice = Utils.formatAmount(item.total_price);
   const unitPrice = (item.unit_price || 0).toFixed(2);
   const unitPriceFormatted = Utils.formatSwissNumber(item.unit_price || 0);
+  const sizeTag = item.size ? `<span style="display:inline-block; background:#667eea; color:#fff; border-radius:4px; padding:2px 8px; font-size:12px; font-weight:700; margin-left:6px;">${item.size}</span>` : '';
 
   return `
     <div class="item-card" data-item-id="${item.id}">
@@ -97,7 +98,7 @@ function createItemCard(item) {
            class="item-image"
            onerror="this.src='/images/placeholder.png'">
       <div class="item-details">
-        <h4>${item.product_name}</h4>
+        <h4>${item.product_name}${sizeTag}</h4>
         <p>Catégorie: ${category}</p>
         <div class="item-display" data-item-id="${item.id}">
           <p>Quantité: ${item.quantity} × ${unitPriceFormatted} USD = <strong>${totalPrice}</strong></p>
@@ -529,7 +530,7 @@ async function handleSaveItem(event) {
   const orderId = State.getCurrentOrderId();
 
   try {
-    await API.updateSupplierOrderItem(itemId, unitPrice, quantity);
+    await API.updateSupplierOrderItem(itemId, { unit_price: unitPrice, quantity });
     await show(orderId);
   } catch (error) {
     console.error('Erreur modification item:', error);
@@ -855,11 +856,24 @@ function renderProductsList(products) {
     return;
   }
   
-  container.innerHTML = products.map(product => `
+  const TEXTILE_CATS = ['tshirt', 'hoodie'];
+  const ADULT_SIZES = ['S', 'M', 'L', 'XL', '2XL'];
+  const KID_SIZES = ['2-4ans', '6-8ans', '10-12ans'];
+
+  container.innerHTML = products.map(product => {
+    const isTextile = TEXTILE_CATS.includes((product.category || '').toLowerCase());
+    const sizes = isTextile ? (/kid/i.test(product.name) ? KID_SIZES : ADULT_SIZES) : [];
+    const sizeSelector = isTextile ? `
+      <select class="item-size-select" data-product-id="${product.id}" style="padding:6px 8px; border:1px solid #cbd5e0; border-radius:4px; font-size:13px;">
+        <option value="">-- Taille --</option>
+        ${sizes.map(s => `<option value="${s}">${s}</option>`).join('')}
+      </select>` : '';
+
+    return `
     <div class="product-list-item">
       <div style="position: relative; width: 80px; height: 80px;">
-        <img src="${product.image_url || ''}" 
-             alt="${product.name}" 
+        <img src="${product.image_url || ''}"
+             alt="${product.name}"
              class="product-list-image"
              style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; background: #f7fafc; border: 1px solid #e2e8f0;"
              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -867,7 +881,7 @@ function renderProductsList(products) {
           <i class="fas fa-image" style="color: #cbd5e0; font-size: 24px;"></i>
         </div>
       </div>
-      
+
       <div class="product-list-info">
         <h4>${product.name}</h4>
         <p><i class="fas fa-tag"></i> ${product.category || 'Autre'}</p>
@@ -878,26 +892,28 @@ function renderProductsList(products) {
       <div class="product-list-price">
         ${Utils.formatSwissNumber(product.origin_price || 0)} USD
       </div>
-      
+
       <div class="product-list-actions">
-        <input type="number" 
-               class="item-quantity-input" 
-               value="50" 
+        ${sizeSelector}
+        <input type="number"
+               class="item-quantity-input"
+               value="50"
                min="1"
                placeholder="Qté"
                data-product-id="${product.id}"
                onfocus="this.select()">
-        <button class="btn btn-primary btn-icon add-item-btn" 
+        <button class="btn btn-primary btn-icon add-item-btn"
                 data-product-id="${product.id}"
                 data-product-name="${product.name}"
                 data-product-price="${product.origin_price || 0}"
                 data-product-category="${product.category || ''}"
-                data-product-image="${product.image_url || ''}">
+                data-product-image="${product.image_url || ''}"
+                data-is-textile="${isTextile}">
           <i class="fas fa-plus"></i> Ajouter
         </button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   
   // Attacher les event listeners
   attachAddItemButtonsListeners();
@@ -914,11 +930,22 @@ function attachAddItemButtonsListeners() {
       const productPrice = parseFloat(btn.dataset.productPrice);
       const productCategory = btn.dataset.productCategory;
       const productImage = btn.dataset.productImage;
-      
+      const isTextile = btn.dataset.isTextile === 'true';
+
       const quantityInput = document.querySelector(`.item-quantity-input[data-product-id="${productId}"]`);
       const quantity = parseInt(quantityInput.value) || 50;
-      
-      await addItemToCurrentOrder(productId, productName, productPrice, quantity, productCategory, productImage);
+
+      let size = null;
+      if (isTextile) {
+        const sizeSelect = document.querySelector(`.item-size-select[data-product-id="${productId}"]`);
+        size = sizeSelect ? sizeSelect.value : null;
+        if (!size) {
+          alert('Veuillez sélectionner une taille pour ce textile');
+          return;
+        }
+      }
+
+      await addItemToCurrentOrder(productId, productName, productPrice, quantity, productCategory, productImage, size);
     });
   });
 }
@@ -926,9 +953,9 @@ function attachAddItemButtonsListeners() {
 /**
  * Ajoute un article à la commande courante
  */
-async function addItemToCurrentOrder(productId, productName, price, quantity, category, imageUrl) {
+async function addItemToCurrentOrder(productId, productName, price, quantity, category, imageUrl, size = null) {
   const orderId = State.getCurrentOrderId();
-  
+
   try {
     const result = await API.addSupplierOrderItem(orderId, {
       product_id: parseInt(productId),
@@ -936,7 +963,8 @@ async function addItemToCurrentOrder(productId, productName, price, quantity, ca
       unit_price: price,
       quantity: quantity,
       category: category,
-      image_url: imageUrl
+      image_url: imageUrl,
+      size: size || null
     });
     
     if (result.success) {

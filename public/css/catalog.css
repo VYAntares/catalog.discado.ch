@@ -647,9 +647,9 @@ li.product-item:hover {
         display: grid;
         grid-template-columns: 220px 1fr;
         gap: 0;
-        max-width: 1650px;
-        margin: 0 0px;
-        padding: 0 0px;
+        max-width: 2400px;
+        margin: 0 auto;
+        padding: 0 24px;
         align-items: start;
     }
 
@@ -867,6 +867,13 @@ li.product-item:hover {
 @media (min-width: 1400px) {
     #productList {
         grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Très grand écran (ex: iMac 27") : 5 colonnes */
+@media (min-width: 1800px) {
+    #productList {
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 

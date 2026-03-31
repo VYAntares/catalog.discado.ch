@@ -80,10 +80,10 @@ export function saveCart(cart) {
 // Ajout au panier
 export function addToCart(product, quantity) {
   const cart = getCart();
-  
-  // Vérification de produit existant
-  const existingItemIndex = cart.findIndex(item => 
-    item.Nom === product.Nom && item.categorie === product.categorie
+
+  // Vérification de produit existant (inclut la taille pour les textiles)
+  const existingItemIndex = cart.findIndex(item =>
+    item.Nom === product.Nom && item.categorie === product.categorie && (item.size || null) === (product.size || null)
   );
   
   if (existingItemIndex !== -1) {

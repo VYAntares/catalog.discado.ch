@@ -57,13 +57,13 @@ async function showProcessOrderModal(order, clientProfile) {
             const products = await response.json();
             
             // Enrichir chaque item avec l'image_url du produit correspondant
-            // Pour les textiles, le Nom contient la taille (ex: "Hoodie 1 - M"),
-            // on cherche d'abord en exact puis avec le nom de base (avant " - ")
+            // Priorité : product_id (fiable), puis fallback par nom
             enrichedItems = order.items.map(item => {
                 const baseName = item.Nom.includes(' - ')
                     ? item.Nom.substring(0, item.Nom.lastIndexOf(' - '))
                     : item.Nom;
-                const product = products.find(p => p.name === item.Nom || p.Nom === item.Nom)
+                const product = (item.product_id && products.find(p => p.id === item.product_id))
+                             || products.find(p => p.name === item.Nom || p.Nom === item.Nom)
                              || products.find(p => p.name === baseName || p.Nom === baseName);
                 return {
                     ...item,

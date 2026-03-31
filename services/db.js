@@ -19,7 +19,7 @@ db.pragma('foreign_keys = ON');
 // Vérification de l'existence d'une colonne dans une table
 function columnExists(tableName, columnName) {
     // Liste blanche des tables autorisées
-    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses', 'client_locations', 'wishlists'];
+    const allowedTables = ['users', 'user_profiles', 'products', 'orders', 'order_items', 'pending_deliveries', 'suppliers', 'user_permissions', 'invoices', 'order_supplier_items', 'expenses', 'client_locations', 'wishlists', 'product_stock_by_size'];
     
     if (!allowedTables.includes(tableName)) {
         return false;
@@ -95,6 +95,17 @@ function initDatabase() {
             // Gestion silencieuse de l'erreur
         }
     }
+
+    // Création de la table product_stock_by_size (suivi stock par taille pour textiles)
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS product_stock_by_size (
+        product_id INTEGER NOT NULL,
+        size TEXT NOT NULL,
+        stock INTEGER DEFAULT 0,
+        PRIMARY KEY (product_id, size),
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    )
+    `);
 
     // Création de la table products
     db.exec(`
@@ -344,6 +355,70 @@ function initDatabase() {
     // Migration : ajout product_id aux tables existantes (nullable pour compatibilité)
     try { db.exec('ALTER TABLE order_items ADD COLUMN product_id INTEGER REFERENCES products(id)'); } catch(e) { /* colonne déjà présente */ }
     try { db.exec('ALTER TABLE pending_deliveries ADD COLUMN product_id INTEGER REFERENCES products(id)'); } catch(e) { /* colonne déjà présente */ }
+
+    // Migration : ajout colonne size aux tables de commandes
+    try { db.exec('ALTER TABLE order_items ADD COLUMN size TEXT'); } catch(e) { /* colonne déjà présente */ }
+    try { db.exec('ALTER TABLE order_supplier_items ADD COLUMN size TEXT'); } catch(e) { /* colonne déjà présente */ }
+    try { db.exec('ALTER TABLE pending_deliveries ADD COLUMN size TEXT'); } catch(e) { /* colonne déjà présente */ }
+
+    // Migration des données existantes : extraire la taille du product_name pour les textiles
+    const TEXTILE_SIZES = ['S', 'M', 'L', 'XL', '2XL', '2-4ans', '6-8ans', '10-12ans'];
+    const TEXTILE_CATS = ['hoodie', 'tshirt'];
+    const sizePlaceholders = TEXTILE_SIZES.map(() => '?').join(',');
+
+    try {
+        const migrateOrderItems = db.transaction(() => {
+            const items = db.prepare(
+                `SELECT id, product_name FROM order_items WHERE product_name LIKE '% - %' AND category IN (${TEXTILE_CATS.map(() => '?').join(',')}) AND size IS NULL`
+            ).all(...TEXTILE_CATS);
+            for (const item of items) {
+                const lastDash = item.product_name.lastIndexOf(' - ');
+                if (lastDash === -1) continue;
+                const size = item.product_name.substring(lastDash + 3).trim();
+                const baseName = item.product_name.substring(0, lastDash).trim();
+                if (!TEXTILE_SIZES.includes(size)) continue;
+                db.prepare('UPDATE order_items SET product_name = ?, size = ? WHERE id = ?').run(baseName, size, item.id);
+            }
+            if (items.length > 0) console.log(`✅ ${items.length} order_items migrés (taille extraite du nom)`);
+        });
+        migrateOrderItems();
+    } catch(e) { console.error('⚠️ Erreur migration order_items sizes:', e.message); }
+
+    try {
+        const migrateSupplierItems = db.transaction(() => {
+            const items = db.prepare(
+                `SELECT id, product_name FROM order_supplier_items WHERE product_name LIKE '% - %' AND category IN (${TEXTILE_CATS.map(() => '?').join(',')}) AND size IS NULL`
+            ).all(...TEXTILE_CATS);
+            for (const item of items) {
+                const lastDash = item.product_name.lastIndexOf(' - ');
+                if (lastDash === -1) continue;
+                const size = item.product_name.substring(lastDash + 3).trim();
+                const baseName = item.product_name.substring(0, lastDash).trim();
+                if (!TEXTILE_SIZES.includes(size)) continue;
+                db.prepare('UPDATE order_supplier_items SET product_name = ?, size = ? WHERE id = ?').run(baseName, size, item.id);
+            }
+            if (items.length > 0) console.log(`✅ ${items.length} order_supplier_items migrés (taille extraite du nom)`);
+        });
+        migrateSupplierItems();
+    } catch(e) { console.error('⚠️ Erreur migration order_supplier_items sizes:', e.message); }
+
+    try {
+        const migratePending = db.transaction(() => {
+            const items = db.prepare(
+                `SELECT id, product_name FROM pending_deliveries WHERE product_name LIKE '% - %' AND category IN (${TEXTILE_CATS.map(() => '?').join(',')}) AND size IS NULL`
+            ).all(...TEXTILE_CATS);
+            for (const item of items) {
+                const lastDash = item.product_name.lastIndexOf(' - ');
+                if (lastDash === -1) continue;
+                const size = item.product_name.substring(lastDash + 3).trim();
+                const baseName = item.product_name.substring(0, lastDash).trim();
+                if (!TEXTILE_SIZES.includes(size)) continue;
+                db.prepare('UPDATE pending_deliveries SET product_name = ?, size = ? WHERE id = ?').run(baseName, size, item.id);
+            }
+            if (items.length > 0) console.log(`✅ ${items.length} pending_deliveries migrés (taille extraite du nom)`);
+        });
+        migratePending();
+    } catch(e) { console.error('⚠️ Erreur migration pending_deliveries sizes:', e.message); }
 
     // Création de la table wishlists
     db.exec(`
@@ -726,28 +801,28 @@ module.exports = {
 
     orderSupplierItems: {
         getAll: db.prepare('SELECT * FROM order_supplier_items'),
-        
+
         getById: db.prepare('SELECT * FROM order_supplier_items WHERE id = ?'),
-        
+
         getByOrderId: db.prepare(`
-            SELECT * FROM order_supplier_items 
-            WHERE order_supplier_id = ? 
+            SELECT * FROM order_supplier_items
+            WHERE order_supplier_id = ?
             ORDER BY batch_number ASC, created_at ASC
         `),
-        
+
         add: db.prepare(`
             INSERT INTO order_supplier_items (
                 order_supplier_id, product_id, product_name,
                 unit_price, quantity, total_price, category, image_url,
-                batch_number, item_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                batch_number, item_status, size
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `),
 
         update: db.prepare(`
             UPDATE order_supplier_items
             SET product_id = ?, product_name = ?, unit_price = ?,
                 quantity = ?, total_price = ?, category = ?, image_url = ?,
-                batch_number = ?, item_status = ?
+                batch_number = ?, item_status = ?, size = ?
             WHERE id = ?
         `),
 
@@ -854,8 +929,8 @@ module.exports = {
     // Requêtes liées aux articles de commande
     orderItems: {
         add: db.prepare(`
-            INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, category, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, category, status, size)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `),
         getByOrder: db.prepare('SELECT * FROM order_items WHERE order_id = ?'),
         getByOrderAndStatus: db.prepare('SELECT * FROM order_items WHERE order_id = ? AND status = ?'),
@@ -868,8 +943,8 @@ module.exports = {
     // Requêtes liées aux livraisons en attente
     pendingDeliveries: {
         add: db.prepare(`
-            INSERT INTO pending_deliveries (user_id, product_id, product_name, product_price, quantity, category)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO pending_deliveries (user_id, product_id, product_name, product_price, quantity, category, size)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `),
         getByUser: db.prepare('SELECT * FROM pending_deliveries WHERE user_id = ?'),
         remove: db.prepare('DELETE FROM pending_deliveries WHERE id = ?'),
@@ -915,8 +990,8 @@ module.exports = {
     getTreatedOrders: db.prepare("SELECT * FROM orders WHERE status IN ('completed', 'partial') ORDER BY date DESC"),
     updateOrderStatus: db.prepare('UPDATE orders SET status = ?, last_processed = ? WHERE order_id = ?'),
     addOrderItem: db.prepare(`
-        INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, category, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, category, status, size)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `),
     getOrderItems: db.prepare('SELECT * FROM order_items WHERE order_id = ?'),
     getOrderItemsByStatus: db.prepare('SELECT * FROM order_items WHERE order_id = ? AND status = ?'),
@@ -925,8 +1000,8 @@ module.exports = {
     updateOrderDate: db.prepare('UPDATE orders SET date = ? WHERE order_id = ?'),
     updateOrderDateAndReference: db.prepare('UPDATE orders SET date = ?, reference = ? WHERE order_id = ?'),
     addPendingDelivery: db.prepare(`
-        INSERT INTO pending_deliveries (user_id, product_id, product_name, product_price, quantity, category)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO pending_deliveries (user_id, product_id, product_name, product_price, quantity, category, size)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `),
     getUserPendingDeliveries: db.prepare('SELECT * FROM pending_deliveries WHERE user_id = ?'),
     removePendingDelivery: db.prepare('DELETE FROM pending_deliveries WHERE id = ?'),
@@ -1009,6 +1084,36 @@ module.exports = {
         removeByProductId: db.prepare('DELETE FROM wishlists WHERE user_id = ? AND product_id = ?'),
         findItem: db.prepare('SELECT * FROM wishlists WHERE user_id = ? AND product_id = ?'),
         countByUser: db.prepare('SELECT COUNT(*) as count FROM wishlists WHERE user_id = ?')
+    },
+
+    // Requêtes liées au stock par taille (textiles)
+    productStockBySize: {
+        getByProduct: db.prepare(`
+            SELECT * FROM product_stock_by_size
+            WHERE product_id = ?
+            ORDER BY CASE size
+                WHEN 'S' THEN 1 WHEN 'M' THEN 2 WHEN 'L' THEN 3
+                WHEN 'XL' THEN 4 WHEN '2XL' THEN 5
+                WHEN '2-4ans' THEN 6 WHEN '6-8ans' THEN 7 WHEN '10-12ans' THEN 8
+                ELSE 9 END
+        `),
+        getStock: db.prepare('SELECT stock FROM product_stock_by_size WHERE product_id = ? AND size = ?'),
+        upsert: db.prepare(`
+            INSERT INTO product_stock_by_size (product_id, size, stock)
+            VALUES (?, ?, ?)
+            ON CONFLICT(product_id, size) DO UPDATE SET stock = excluded.stock
+        `),
+        decrement: db.prepare(`
+            UPDATE product_stock_by_size
+            SET stock = MAX(0, stock - ?)
+            WHERE product_id = ? AND size = ?
+        `),
+        increment: db.prepare(`
+            UPDATE product_stock_by_size
+            SET stock = stock + ?
+            WHERE product_id = ? AND size = ?
+        `),
+        deleteByProduct: db.prepare('DELETE FROM product_stock_by_size WHERE product_id = ?')
     },
 
     // Requêtes liées aux tokens de réinitialisation de mot de passe

@@ -1082,6 +1082,45 @@ app.get('/api/products/stock', requireLogin, requireAdmin, async (req, res) => {
   }
 });
 
+// GET stock par taille pour un produit textile
+app.get('/api/products/:id/size-stock', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const rows = dbModule.productStockBySize.getByProduct.all(id);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching size stock:', error);
+    res.status(500).json({ error: 'Failed to fetch size stock' });
+  }
+});
+
+// PUT stock par taille pour un produit textile (array de {size, stock})
+app.put('/api/products/:id/size-stock', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sizes } = req.body; // [{ size: 'S', stock: 10 }, ...]
+
+    if (!Array.isArray(sizes)) {
+      return res.status(400).json({ error: 'sizes must be an array' });
+    }
+
+    const updateAll = dbModule.db.transaction(() => {
+      for (const entry of sizes) {
+        dbModule.productStockBySize.upsert.run(parseInt(id), entry.size, parseInt(entry.stock) || 0);
+      }
+      // Mettre à jour le stock global = somme des tailles
+      const total = sizes.reduce((sum, e) => sum + (parseInt(e.stock) || 0), 0);
+      dbModule.products.updateStock.run(total, parseInt(id));
+    });
+    updateAll();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating size stock:', error);
+    res.status(500).json({ error: 'Failed to update size stock' });
+  }
+});
+
 // GET stock statistics
 app.get('/api/products/stats/stock', requireLogin, requireAdmin, async (req, res) => {
   try {
@@ -1194,6 +1233,26 @@ app.get('/api/stats/product/:productId', requireLogin, requireAdmin, (req, res) 
     const supplierOrderDetailsStmt = dbModule.db.prepare(supplierOrderDetailsQuery);
     const supplierOrderDetails = supplierOrderDetailsStmt.all(...supplierParams);
 
+    // Détail par taille pour les commandes fournisseur (textiles)
+    const supplierSizeBreakdownQuery = `
+      SELECT
+        osi.size,
+        SUM(osi.quantity) as quantity
+      FROM order_supplier_items osi
+      INNER JOIN order_supplier os ON osi.order_supplier_id = os.id
+      WHERE osi.product_id = ?
+        AND os.status != 'Livrée'
+        AND osi.size IS NOT NULL
+        AND osi.size != ''${supplierWhereClause}
+      GROUP BY osi.size
+      ORDER BY CASE osi.size
+        WHEN 'S' THEN 1 WHEN 'M' THEN 2 WHEN 'L' THEN 3
+        WHEN 'XL' THEN 4 WHEN '2XL' THEN 5
+        WHEN '2-4ans' THEN 6 WHEN '6-8ans' THEN 7 WHEN '10-12ans' THEN 8
+        ELSE 9 END
+    `;
+    const supplierSizeBreakdown = dbModule.db.prepare(supplierSizeBreakdownQuery).all(...supplierParams);
+
     const total_delivered = deliveredResult?.total_delivered || 0;
     const total_remaining = remainingResult?.total_remaining || 0;
     const sum_total_delivered_price = deliveredResult?.sum_total_delivered_price || 0;
@@ -1204,6 +1263,18 @@ app.get('/api/stats/product/:productId', requireLogin, requireAdmin, (req, res) 
     const productQuery = `SELECT stock, name FROM products WHERE id = ? LIMIT 1`;
     const productStmt = dbModule.db.prepare(productQuery);
     const productResult = productStmt.get(productId);
+
+    // Détail du stock par taille (product_stock_by_size)
+    const stockBySizeRows = dbModule.db.prepare(`
+      SELECT size, stock
+      FROM product_stock_by_size
+      WHERE product_id = ? AND stock > 0
+      ORDER BY CASE size
+        WHEN 'S' THEN 1 WHEN 'M' THEN 2 WHEN 'L' THEN 3
+        WHEN 'XL' THEN 4 WHEN '2XL' THEN 5
+        WHEN '2-4ans' THEN 6 WHEN '6-8ans' THEN 7 WHEN '10-12ans' THEN 8
+        ELSE 9 END
+    `).all(productId);
 
     const result = {
       product_name: productResult?.name || null,
@@ -1218,7 +1289,9 @@ app.get('/api/stats/product/:productId', requireLogin, requireAdmin, (req, res) 
       order_count: deliveredResult?.order_count || 0,
       supplier_order_quantity: supplier_order_quantity,
       supplier_order_details: supplierOrderDetails,
-      current_stock: productResult?.stock ?? null
+      supplier_order_size_breakdown: supplierSizeBreakdown.length > 0 ? supplierSizeBreakdown : null,
+      current_stock: productResult?.stock ?? null,
+      stock_by_size: stockBySizeRows.length > 0 ? stockBySizeRows : null
     };
 
     res.json(result);
@@ -3409,7 +3482,7 @@ app.delete('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) =>
 app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req, res) => {
   try {
     const { orderId } = req.params;
-    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status } = req.body;
+    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status, size } = req.body;
 
     if (!product_name || unit_price == null || !quantity) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -3429,7 +3502,8 @@ app.post('/api/order-suppliers/:orderId/items', requireLogin, requireAdmin, (req
       category || null,
       image_url || null,
       batchNum,
-      item_status || 'commandé'
+      item_status || 'commandé',
+      size || null
     );
 
     // Recalculer le total de la commande

@@ -23,6 +23,10 @@ class ProductStatsModal {
 	  this.currentProductName = productName;
 	  this.currentYear = 'all';
 
+	  // Vider le cache pour ce produit (les données peuvent avoir changé)
+	  this.statsCache.forEach((_, key) => { if (key.startsWith(`${productId}_`)) this.statsCache.delete(key); });
+	  this.yearsCache.delete(productId);
+
 	  // ⚡ SOLUTION 1 : Créer et afficher la modale IMMÉDIATEMENT avec le loader
 	  this.createModal();
 	  this.modal.style.display = 'flex';
@@ -256,6 +260,14 @@ class ProductStatsModal {
 							</div>
 						  </div>
 						`).join('')}
+					  ${stats.supplier_order_size_breakdown ? `
+						<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+						  <div style="font-size: 11px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">Détail par taille :</div>
+						  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+							${stats.supplier_order_size_breakdown.map(s => `<span style="background: #ebf4ff; color: #2b6cb0; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 600;">${s.size}&nbsp;: ${s.quantity}</span>`).join('')}
+						  </div>
+						</div>
+					  ` : ''}
 					  </div>
 					</td>
 				  </tr>
@@ -267,6 +279,8 @@ class ProductStatsModal {
 
 		// Afficher le stock actuel si disponible
 		if (stats.current_stock !== null) {
+		  const stockColor = stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e';
+		  const stockLabel = stats.current_stock > 10 ? 'En stock' : stats.current_stock > 0 ? 'Stock bas' : 'Rupture';
 		  html += `
 			<div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-top: 16px;">
 			  <table style="width: 100%; border-collapse: collapse;">
@@ -284,14 +298,21 @@ class ProductStatsModal {
 					  </div>
 					</td>
 					<td style="padding: 8px 6px; text-align: center;">
-					  <div style="font-size: 22px; font-weight: bold; color: ${stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e'};">${stats.current_stock}</div>
+					  <div style="font-size: 22px; font-weight: bold; color: ${stockColor};">${stats.current_stock}</div>
 					</td>
 					<td style="padding: 8px 6px; text-align: center;">
-					  <div style="font-size: 11px; font-weight: 600; color: ${stats.current_stock > 10 ? '#6b46c1' : stats.current_stock > 0 ? '#d69e2e' : '#e53e3e'};">
-						${stats.current_stock > 10 ? 'En stock' : stats.current_stock > 0 ? 'Stock bas' : 'Rupture'}
+					  <div style="font-size: 11px; font-weight: 600; color: ${stockColor};">${stockLabel}</div>
+					</td>
+				  </tr>
+				  ${stats.stock_by_size ? `
+				  <tr>
+					<td colspan="3" style="padding: 0 12px 12px 12px;">
+					  <div style="display: flex; flex-wrap: wrap; gap: 6px; padding-left: 46px;">
+						${stats.stock_by_size.map(s => `<span style="background: #f3e8ff; color: #6b46c1; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 600;">${s.size}&nbsp;: ${s.stock}</span>`).join('')}
 					  </div>
 					</td>
 				  </tr>
+				  ` : ''}
 				</tbody>
 			  </table>
 			</div>
@@ -455,6 +476,14 @@ class ProductStatsModal {
 						  </div>
 						</div>
 					  `).join('')}
+					  ${stats.supplier_order_size_breakdown ? `
+						<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+						  <div style="font-size: 11px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">Détail par taille :</div>
+						  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+							${stats.supplier_order_size_breakdown.map(s => `<span style="background: #ebf4ff; color: #2b6cb0; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 600;">${s.size}&nbsp;: ${s.quantity}</span>`).join('')}
+						  </div>
+						</div>
+					  ` : ''}
 					</div>
 				  </td>
 				</tr>
@@ -483,6 +512,15 @@ class ProductStatsModal {
 					</div>
 				  </td>
 				</tr>
+				${stats.stock_by_size ? `
+				<tr>
+				  <td colspan="3" style="padding: 0 12px 12px 12px;">
+					<div style="display: flex; flex-wrap: wrap; gap: 6px; padding-left: 46px;">
+					  ${stats.stock_by_size.map(s => `<span style="background: #f3e8ff; color: #6b46c1; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 600;">${s.size}&nbsp;: ${s.stock}</span>`).join('')}
+					</div>
+				  </td>
+				</tr>
+				` : ''}
 			  ` : ''}
 			</tbody>
 		  </table>
