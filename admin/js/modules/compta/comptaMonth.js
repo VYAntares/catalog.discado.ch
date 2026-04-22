@@ -316,8 +316,19 @@ class ComptaMonth {
         document.getElementById('meSave').addEventListener('click', async () => {
             const amountPaid = parseFloat(document.getElementById('meAmountPaid').value) || 0;
             const dueDate = document.getElementById('meDueDate').value;
-            const paidDate = document.getElementById('mePaidDate').value;
-            const paymentStatus = document.getElementById('mePaymentStatus').value;
+            let paidDate = document.getElementById('mePaidDate').value;
+
+            // Auto-calculate payment status based on amount
+            let paymentStatus;
+            if (amountPaid <= 0) {
+                paymentStatus = 'unpaid';
+                paidDate = '';
+            } else if (amountPaid >= invoice.total_ttc) {
+                paymentStatus = 'paid';
+                if (!paidDate) paidDate = new Date().toISOString().split('T')[0];
+            } else {
+                paymentStatus = 'partial';
+            }
 
             const amountDue = Math.max(0, invoice.total_ttc - amountPaid);
             const updateData = {

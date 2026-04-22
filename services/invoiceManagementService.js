@@ -21,23 +21,23 @@ function getAllInvoices(year = null) {
             LEFT JOIN orders o ON i.order_id = o.order_id
         `;
         
-        const params = [];
-        if (year) {
-            query += ` WHERE strftime('%Y', i.invoice_date) = ?`;
-            params.push(year.toString());
-        }
-        
         query += `
-            ORDER BY 
-                CASE 
+            ORDER BY
+                CASE
                     WHEN up.last_name IS NOT NULL THEN up.last_name
                     ELSE i.client_full_name
                 END ASC,
                 i.invoice_date DESC
         `;
-        
-        const invoices = db.db.prepare(query).all(...params);
-        
+
+        let invoices = db.db.prepare(query).all();
+
+        // Filter by year in JavaScript to avoid SQLite strftime UTC vs local-timezone mismatch
+        if (year) {
+            const y = parseInt(year);
+            invoices = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === y);
+        }
+
         return invoices.map(invoice => ({
             ...invoice,
             displayName: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
@@ -72,14 +72,15 @@ function getClientInvoices(userId, year = null) {
         `;
         
         const params = [userId];
-        if (year) {
-            query += ` AND strftime('%Y', i.invoice_date) = ?`;
-            params.push(year.toString());
-        }
-        
         query += ` ORDER BY i.invoice_date DESC`;
-        
-        const invoices = db.db.prepare(query).all(...params);
+
+        let invoices = db.db.prepare(query).all(...params);
+
+        // Filter by year in JavaScript to avoid SQLite strftime UTC vs local-timezone mismatch
+        if (year) {
+            const y = parseInt(year);
+            invoices = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === y);
+        }
         const paymentsStmt = db.db.prepare(
             'SELECT * FROM invoice_payments WHERE invoice_id = ? ORDER BY payment_date ASC, id ASC'
         );
@@ -136,7 +137,7 @@ function getInvoiceDetails(invoiceId) {
  */
 function updatePaymentStatus(invoiceId, paymentData) {
     try {
-        const { amount_paid, amount_due, payment_status, paid_date, commission_status } = paymentData;
+        const { amount_paid, amount_due, payment_status, paid_date, commission_status, due_date, invoice_date } = paymentData;
 
         const invoice = db.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
         if (!invoice) {
@@ -144,7 +145,7 @@ function updatePaymentStatus(invoiceId, paymentData) {
         }
 
         // If only commission_status is being updated
-        if (commission_status !== undefined && amount_paid === undefined) {
+        if (commission_status !== undefined && amount_paid === undefined && invoice_date === undefined && due_date === undefined) {
             const updateCommissionStmt = db.db.prepare(`
                 UPDATE invoices
                 SET
@@ -157,19 +158,23 @@ function updatePaymentStatus(invoiceId, paymentData) {
             const updateStmt = db.db.prepare(`
                 UPDATE invoices
                 SET
-                    amount_paid = ?,
-                    amount_due = ?,
-                    payment_status = ?,
-                    paid_date = ?,
+                    amount_paid = COALESCE(?, amount_paid),
+                    amount_due = COALESCE(?, amount_due),
+                    payment_status = COALESCE(?, payment_status),
+                    paid_date = CASE WHEN ? IS NOT NULL THEN ? ELSE paid_date END,
+                    due_date = CASE WHEN ? IS NOT NULL THEN ? ELSE due_date END,
+                    invoice_date = CASE WHEN ? IS NOT NULL THEN ? ELSE invoice_date END,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             `);
 
             updateStmt.run(
-                amount_paid,
-                amount_due,
-                payment_status,
-                paid_date || null,
+                amount_paid !== undefined ? amount_paid : null,
+                amount_due !== undefined ? amount_due : null,
+                payment_status || null,
+                paid_date || null, paid_date || null,
+                due_date || null, due_date || null,
+                invoice_date || null, invoice_date || null,
                 invoiceId
             );
         }
@@ -190,28 +195,11 @@ function updatePaymentStatus(invoiceId, paymentData) {
  */
 function getInvoiceStatistics(year = null) {
     try {
-        let query = `
-            SELECT 
-                COUNT(*) as total_invoices,
-                SUM(CASE WHEN payment_status = 'paid' THEN 1 ELSE 0 END) as paid_count,
-                SUM(CASE WHEN payment_status = 'unpaid' THEN 1 ELSE 0 END) as unpaid_count,
-                SUM(CASE WHEN payment_status = 'partial' THEN 1 ELSE 0 END) as partial_count,
-                SUM(total_ttc) as total_amount,
-                SUM(amount_paid) as total_paid,
-                SUM(amount_due) as total_due
-            FROM invoices
-        `;
-        
-        const params = [];
-        if (year) {
-            query += ` WHERE strftime('%Y', invoice_date) = ?`;
-            params.push(year.toString());
-        }
-        
-        const stats = db.db.prepare(query).get(...params);
-        
-        return stats || {
-            total_invoices: 0,
+        // Use JS date filtering to stay consistent with other functions (UTC vs local-timezone)
+        const invoices = getAllInvoices(year);
+
+        const stats = {
+            total_invoices: invoices.length,
             paid_count: 0,
             unpaid_count: 0,
             partial_count: 0,
@@ -219,6 +207,17 @@ function getInvoiceStatistics(year = null) {
             total_paid: 0,
             total_due: 0
         };
+
+        for (const inv of invoices) {
+            if (inv.payment_status === 'paid') stats.paid_count++;
+            else if (inv.payment_status === 'unpaid') stats.unpaid_count++;
+            else if (inv.payment_status === 'partial') stats.partial_count++;
+            stats.total_amount += parseFloat(inv.total_ttc) || 0;
+            stats.total_paid += parseFloat(inv.amount_paid) || 0;
+            stats.total_due += parseFloat(inv.amount_due) || 0;
+        }
+
+        return stats;
     } catch (error) {
         console.error('Error getting invoice statistics:', error);
         throw error;
@@ -250,12 +249,6 @@ function getClientsSummary(year = null) {
             LEFT JOIN user_profiles up ON i.user_id = up.username
         `;
 
-        const params = [];
-        if (year) {
-            query += ` WHERE strftime('%Y', i.invoice_date) = ?`;
-            params.push(year.toString());
-        }
-
         query += `
             GROUP BY i.user_id
             ORDER BY
@@ -266,7 +259,57 @@ function getClientsSummary(year = null) {
                 END ASC
         `;
 
-        const clients = db.db.prepare(query).all(...params);
+        let clients = db.db.prepare(query).all();
+
+        // Filter by year in JavaScript to avoid SQLite strftime UTC vs local-timezone mismatch
+        if (year) {
+            const y = parseInt(year);
+            // We need to re-aggregate after filtering, so fetch individual invoices instead
+            const invoices = getAllInvoices(year.toString());
+            const clientMap = new Map();
+            for (const inv of invoices) {
+                if (!clientMap.has(inv.user_id)) {
+                    clientMap.set(inv.user_id, {
+                        user_id: inv.user_id,
+                        first_name: inv.first_name,
+                        last_name: inv.last_name,
+                        shop_name: inv.shop_name,
+                        referral_source: inv.referral_source,
+                        invoice_count: 0,
+                        total_amount: 0,
+                        total_paid: 0,
+                        total_due: 0,
+                        paid_count: 0,
+                        unpaid_count: 0,
+                        partial_count: 0,
+                        commission_total: 0,
+                        commission_received: 0
+                    });
+                }
+                const c = clientMap.get(inv.user_id);
+                c.invoice_count++;
+                c.total_amount += parseFloat(inv.total_ttc) || 0;
+                c.total_paid += parseFloat(inv.amount_paid) || 0;
+                c.total_due += parseFloat(inv.amount_due) || 0;
+                if (inv.payment_status === 'paid') c.paid_count++;
+                else if (inv.payment_status === 'unpaid') c.unpaid_count++;
+                else if (inv.payment_status === 'partial') c.partial_count++;
+                if (inv.payment_status === 'paid' || inv.payment_status === 'partial') {
+                    c.commission_total += (parseFloat(inv.amount_paid) || 0) * 0.10;
+                    if (inv.commission_status === 'received') {
+                        c.commission_received += (parseFloat(inv.amount_paid) || 0) * 0.10;
+                    }
+                }
+            }
+            clients = Array.from(clientMap.values()).sort((a, b) => {
+                const refA = a.referral_source || 'ZZZ';
+                const refB = b.referral_source || 'ZZZ';
+                if (refA !== refB) return refA.localeCompare(refB);
+                const nameA = a.last_name || a.user_id;
+                const nameB = b.last_name || b.user_id;
+                return nameA.localeCompare(nameB);
+            });
+        }
 
         return clients.map(client => ({
             ...client,
@@ -359,36 +402,19 @@ function getMonthlyBreakdown(year = null, type = 'total_amount') {
  */
 function getMonthInvoices(year, month) {
     try {
-        const query = `
-            SELECT 
-                i.*,
-                up.first_name,
-                up.last_name,
-                up.shop_name,
-                up.email,
-                up.phone,
-                o.date as order_date
-            FROM invoices i
-            LEFT JOIN user_profiles up ON i.user_id = up.username
-            LEFT JOIN orders o ON i.order_id = o.order_id
-            WHERE strftime('%Y', i.invoice_date) = ?
-            AND strftime('%m', i.invoice_date) = ?
-            ORDER BY i.invoice_date DESC
-        `;
-        
-        const yearStr = year.toString();
-        const monthStr = month.toString().padStart(2, '0');
-        
-        const invoices = db.db.prepare(query).all(yearStr, monthStr);
-        
-        return invoices.map(invoice => ({
-            ...invoice,
-            client_full_name: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
-            displayName: invoice.client_full_name || `${invoice.first_name || ''} ${invoice.last_name || ''}`.trim(),
-            shopName: invoice.shop_name || 'N/A',
-            email: invoice.email || 'N/A',
-            phone: invoice.phone || 'N/A'
-        }));
+        // Use getAllInvoices + JS date filtering to stay consistent with
+        // getMonthlyBreakdown (avoids SQLite strftime UTC vs local-timezone mismatch)
+        const allInvoices = getAllInvoices(year.toString());
+
+        const filtered = allInvoices.filter(invoice => {
+            const d = new Date(invoice.invoice_date);
+            return d.getFullYear() === parseInt(year) && (d.getMonth() + 1) === parseInt(month);
+        });
+
+        // Sort by invoice_date descending
+        filtered.sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date));
+
+        return filtered;
     } catch (error) {
         console.error('Error getting month invoices:', error);
         throw error;
@@ -416,16 +442,15 @@ function getUnpaidInvoices(year = null) {
             LEFT JOIN orders o ON i.order_id = o.order_id
             WHERE i.payment_status = 'unpaid'
         `;
-        
-        const params = [];
-        if (year) {
-            query += ` AND strftime('%Y', i.invoice_date) = ?`;
-            params.push(year.toString());
-        }
-        
+
         query += ` ORDER BY i.invoice_date DESC`;
-        
-        const invoices = db.db.prepare(query).all(...params);
+
+        let invoices = db.db.prepare(query).all();
+
+        if (year) {
+            const y = parseInt(year);
+            invoices = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === y);
+        }
         
         return invoices.map(invoice => ({
             ...invoice,
@@ -458,15 +483,14 @@ function getPartialInvoices(year = null) {
             WHERE i.payment_status = 'partial'
         `;
 
-        const params = [];
-        if (year) {
-            query += ` AND strftime('%Y', i.invoice_date) = ?`;
-            params.push(year.toString());
-        }
-
         query += ` ORDER BY i.invoice_date DESC`;
 
-        const invoices = db.db.prepare(query).all(...params);
+        let invoices = db.db.prepare(query).all();
+
+        if (year) {
+            const y = parseInt(year);
+            invoices = invoices.filter(inv => new Date(inv.invoice_date).getFullYear() === y);
+        }
 
         return invoices.map(invoice => ({
             ...invoice,
@@ -510,9 +534,19 @@ function _recalcInvoiceTotals(invoiceId) {
     } else {
         paymentStatus = 'partial';
     }
+    // Si fully paid, set paid_date to the most recent payment date
+    let paidDate = invoice.paid_date;
+    if (paymentStatus === 'paid' && !invoice.paid_date) {
+        const lastPayment = db.db.prepare(
+            'SELECT payment_date FROM invoice_payments WHERE invoice_id = ? ORDER BY payment_date DESC LIMIT 1'
+        ).get(invoiceId);
+        if (lastPayment) paidDate = lastPayment.payment_date;
+    } else if (paymentStatus !== 'paid') {
+        paidDate = null;
+    }
     db.db.prepare(`
-        UPDATE invoices SET amount_paid = ?, amount_due = ?, payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-    `).run(totalPaid, amountDue, paymentStatus, invoiceId);
+        UPDATE invoices SET amount_paid = ?, amount_due = ?, payment_status = ?, paid_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).run(totalPaid, amountDue, paymentStatus, paidDate, invoiceId);
 }
 
 function addInvoicePayment(invoiceId, amount, payment_date) {

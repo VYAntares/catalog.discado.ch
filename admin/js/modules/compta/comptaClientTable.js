@@ -393,6 +393,7 @@ class ComptaClientTable {
 
         const paidDateValue = invoice.paid_date ? new Date(invoice.paid_date).toISOString().split('T')[0] : '';
         const dueDateValue = invoice.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
+        const invoiceDateValue = invoice.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : '';
 
         const overlay = document.createElement('div');
         overlay.id = 'mobileEditOverlay';
@@ -405,6 +406,10 @@ class ComptaClientTable {
                 <div class="mobile-edit-field">
                     <label>Montant encaissé (CHF)</label>
                     <input type="number" id="meAmountPaid" step="0.01" min="0" value="${parseFloat(invoice.amount_paid || 0).toFixed(2)}">
+                </div>
+                <div class="mobile-edit-field">
+                    <label>Date d'émission</label>
+                    <input type="date" id="meInvoiceDate" value="${invoiceDateValue}">
                 </div>
                 <div class="mobile-edit-field">
                     <label>Date d'échéance</label>
@@ -461,10 +466,22 @@ class ComptaClientTable {
 
         document.getElementById('meSave').addEventListener('click', async () => {
             const amountPaid = parseFloat(document.getElementById('meAmountPaid').value) || 0;
+            const invoiceDate = document.getElementById('meInvoiceDate').value;
             const dueDate = document.getElementById('meDueDate').value;
-            const paidDate = document.getElementById('mePaidDate').value;
-            const paymentStatus = document.getElementById('mePaymentStatus').value;
+            let paidDate = document.getElementById('mePaidDate').value;
             const commissionStatus = document.getElementById('meCommissionStatus').value;
+
+            // Auto-calculate payment status based on amount
+            let paymentStatus;
+            if (amountPaid <= 0) {
+                paymentStatus = 'unpaid';
+                paidDate = '';
+            } else if (amountPaid >= invoice.total_ttc) {
+                paymentStatus = 'paid';
+                if (!paidDate) paidDate = new Date().toISOString().split('T')[0];
+            } else {
+                paymentStatus = 'partial';
+            }
 
             const amountDue = Math.max(0, invoice.total_ttc - amountPaid);
             const updateData = {
@@ -472,7 +489,8 @@ class ComptaClientTable {
                 amount_due: amountDue < 0 ? 0 : amountDue,
                 payment_status: paymentStatus,
                 paid_date: paidDate || null,
-                due_date: dueDate || null
+                due_date: dueDate || null,
+                invoice_date: invoiceDate || null
             };
 
             try {
