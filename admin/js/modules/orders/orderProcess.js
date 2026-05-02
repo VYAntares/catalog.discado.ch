@@ -424,6 +424,7 @@ function generateItemsByCategory(items) {
                     <td>
                         <div class="item-details">
                             <span class="item-name" title="${item.Nom}">${item.Nom}</span>
+                            ${item.size ? `<span class="item-size">Taille: ${item.size}</span>` : ''}
                             <span class="item-price">${Formatter.formatPrice(item.prix)} CHF</span>
                         </div>
                     </td>

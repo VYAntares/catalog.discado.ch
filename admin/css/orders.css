@@ -372,6 +372,16 @@
     font-size: 12px;
 }
 
+.item-size {
+    align-self: flex-start;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
 .delivered-quantity {
     width: 72px;
     padding: 7px 8px;
