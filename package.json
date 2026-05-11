@@ -19,7 +19,7 @@
     "@capacitor/ios": "^8.1.0",
     "better-sqlite3": "^11.8.1",
     "better-sqlite3-session-store": "^0.1.0",
-    "csurf": "^1.10.0",
+    "csurf": "^1.2.2",
     "csv-parser": "^3.2.0",
     "dompurify": "^3.2.4",
     "exceljs": "^4.4.0",
@@ -34,7 +34,7 @@
     "pdfkit": "^0.16.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.5",
-    "sqlite3": "^5.1.7",
+    "sqlite3": "^6.0.1",
     "swissqrbill": "^4.2.1",
     "winston": "^3.17.0"
   }
