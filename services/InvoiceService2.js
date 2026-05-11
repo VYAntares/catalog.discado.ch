@@ -148,8 +148,9 @@ class InvoiceService {
         });
       } else {
         doc.font('Helvetica').fontSize(9);
-        
-        doc.text(item.Nom, currentX + 5, rowY + 6, {
+
+        const displayName = item.size ? `${item.Nom} — Taille ${item.size}` : item.Nom;
+        doc.text(displayName, currentX + 5, rowY + 6, {
           width: columns[0].width - 10,
           align: columns[0].align
         });

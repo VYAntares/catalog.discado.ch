@@ -241,11 +241,25 @@ async function saveNotes() {
 async function handleStatusChange(event) {
   const orderId = State.getCurrentOrderId();
   const newStatus = event.target.value;
+  const currentOrder = State.getCurrentOrder();
+
+  if (newStatus === 'Livrée' && currentOrder?.status !== 'Livrée') {
+    if (!confirm('Passer en "Livrée" va ajouter les quantités commandées au stock. Confirmer ?')) {
+      event.target.value = currentOrder?.status || 'Passée';
+      return;
+    }
+  } else if (newStatus !== 'Livrée' && currentOrder?.status === 'Livrée') {
+    if (!confirm('Retirer le statut "Livrée" va enlever les quantités du stock. Confirmer ?')) {
+      event.target.value = currentOrder?.status || 'Livrée';
+      return;
+    }
+  }
 
   try {
     await API.updateSupplierOrderStatus(orderId, newStatus);
   } catch (error) {
     console.error('Erreur mise à jour statut:', error);
+    event.target.value = currentOrder?.status || 'Passée';
   }
 }
 

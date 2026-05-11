@@ -1,0 +1,318 @@
+/* Modale d'ajout d'article à une commande client (édition historique) */
+/* Tous les styles sont scopés sous #addClientItemModal pour éviter tout conflit */
+
+#addClientItemModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+#addClientItemModal .aci-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    animation: aciSlideUp 0.3s ease;
+}
+
+@keyframes aciSlideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+#addClientItemModal .aci-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+#addClientItemModal .aci-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a202c;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#addClientItemModal .aci-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #a0aec0;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    transition: all 0.2s;
+}
+
+#addClientItemModal .aci-modal-close:hover {
+    color: #1a202c;
+    transform: rotate(90deg);
+}
+
+#addClientItemModal .aci-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+#addClientItemModal .aci-filters {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+#addClientItemModal .aci-filters input,
+#addClientItemModal .aci-filters select {
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    width: 100%;
+    font-size: 14px;
+    background: white;
+}
+
+#addClientItemModal #aciSearchInput {
+    font-size: 16px;
+}
+
+#addClientItemModal .aci-products-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+#addClientItemModal .aci-product-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 120px 220px;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    align-items: center;
+    transition: box-shadow 0.2s;
+}
+
+#addClientItemModal .aci-product-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+#addClientItemModal .aci-img-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+#addClientItemModal .aci-img-wrap img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+}
+
+#addClientItemModal .aci-img-fallback {
+    display: none;
+    width: 80px;
+    height: 80px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    align-items: center;
+    justify-content: center;
+}
+
+#addClientItemModal .aci-product-info h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+#addClientItemModal .aci-product-info p {
+    margin: 2px 0;
+    font-size: 12px;
+    color: #4a5568;
+}
+
+#addClientItemModal .aci-product-price {
+    text-align: right;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 14px;
+}
+
+#addClientItemModal .aci-product-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+#addClientItemModal .aci-size-select,
+#addClientItemModal .aci-qty-input,
+#addClientItemModal .aci-price-input {
+    padding: 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 13px;
+    background: white;
+}
+
+#addClientItemModal .aci-qty-input {
+    width: 60px;
+    text-align: center;
+    font-weight: 600;
+}
+
+#addClientItemModal .aci-price-input {
+    width: 75px;
+    text-align: right;
+}
+
+#addClientItemModal .aci-add-btn {
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+#addClientItemModal .aci-add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.35);
+}
+
+#addClientItemModal .aci-empty {
+    text-align: center;
+    padding: 40px;
+    color: #718096;
+}
+
+#addClientItemModal .aci-info-banner {
+    background: #fff3e0;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    text-align: center;
+    color: #f57c00;
+    font-size: 13px;
+}
+
+/* Bouton "Ajouter un article" dans le footer du détail de commande */
+.order-actions-footer .add-item-to-order-btn {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.order-actions-footer .add-item-to-order-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.35);
+}
+
+/* Ligne d'article ajouté (visuel "non sauvegardé") */
+.items-table tr.item-added {
+    background-color: #e6ffe6;
+}
+
+.items-table tr.item-added td:first-child::before {
+    content: "+ ";
+    color: #28a745;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    #addClientItemModal .aci-modal-content {
+        width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+
+    #addClientItemModal .aci-filters {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    #addClientItemModal #aciSearchInput,
+    #addClientItemModal #aciSupplierSelect,
+    #addClientItemModal #aciCategorySelect {
+        font-size: 16px;
+    }
+
+    #addClientItemModal .aci-product-item {
+        grid-template-columns: 60px 1fr;
+        grid-template-rows: auto auto;
+        gap: 8px 10px;
+        padding: 10px;
+    }
+
+    #addClientItemModal .aci-img-wrap,
+    #addClientItemModal .aci-img-wrap img,
+    #addClientItemModal .aci-img-fallback {
+        width: 60px;
+        height: 60px;
+    }
+
+    #addClientItemModal .aci-product-info {
+        grid-row: 1;
+        grid-column: 2;
+        min-width: 0;
+    }
+
+    #addClientItemModal .aci-product-price {
+        display: none;
+    }
+
+    #addClientItemModal .aci-product-actions {
+        grid-row: 2;
+        grid-column: 1 / -1;
+        flex-wrap: wrap;
+        justify-content: stretch;
+    }
+
+    #addClientItemModal .aci-add-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}

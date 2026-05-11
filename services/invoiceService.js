@@ -243,9 +243,10 @@ class InvoiceService {
         const lineTotal = prix * qty;
         totalHT += lineTotal;
 
-        // Description
+        // Description (avec taille si applicable)
         doc.font('Helvetica').fontSize(8.5).fillColor(COLORS.text);
-        doc.text(item.Nom || '', x + 16, yPos + 6, { width: COL.desc - 30, lineBreak: false });
+        const descName = item.size ? `${item.Nom || ''} — Taille ${item.size}` : (item.Nom || '');
+        doc.text(descName, x + 16, yPos + 6, { width: COL.desc - 30, lineBreak: false });
         x += COL.desc;
 
         // Qty

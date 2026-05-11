@@ -119,7 +119,7 @@ function injectAdminPanelLink() {
     fetch('/api/check-auth', { credentials: 'same-origin' })
         .then(function(res) { return res.json(); })
         .then(function(data) {
-            if (data && data.role === 'admin') {
+            if (data && (data.role === 'admin' || data.role === 'admin_observateur')) {
                 const userMenu = document.getElementById('userMenu');
                 if (!userMenu || userMenu.querySelector('.admin-panel-link')) return;
                 const link = document.createElement('a');

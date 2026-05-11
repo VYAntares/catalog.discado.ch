@@ -911,6 +911,9 @@ module.exports = {
             WHERE id = ?
         `),
         updateStock: db.prepare('UPDATE products SET stock = ? WHERE id = ?'),
+        incrementStock: db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?'),
+        decrementStock: db.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?'),
+        recalcStockFromSizes: db.prepare('UPDATE products SET stock = (SELECT COALESCE(SUM(stock), 0) FROM product_stock_by_size WHERE product_id = ?) WHERE id = ?'),
         delete: db.prepare('DELETE FROM products WHERE id = ?')
     },
     
@@ -1008,7 +1011,7 @@ module.exports = {
     updatePendingDeliveryQuantity: db.prepare('UPDATE pending_deliveries SET quantity = ? WHERE id = ?'),
     findPendingDeliveryItem: db.prepare(`
         SELECT * FROM pending_deliveries
-        WHERE user_id = ? AND product_id = ?
+        WHERE user_id = ? AND product_name = ?
     `),
 
     // Requêtes liées aux dépenses

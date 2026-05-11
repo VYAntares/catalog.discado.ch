@@ -305,7 +305,7 @@ function setupPendingDeliveryEvents(clientId) {
                     categorie: checkbox.getAttribute('data-category')
                 });
             });
-            
+
             if (selectedItems.length > 0) {
                 createOrderFromPendingItems(clientId, selectedItems);
             } else {
@@ -323,10 +323,11 @@ function setupPendingDeliveryEvents(clientId) {
                     Nom: checkbox.getAttribute('data-name'),
                     prix: checkbox.getAttribute('data-price'),
                     quantity: parseInt(checkbox.getAttribute('data-quantity')),
-                    categorie: checkbox.getAttribute('data-category')
+                    categorie: checkbox.getAttribute('data-category'),
+                    product_id: checkbox.getAttribute('data-product-id')
                 });
             });
-            
+
             if (selectedItems.length > 0) {
                 deleteSelectedItems(clientId, selectedItems);
             } else {

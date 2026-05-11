@@ -126,7 +126,7 @@ const permissionService = {
                     COALESCE(p.stats, 0) as stats
                 FROM users u
                 LEFT JOIN user_permissions p ON u.username = p.username
-                WHERE u.role = 'admin'
+                WHERE u.role IN ('admin', 'admin_observateur')
             `);
             
             return stmt.all();

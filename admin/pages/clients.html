@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/admin/css/main.css">
     <link rel="stylesheet" href="/admin/css/clients.css">
     <link rel="stylesheet" href="/admin/css/history-view.css">
+    <link rel="stylesheet" href="/admin/css/add-client-item.css">
     <!-- Ajouter une police Google pour améliorer la typographie -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())document.body?document.body.classList.add("capacitor-ios"):document.addEventListener("DOMContentLoaded",function(){document.body.classList.add("capacitor-ios")});</script>
@@ -123,6 +124,36 @@
             <span class="close-modal">&times;</span>
             <div id="orderModalContent" class="modal-body">
                 <!-- Le contenu sera chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'ajout d'article (édition de commande) -->
+    <div id="addClientItemModal">
+        <div class="aci-modal-content">
+            <div class="aci-modal-header">
+                <h2><i class="fas fa-box-open"></i> Ajouter un article à la commande</h2>
+                <button class="aci-modal-close" id="aciCloseBtn" type="button">&times;</button>
+            </div>
+            <div class="aci-modal-body">
+                <div class="aci-filters">
+                    <input type="text"
+                           id="aciSearchInput"
+                           placeholder="🔍 Rechercher par nom, numéro ou code-barres..."
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false">
+                    <select id="aciSupplierSelect">
+                        <option value="">Tous les fournisseurs</option>
+                    </select>
+                    <select id="aciCategorySelect">
+                        <option value="">Toutes les catégories</option>
+                    </select>
+                </div>
+                <div id="aciProductsContainer" class="aci-products-container">
+                    <div class="aci-empty">Chargement des produits...</div>
+                </div>
             </div>
         </div>
     </div>

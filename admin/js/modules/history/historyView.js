@@ -223,11 +223,12 @@ function displayOrderDetails(order, container) {
             groupedItems[category].forEach(item => {
                 const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
 
+                const sizePill = item.size ? `<span class="order-detail-size-pill">Taille ${item.size}</span>` : '';
                 detailsHTML += `
-                    <tr data-product-name="${item.Nom}" data-product-id="${item.product_id || ''}" data-order-item-id="${item.order_item_id || ''}">
+                    <tr data-product-name="${item.Nom}" data-product-id="${item.product_id || ''}" data-order-item-id="${item.order_item_id || ''}" data-size="${item.size || ''}">
                         <td class="qty-column">${item.quantity}</td>
                         <td class="product-column">
-                            <span class="product-name">${item.Nom}</span>
+                            <span class="product-name">${item.Nom}</span>${sizePill}
                         </td>
                         <td class="unit-price-column">${Formatter.formatPrice(item.prix)} CHF</td>
                         <td class="total-column">${itemTotal} CHF</td>
@@ -296,11 +297,12 @@ function displayOrderDetails(order, container) {
 
             groupedRemainingItems[category].forEach(item => {
                 const itemTotal = Formatter.formatSwissNumber(parseFloat(item.prix) * item.quantity);
+                const sizePill = item.size ? `<span class="order-detail-size-pill">Taille ${item.size}</span>` : '';
                 detailsHTML += `
-                    <tr class="pending-item">
+                    <tr class="pending-item" data-size="${item.size || ''}">
                         <td class="qty-column">${item.quantity}</td>
                         <td class="product-column">
-                            <span class="product-name">${item.Nom}</span>
+                            <span class="product-name">${item.Nom}</span>${sizePill}
                         </td>
                         <td class="unit-price-column">${Formatter.formatPrice(item.prix)} CHF</td>
                         <td class="total-column">${itemTotal} CHF</td>

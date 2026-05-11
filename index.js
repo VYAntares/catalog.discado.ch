@@ -176,9 +176,34 @@ function requireLogin(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  if (req.session.user && req.session.user.role === 'admin') return next();
+  const role = req.session.user && req.session.user.role;
+  if (role === 'admin' || role === 'admin_observateur') return next();
   res.status(403).send('Access denied');
 }
+
+// Bloque toute écriture (POST/PUT/DELETE/PATCH) pour le rôle admin_observateur,
+// sauf routes d'authentification et de gestion du compte propre.
+const READONLY_WRITE_WHITELIST = new Set([
+  '/login',
+  '/api/forgot-password',
+  '/api/reset-password',
+  '/api/change-password'
+]);
+
+function blockWritesForObserver(req, res, next) {
+  if (req.session.user && req.session.user.role === 'admin_observateur') {
+    const isWrite = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
+    if (isWrite && !READONLY_WRITE_WHITELIST.has(req.path)) {
+      return res.status(403).json({
+        success: false,
+        code: 'READ_ONLY_ACCOUNT',
+        message: 'Compte en lecture seule : aucune modification autorisée.'
+      });
+    }
+  }
+  next();
+}
+app.use(blockWritesForObserver);
 
 function requirePermission(permission) {
   return (req, res, next) => {
@@ -274,15 +299,16 @@ function requireCompleteProfile(req, res, next) {
   if (!req.session.user) {
     return res.redirect('/');
   }
-  
-  if (req.session.user.role === 'admin') {
+
+  const role = req.session.user.role;
+  if (role === 'admin' || role === 'admin_observateur') {
     return next();
   }
-  
+
   if (!userService.isProfileComplete(req.session.user.username)) {
     return res.redirect('/pages/profile.html');
   }
-  
+
   next();
 }
 
@@ -293,7 +319,8 @@ function requireSecurePassword(req, res, next) {
   }
   
   // Admins are not subject to this check
-  if (req.session.user.role === 'admin') {
+  const role = req.session.user.role;
+  if (role === 'admin' || role === 'admin_observateur') {
     return next();
   }
   
@@ -493,7 +520,7 @@ app.post('/login', (req, res) => {
       role: user.role
     };
     
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'admin_observateur') {
       // Rediriger vers la première page accessible
       const firstPage = navigationService.getFirstAccessiblePage(username);
       
@@ -2305,35 +2332,43 @@ app.post('/api/admin/delete-pending-items', requireLogin, requireAdmin, (req, re
 });
 
 app.post('/api/admin/update-order-items', requireLogin, requireAdmin, async (req, res) => {
-  const { orderId, userId, modifications, deletions } = req.body;
-  
+  const { orderId, userId, modifications, deletions, additions } = req.body;
+
   if (!orderId || !userId) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Paramètres invalides: orderId et userId sont requis' 
+    return res.status(400).json({
+      success: false,
+      message: 'Paramètres invalides: orderId et userId sont requis'
     });
   }
-  
+
   if (modifications && !Array.isArray(modifications)) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Le paramètre modifications doit être un tableau' 
+    return res.status(400).json({
+      success: false,
+      message: 'Le paramètre modifications doit être un tableau'
     });
   }
-  
+
   if (deletions && !Array.isArray(deletions)) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Le paramètre deletions doit être un tableau' 
+    return res.status(400).json({
+      success: false,
+      message: 'Le paramètre deletions doit être un tableau'
     });
   }
-  
+
+  if (additions && !Array.isArray(additions)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Le paramètre additions doit être un tableau'
+    });
+  }
+
   try {
     const result = await orderService.updateOrderItems(
-      orderId, 
-      userId, 
-      modifications || [], 
-      deletions || []
+      orderId,
+      userId,
+      modifications || [],
+      deletions || [],
+      additions || []
     );
     res.json(result);
   } catch (error) {
@@ -3035,7 +3070,45 @@ app.patch('/api/order-suppliers/:id/status', requireLogin, requireAdmin, (req, r
       return res.status(400).json({ error: 'Status is required' });
     }
 
-    dbModule.orderSupplier.updateStatus.run(status, req.params.id);
+    const currentOrder = dbModule.orderSupplier.getById.get(req.params.id);
+    if (!currentOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const updateAndSyncStock = dbModule.db.transaction(() => {
+      dbModule.orderSupplier.updateStatus.run(status, req.params.id);
+
+      const wasLivree = currentOrder.status === 'Livrée';
+      const isNowLivree = status === 'Livrée';
+
+      if (isNowLivree && !wasLivree) {
+        // Passage à "Livrée" → ajouter au stock
+        const items = dbModule.orderSupplierItems.getByOrderId.all(req.params.id);
+        for (const item of items) {
+          if (!item.product_id) continue;
+          if (item.size) {
+            dbModule.productStockBySize.increment.run(item.quantity, item.product_id, item.size);
+            dbModule.products.recalcStockFromSizes.run(item.product_id, item.product_id);
+          } else {
+            dbModule.products.incrementStock.run(item.quantity, item.product_id);
+          }
+        }
+      } else if (!isNowLivree && wasLivree) {
+        // Retour depuis "Livrée" → enlever du stock
+        const items = dbModule.orderSupplierItems.getByOrderId.all(req.params.id);
+        for (const item of items) {
+          if (!item.product_id) continue;
+          if (item.size) {
+            dbModule.productStockBySize.decrement.run(item.quantity, item.product_id, item.size);
+            dbModule.products.recalcStockFromSizes.run(item.product_id, item.product_id);
+          } else {
+            dbModule.products.decrementStock.run(item.quantity, item.product_id);
+          }
+        }
+      }
+    });
+
+    updateAndSyncStock();
     res.json({ success: true, message: 'Status updated successfully' });
 
   } catch (error) {

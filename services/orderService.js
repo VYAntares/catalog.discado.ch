@@ -819,7 +819,7 @@ const orderService = {
                         userId,
                         item.id || item.product_id
                     );
-                    
+
                     if (pendingItem) {
                         if (pendingItem.quantity === item.quantity) {
                             dbModule.removePendingDelivery.run(pendingItem.id);
@@ -834,7 +834,7 @@ const orderService = {
                         }
                     }
                 });
-                
+
                 return {
                     success: true,
                     deleted: totalDeleted,
@@ -850,7 +850,7 @@ const orderService = {
      * Met à jour les articles d'une commande et recalcule la facture
      * + Gestion du stock lors des modifications
      */
-    updateOrderItems(orderId, userId, modifications, deletions) {
+    updateOrderItems(orderId, userId, modifications, deletions, additions) {
         try {
             return dbModule.transaction(() => {
                 // Vérifier que la commande existe
@@ -858,7 +858,38 @@ const orderService = {
                 if (!order) {
                     throw new Error('Commande non trouvée');
                 }
-                
+
+                // Gérer les ajouts (insertion en statut 'delivered' + décrément stock)
+                if (additions && additions.length > 0) {
+                    additions.forEach(add => {
+                        const productId = add.product_id ? parseInt(add.product_id, 10) : null;
+                        const productName = (add.product_name || '').trim();
+                        const unitPrice = parseFloat(add.unit_price);
+                        const quantity = parseInt(add.quantity, 10);
+                        const category = add.category || null;
+                        const size = add.size || null;
+
+                        if (!productName || !Number.isFinite(unitPrice) || !Number.isFinite(quantity) || quantity <= 0) {
+                            return;
+                        }
+
+                        dbModule.addOrderItem.run(
+                            orderId,
+                            productId,
+                            productName,
+                            unitPrice,
+                            quantity,
+                            category,
+                            'delivered',
+                            size
+                        );
+
+                        if (productId) {
+                            this._decrementStock(productId, quantity, size);
+                        }
+                    });
+                }
+
                 // Gérer les suppressions d'abord (par order_item_id — unique même pour multi-tailles)
                 if (deletions && deletions.length > 0) {
                     deletions.forEach(deletion => {

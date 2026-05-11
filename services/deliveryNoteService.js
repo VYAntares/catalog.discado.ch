@@ -174,9 +174,10 @@ async function generateDeliveryNotePDF(doc, orderItems, userProfile, orderDate, 
           yPos = th.y;
         }
 
-        // Item name
+        // Item name (avec taille si applicable)
         doc.font('Helvetica').fontSize(8.5).fillColor(COLORS.text);
-        doc.text(item.Nom || '', MARGIN.left + 16, yPos + 6, { width: colDescW - 30, lineBreak: false });
+        const itemName = item.size ? `${item.Nom || ''} — Taille ${item.size}` : (item.Nom || '');
+        doc.text(itemName, MARGIN.left + 16, yPos + 6, { width: colDescW - 30, lineBreak: false });
 
         // Quantity
         const qty = item.quantity || 0;
