@@ -316,6 +316,10 @@
     "removedNotif": "removed from cart",
     "clearedNotif": "Cart cleared",
     "orderSuccess": "Order placed successfully!",
-    "orderError": "Error placing order. Please try again."
+    "orderError": "Error placing order. Please try again.",
+    "browseCatalogue": "Browse Catalogue",
+    "exclVAT": "Excl. VAT",
+    "vatLabel": "VAT 8.1%",
+    "inclVAT": "Total incl. VAT"
   }
 }

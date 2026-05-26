@@ -3447,13 +3447,14 @@ app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) 
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status } = req.body;
+    const { product_id, product_name, unit_price, quantity, category, image_url, batch_number, item_status, size } = req.body;
 
     const newQuantity = quantity !== undefined ? quantity : item.quantity;
     const newUnitPrice = unit_price !== undefined ? unit_price : item.unit_price;
     const newTotalPrice = newQuantity * newUnitPrice;
     const newBatchNumber = batch_number !== undefined ? batch_number : item.batch_number;
     const newItemStatus = item_status !== undefined ? item_status : (item.item_status || 'commandé');
+    const newSize = size !== undefined ? size : item.size;
 
     dbModule.orderSupplierItems.update.run(
       product_id !== undefined ? product_id : item.product_id,
@@ -3465,6 +3466,7 @@ app.put('/api/order-supplier-items/:id', requireLogin, requireAdmin, (req, res) 
       image_url !== undefined ? image_url : item.image_url,
       newBatchNumber,
       newItemStatus,
+      newSize,
       req.params.id
     );
 

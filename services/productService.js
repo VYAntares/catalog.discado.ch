@@ -24,7 +24,8 @@ const productService = {
                     Nom: product.name,
                     prix: product.price.toString(),
                     categorie: product.category,
-                    imageUrl: product.image_url
+                    imageUrl: product.image_url,
+                    stock: product.stock
                 }));
             } else {
                 // Utiliser l'ancien système CSV et migrer vers DB

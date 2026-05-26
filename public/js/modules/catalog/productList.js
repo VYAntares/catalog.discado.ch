@@ -348,7 +348,17 @@ function createInfoContainer(product) {
     priceSpan.textContent = `${formatPrice(product.prix || 0)} CHF`;
     priceSpan.className = "product-price";
 
-    infoContainer.append(nameRow, priceSpan);
+    const stockBadge = document.createElement("span");
+    const stockQty = Number(product.stock) || 0;
+    if (stockQty > 0) {
+        stockBadge.textContent = "En stock";
+        stockBadge.className = "stock-badge in-stock";
+    } else {
+        stockBadge.textContent = "Rupture";
+        stockBadge.className = "stock-badge out-of-stock";
+    }
+
+    infoContainer.append(nameRow, priceSpan, stockBadge);
     return infoContainer;
 }
 

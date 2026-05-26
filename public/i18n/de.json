@@ -316,6 +316,10 @@
     "removedNotif": "aus dem Warenkorb entfernt",
     "clearedNotif": "Warenkorb geleert",
     "orderSuccess": "Bestellung erfolgreich aufgegeben!",
-    "orderError": "Fehler beim Bestellen. Bitte versuchen Sie es erneut."
+    "orderError": "Fehler beim Bestellen. Bitte versuchen Sie es erneut.",
+    "browseCatalogue": "Katalog durchsuchen",
+    "exclVAT": "Exkl. MwSt.",
+    "vatLabel": "MwSt. 8.1%",
+    "inclVAT": "Total inkl. MwSt."
   }
 }

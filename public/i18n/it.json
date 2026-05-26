@@ -316,6 +316,10 @@
     "removedNotif": "rimosso dal carrello",
     "clearedNotif": "Carrello svuotato",
     "orderSuccess": "Ordine effettuato con successo!",
-    "orderError": "Errore nell'ordine. Riprova."
+    "orderError": "Errore nell'ordine. Riprova.",
+    "browseCatalogue": "Sfoglia il catalogo",
+    "exclVAT": "Escl. IVA",
+    "vatLabel": "IVA 8.1%",
+    "inclVAT": "Totale incl. IVA"
   }
 }

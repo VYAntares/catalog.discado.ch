@@ -136,3 +136,16 @@ export function getCartTotal() {
     return total + (parseFloat(item.prix) * item.quantity);
   }, 0);
 }
+
+// Mise à jour de la quantité d'un article (supprime si quantité <= 0)
+export function updateCartItemQuantity(index, newQuantity) {
+  const cart = getCart();
+  if (index < 0 || index >= cart.length) return cart;
+  if (newQuantity <= 0) {
+    cart.splice(index, 1);
+  } else {
+    cart[index].quantity = Math.min(newQuantity, AppConfig.MAX_CART_QUANTITY);
+  }
+  saveCart(cart);
+  return cart;
+}

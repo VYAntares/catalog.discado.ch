@@ -131,6 +131,11 @@ function createOrderCard(order, index) {
         const isOpen = detailPanel.classList.contains('open');
         detailPanel.classList.toggle('open', !isOpen);
         header.classList.toggle('detail-open', !isOpen);
+        if (!isOpen) {
+            detailPanel.style.maxHeight = detailPanel.scrollHeight + 'px';
+        } else {
+            detailPanel.style.maxHeight = '0';
+        }
     });
 
     return card;
@@ -327,9 +332,24 @@ function buildDetailFooter(order) {
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
 
-function groupByCategory(items) {
-    const grouped = {};
+// Fusionne les lignes identiques (même produit + même taille) en sommant les quantités
+function mergeItems(items) {
+    const map = new Map();
     items.forEach(item => {
+        const key = `${item.product_id || ''}|${(item.Nom || '').toLowerCase().trim()}|${item.size || ''}`;
+        if (map.has(key)) {
+            map.get(key).quantity += item.quantity;
+        } else {
+            map.set(key, { ...item });
+        }
+    });
+    return Array.from(map.values());
+}
+
+function groupByCategory(items) {
+    const merged = mergeItems(items);
+    const grouped = {};
+    merged.forEach(item => {
         const cat = item.categorie || 'Other';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(item);

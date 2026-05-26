@@ -59,7 +59,6 @@ function initDiscadoHeader() {
             <div class="header-right">
                 <button id="wishlistToggle" class="icon-btn" data-i18n-aria="header.wishlist" aria-label="My favourites">
                     <i class="fas fa-heart"></i>
-                    <span id="wishlistCountBadge" class="cart-count-badge" style="display:none;">0</span>
                 </button>
                 <button id="cartToggle" class="icon-btn" data-i18n-aria="header.cart" aria-label="Shopping cart">
                     <i class="fas fa-shopping-cart"></i>
@@ -380,17 +379,8 @@ function setWishlistFilterActive(active) {
     if (btn) btn.classList.toggle('wishlist-filter-active', active);
 }
 
-// Mettre à jour le badge wishlist
-function updateWishlistBadge(count) {
-    const badge = document.getElementById('wishlistCountBadge');
-    if (!badge) return;
-    if (count > 0) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.style.display = 'flex';
-    } else {
-        badge.style.display = 'none';
-    }
-}
+// Badge wishlist désactivé
+function updateWishlistBadge(count) {}
 
 // Charger le count wishlist depuis le serveur
 function loadWishlistCount() {

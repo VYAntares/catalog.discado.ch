@@ -269,7 +269,7 @@ main {
 }
 
 .order-detail-panel.open {
-    max-height: 4000px;
+    max-height: none;
 }
 
 .order-detail-inner {

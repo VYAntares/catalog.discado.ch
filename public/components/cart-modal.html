@@ -16,20 +16,35 @@
             <p class="empty-cart"><i class="fas fa-shopping-basket"></i><br><span data-i18n="cart.empty">Your cart is empty</span></p>
         </div>
 
-        <!-- Total -->
+        <!-- Total breakdown -->
         <div class="cart-total">
-            <span class="cart-total-label" data-i18n="cart.total">Total</span>
-            <span class="cart-total-value"><span id="cart-total-amount">0.00</span> CHF</span>
+            <div class="cart-total-row">
+                <span class="cart-total-label" data-i18n="cart.exclVAT">Excl. VAT</span>
+                <span id="cart-total-ht">0.00 CHF</span>
+            </div>
+            <div class="cart-total-row">
+                <span class="cart-total-label" data-i18n="cart.vatLabel">VAT 8.1%</span>
+                <span id="cart-total-tva">0.00 CHF</span>
+            </div>
+            <div class="cart-total-row cart-total-ttc-row">
+                <span class="cart-total-label" data-i18n="cart.inclVAT">Total incl. VAT</span>
+                <span id="cart-total-amount">0.00 CHF</span>
+            </div>
         </div>
 
         <!-- Actions -->
         <div class="cart-actions">
-            <button id="clear-cart-btn" class="secondary-btn">
-                <i class="fas fa-trash-alt"></i> <span data-i18n="cart.clearCart">Clear Cart</span>
-            </button>
             <button id="checkout-btn" class="primary-btn">
                 <i class="fas fa-check"></i> <span data-i18n="cart.orderNow">Order Now</span>
             </button>
+        </div>
+
+        <!-- Lien secondaire vers les commandes -->
+        <div class="cart-footer-link">
+            <a href="/pages/orders.html">
+                <i class="fas fa-receipt"></i>
+                <span data-i18n="cart.viewOrders">View My Orders</span>
+            </a>
         </div>
 
         <!-- Confirmation (shown after successful order) -->

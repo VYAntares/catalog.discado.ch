@@ -316,6 +316,10 @@
     "removedNotif": "retiré du panier",
     "clearedNotif": "Panier vidé",
     "orderSuccess": "Commande passée avec succès !",
-    "orderError": "Erreur lors de la commande. Veuillez réessayer."
+    "orderError": "Erreur lors de la commande. Veuillez réessayer.",
+    "browseCatalogue": "Parcourir le catalogue",
+    "exclVAT": "HT",
+    "vatLabel": "TVA 8.1%",
+    "inclVAT": "Total TTC"
   }
 }
