@@ -1,6 +1,6 @@
 // public/js/modules/wishlist/wishlist.js
 import { fetchWishlist, removeFromWishlistApi } from '../../core/api.js';
-import { addToCart } from '../../core/storage.js';
+import { addCartItem } from '../../core/cartApi.js';
 import { showNotification } from '../../utils/notification.js';
 import { formatPrice } from '../../utils/formatter.js';
 
@@ -85,16 +85,20 @@ function createWishlistItem(item) {
         </div>
     `;
 
-    li.querySelector('.wishlist-add-cart-btn').addEventListener('click', () => {
-        addToCart({
-            id: item.product_id,
-            Nom: item.product_name,
-            prix: item.product_price,
-            categorie: item.category,
-            imageUrl: item.image_url
-        }, 1);
-        showNotification(`${item.product_name} ${window.t ? window.t('cart.addedNotif') : 'added to cart!'}`, 'success');
-        document.dispatchEvent(new CustomEvent('cartUpdated'));
+    li.querySelector('.wishlist-add-cart-btn').addEventListener('click', async () => {
+        try {
+            await addCartItem({
+                id: item.product_id,
+                Nom: item.product_name,
+                prix: item.product_price,
+                categorie: item.category,
+                imageUrl: item.image_url
+            }, 1);
+            showNotification(`${item.product_name} ${window.t ? window.t('cart.addedNotif') : 'added to cart!'}`, 'success');
+            document.dispatchEvent(new CustomEvent('cartUpdated'));
+        } catch (e) {
+            showNotification('Erreur lors de l\'ajout au panier', 'error');
+        }
     });
 
     li.querySelector('.wishlist-remove-btn').addEventListener('click', async () => {

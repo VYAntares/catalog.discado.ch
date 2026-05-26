@@ -131,42 +131,27 @@ function injectAdminPanelLink() {
         .catch(function() { /* non connecté ou erreur réseau, on ignore */ });
 }
 
-// Mise à jour du badge de comptage du panier
+// Mise à jour du badge de comptage du panier (via API serveur)
 function updateCartCountBadge() {
-    try {
-        const cartCount = getCartItemCount();
-        const cartCountBadge = document.getElementById('cartCountBadge');
-        
-        if (cartCountBadge) {
-            cartCountBadge.textContent = cartCount;
-            cartCountBadge.style.display = cartCount > 0 ? 'flex' : 'none';
-            
-            if (cartCount > 99) {
-                cartCountBadge.textContent = '99+';
-                cartCountBadge.classList.add('large-number');
-            } else {
-                cartCountBadge.classList.remove('large-number');
+    fetch('/api/cart', { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : [])
+        .then(cart => {
+            const count = Array.isArray(cart)
+                ? cart.reduce((s, i) => s + (parseInt(i.quantity) || 0), 0)
+                : 0;
+            const badge = document.getElementById('cartCountBadge');
+            if (badge) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = count > 0 ? 'flex' : 'none';
+                badge.classList.toggle('large-number', count > 99);
             }
-        }
-    } catch (e) {
-        console.warn('Error updating cart badge:', e);
-    }
+        })
+        .catch(() => { /* non connecté, on ignore */ });
 }
 
-// Obtenir le nombre d'articles dans le panier
+// Obsolète — conservé pour compatibilité
 function getCartItemCount() {
-    try {
-        const cartJson = localStorage.getItem('discado_cart');
-        if (!cartJson) return 0;
-        
-        const cart = JSON.parse(cartJson);
-        if (!Array.isArray(cart)) return 0;
-        
-        return cart.reduce((total, item) => total + (parseInt(item.quantity) || 0), 0);
-    } catch (e) {
-        console.warn('Error getting cart count:', e);
-        return 0;
-    }
+    return 0;
 }
 
 // Configuration du menu utilisateur
@@ -345,11 +330,6 @@ function setupCartEvents() {
     
     document.addEventListener('cartUpdated', updateCartCountBadge);
     
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'discado_cart') {
-            updateCartCountBadge();
-        }
-    });
 }
 
 // Connecter les fonctionnalités du panier au header

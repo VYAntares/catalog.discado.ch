@@ -420,6 +420,25 @@ function initDatabase() {
         migratePending();
     } catch(e) { console.error('⚠️ Erreur migration pending_deliveries sizes:', e.message); }
 
+    // Création de la table cart_items (panier serveur)
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS cart_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        product_id INTEGER,
+        product_name TEXT NOT NULL,
+        product_price REAL NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        category TEXT,
+        image_url TEXT,
+        size TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(username),
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+    )
+    `);
+
     // Création de la table wishlists
     db.exec(`
     CREATE TABLE IF NOT EXISTS wishlists (
@@ -1074,6 +1093,29 @@ module.exports = {
             WHERE id = ?
         `),
         delete: db.prepare('DELETE FROM client_locations WHERE id = ?')
+    },
+
+    // Requêtes liées au panier serveur
+    cart: {
+        getByUser: db.prepare('SELECT * FROM cart_items WHERE user_id = ? ORDER BY created_at ASC'),
+        getById:   db.prepare('SELECT * FROM cart_items WHERE id = ? AND user_id = ?'),
+        findItem:  db.prepare(`
+            SELECT * FROM cart_items
+            WHERE user_id = ?
+              AND (product_id IS NOT NULL AND product_id = ? OR product_id IS NULL AND product_name = ?)
+              AND COALESCE(size, '') = COALESCE(?, '')
+            LIMIT 1
+        `),
+        insert: db.prepare(`
+            INSERT INTO cart_items (user_id, product_id, product_name, product_price, quantity, category, image_url, size)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `),
+        updateQuantity: db.prepare(`
+            UPDATE cart_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?
+        `),
+        delete:    db.prepare('DELETE FROM cart_items WHERE id = ? AND user_id = ?'),
+        clearUser: db.prepare('DELETE FROM cart_items WHERE user_id = ?'),
+        countByUser: db.prepare('SELECT COALESCE(SUM(quantity), 0) as count FROM cart_items WHERE user_id = ?')
     },
 
     // Requêtes liées à la wishlist

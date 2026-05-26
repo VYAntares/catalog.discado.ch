@@ -1851,6 +1851,94 @@ app.get('/api/user-orders', requireLogin, (req, res) => {
   }
 });
 
+// ===== PANIER SERVEUR =====
+
+// Récupérer le panier
+app.get('/api/cart', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  try {
+    const rows = dbModule.cart.getByUser.all(userId);
+    const items = rows.map(r => ({
+      cartItemId: r.id,
+      id: r.product_id,
+      Nom: r.product_name,
+      prix: r.product_price,
+      quantity: r.quantity,
+      categorie: r.category,
+      imageUrl: r.image_url,
+      size: r.size
+    }));
+    res.json(items);
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur récupération panier' });
+  }
+});
+
+// Ajouter ou fusionner un article
+app.post('/api/cart/items', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  const { product_id, product_name, product_price, quantity, category, image_url, size } = req.body;
+  if (!product_name || !product_price || !quantity) {
+    return res.status(400).json({ error: 'Champs manquants' });
+  }
+  try {
+    const existing = dbModule.cart.findItem.get(userId, product_id || null, product_name, size || null);
+    if (existing) {
+      const newQty = existing.quantity + parseInt(quantity);
+      dbModule.cart.updateQuantity.run(newQty, existing.id, userId);
+      res.json({ success: true, cartItemId: existing.id, quantity: newQty });
+    } else {
+      const result = dbModule.cart.insert.run(
+        userId, product_id || null, product_name,
+        parseFloat(product_price), parseInt(quantity),
+        category || null, image_url || null, size || null
+      );
+      res.json({ success: true, cartItemId: result.lastInsertRowid, quantity: parseInt(quantity) });
+    }
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur ajout panier' });
+  }
+});
+
+// Mettre à jour la quantité d'un article
+app.put('/api/cart/items/:id', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  const id = parseInt(req.params.id);
+  const { quantity } = req.body;
+  if (!quantity || quantity < 1) return res.status(400).json({ error: 'Quantité invalide' });
+  try {
+    const item = dbModule.cart.getById.get(id, userId);
+    if (!item) return res.status(404).json({ error: 'Article non trouvé' });
+    dbModule.cart.updateQuantity.run(parseInt(quantity), id, userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur mise à jour quantité' });
+  }
+});
+
+// Supprimer un article
+app.delete('/api/cart/items/:id', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  const id = parseInt(req.params.id);
+  try {
+    dbModule.cart.delete.run(id, userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur suppression article' });
+  }
+});
+
+// Vider le panier
+app.delete('/api/cart', requireLogin, (req, res) => {
+  const userId = req.session.user.username;
+  try {
+    dbModule.cart.clearUser.run(userId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur vidage panier' });
+  }
+});
+
 // ===== WISHLIST =====
 
 // GET /api/wishlist — Liste des favoris de l'utilisateur connecté

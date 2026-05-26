@@ -1,6 +1,6 @@
 //public/js/modules/catalog/productList.js
 import { fetchProducts, fetchWishlist, addToWishlistApi, removeFromWishlistApi } from '../../core/api.js';
-import { addToCart } from '../../core/storage.js';
+import { addCartItem } from '../../core/cartApi.js';
 import { showNotification } from '../../utils/notification.js';
 import { initImagePreview } from './imagePreview.js';
 import { searchProducts } from './productSearch.js';
@@ -565,19 +565,20 @@ function updateFloatingButtonCounter() {
 }
 
 // Add all selected products to cart
-function addAllSelectedToCart() {
+async function addAllSelectedToCart() {
     if (selectedProducts.length === 0) {
         showNotification('Please select at least one product', 'info');
         return;
     }
-    
-    selectedProducts.forEach(product => {
-        addToCart(product, product.quantity);
-    });
-    
-    const totalItems = selectedProducts.reduce((total, item) => total + item.quantity, 0);
-            showNotification(`${totalItems} ${window.t ? window.t('cart.addedNotif') : 'items added to cart!'}`, 'success');
-    
+
+    try {
+        await Promise.all(selectedProducts.map(product => addCartItem(product, product.quantity)));
+        const totalItems = selectedProducts.reduce((total, item) => total + item.quantity, 0);
+        showNotification(`${totalItems} ${window.t ? window.t('cart.addedNotif') : 'items added to cart!'}`, 'success');
+    } catch (e) {
+        showNotification('Erreur lors de l\'ajout au panier', 'error');
+    }
+
     resetAllQuantities();
     document.dispatchEvent(new CustomEvent('cartUpdated'));
 }
