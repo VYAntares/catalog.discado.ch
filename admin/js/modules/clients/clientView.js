@@ -61,14 +61,38 @@ async function viewClientDetails(clientId, fromMap = false) {
     }
 }
 
+// Échappe une valeur HTML pour usage dans des attributs
+function escapeAttr(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Génère un champ éditable (span + input caché)
+function editableField(label, fieldKey, value, opts = {}) {
+    const placeholder = opts.placeholder || 'N/A';
+    const type = opts.type || 'text';
+    const display = value && String(value).trim() ? value : placeholder;
+    const inputAttrs = opts.inputAttrs || '';
+    return `
+        <div class="info-item" data-editable-field="${fieldKey}">
+            <span class="info-label">${label}</span>
+            <span class="info-value" data-display>${escapeAttr(display)}</span>
+            <input type="${type}" class="info-input" data-input
+                   name="${fieldKey}" value="${escapeAttr(value || '')}"
+                   ${inputAttrs} hidden>
+        </div>
+    `;
+}
+
 //Affiche les détails d'un client dans la modale
 async function displayClientDetails(client, fromMap = false) {
     clientDetailsTitle.textContent = `Détails du client: ${client.clientId || 'N/A'}`;
-    
+
     const lastUpdated = client.lastUpdated ? Formatter.formatDate(client.lastUpdated) : 'N/A';
-    
+
     let html = `
-        <div class="client-section">
+        <div class="client-section" data-client-id="${escapeAttr(client.clientId)}">
             <div class="client-header">
                 <h2 class="client-title">Détails du client: ${client.clientId || 'N/A'}</h2>
                 <button class="client-close-btn" id="closeClientModal">&times;</button>
@@ -79,6 +103,15 @@ async function displayClientDetails(client, fromMap = false) {
                    title="Voir les factures de ce client en comptabilité">
                     <i class="fas fa-file-invoice"></i> Voir factures compta
                 </a>
+                <button class="action-btn edit-client-btn btn-sm" id="editClientBtn" type="button">
+                    <i class="fas fa-pen"></i> Modifier
+                </button>
+                <button class="action-btn primary-btn btn-sm" id="saveClientBtn" type="button" hidden>
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+                <button class="action-btn cancel-edit-btn btn-sm" id="cancelClientEditBtn" type="button" hidden>
+                    <i class="fas fa-times"></i> Annuler
+                </button>
             </div>
 
             <!-- Section Informations personnelles -->
@@ -87,64 +120,62 @@ async function displayClientDetails(client, fromMap = false) {
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label">ID Client:</span>
-                        <span class="info-value">${client.clientId || 'N/A'}</span>
+                        <span class="info-value">${escapeAttr(client.clientId || 'N/A')}</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Prénom:</span>
-                        <span class="info-value">${client.firstName || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Nom:</span>
-                        <span class="info-value">${client.lastName || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Email:</span>
-                        <span class="info-value">${client.email || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Téléphone:</span>
-                        <span class="info-value">${client.phone || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Source/Référence:</span>
-                        <span class="info-value">${client.referralSource || 'Non spécifiée'}</span>
-                    </div>
+                    ${editableField('Prénom:', 'firstName', client.firstName)}
+                    ${editableField('Nom:', 'lastName', client.lastName)}
+                    ${editableField('Email:', 'email', client.email, { type: 'email' })}
+                    ${editableField('Téléphone:', 'phone', client.phone, { type: 'tel', inputAttrs: 'inputmode="numeric"' })}
+                    ${editableField('Source/Référence:', 'referralSource', client.referralSource, { placeholder: 'Non spécifiée' })}
                 </div>
             </div>
 
-            <!-- Section Informations boutique -->
+            <!-- Section Informations boutique (livraison) -->
             <div class="info-section">
-                <h3 class="info-section-title">Informations boutique</h3>
+                <h3 class="info-section-title">Adresse de livraison (boutique)</h3>
                 <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Nom de la boutique:</span>
-                        <span class="info-value">${client.shopName || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Adresse:</span>
-                        <span class="info-value">${client.shopAddress || client.address || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Ville:</span>
-                        <span class="info-value">${client.shopCity || client.city || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Code postal:</span>
-                        <span class="info-value">${client.shopZipCode || client.postalCode || 'N/A'}</span>
-                    </div>
+                    ${editableField('Nom de la boutique:', 'shopName', client.shopName)}
+                    ${editableField('Adresse:', 'shopAddress', client.shopAddress || client.address)}
+                    ${editableField('Ville:', 'shopCity', client.shopCity || client.city)}
+                    ${editableField('Code postal:', 'shopZipCode', client.shopZipCode || client.postalCode, { inputAttrs: 'inputmode="numeric"' })}
                 </div>
             </div>
-            
+
+            <!-- Section Adresse de facturation -->
+            <div class="info-section" data-billing-section>
+                <h3 class="info-section-title">
+                    Adresse de facturation
+                    <span class="billing-same-badge" data-billing-badge
+                          style="font-size:12px;font-weight:500;color:#06b6d4;background:#ecfeff;padding:3px 10px;border-radius:12px;margin-left:8px;${client.billingSameAsShipping ? '' : 'display:none;'}">
+                        identique à la livraison
+                    </span>
+                </h3>
+                <label class="billing-same-edit-toggle" data-billing-toggle hidden>
+                    <input type="checkbox" id="adminBillingSameAsShipping" ${client.billingSameAsShipping ? 'checked' : ''}>
+                    <span>Identique à l'adresse de livraison</span>
+                </label>
+                <div class="info-grid" data-billing-grid>
+                    ${editableField('Prénom:', 'billingFirstName', client.billingFirstName)}
+                    ${editableField('Nom:', 'billingLastName', client.billingLastName)}
+                    ${editableField('Société / Boutique:', 'billingShopName', client.billingShopName)}
+                    ${editableField('Adresse:', 'billingAddress', client.billingAddress)}
+                    ${editableField('Ville:', 'billingCity', client.billingCity)}
+                    ${editableField('Code postal:', 'billingZipCode', client.billingZipCode, { inputAttrs: 'inputmode="numeric"' })}
+                </div>
+            </div>
+
             <div id="pending-delivery-container"></div>
             <div id="client-orders-container"></div>
         </div>
     `;
-    
+
     clientDetailsContent.innerHTML = html;
-    
+
     document.getElementById('closeClientModal').addEventListener('click', function() {
         Modal.hideModal(clientModal);
     });
+
+    setupClientEditMode(client);
     
     try {
         const orders = await API.fetchClientOrders(client.clientId);
@@ -496,6 +527,113 @@ function createAdminOrderCard(order, clientId) {
     }
 
     return card;
+}
+
+// === Mode édition rapide du profil client (admin) ===
+function setupClientEditMode(client) {
+    const editBtn = document.getElementById('editClientBtn');
+    const saveBtn = document.getElementById('saveClientBtn');
+    const cancelBtn = document.getElementById('cancelClientEditBtn');
+    if (!editBtn || !saveBtn || !cancelBtn) return;
+
+    const section = clientDetailsContent.querySelector('.client-section');
+    const billingBadge = section.querySelector('[data-billing-badge]');
+    const billingToggle = section.querySelector('[data-billing-toggle]');
+    const billingCheckbox = section.querySelector('#adminBillingSameAsShipping');
+    const billingGrid = section.querySelector('[data-billing-grid]');
+
+    const setMode = (editing) => {
+        section.classList.toggle('editing', editing);
+        editBtn.hidden = editing;
+        saveBtn.hidden = !editing;
+        cancelBtn.hidden = !editing;
+        if (billingToggle) billingToggle.hidden = !editing;
+        if (billingBadge) billingBadge.style.display = (!editing && client.billingSameAsShipping) ? '' : 'none';
+
+        section.querySelectorAll('[data-editable-field]').forEach(item => {
+            const display = item.querySelector('[data-display]');
+            const input = item.querySelector('[data-input]');
+            if (!display || !input) return;
+            display.hidden = editing;
+            input.hidden = !editing;
+        });
+
+        if (editing) applyBillingToggleState();
+    };
+
+    const applyBillingToggleState = () => {
+        if (!billingCheckbox || !billingGrid) return;
+        const sameAsShipping = billingCheckbox.checked;
+        billingGrid.style.opacity = sameAsShipping ? '0.5' : '1';
+        billingGrid.querySelectorAll('[data-input]').forEach(input => {
+            input.disabled = sameAsShipping;
+        });
+        if (sameAsShipping) prefillBillingFromShipping();
+    };
+
+    const prefillBillingFromShipping = () => {
+        const map = {
+            billingFirstName: 'firstName',
+            billingLastName: 'lastName',
+            billingShopName: 'shopName',
+            billingAddress: 'shopAddress',
+            billingCity: 'shopCity',
+            billingZipCode: 'shopZipCode'
+        };
+        Object.entries(map).forEach(([billing, shipping]) => {
+            const bInput = section.querySelector(`[data-editable-field="${billing}"] [data-input]`);
+            const sInput = section.querySelector(`[data-editable-field="${shipping}"] [data-input]`);
+            if (bInput && sInput) bInput.value = sInput.value;
+        });
+    };
+
+    const collect = () => {
+        const data = {};
+        section.querySelectorAll('[data-editable-field]').forEach(item => {
+            const input = item.querySelector('[data-input]');
+            if (input) data[input.name] = input.value.trim();
+        });
+        data.billingSameAsShipping = billingCheckbox ? billingCheckbox.checked : true;
+        return data;
+    };
+
+    editBtn.addEventListener('click', () => setMode(true));
+
+    cancelBtn.addEventListener('click', () => {
+        // Restaure les valeurs initiales depuis le client
+        section.querySelectorAll('[data-editable-field]').forEach(item => {
+            const key = item.getAttribute('data-editable-field');
+            const input = item.querySelector('[data-input]');
+            if (input) input.value = client[key] || '';
+        });
+        if (billingCheckbox) billingCheckbox.checked = !!client.billingSameAsShipping;
+        setMode(false);
+    });
+
+    if (billingCheckbox) billingCheckbox.addEventListener('change', applyBillingToggleState);
+
+    saveBtn.addEventListener('click', async () => {
+        const profileData = collect();
+        saveBtn.disabled = true;
+        const originalLabel = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+
+        try {
+            const result = await API.updateClientProfile(client.clientId, profileData);
+            if (result && result.profile) {
+                Notification.showNotification('Client mis à jour avec succès', 'success');
+                // Réaffiche avec les données fraîches
+                displayClientDetails({ ...result.profile, clientId: client.clientId }, false);
+            } else {
+                Notification.showNotification('Erreur : ' + (result?.message || 'Mise à jour impossible'), 'error');
+            }
+        } catch (error) {
+            Notification.showNotification('Erreur lors de la mise à jour : ' + error.message, 'error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalLabel;
+        }
+    });
 }
 
 export {

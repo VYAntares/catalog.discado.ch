@@ -49,7 +49,8 @@
 /* Accent couleur par section */
 .profile-section:nth-child(1) { border-left-color: #e9394f; }
 .profile-section:nth-child(2) { border-left-color: #7c3aed; }
-.profile-section:nth-child(3) { border-left-color: #f59e0b; }
+.profile-section:nth-child(3) { border-left-color: #06b6d4; }
+.profile-section:nth-child(4) { border-left-color: #f59e0b; }
 
 /* En-tête de section */
 .profile-section h3 {
@@ -91,9 +92,63 @@
 }
 
 .profile-section:nth-child(3) h3::before {
+    content: '\f570'; /* fa-file-invoice-dollar */
+    background: #ecfeff;
+    color: #06b6d4;
+}
+
+.profile-section:nth-child(4) h3::before {
     content: '\f023'; /* fa-lock */
     background: #fffbeb;
     color: #f59e0b;
+}
+
+/* Toggle "Same as shipping" pour l'adresse de facturation */
+.billing-same-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.billing-same-toggle:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.billing-same-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #06b6d4;
+    flex-shrink: 0;
+}
+
+.billing-same-toggle .toggle-label {
+    font-size: 14px;
+    color: #1a1a2e;
+    font-weight: 500;
+}
+
+.billing-same-toggle .toggle-hint {
+    font-size: 12px;
+    color: #64748b;
+    margin-left: auto;
+}
+
+.billing-fields {
+    display: block;
+}
+
+.billing-fields.hidden {
+    display: none;
 }
 
 /* =========================================
@@ -540,8 +595,9 @@ input.password-mismatch {
         align-items: start;
     }
 
-    /* Password section + note + bouton : pleine largeur */
+    /* Sections Billing + Password + note + bouton : pleine largeur */
     .profile-section:nth-child(3),
+    .profile-section:nth-child(4),
     .required-fields-note,
     .save-btn {
         grid-column: 1 / -1;

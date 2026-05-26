@@ -43,7 +43,9 @@
     "allProducts": "Alle Produkte",
     "addToCart": "In den Warenkorb",
     "noResults": "Keine Produkte gefunden.",
-    "errorLoad": "Fehler beim Laden der Produkte."
+    "errorLoad": "Fehler beim Laden der Produkte.",
+    "inStock": "Auf Lager",
+    "outOfStock": "Nicht verfügbar"
   },
   "login": {
     "subtitle": "Bei Ihrem Konto anmelden",
@@ -112,6 +114,15 @@
     "shopCityLabel": "Stadt*",
     "shopCityPlaceholder": "Stadt",
     "shopZipLabel": "Postleitzahl*",
+    "billingInfo": "Rechnungsadresse",
+    "billingSameAsShipping": "Identisch mit der Lieferadresse",
+    "billingSameHint": "(Häkchen entfernen, um eine andere zu verwenden)",
+    "billingFirstNameLabel": "Vorname",
+    "billingLastNameLabel": "Nachname",
+    "billingShopNameLabel": "Firma / Geschäft",
+    "billingAddressLabel": "Rechnungsadresse",
+    "billingCityLabel": "Stadt",
+    "billingZipLabel": "Postleitzahl",
     "zipHint": "Nur Zahlen",
     "passwordMgmt": "Passwortverwaltung",
     "currentPasswordLabel": "Aktuelles Passwort",

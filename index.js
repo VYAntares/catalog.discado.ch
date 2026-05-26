@@ -2085,10 +2085,10 @@ app.get('/api/admin/client-profiles', requireLogin, requireAdmin, (req, res) => 
 
 app.get('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, res) => {
   const userId = req.params.userId;
-  
+
   try {
     const profile = userService.getUserProfile(userId);
-    
+
     if (profile) {
       res.json(profile);
     } else {
@@ -2096,6 +2096,30 @@ app.get('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, r
     }
   } catch (error) {
     res.status(500).json({ error: 'Error getting client profile' });
+  }
+});
+
+// Mise à jour du profil d'un client par l'admin (livraison + facturation + infos)
+app.post('/api/admin/client-profile/:userId', requireLogin, requireAdmin, (req, res) => {
+  const userId = req.params.userId;
+  const profileData = req.body || {};
+
+  try {
+    const existing = userService.getUser(userId);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Client introuvable' });
+    }
+
+    // L'admin ne change pas le mot de passe via cette route
+    delete profileData.passwordChange;
+    profileData.lastUpdated = new Date().toISOString();
+
+    const result = userService.saveUserProfile(profileData, userId);
+    const updated = userService.getUserProfile(userId);
+    res.json({ success: true, profile: updated, isProfileComplete: result.isProfileComplete });
+  } catch (error) {
+    console.error('Erreur mise à jour client (admin):', error.message);
+    res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour du client' });
   }
 });
 
@@ -2225,11 +2249,20 @@ app.get('/api/admin/download-invoice-eur/:orderId/:userId', requireLogin, requir
       const cX = 350; let cY = MT + 50;
       doc.font('Helvetica').fontSize(7).fillColor(MUTED).text('BILL TO', cX, cY, { characterSpacing: 1.5 });
       cY += 14; drawLine(doc, cX, cY, cX+170, cY, ACCENT, 1); cY += 8;
-      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(PRIMARY).text(`${userProfile.firstName} ${userProfile.lastName}`, cX, cY); cY += 13;
+      // Bloc destinataire = adresse de facturation (fallback livraison)
+      const billName = [
+        userProfile.billingFirstName || userProfile.firstName || '',
+        userProfile.billingLastName || userProfile.lastName || ''
+      ].join(' ').trim();
+      const billShopName = userProfile.billingShopName || userProfile.shopName || '';
+      const billAddress = userProfile.billingAddress || userProfile.shopAddress || '';
+      const billZip = userProfile.billingZipCode || userProfile.shopZipCode || '';
+      const billCity = userProfile.billingCity || userProfile.shopCity || '';
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(PRIMARY).text(billName, cX, cY); cY += 13;
       doc.font('Helvetica').fontSize(8.5).fillColor('#111111');
-      doc.text(userProfile.shopName || '', cX, cY); cY += 11;
-      doc.text(userProfile.shopAddress || '', cX, cY); cY += 11;
-      doc.text(`${userProfile.shopZipCode||''} ${userProfile.shopCity||''}`, cX, cY);
+      doc.text(billShopName, cX, cY); cY += 11;
+      doc.text(billAddress, cX, cY); cY += 11;
+      doc.text(`${billZip} ${billCity}`, cX, cY);
 
       const titleY = MT + 155;
       drawLine(doc, ML, titleY+28, ML+CW, titleY+28, BORDER, 0.5);

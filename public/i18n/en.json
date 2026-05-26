@@ -43,7 +43,9 @@
     "allProducts": "All Products",
     "addToCart": "Add to Cart",
     "noResults": "No products found.",
-    "errorLoad": "Error loading products."
+    "errorLoad": "Error loading products.",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock"
   },
   "login": {
     "subtitle": "Sign in to your account",
@@ -113,6 +115,15 @@
     "shopCityPlaceholder": "Shop city",
     "shopZipLabel": "Shop Zip Code*",
     "zipHint": "Numbers only",
+    "billingInfo": "Billing Address",
+    "billingSameAsShipping": "Same as shipping address",
+    "billingSameHint": "(uncheck to use a different one)",
+    "billingFirstNameLabel": "First Name",
+    "billingLastNameLabel": "Last Name",
+    "billingShopNameLabel": "Company / Shop Name",
+    "billingAddressLabel": "Billing Address",
+    "billingCityLabel": "City",
+    "billingZipLabel": "Zip Code",
     "passwordMgmt": "Password Management",
     "currentPasswordLabel": "Current Password",
     "currentPasswordPlaceholder": "Enter your current password",

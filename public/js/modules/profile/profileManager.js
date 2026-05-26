@@ -369,7 +369,48 @@ function setupProfileForm() {
     loadUserProfile();
     setupRealtimeValidation(profileForm);
     setupRealTimeSubmitButton();
+    setupBillingToggle();
     profileForm.addEventListener('submit', handleProfileSubmit);
+}
+
+function setupBillingToggle() {
+    const toggle = document.getElementById('billingSameAsShipping');
+    const fields = document.getElementById('billingFields');
+    if (!toggle || !fields) return;
+
+    const apply = () => {
+        if (toggle.checked) {
+            fields.classList.add('hidden');
+            fields.querySelectorAll('input').forEach(input => {
+                input.classList.remove('input-error');
+                removeErrorMessage(input);
+            });
+        } else {
+            fields.classList.remove('hidden');
+            prefillBillingFromShipping();
+        }
+    };
+
+    toggle.addEventListener('change', apply);
+    apply();
+}
+
+function prefillBillingFromShipping() {
+    const map = {
+        billingFirstName: 'firstName',
+        billingLastName: 'lastName',
+        billingShopName: 'shopName',
+        billingAddress: 'shopAddress',
+        billingCity: 'shopCity',
+        billingZipCode: 'shopZipCode'
+    };
+    Object.entries(map).forEach(([billingId, shippingId]) => {
+        const billingField = document.getElementById(billingId);
+        const shippingField = document.getElementById(shippingId);
+        if (billingField && shippingField && !billingField.value.trim()) {
+            billingField.value = shippingField.value;
+        }
+    });
 }
 
 async function loadUserProfile() {
@@ -433,8 +474,8 @@ function showForcedPasswordChangeUI() {
     }
     mainContent.insertBefore(alertContainer, mainContent.firstChild);
     
-    // Highlight password section
-    const passwordSection = document.querySelector('.profile-section:nth-child(3)') || document.querySelector('.password-section') || document.getElementById('passwordFields');
+    // Highlight password section (now 4th section: Personal, Shop, Billing, Password)
+    const passwordSection = document.querySelector('.profile-section:nth-child(4)') || document.querySelector('.password-section') || document.getElementById('passwordFields');
     if (passwordSection) {
         passwordSection.classList.add('highlight-section');
         passwordSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -492,7 +533,13 @@ function fillProfileForm(profileData) {
         shopName: document.getElementById('shopName'),
         shopAddress: document.getElementById('shopAddress'),
         shopCity: document.getElementById('shopCity'),
-        shopZipCode: document.getElementById('shopZipCode')
+        shopZipCode: document.getElementById('shopZipCode'),
+        billingFirstName: document.getElementById('billingFirstName'),
+        billingLastName: document.getElementById('billingLastName'),
+        billingShopName: document.getElementById('billingShopName'),
+        billingAddress: document.getElementById('billingAddress'),
+        billingCity: document.getElementById('billingCity'),
+        billingZipCode: document.getElementById('billingZipCode')
     };
 
     const fieldMappings = {
@@ -503,19 +550,25 @@ function fillProfileForm(profileData) {
         shopName: ['shopName', 'shop_name', 'shopname', 'nom_boutique', 'boutique'],
         shopAddress: ['shopAddress', 'shop_address', 'shopaddress', 'address', 'adresse'],
         shopCity: ['shopCity', 'shop_city', 'shopcity', 'city', 'ville'],
-        shopZipCode: ['shopZipCode', 'shop_zip_code', 'shopzipcode', 'zipCode', 'zip', 'postalCode', 'postal_code', 'code_postal']
+        shopZipCode: ['shopZipCode', 'shop_zip_code', 'shopzipcode', 'zipCode', 'zip', 'postalCode', 'postal_code', 'code_postal'],
+        billingFirstName: ['billingFirstName', 'billing_first_name'],
+        billingLastName: ['billingLastName', 'billing_last_name'],
+        billingShopName: ['billingShopName', 'billing_shop_name'],
+        billingAddress: ['billingAddress', 'billing_address'],
+        billingCity: ['billingCity', 'billing_city'],
+        billingZipCode: ['billingZipCode', 'billing_zip_code']
     };
 
     function findFieldValue(fieldName) {
         const possibleNames = fieldMappings[fieldName] || [fieldName];
-        
+
         for (const name of possibleNames) {
             const value = profileData[name] || profileData[name.toLowerCase()];
             if (value !== undefined && value !== null) {
                 return value;
             }
         }
-        
+
         return '';
     }
 
@@ -531,6 +584,22 @@ function fillProfileForm(profileData) {
     }
     if (fields.shopZipCode) {
         fields.shopZipCode.value = cleanNumericInput(fields.shopZipCode.value);
+    }
+    if (fields.billingZipCode) {
+        fields.billingZipCode.value = cleanNumericInput(fields.billingZipCode.value);
+    }
+
+    // Coche la case "Same as shipping" en fonction du profil
+    const toggle = document.getElementById('billingSameAsShipping');
+    const billingContainer = document.getElementById('billingFields');
+    if (toggle && billingContainer) {
+        const sameAsShipping = profileData.billingSameAsShipping !== false;
+        toggle.checked = sameAsShipping;
+        if (sameAsShipping) {
+            billingContainer.classList.add('hidden');
+        } else {
+            billingContainer.classList.remove('hidden');
+        }
     }
 }
 
@@ -668,19 +737,30 @@ function validateZipCodeField(zipCodeField) {
 }
 
 function collectProfileData() {
+    const val = (id) => (document.getElementById(id)?.value || '').trim();
+    const billingSameToggle = document.getElementById('billingSameAsShipping');
+    const billingSameAsShipping = billingSameToggle ? billingSameToggle.checked : true;
+
     return {
-        firstName: document.getElementById('firstName').value.trim(),
-        lastName: document.getElementById('lastName').value.trim(),
-        fullName: `${document.getElementById('firstName').value.trim()} ${document.getElementById('lastName').value.trim()}`,
-        email: document.getElementById('email').value.trim(),
-        phone: document.getElementById('phone').value.trim(),
-        shopName: document.getElementById('shopName').value.trim(),
-        shopAddress: document.getElementById('shopAddress').value.trim(),
-        shopCity: document.getElementById('shopCity').value.trim(),
-        shopZipCode: document.getElementById('shopZipCode').value.trim(),
-        address: document.getElementById('shopAddress').value.trim(),
-        city: document.getElementById('shopCity').value.trim(),
-        postalCode: document.getElementById('shopZipCode').value.trim(),
+        firstName: val('firstName'),
+        lastName: val('lastName'),
+        fullName: `${val('firstName')} ${val('lastName')}`,
+        email: val('email'),
+        phone: val('phone'),
+        shopName: val('shopName'),
+        shopAddress: val('shopAddress'),
+        shopCity: val('shopCity'),
+        shopZipCode: val('shopZipCode'),
+        address: val('shopAddress'),
+        city: val('shopCity'),
+        postalCode: val('shopZipCode'),
+        billingSameAsShipping,
+        billingFirstName: billingSameAsShipping ? '' : val('billingFirstName'),
+        billingLastName: billingSameAsShipping ? '' : val('billingLastName'),
+        billingShopName: billingSameAsShipping ? '' : val('billingShopName'),
+        billingAddress: billingSameAsShipping ? '' : val('billingAddress'),
+        billingCity: billingSameAsShipping ? '' : val('billingCity'),
+        billingZipCode: billingSameAsShipping ? '' : val('billingZipCode'),
         lastUpdated: new Date().toISOString()
     };
 }

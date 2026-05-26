@@ -81,6 +81,26 @@ function initDatabase() {
         }
     }
 
+    // Ajout des colonnes d'adresse de facturation à user_profiles
+    const billingColumns = [
+        ['billing_first_name', 'TEXT'],
+        ['billing_last_name', 'TEXT'],
+        ['billing_shop_name', 'TEXT'],
+        ['billing_address', 'TEXT'],
+        ['billing_city', 'TEXT'],
+        ['billing_zip_code', 'TEXT']
+    ];
+    billingColumns.forEach(([name, type]) => {
+        if (!columnExists('user_profiles', name)) {
+            try {
+                db.exec(`ALTER TABLE user_profiles ADD COLUMN ${name} ${type}`);
+                console.log(`✅ Colonne ${name} ajoutée à user_profiles`);
+            } catch (error) {
+                console.error(`⚠️ Erreur ajout colonne ${name}:`, error.message);
+            }
+        }
+    });
+
     // Vérification et mise à jour de la table orders
     const ordersColumns = db.prepare("PRAGMA table_info(orders)").all();
     const hasReference = ordersColumns.some(col => col.name === 'reference');
@@ -678,7 +698,14 @@ module.exports = {
         `),
         getAll: db.prepare('SELECT * FROM user_profiles'),
         getNotes: db.prepare('SELECT notes FROM user_profiles WHERE username = ?'),
-        updateNotes: db.prepare('UPDATE user_profiles SET notes = ?, last_updated = ? WHERE username = ?')
+        updateNotes: db.prepare('UPDATE user_profiles SET notes = ?, last_updated = ? WHERE username = ?'),
+        updateBillingAddress: db.prepare(`
+            UPDATE user_profiles
+            SET billing_first_name = ?, billing_last_name = ?, billing_shop_name = ?,
+                billing_address = ?, billing_city = ?, billing_zip_code = ?,
+                last_updated = ?
+            WHERE username = ?
+        `)
     },
     
     // Requêtes liées aux fournisseurs

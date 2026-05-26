@@ -104,6 +104,52 @@
                     </div>
                 </div>
                 <div class="profile-section">
+                    <h3 data-i18n="profile.billingInfo">Billing Address</h3>
+                    <label class="billing-same-toggle" for="billingSameAsShipping">
+                        <input type="checkbox" id="billingSameAsShipping" name="billingSameAsShipping" checked>
+                        <span class="toggle-label" data-i18n="profile.billingSameAsShipping">Same as shipping address</span>
+                        <span class="toggle-hint" data-i18n="profile.billingSameHint">(uncheck to use a different one)</span>
+                    </label>
+                    <div id="billingFields" class="billing-fields hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="billingFirstName" data-i18n="profile.billingFirstNameLabel">First Name</label>
+                                <input type="text" id="billingFirstName" name="billingFirstName" placeholder="Billing first name">
+                            </div>
+                            <div class="form-group">
+                                <label for="billingLastName" data-i18n="profile.billingLastNameLabel">Last Name</label>
+                                <input type="text" id="billingLastName" name="billingLastName" placeholder="Billing last name">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="billingShopName" data-i18n="profile.billingShopNameLabel">Company / Shop Name</label>
+                            <input type="text" id="billingShopName" name="billingShopName" placeholder="Billing company or shop name">
+                        </div>
+                        <div class="form-group">
+                            <label for="billingAddress" data-i18n="profile.billingAddressLabel">Billing Address</label>
+                            <input type="text" id="billingAddress" name="billingAddress" placeholder="Billing street address">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="billingCity" data-i18n="profile.billingCityLabel">City</label>
+                                <input type="text" id="billingCity" name="billingCity" placeholder="Billing city">
+                            </div>
+                            <div class="form-group">
+                                <label for="billingZipCode" data-i18n="profile.billingZipLabel">Zip Code</label>
+                                <input
+                                    type="text"
+                                    id="billingZipCode"
+                                    name="billingZipCode"
+                                    placeholder="1234"
+                                    pattern="[0-9]*"
+                                    inputmode="numeric"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
                     <h3 data-i18n="profile.passwordMgmt">Password Management</h3>
                     <div class="form-group">
                         <label for="currentPassword" data-i18n="profile.currentPasswordLabel">Current Password</label>

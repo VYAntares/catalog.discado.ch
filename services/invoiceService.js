@@ -138,15 +138,25 @@ class InvoiceService {
     drawLine(doc, cX, cY, cX + 170, cY, COLORS.accent, 1);
     cY += 8;
 
+    // Bloc destinataire = adresse de facturation (fallback livraison si vide)
+    const billName = [
+      userProfile.billingFirstName || userProfile.firstName || '',
+      userProfile.billingLastName || userProfile.lastName || ''
+    ].join(' ').trim();
+    const billShopName = userProfile.billingShopName || userProfile.shopName || '';
+    const billAddress = userProfile.billingAddress || userProfile.shopAddress || userProfile.address || '';
+    const billZip = userProfile.billingZipCode || userProfile.shopZipCode || userProfile.postalCode || '';
+    const billCity = userProfile.billingCity || userProfile.shopCity || userProfile.city || '';
+
     doc.font('Helvetica-Bold').fontSize(9.5).fillColor(COLORS.primary);
-    doc.text(`${userProfile.firstName} ${userProfile.lastName}`, cX, cY);
+    doc.text(billName, cX, cY);
     cY += 13;
     doc.font('Helvetica').fontSize(8.5).fillColor(COLORS.text);
-    doc.text(userProfile.shopName || '', cX, cY);
+    doc.text(billShopName, cX, cY);
     cY += 11;
-    doc.text(userProfile.shopAddress || userProfile.address || '', cX, cY);
+    doc.text(billAddress, cX, cY);
     cY += 11;
-    doc.text(`${userProfile.shopZipCode || userProfile.postalCode || ''} ${userProfile.shopCity || userProfile.city || ''}`, cX, cY);
+    doc.text(`${billZip} ${billCity}`, cX, cY);
 
     // Title line
     const titleY = y0 + 155;
@@ -414,10 +424,13 @@ class InvoiceService {
           country: 'CH'
         },
         debtor: {
-          name: `${userProfile.firstName} ${userProfile.lastName}`,
-          address: userProfile.shopAddress || userProfile.address,
-          zip: parseInt(userProfile.shopZipCode || userProfile.postalCode) || 1000,
-          city: userProfile.shopCity || userProfile.city,
+          name: [
+            userProfile.billingFirstName || userProfile.firstName || '',
+            userProfile.billingLastName || userProfile.lastName || ''
+          ].join(' ').trim(),
+          address: userProfile.billingAddress || userProfile.shopAddress || userProfile.address,
+          zip: parseInt(userProfile.billingZipCode || userProfile.shopZipCode || userProfile.postalCode) || 1000,
+          city: userProfile.billingCity || userProfile.shopCity || userProfile.city,
           country: 'CH'
         },
         message: `Facture ${formattedOrderId}`

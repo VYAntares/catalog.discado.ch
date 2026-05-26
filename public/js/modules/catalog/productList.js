@@ -351,10 +351,10 @@ function createInfoContainer(product) {
     const stockBadge = document.createElement("span");
     const stockQty = Number(product.stock) || 0;
     if (stockQty > 0) {
-        stockBadge.textContent = "En stock";
+        stockBadge.textContent = window.t ? window.t('catalog.inStock') : "In stock";
         stockBadge.className = "stock-badge in-stock";
     } else {
-        stockBadge.textContent = "Rupture";
+        stockBadge.textContent = window.t ? window.t('catalog.outOfStock') : "Out of stock";
         stockBadge.className = "stock-badge out-of-stock";
     }
 

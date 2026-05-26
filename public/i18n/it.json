@@ -43,7 +43,9 @@
     "allProducts": "Tutti i Prodotti",
     "addToCart": "Aggiungi al carrello",
     "noResults": "Nessun prodotto trovato.",
-    "errorLoad": "Errore nel caricamento dei prodotti."
+    "errorLoad": "Errore nel caricamento dei prodotti.",
+    "inStock": "Disponibile",
+    "outOfStock": "Esaurito"
   },
   "login": {
     "subtitle": "Accedi al tuo account",
@@ -112,6 +114,15 @@
     "shopCityLabel": "Città del negozio*",
     "shopCityPlaceholder": "Città",
     "shopZipLabel": "Codice postale*",
+    "billingInfo": "Indirizzo di fatturazione",
+    "billingSameAsShipping": "Uguale all'indirizzo di consegna",
+    "billingSameHint": "(deseleziona per usarne uno diverso)",
+    "billingFirstNameLabel": "Nome",
+    "billingLastNameLabel": "Cognome",
+    "billingShopNameLabel": "Azienda / Negozio",
+    "billingAddressLabel": "Indirizzo di fatturazione",
+    "billingCityLabel": "Città",
+    "billingZipLabel": "Codice postale",
     "zipHint": "Solo numeri",
     "passwordMgmt": "Gestione password",
     "currentPasswordLabel": "Password attuale",

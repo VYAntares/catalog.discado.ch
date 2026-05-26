@@ -630,6 +630,79 @@
     flex-wrap: wrap;
 }
 
+/* === Mode édition rapide client (admin) === */
+.edit-client-btn {
+    background: #f1f5f9;
+    color: #1a1a2e;
+    border: 1px solid #cbd5e1;
+}
+
+.edit-client-btn:hover {
+    background: #e2e8f0;
+}
+
+.cancel-edit-btn {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.cancel-edit-btn:hover {
+    background: #fee2e2;
+}
+
+.info-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #1a1a2e;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.info-input:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+.info-input:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.client-section.editing .info-item[data-editable-field] {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.billing-same-edit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #ecfeff;
+    border: 1px solid #a5f3fc;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #155e75;
+    user-select: none;
+}
+
+.billing-same-edit-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #06b6d4;
+    cursor: pointer;
+}
+
 .modal .client-section .info-section:first-of-type {
     margin-top: 10px;
 }

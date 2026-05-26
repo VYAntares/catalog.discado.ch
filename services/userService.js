@@ -29,8 +29,10 @@ const userService = {
     getUserProfile(username) {
         try {
             const profile = dbModule.getUserProfile.get(username);
-            
+
             if (profile) {
+                // Adresse de facturation : si aucune n'est définie, on retombe sur l'adresse de livraison
+                const hasBilling = profile.billing_address || profile.billing_city || profile.billing_zip_code;
                 return {
                     clientId: username,
                     firstName: profile.first_name,
@@ -43,10 +45,17 @@ const userService = {
                     shopCity: profile.shop_city,
                     shopZipCode: profile.shop_zip_code,
                     referralSource: profile.referral_source || '',
+                    billingFirstName: hasBilling ? (profile.billing_first_name || '') : (profile.first_name || ''),
+                    billingLastName: hasBilling ? (profile.billing_last_name || '') : (profile.last_name || ''),
+                    billingShopName: hasBilling ? (profile.billing_shop_name || '') : (profile.shop_name || ''),
+                    billingAddress: hasBilling ? (profile.billing_address || '') : (profile.shop_address || ''),
+                    billingCity: hasBilling ? (profile.billing_city || '') : (profile.shop_city || ''),
+                    billingZipCode: hasBilling ? (profile.billing_zip_code || '') : (profile.shop_zip_code || ''),
+                    billingSameAsShipping: !hasBilling,
                     lastUpdated: profile.last_updated
                 };
             }
-            
+
             return null;
         } catch (error) {
             return null;
@@ -68,7 +77,7 @@ const userService = {
     saveUserProfile(profileData, username) {
         try {
             const isPasswordWeak = this.isPasswordSameAsUsername(username);
-            
+
             // Data normalization
             const normalizedData = {
                 firstName: profileData.firstName || '',
@@ -82,15 +91,42 @@ const userService = {
                 referralSource: profileData.referralSource || '',
                 lastUpdated: profileData.lastUpdated || new Date().toISOString()
             };
-            
+
             const existingProfile = dbModule.getUserProfile.get(username);
             let passwordChanged = false;
-            
+
             // Update or create profile
             if (existingProfile) {
                 this._updateProfile(username, normalizedData);
             } else {
                 this._createProfile(username, normalizedData);
+            }
+
+            // Adresse de facturation: si "billingSameAsShipping" est true (par défaut),
+            // on stocke NULL pour laisser le fallback s'appliquer
+            try {
+                const sameAsShipping = profileData.billingSameAsShipping !== false &&
+                    !profileData.billingAddress && !profileData.billingCity && !profileData.billingZipCode;
+
+                const billing = sameAsShipping ? {
+                    firstName: null, lastName: null, shopName: null,
+                    address: null, city: null, zipCode: null
+                } : {
+                    firstName: profileData.billingFirstName || normalizedData.firstName,
+                    lastName: profileData.billingLastName || normalizedData.lastName,
+                    shopName: profileData.billingShopName || normalizedData.shopName,
+                    address: profileData.billingAddress || normalizedData.shopAddress,
+                    city: profileData.billingCity || normalizedData.shopCity,
+                    zipCode: profileData.billingZipCode || normalizedData.shopZipCode
+                };
+
+                dbModule.profiles.updateBillingAddress.run(
+                    billing.firstName, billing.lastName, billing.shopName,
+                    billing.address, billing.city, billing.zipCode,
+                    normalizedData.lastUpdated, username
+                );
+            } catch (billingError) {
+                console.error('⚠️ Erreur mise à jour adresse de facturation:', billingError.message);
             }
             
             // Handle password change
@@ -191,23 +227,33 @@ const userService = {
     getAllClientProfiles() {
         try {
             const profiles = dbModule.getAllProfiles.all();
-            
-            return profiles.map(profile => ({
-                clientId: profile.username,
-                firstName: profile.first_name,
-                lastName: profile.last_name,
-                fullName: `${profile.first_name} ${profile.last_name}`,
-                email: profile.email,
-                phone: profile.phone,
-                shopName: profile.shop_name,
-                shopAddress: profile.shop_address,
-                shopCity: profile.shop_city,
-                shopZipCode: profile.shop_zip_code,
-                referralSource: profile.referral_source || '',
-                lastUpdated: profile.last_updated
-            }));
+
+            return profiles.map(profile => {
+                const hasBilling = profile.billing_address || profile.billing_city || profile.billing_zip_code;
+                return {
+                    clientId: profile.username,
+                    firstName: profile.first_name,
+                    lastName: profile.last_name,
+                    fullName: `${profile.first_name} ${profile.last_name}`,
+                    email: profile.email,
+                    phone: profile.phone,
+                    shopName: profile.shop_name,
+                    shopAddress: profile.shop_address,
+                    shopCity: profile.shop_city,
+                    shopZipCode: profile.shop_zip_code,
+                    referralSource: profile.referral_source || '',
+                    billingFirstName: hasBilling ? (profile.billing_first_name || '') : (profile.first_name || ''),
+                    billingLastName: hasBilling ? (profile.billing_last_name || '') : (profile.last_name || ''),
+                    billingShopName: hasBilling ? (profile.billing_shop_name || '') : (profile.shop_name || ''),
+                    billingAddress: hasBilling ? (profile.billing_address || '') : (profile.shop_address || ''),
+                    billingCity: hasBilling ? (profile.billing_city || '') : (profile.shop_city || ''),
+                    billingZipCode: hasBilling ? (profile.billing_zip_code || '') : (profile.shop_zip_code || ''),
+                    billingSameAsShipping: !hasBilling,
+                    lastUpdated: profile.last_updated
+                };
+            });
         } catch (error) {
-            return []; 
+            return [];
         }
     },
     

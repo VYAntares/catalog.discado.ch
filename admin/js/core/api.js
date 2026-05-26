@@ -132,6 +132,20 @@ async function deletePendingItems(userId, items) {
   }
 }
 
+// Met à jour le profil d'un client existant (admin)
+async function updateClientProfile(clientId, profileData) {
+  try {
+    const response = await fetch(`/api/admin/client-profile/${encodeURIComponent(clientId)}`, {
+      ...API_CONFIG,
+      method: 'POST',
+      body: JSON.stringify(profileData)
+    });
+    return await handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Crée un nouveau client
 async function createNewClient(clientData) {
   try {
@@ -748,6 +762,7 @@ export {
   processOrder,
   deletePendingItems,
   createNewClient,
+  updateClientProfile,
   getInvoiceDownloadLink,
   saveUserPassword,
   fetchSuppliers,
