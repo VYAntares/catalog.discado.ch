@@ -2517,6 +2517,7 @@ app.get('/api/suppliers', requireLogin, requireAdmin, async (req, res) => {
             wechats: supplier.wechats ? JSON.parse(supplier.wechats) : [],
             phones: supplier.phones ? JSON.parse(supplier.phones) : [],
             notes: supplier.notes || '',
+            image_url: supplier.image_url || null,
             created_at: supplier.created_at,
             updated_at: supplier.updated_at
         }));
@@ -2545,6 +2546,7 @@ app.get('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
             wechats: supplier.wechats ? JSON.parse(supplier.wechats) : [],
             phones: supplier.phones ? JSON.parse(supplier.phones) : [],
             notes: supplier.notes || '',
+            image_url: supplier.image_url || null,
             created_at: supplier.created_at,
             updated_at: supplier.updated_at
         });
@@ -2557,26 +2559,27 @@ app.get('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
 // CREATE supplier
 app.post('/api/suppliers', requireLogin, requireAdmin, async (req, res) => {
     try {
-        const { name, emails, wechats, phones, notes } = req.body;
-        
+        const { name, emails, wechats, phones, notes, image_url } = req.body;
+
         if (!name) {
             return res.status(400).json({ error: 'Le nom du fournisseur est requis' });
         }
-        
+
         // Vérifier si le nom existe déjà
         const existing = dbModule.suppliers.getByName.get(name);
         if (existing) {
             return res.status(409).json({ error: 'Un fournisseur avec ce nom existe déjà' });
         }
-        
+
         const result = dbModule.suppliers.create.run(
             name,
             JSON.stringify(emails || []),
             JSON.stringify(wechats || []),
             JSON.stringify(phones || []),
-            notes || ''
+            notes || '',
+            image_url || null
         );
-        
+
         res.status(201).json({
             success: true,
             message: 'Fournisseur créé avec succès',
@@ -2592,27 +2595,28 @@ app.post('/api/suppliers', requireLogin, requireAdmin, async (req, res) => {
 app.put('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, emails, wechats, phones, notes } = req.body;
-        
+        const { name, emails, wechats, phones, notes, image_url } = req.body;
+
         if (!name) {
             return res.status(400).json({ error: 'Le nom du fournisseur est requis' });
         }
-        
+
         // Vérifier si le fournisseur existe
         const supplier = dbModule.suppliers.getById.get(id);
         if (!supplier) {
             return res.status(404).json({ error: 'Fournisseur non trouvé' });
         }
-        
+
         dbModule.suppliers.update.run(
             name,
             JSON.stringify(emails || []),
             JSON.stringify(wechats || []),
             JSON.stringify(phones || []),
             notes || '',
+            image_url !== undefined ? image_url : supplier.image_url,
             id
         );
-        
+
         res.json({
             success: true,
             message: 'Fournisseur mis à jour avec succès'
@@ -2620,6 +2624,78 @@ app.put('/api/suppliers/:id', requireLogin, requireAdmin, async (req, res) => {
     } catch (error) {
         console.error('Error updating supplier:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour du fournisseur' });
+    }
+});
+
+// Upload de l'image d'un fournisseur
+app.post('/api/suppliers/upload-image', requireLogin, requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Aucune image fournie' });
+        }
+
+        const uploadPath = path.join(__dirname, 'public/images/suppliers');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        const ext = path.extname(req.file.originalname) || '.jpg';
+        const sanitizedBase = path.basename(req.file.originalname, ext).replace(/[^a-zA-Z0-9]/g, '-').slice(0, 40) || 'supplier';
+        const filename = `${sanitizedBase}-${Date.now()}.jpg`;
+        const fullPath = path.join(uploadPath, filename);
+
+        try {
+            await sharp(req.file.buffer)
+                .resize(600, 600, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 85 })
+                .toFile(fullPath);
+        } catch (sharpError) {
+            console.warn('⚠️ Sharp optimization failed, saving original:', sharpError.message);
+            fs.writeFileSync(fullPath, req.file.buffer);
+        }
+
+        const imagePath = `/images/suppliers/${filename}`;
+
+        // Si un supplierId est fourni, mettre à jour la BD et supprimer l'ancienne image
+        const supplierId = req.body.supplier_id;
+        if (supplierId) {
+            const supplier = dbModule.suppliers.getById.get(supplierId);
+            if (supplier) {
+                if (supplier.image_url) {
+                    const oldPath = path.join(__dirname, 'public', supplier.image_url);
+                    if (fs.existsSync(oldPath)) {
+                        try { fs.unlinkSync(oldPath); } catch (e) { /* ignore */ }
+                    }
+                }
+                dbModule.suppliers.updateImage.run(imagePath, supplierId);
+            }
+        }
+
+        res.json({ success: true, imagePath });
+    } catch (error) {
+        console.error('Error uploading supplier image:', error);
+        res.status(500).json({ error: 'Erreur lors de l\'upload de l\'image' });
+    }
+});
+
+// Suppression de l'image d'un fournisseur
+app.delete('/api/suppliers/:id/image', requireLogin, requireAdmin, (req, res) => {
+    try {
+        const supplier = dbModule.suppliers.getById.get(req.params.id);
+        if (!supplier) {
+            return res.status(404).json({ error: 'Fournisseur non trouvé' });
+        }
+        if (supplier.image_url) {
+            const fullPath = path.join(__dirname, 'public', supplier.image_url);
+            if (fs.existsSync(fullPath)) {
+                try { fs.unlinkSync(fullPath); } catch (e) { /* ignore */ }
+            }
+        }
+        dbModule.suppliers.updateImage.run(null, req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting supplier image:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression de l\'image' });
     }
 });
 
@@ -2809,6 +2885,26 @@ app.get('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
     res.json(orders);
   } catch (error) {
     console.error('Error fetching supplier orders:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier orders' });
+  }
+});
+
+// Récupérer toutes les commandes fournisseurs avec détails (nom fournisseur, articles, catégories)
+app.get('/api/order-suppliers/all-with-details', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const orders = dbModule.db.prepare(`
+      SELECT os.*,
+        s.name AS supplier_name,
+        s.image_url AS supplier_image_url,
+        COALESCE((SELECT SUM(osi.quantity) FROM order_supplier_items osi WHERE osi.order_supplier_id = os.id), 0) as item_count,
+        (SELECT GROUP_CONCAT(DISTINCT osi.category) FROM order_supplier_items osi WHERE osi.order_supplier_id = os.id AND osi.category IS NOT NULL AND osi.category != '' AND osi.category != 'placeholder') as categories
+      FROM order_supplier os
+      LEFT JOIN suppliers s ON s.id = os.supplier_id
+      ORDER BY os.order_date DESC
+    `).all();
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching all supplier orders with details:', error);
     res.status(500).json({ error: 'Failed to fetch supplier orders' });
   }
 });
@@ -3141,7 +3237,8 @@ app.post('/api/order-suppliers', requireLogin, requireAdmin, (req, res) => {
           item.category || null,
           item.image_url || null,
           batchNumber,
-          item.item_status || 'commandé'
+          item.item_status || 'commandé',
+          item.size || null
         );
       });
     }
@@ -3798,7 +3895,8 @@ app.post('/api/order-suppliers/:orderId/batches/create', requireLogin, requireAd
       'placeholder',  // category
       null,  // image_url
       newBatchNumber,  // batch_number
-      'pending'  // item_status
+      'pending',  // item_status
+      null   // size
     );
     
     res.json({
@@ -3884,6 +3982,7 @@ app.post('/api/order-suppliers/:orderId/items/:itemId/move-to-batch', requireLog
       sourceItem.image_url,
       sourceItem.batch_number, // Garde le batch original
       sourceItem.item_status || 'pending', // item_status
+      sourceItem.size || null, // size
       itemId
     );
     
@@ -3899,7 +3998,8 @@ app.post('/api/order-suppliers/:orderId/items/:itemId/move-to-batch', requireLog
       sourceItem.category,
       sourceItem.image_url,
       target_batch,
-      sourceItem.item_status || 'pending' // item_status
+      sourceItem.item_status || 'pending', // item_status
+      sourceItem.size || null // size
     );
     
     // Recalculer le total de la commande (reste inchangé normalement)
@@ -4055,6 +4155,19 @@ app.put('/api/invoices/:invoiceId/payment', requireLogin, requireAdmin, requireP
   } catch (error) {
     console.error('Error updating payment status:', error);
     res.status(500).json({ error: 'Error updating payment status: ' + error.message });
+  }
+});
+
+app.post('/api/invoices/:invoiceId/accounting-mode', requireLogin, requireAdmin, requirePermission('stock'), (req, res) => {
+  const { invoiceId } = req.params;
+  const { enabled } = req.body;
+  try {
+    const result = invoiceManagementService.toggleAccountingMode(invoiceId, !!enabled);
+    if (!result.success) return res.status(400).json({ error: result.message });
+    res.json(result);
+  } catch (error) {
+    console.error('Error toggling accounting mode:', error);
+    res.status(500).json({ error: 'Erreur serveur: ' + error.message });
   }
 });
 

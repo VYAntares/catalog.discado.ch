@@ -42,10 +42,14 @@ function createSupplierCard(supplier) {
     rows(wechats, 'fab fa-weixin',   'wechat'),
   ].join('');
 
+  const avatarHtml = supplier.image_url
+    ? `<img class="sc-avatar" src="${supplier.image_url}" alt="${supplier.name}">`
+    : `<span class="sc-icon"><i class="fas fa-truck"></i></span>`;
+
   return `
     <div class="supplier-card" data-supplier-id="${supplier.id}">
       <div class="sc-name">
-        <span class="sc-icon"><i class="fas fa-truck"></i></span>
+        ${avatarHtml}
         <span>${supplier.name}</span>
       </div>
       ${contactsHtml

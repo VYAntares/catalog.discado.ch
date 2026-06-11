@@ -229,6 +229,51 @@ async function createSupplier(supplierData) {
   }
 }
 
+// Met à jour un fournisseur
+async function updateSupplier(supplierId, supplierData) {
+  try {
+    const response = await fetch(`/api/suppliers/${supplierId}`, {
+      ...API_CONFIG,
+      method: 'PUT',
+      body: JSON.stringify(supplierData)
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Upload de l'image d'un fournisseur (avec ou sans supplier_id)
+async function uploadSupplierImage(file, supplierId = null) {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (supplierId) formData.append('supplier_id', supplierId);
+
+    const response = await fetch('/api/suppliers/upload-image', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Supprime l'image d'un fournisseur
+async function deleteSupplierImage(supplierId) {
+  try {
+    const response = await fetch(`/api/suppliers/${supplierId}/image`, {
+      ...API_CONFIG,
+      method: 'DELETE'
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Récupère les commandes d'un fournisseur spécifique
 async function fetchSupplierOrders(supplierId) {
   try {
@@ -253,6 +298,16 @@ async function fetchSupplierStats(supplierId) {
 async function fetchAllSupplierOrders() {
   try {
     const response = await fetch('/api/order-suppliers', API_CONFIG);
+    return handleApiResponse(response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Récupère toutes les commandes fournisseurs avec détails (nom fournisseur, articles, catégories)
+async function fetchAllSupplierOrdersWithDetails() {
+  try {
+    const response = await fetch('/api/order-suppliers/all-with-details', API_CONFIG);
     return handleApiResponse(response);
   } catch (error) {
     throw error;
@@ -767,9 +822,13 @@ export {
   saveUserPassword,
   fetchSuppliers,
   createSupplier,
+  updateSupplier,
+  uploadSupplierImage,
+  deleteSupplierImage,
   fetchSupplierOrders,
   fetchSupplierStats,
   fetchAllSupplierOrders,
+  fetchAllSupplierOrdersWithDetails,
   fetchSupplierOrderDetails,
   fetchSupplierOrderItems,
   createSupplierOrder,

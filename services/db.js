@@ -198,6 +198,55 @@ function initDatabase() {
         }
     }
 
+    // Mode "comptabiliser" : ajuste HT/VAT/TTC au montant réellement encaissé.
+    // Les colonnes original_* conservent les valeurs facturées d'origine pour pouvoir revenir en arrière.
+    if (!columnExists('invoices', 'accounting_mode')) {
+        try {
+            db.exec(`ALTER TABLE invoices ADD COLUMN accounting_mode INTEGER DEFAULT 0`);
+            console.log('✅ Colonne accounting_mode ajoutée à invoices');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne accounting_mode:', error.message);
+        }
+    }
+    if (!columnExists('invoices', 'original_subtotal_ht')) {
+        try {
+            db.exec(`ALTER TABLE invoices ADD COLUMN original_subtotal_ht REAL`);
+            console.log('✅ Colonne original_subtotal_ht ajoutée à invoices');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne original_subtotal_ht:', error.message);
+        }
+    }
+    if (!columnExists('invoices', 'original_vat_amount')) {
+        try {
+            db.exec(`ALTER TABLE invoices ADD COLUMN original_vat_amount REAL`);
+            console.log('✅ Colonne original_vat_amount ajoutée à invoices');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne original_vat_amount:', error.message);
+        }
+    }
+    if (!columnExists('invoices', 'original_total_ttc')) {
+        try {
+            db.exec(`ALTER TABLE invoices ADD COLUMN original_total_ttc REAL`);
+            console.log('✅ Colonne original_total_ttc ajoutée à invoices');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne original_total_ttc:', error.message);
+        }
+    }
+
+    // Aligne les factures déjà en mode comptabilisé sur le statut 'paid' (rattrapage)
+    try {
+        const fixed = db.prepare(`
+            UPDATE invoices
+            SET payment_status = 'paid', amount_due = 0
+            WHERE accounting_mode = 1 AND payment_status <> 'paid'
+        `).run();
+        if (fixed.changes > 0) {
+            console.log(`✅ ${fixed.changes} facture(s) comptabilisée(s) re-marquée(s) 'paid'`);
+        }
+    } catch (error) {
+        console.error('⚠️ Erreur rattrapage statut comptabilisé:', error.message);
+    }
+
     // Création de la table suppliers
     db.exec(`
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -207,11 +256,22 @@ function initDatabase() {
         wechats TEXT,
         phones TEXT,
         notes TEXT,
+        image_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     `);
     console.log('✅ Table suppliers créée ou déjà existante');
+
+    // Migration : ajout de la colonne image_url à suppliers (si BD existante)
+    if (!columnExists('suppliers', 'image_url')) {
+        try {
+            db.exec(`ALTER TABLE suppliers ADD COLUMN image_url TEXT`);
+            console.log('✅ Colonne image_url ajoutée à suppliers');
+        } catch (error) {
+            console.error('⚠️ Erreur ajout colonne image_url:', error.message);
+        }
+    }
 
     // Création de la table client_locations
     db.exec(`
@@ -714,12 +774,17 @@ module.exports = {
         getById: db.prepare('SELECT * FROM suppliers WHERE id = ?'),
         getByName: db.prepare('SELECT * FROM suppliers WHERE name = ?'),
         create: db.prepare(`
-            INSERT INTO suppliers (name, emails, wechats, phones, notes) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO suppliers (name, emails, wechats, phones, notes, image_url)
+            VALUES (?, ?, ?, ?, ?, ?)
         `),
         update: db.prepare(`
-            UPDATE suppliers 
-            SET name = ?, emails = ?, wechats = ?, phones = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+            UPDATE suppliers
+            SET name = ?, emails = ?, wechats = ?, phones = ?, notes = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `),
+        updateImage: db.prepare(`
+            UPDATE suppliers
+            SET image_url = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `),
         delete: db.prepare('DELETE FROM suppliers WHERE id = ?')

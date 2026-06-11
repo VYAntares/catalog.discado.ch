@@ -10,6 +10,7 @@ import * as SupplierDetails from './supplierDetails.js';
 import * as OrderDetails from './orderDetails.js';
 import * as CreateOrderModal from './createOrderModal.js';
 import * as CreateSupplierModal from './createSupplierModal.js';
+import * as AllOrders from './allOrders.js';
 
 /**
  * Initialisation du module
@@ -23,6 +24,7 @@ export async function init() {
     initLogout();
     CreateOrderModal.init();
     CreateSupplierModal.init();
+    AllOrders.init();
 
     // Afficher la vue initiale
     SuppliersList.show();
@@ -62,6 +64,7 @@ function initNavigation() {
   // Bouton retour vers liste fournisseurs
   document.getElementById('backToSuppliersBtn')?.addEventListener('click', () => {
     SuppliersList.show();
+    AllOrders.load();
   });
 
   // Bouton retour vers détails fournisseur

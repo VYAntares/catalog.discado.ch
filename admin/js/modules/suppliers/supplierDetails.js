@@ -37,6 +37,7 @@ export async function show(supplierId) {
     fillSupplierInfo(supplier);
     fillSupplierStats(stats);
     renderOrdersList(orders);
+    initImageControls(supplierId);
 
   } catch (error) {
     console.error('Erreur chargement détails fournisseur:', error);
@@ -47,19 +48,65 @@ export async function show(supplierId) {
   }
 }
 
+function renderAvatar(supplier) {
+  const avatar = document.getElementById('supplierDetailsAvatar');
+  if (!avatar) return;
+  if (supplier.image_url) {
+    avatar.innerHTML = `<img src="${supplier.image_url}" alt="${supplier.name}">`;
+    avatar.classList.add('has-image');
+  } else {
+    avatar.innerHTML = '<i class="fas fa-truck"></i>';
+    avatar.classList.remove('has-image');
+  }
+}
+
+function initImageControls(supplierId) {
+  const btn = document.getElementById('supplierDetailsImageBtn');
+  const input = document.getElementById('supplierDetailsImageInput');
+  if (!btn || !input) return;
+
+  btn.onclick = () => input.click();
+  input.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const originalLabel = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+      const result = await API.uploadSupplierImage(file, supplierId);
+      // Mettre à jour le state
+      const suppliers = State.getSuppliers();
+      const target = suppliers.find(s => s.id == supplierId);
+      if (target) target.image_url = result.imagePath;
+      renderAvatar({ image_url: result.imagePath, name: target ? target.name : '' });
+    } catch (error) {
+      console.error('Erreur upload image:', error);
+      alert('Erreur lors de l\'upload de l\'image.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalLabel;
+      event.target.value = '';
+    }
+  };
+}
+
 /**
  * Remplit les informations du fournisseur
  */
 function fillSupplierInfo(supplier) {
   document.getElementById('supplierName').textContent = supplier.name;
-  
+
   const contacts = [];
   if (supplier.emails) contacts.push(`📧 ${supplier.emails}`);
   if (supplier.phones) contacts.push(`📞 ${supplier.phones}`);
   if (supplier.wechats) contacts.push(`💬 ${supplier.wechats}`);
-  
-  document.getElementById('supplierContacts').innerHTML = 
+
+  document.getElementById('supplierContacts').innerHTML =
     contacts.map(c => `<span>${c}</span>`).join('');
+
+  renderAvatar(supplier);
 }
 
 /**

@@ -525,6 +525,34 @@ function _recalcInvoiceTotals(invoiceId) {
         'SELECT COALESCE(SUM(amount), 0) as total FROM invoice_payments WHERE invoice_id = ?'
     ).get(invoiceId);
     const totalPaid = row.total;
+    // Si la facture est en mode "comptabiliser", on ré-aligne HT/VAT/TTC sur le nouveau montant payé
+    // pour garder l'invariant total_ttc = amount_paid. Le taux TVA d'origine est conservé.
+    if (invoice.accounting_mode === 1 && invoice.original_subtotal_ht != null) {
+        const origHt  = parseFloat(invoice.original_subtotal_ht) || 0;
+        const origVat = parseFloat(invoice.original_vat_amount)  || 0;
+        const vatRate = origHt > 0 ? origVat / origHt : 0;
+        const newTtc = +totalPaid.toFixed(2);
+        const newHt  = +(totalPaid / (1 + vatRate)).toFixed(2);
+        const newVat = +(totalPaid - newHt).toFixed(2);
+        const status = totalPaid <= 0 ? 'unpaid' : 'paid';
+        let paidDate = invoice.paid_date;
+        if (status === 'paid' && !invoice.paid_date) {
+            const lastPayment = db.db.prepare(
+                'SELECT payment_date FROM invoice_payments WHERE invoice_id = ? ORDER BY payment_date DESC LIMIT 1'
+            ).get(invoiceId);
+            if (lastPayment) paidDate = lastPayment.payment_date;
+        } else if (status !== 'paid') {
+            paidDate = null;
+        }
+        db.db.prepare(`
+            UPDATE invoices
+            SET subtotal_ht = ?, vat_amount = ?, total_ttc = ?,
+                amount_paid = ?, amount_due = 0,
+                payment_status = ?, paid_date = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `).run(newHt, newVat, newTtc, totalPaid, status, paidDate, invoiceId);
+        return;
+    }
     const amountDue = Math.max(0, invoice.total_ttc - totalPaid);
     let paymentStatus;
     if (totalPaid <= 0) {
@@ -568,6 +596,101 @@ function addInvoicePayment(invoiceId, amount, payment_date) {
     }
 }
 
+/**
+ * Active ou désactive le mode "comptabiliser" :
+ *   - ON  : snapshot des valeurs HT/VAT/TTC d'origine dans original_*, puis recalcul
+ *           pour que total_ttc = amount_paid en conservant le taux TVA d'origine.
+ *           HT_new = paid / (1 + tauxTVA), VAT_new = paid - HT_new.
+ *   - OFF : restaure HT/VAT/TTC depuis les colonnes original_*.
+ * amount_paid n'est jamais modifié — il provient de invoice_payments.
+ */
+function toggleAccountingMode(invoiceId, enabled) {
+    try {
+        const invoice = db.db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
+        if (!invoice) return { success: false, message: 'Facture non trouvée' };
+
+        const wantOn = enabled ? 1 : 0;
+
+        if (wantOn === 1) {
+            const paid = parseFloat(invoice.amount_paid) || 0;
+            if (paid <= 0) {
+                return { success: false, message: 'Impossible de comptabiliser une facture sans paiement encaissé.' };
+            }
+
+            // Snapshot des valeurs originales seulement à la première activation
+            const origHt  = invoice.original_subtotal_ht != null ? invoice.original_subtotal_ht : invoice.subtotal_ht;
+            const origVat = invoice.original_vat_amount  != null ? invoice.original_vat_amount  : invoice.vat_amount;
+            const origTtc = invoice.original_total_ttc   != null ? invoice.original_total_ttc   : invoice.total_ttc;
+
+            // Taux TVA effectif basé sur l'original (évite la dérive en cas de toggles répétés)
+            const origHtNum = parseFloat(origHt) || 0;
+            const vatRate = origHtNum > 0 ? (parseFloat(origVat) || 0) / origHtNum : 0;
+
+            const newHt  = +(paid / (1 + vatRate)).toFixed(2);
+            const newVat = +(paid - newHt).toFixed(2);
+            const newTtc = +paid.toFixed(2);
+
+            // Snapshot du paid_date d'origine pour pouvoir le restaurer plus tard
+            let paidDate = invoice.paid_date;
+            if (!paidDate) {
+                const lastPayment = db.db.prepare(
+                    'SELECT payment_date FROM invoice_payments WHERE invoice_id = ? ORDER BY payment_date DESC LIMIT 1'
+                ).get(invoiceId);
+                if (lastPayment) paidDate = lastPayment.payment_date;
+            }
+
+            db.db.prepare(`
+                UPDATE invoices
+                SET original_subtotal_ht = COALESCE(original_subtotal_ht, ?),
+                    original_vat_amount  = COALESCE(original_vat_amount, ?),
+                    original_total_ttc   = COALESCE(original_total_ttc, ?),
+                    subtotal_ht = ?,
+                    vat_amount  = ?,
+                    total_ttc   = ?,
+                    amount_due  = 0,
+                    payment_status = 'paid',
+                    paid_date = COALESCE(paid_date, ?),
+                    accounting_mode = 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `).run(origHt, origVat, origTtc, newHt, newVat, newTtc, paidDate, invoiceId);
+        } else {
+            // Retour à l'original
+            if (invoice.original_total_ttc == null) {
+                // Jamais comptabilisé : juste s'assurer que le flag est à 0
+                db.db.prepare('UPDATE invoices SET accounting_mode = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(invoiceId);
+            } else {
+                const restoredTtc = parseFloat(invoice.original_total_ttc) || 0;
+                const paid = parseFloat(invoice.amount_paid) || 0;
+                const restoredDue = Math.max(0, restoredTtc - paid);
+                let restoredStatus;
+                if (paid <= 0) restoredStatus = 'unpaid';
+                else if (paid >= restoredTtc) restoredStatus = 'paid';
+                else restoredStatus = 'partial';
+                const restoredPaidDate = restoredStatus === 'paid' ? invoice.paid_date : null;
+
+                db.db.prepare(`
+                    UPDATE invoices
+                    SET subtotal_ht = original_subtotal_ht,
+                        vat_amount  = original_vat_amount,
+                        total_ttc   = original_total_ttc,
+                        amount_due  = ?,
+                        payment_status = ?,
+                        paid_date = ?,
+                        accounting_mode = 0,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `).run(restoredDue, restoredStatus, restoredPaidDate, invoiceId);
+            }
+        }
+
+        return { success: true, invoice: getInvoiceDetails(invoiceId) };
+    } catch (error) {
+        console.error('Error toggling accounting mode:', error);
+        return { success: false, message: 'Erreur lors du changement de mode comptabilisé' };
+    }
+}
+
 function deleteInvoicePayment(paymentId) {
     try {
         const payment = db.db.prepare('SELECT * FROM invoice_payments WHERE id = ?').get(paymentId);
@@ -599,5 +722,6 @@ module.exports = {
     getPartialInvoices,
     getInvoicePayments,
     addInvoicePayment,
-    deleteInvoicePayment
+    deleteInvoicePayment,
+    toggleAccountingMode
 };

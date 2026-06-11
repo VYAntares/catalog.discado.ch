@@ -84,6 +84,30 @@
                     <!-- Les cartes fournisseurs seront générées ici -->
                     <div class="loading">Chargement des fournisseurs...</div>
                 </div>
+
+                <!-- Section toutes les commandes -->
+                <div class="all-orders-section">
+                    <div class="all-orders-header">
+                        <h2 class="all-orders-title">
+                            <i class="fas fa-file-invoice"></i> Toutes les commandes
+                        </h2>
+                        <div class="all-orders-filter">
+                            <label for="allOrdersStatusFilter">Statut :</label>
+                            <select id="allOrdersStatusFilter">
+                                <option value="">Tous</option>
+                                <option value="Passée">Passée</option>
+                                <option value="En production">En production</option>
+                                <option value="Terminée">Terminée</option>
+                                <option value="En chemin">En chemin</option>
+                                <option value="Livrée">Livrée</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="orders-list" id="allOrdersList">
+                        <div class="loading">Chargement des commandes...</div>
+                    </div>
+                </div>
             </section>
 
             <!-- Vue détails fournisseur -->
@@ -95,9 +119,20 @@
                 </div>
 
                 <div class="supplier-header">
-                    <div class="supplier-info">
-                        <h2 id="supplierName"></h2>
-                        <div class="supplier-contacts" id="supplierContacts"></div>
+                    <div class="supplier-identity">
+                        <div class="supplier-avatar-wrapper">
+                            <div class="supplier-avatar" id="supplierDetailsAvatar">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <input type="file" id="supplierDetailsImageInput" accept="image/*" hidden>
+                            <button class="supplier-avatar-edit" id="supplierDetailsImageBtn" title="Modifier l'image">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+                        <div class="supplier-info">
+                            <h2 id="supplierName"></h2>
+                            <div class="supplier-contacts" id="supplierContacts"></div>
+                        </div>
                     </div>
                     <button class="btn btn-primary" id="createOrderBtn">
                         <i class="fas fa-plus"></i> Nouvelle Commande
@@ -276,6 +311,26 @@
             </div>
             <div class="modal-body">
                 <form id="createSupplierForm">
+                    <div class="form-group">
+                        <label>Image du fournisseur</label>
+                        <div class="supplier-image-uploader" id="supplierImageUploader">
+                            <div class="supplier-image-preview" id="supplierImagePreview">
+                                <i class="fas fa-image"></i>
+                                <span>Aucune image</span>
+                            </div>
+                            <div class="supplier-image-actions">
+                                <input type="file" id="supplierImageInput" accept="image/*" hidden>
+                                <input type="hidden" id="supplierFormImageUrl" value="">
+                                <button type="button" class="btn btn-secondary" id="supplierImageSelectBtn">
+                                    <i class="fas fa-upload"></i> Choisir une image
+                                </button>
+                                <button type="button" class="btn btn-danger" id="supplierImageRemoveBtn" style="display: none;">
+                                    <i class="fas fa-times"></i> Retirer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>Nom du fournisseur *</label>
                         <input type="text" id="supplierFormName" required placeholder="Nom du fournisseur">
@@ -476,7 +531,7 @@
     </script>
 
     <script type="module">
-        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js?v=6';
+        import * as SuppliersModule from '/admin/js/modules/suppliers/main.js?v=8';
 
         document.addEventListener('DOMContentLoaded', () => {
           SuppliersModule.init();

@@ -226,6 +226,9 @@ class ComptaMonth {
                     </div>
                 </div>
                 <div class="inv-card-actions">
+                    <button class="inv-accounting-btn ${invoice.accounting_mode ? 'is-active' : ''}" ontouchstart="void(0)" onclick="event.preventDefault();window._monthToggleAccounting(${invoice.id})" title="Aligner HT/VAT/TTC sur le montant encaissé">
+                        <i class="fas fa-calculator"></i> Comptabiliser
+                    </button>
                     <button class="inv-edit-btn" ontouchstart="void(0)" onclick="event.preventDefault();window._monthEditBadge(${invoice.id})">
                         <i class="fas fa-pen"></i> Edit
                     </button>
@@ -245,6 +248,31 @@ class ComptaMonth {
         window._monthDownloadPdf = (url, filename) => {
             window.downloadOrShareFile(url, filename).catch(err => showNotification('Erreur : ' + err.message, 'error'));
         };
+        window._monthToggleAccounting = (invoiceId) => this.toggleAccountingMode(invoiceId);
+    }
+
+    async toggleAccountingMode(invoiceId) {
+        const invoice = this.invoices.find(inv => inv.id == invoiceId);
+        if (!invoice) return;
+        const willEnable = !invoice.accounting_mode;
+        if (willEnable && (parseFloat(invoice.amount_paid) || 0) <= 0) {
+            showNotification('Aucun paiement encaissé sur cette facture.', 'error');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/invoices/${invoiceId}/accounting-mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ enabled: willEnable })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur');
+            showNotification(willEnable ? 'Facture comptabilisée' : 'Facture restaurée', 'success');
+            await this.loadMonthInvoices();
+        } catch (err) {
+            showNotification('Erreur : ' + err.message, 'error');
+        }
     }
 
     openMobileEditModal(invoiceId) {

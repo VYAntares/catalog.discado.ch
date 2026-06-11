@@ -25,6 +25,62 @@ export function init() {
   document.querySelectorAll('.btn-add-field').forEach(btn => {
     btn.addEventListener('click', () => addDynamicField(btn.dataset.target));
   });
+
+  initImageUploader();
+}
+
+function initImageUploader() {
+  const selectBtn = document.getElementById('supplierImageSelectBtn');
+  const removeBtn = document.getElementById('supplierImageRemoveBtn');
+  const input = document.getElementById('supplierImageInput');
+
+  if (selectBtn && input) {
+    selectBtn.addEventListener('click', () => input.click());
+    input.addEventListener('change', handleImageSelect);
+  }
+  if (removeBtn) {
+    removeBtn.addEventListener('click', resetImage);
+  }
+}
+
+async function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const selectBtn = document.getElementById('supplierImageSelectBtn');
+  const originalLabel = selectBtn.innerHTML;
+  selectBtn.disabled = true;
+  selectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upload...';
+
+  try {
+    const result = await API.uploadSupplierImage(file);
+    document.getElementById('supplierFormImageUrl').value = result.imagePath;
+    updateImagePreview(result.imagePath);
+  } catch (error) {
+    console.error('Erreur upload image:', error);
+    alert('Erreur lors de l\'upload de l\'image.');
+  } finally {
+    selectBtn.disabled = false;
+    selectBtn.innerHTML = originalLabel;
+    event.target.value = '';
+  }
+}
+
+function updateImagePreview(imageUrl) {
+  const preview = document.getElementById('supplierImagePreview');
+  const removeBtn = document.getElementById('supplierImageRemoveBtn');
+  if (imageUrl) {
+    preview.innerHTML = `<img src="${imageUrl}" alt="Aperçu">`;
+    if (removeBtn) removeBtn.style.display = 'inline-flex';
+  } else {
+    preview.innerHTML = '<i class="fas fa-image"></i><span>Aucune image</span>';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+function resetImage() {
+  document.getElementById('supplierFormImageUrl').value = '';
+  updateImagePreview(null);
 }
 
 /**
@@ -50,6 +106,7 @@ export function close() {
 function resetForm() {
   document.getElementById('supplierFormName').value = '';
   document.getElementById('supplierFormNotes').value = '';
+  resetImage();
 
   // Reset des champs dynamiques (garder seulement le premier vide)
   ['supplierEmailsContainer', 'supplierWechatsContainer', 'supplierPhonesContainer'].forEach(containerId => {
@@ -119,6 +176,7 @@ async function handleSubmit() {
   const emails = collectDynamicValues('supplier-email-input');
   const wechats = collectDynamicValues('supplier-wechat-input');
   const phones = collectDynamicValues('supplier-phone-input');
+  const image_url = document.getElementById('supplierFormImageUrl').value || null;
 
   const submitBtn = document.getElementById('submitCreateSupplierBtn');
   submitBtn.disabled = true;
@@ -130,7 +188,8 @@ async function handleSubmit() {
       emails,
       wechats,
       phones,
-      notes
+      notes,
+      image_url
     });
 
     console.log('✅ Fournisseur créé:', result);
