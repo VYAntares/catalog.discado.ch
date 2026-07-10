@@ -619,6 +619,33 @@ async function updateSupplierOrderItemStatus(itemId, itemStatus) {
   }
 }
 
+// Marque tous les items d'un batch comme livrés / commandés (met à jour le stock)
+async function updateSupplierOrderBatchStatus(orderId, batchNumber, itemStatus) {
+  try {
+    const response = await fetch(`/api/order-suppliers/${orderId}/batches/${batchNumber}/status`, {
+      ...API_CONFIG,
+      method: 'PATCH',
+      body: JSON.stringify({ item_status: itemStatus })
+    });
+
+    const result = await handleApiResponse(response);
+
+    if (result.success) {
+      const label = itemStatus === 'livré'
+        ? `Batch ${batchNumber} livré : ${result.quantity_synced} unités ajoutées au stock`
+        : `Batch ${batchNumber} repassé en commandé : ${result.quantity_synced} unités retirées du stock`;
+      Notification.showNotification(
+        result.items_synced === 0 ? `Batch ${batchNumber} : aucun changement` : label,
+        'success'
+      );
+    }
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Supprime une commande fournisseur
 async function deleteSupplierOrder(orderId) {
   try {
@@ -840,6 +867,7 @@ export {
   updateSupplierOrderItem,
   deleteSupplierOrderItem,
   updateSupplierOrderItemStatus,
+  updateSupplierOrderBatchStatus,
   deleteSupplierOrder,
   getSupplierOrderPayments,
   addSupplierOrderPayment,

@@ -1598,9 +1598,18 @@ app.delete('/api/products/:id', requireLogin, requireAdmin, requirePermission('s
       return res.status(404).json({ error: 'Produit non trouvé' });
     }
 
-    // Supprimer le produit
-    const deleteStmt = dbModule.db.prepare('DELETE FROM products WHERE id = ?');
-    deleteStmt.run(id);
+    // Supprimer le produit en détachant d'abord les références d'historique.
+    // order_items / pending_deliveries pointent vers products(id) sans règle ON DELETE,
+    // ce qui ferait échouer la suppression (FOREIGN KEY constraint failed) dès qu'un
+    // produit a déjà été commandé. On met product_id à NULL : product_name/product_price
+    // sont stockés en dur dans ces tables, donc l'historique reste lisible.
+    const deleteProduct = dbModule.db.transaction((productId) => {
+      dbModule.db.prepare('UPDATE order_items SET product_id = NULL WHERE product_id = ?').run(productId);
+      dbModule.db.prepare('UPDATE pending_deliveries SET product_id = NULL WHERE product_id = ?').run(productId);
+      dbModule.db.prepare('DELETE FROM products WHERE id = ?').run(productId);
+    });
+
+    deleteProduct(id);
 
     console.log('✅ Produit supprimé');
 
@@ -3279,6 +3288,47 @@ app.put('/api/order-suppliers/:id', requireLogin, requireAdmin, (req, res) => {
   }
 });
 
+// ─── Stock des commandes fournisseur ─────────────────────────────────────────
+// Le stock est piloté par item_status, jamais par le statut de la commande.
+// Un item n'ajoute son stock qu'à la transition 'commandé' -> 'livré', et ne le
+// retire qu'à la transition inverse : marquer deux fois "livré" est sans effet.
+
+const ITEM_STATUS_LIVRE = 'livré';
+const ITEM_STATUS_COMMANDE = 'commandé';
+
+function applyItemStock(item, direction) {
+  if (!item.product_id) return;
+  if (item.size) {
+    const stmt = direction > 0 ? dbModule.productStockBySize.increment : dbModule.productStockBySize.decrement;
+    stmt.run(item.quantity, item.product_id, item.size);
+    dbModule.products.recalcStockFromSizes.run(item.product_id, item.product_id);
+  } else {
+    const stmt = direction > 0 ? dbModule.products.incrementStock : dbModule.products.decrementStock;
+    stmt.run(item.quantity, item.product_id);
+  }
+}
+
+// Fait basculer une liste d'items vers targetStatus, en n'appliquant le mouvement
+// de stock qu'aux items qui changent réellement d'état. Retourne le nb d'items
+// touchés et la quantité déplacée.
+function syncItemsToStatus(items, targetStatus) {
+  const toLivre = targetStatus === ITEM_STATUS_LIVRE;
+  let changed = 0;
+  let quantity = 0;
+
+  for (const item of items) {
+    const isLivre = item.item_status === ITEM_STATUS_LIVRE;
+    if (isLivre === toLivre) continue; // déjà dans l'état voulu
+
+    dbModule.orderSupplierItems.updateItemStatus.run(targetStatus, item.id);
+    applyItemStock(item, toLivre ? 1 : -1);
+    changed++;
+    quantity += item.quantity;
+  }
+
+  return { changed, quantity };
+}
+
 // Mettre à jour uniquement le statut
 app.patch('/api/order-suppliers/:id/status', requireLogin, requireAdmin, (req, res) => {
   try {
@@ -3298,36 +3348,21 @@ app.patch('/api/order-suppliers/:id/status', requireLogin, requireAdmin, (req, r
 
       const wasLivree = currentOrder.status === 'Livrée';
       const isNowLivree = status === 'Livrée';
+      if (isNowLivree === wasLivree) return { changed: 0, quantity: 0 };
 
-      if (isNowLivree && !wasLivree) {
-        // Passage à "Livrée" → ajouter au stock
-        const items = dbModule.orderSupplierItems.getByOrderId.all(req.params.id);
-        for (const item of items) {
-          if (!item.product_id) continue;
-          if (item.size) {
-            dbModule.productStockBySize.increment.run(item.quantity, item.product_id, item.size);
-            dbModule.products.recalcStockFromSizes.run(item.product_id, item.product_id);
-          } else {
-            dbModule.products.incrementStock.run(item.quantity, item.product_id);
-          }
-        }
-      } else if (!isNowLivree && wasLivree) {
-        // Retour depuis "Livrée" → enlever du stock
-        const items = dbModule.orderSupplierItems.getByOrderId.all(req.params.id);
-        for (const item of items) {
-          if (!item.product_id) continue;
-          if (item.size) {
-            dbModule.productStockBySize.decrement.run(item.quantity, item.product_id, item.size);
-            dbModule.products.recalcStockFromSizes.run(item.product_id, item.product_id);
-          } else {
-            dbModule.products.decrementStock.run(item.quantity, item.product_id);
-          }
-        }
-      }
+      // Passage à "Livrée" : on ne rattrape que les items pas encore livrés
+      // (un batch déjà réceptionné a déjà ajouté son stock).
+      const items = dbModule.orderSupplierItems.getByOrderId.all(req.params.id);
+      return syncItemsToStatus(items, isNowLivree ? ITEM_STATUS_LIVRE : ITEM_STATUS_COMMANDE);
     });
 
-    updateAndSyncStock();
-    res.json({ success: true, message: 'Status updated successfully' });
+    const result = updateAndSyncStock();
+    res.json({
+      success: true,
+      message: 'Status updated successfully',
+      items_synced: result.changed,
+      quantity_synced: result.quantity
+    });
 
   } catch (error) {
     console.error('Error updating order status:', error);
@@ -3738,16 +3773,61 @@ app.patch('/api/order-supplier-items/:id/status', requireLogin, requireAdmin, (r
     }
 
     const { item_status } = req.body;
-    if (!item_status || !['commandé', 'livré'].includes(item_status)) {
+    if (!item_status || ![ITEM_STATUS_COMMANDE, ITEM_STATUS_LIVRE].includes(item_status)) {
       return res.status(400).json({ error: 'Invalid status. Must be "commandé" or "livré"' });
     }
 
-    dbModule.orderSupplierItems.updateItemStatus.run(item_status, req.params.id);
-    res.json({ success: true, message: 'Status updated successfully' });
+    const applyStatus = dbModule.db.transaction(() => syncItemsToStatus([item], item_status));
+    const result = applyStatus();
+
+    res.json({
+      success: true,
+      message: 'Status updated successfully',
+      stock_applied: result.changed > 0,
+      quantity_synced: result.quantity
+    });
 
   } catch (error) {
     console.error('Error updating item status:', error);
     res.status(500).json({ error: 'Failed to update item status' });
+  }
+});
+
+// Marquer un batch entier comme livré / commandé (réception d'un arrivage partiel)
+app.patch('/api/order-suppliers/:orderId/batches/:batchNumber/status', requireLogin, requireAdmin, (req, res) => {
+  try {
+    const { item_status } = req.body;
+    if (!item_status || ![ITEM_STATUS_COMMANDE, ITEM_STATUS_LIVRE].includes(item_status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be "commandé" or "livré"' });
+    }
+
+    const order = dbModule.orderSupplier.getById.get(req.params.orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const items = dbModule.orderSupplierItems.getByOrderIdAndBatch.all(
+      req.params.orderId,
+      req.params.batchNumber
+    );
+    if (items.length === 0) {
+      return res.status(404).json({ error: 'Batch not found or empty' });
+    }
+
+    const applyBatch = dbModule.db.transaction(() => syncItemsToStatus(items, item_status));
+    const result = applyBatch();
+
+    res.json({
+      success: true,
+      message: `Batch ${req.params.batchNumber} → ${item_status}`,
+      items_total: items.length,
+      items_synced: result.changed,
+      quantity_synced: result.quantity
+    });
+
+  } catch (error) {
+    console.error('Error updating batch status:', error);
+    res.status(500).json({ error: 'Failed to update batch status' });
   }
 });
 

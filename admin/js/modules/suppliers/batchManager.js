@@ -162,24 +162,41 @@ function createBatchContainers(orderId, batchStats) {
  */
 function createBatchContainer(orderId, batch) {
   const items = State.getCurrentOrderItems().filter(item => item.batch_number === batch.batch_number);
-  
+
   const isEmpty = items.length === 0;
   const deleteBtn = isEmpty ? `
     <button class="batch-delete-btn" data-batch="${batch.batch_number}" title="Supprimer ce batch vide">
       <i class="fas fa-trash"></i>
     </button>
   ` : '';
-  
+
+  // Un batch est "reçu" quand toutes ses lignes sont livrées
+  const allLivre = !isEmpty && items.every(i => i.item_status === 'livré');
+  const receiveBtn = isEmpty ? '' : `
+    <button class="batch-receive-btn"
+            data-batch="${batch.batch_number}"
+            data-target-status="${allLivre ? 'commandé' : 'livré'}"
+            title="${allLivre ? 'Annuler la réception : retire le stock' : 'Marquer ce batch comme reçu : ajoute le stock'}"
+            style="padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;
+                   border:1px solid ${allLivre ? '#48bb78' : '#ed8936'};
+                   background:${allLivre ? '#f0fff4' : '#fffaf0'};
+                   color:${allLivre ? '#276749' : '#9c4221'};">
+      <i class="fas fa-${allLivre ? 'undo' : 'truck-loading'}"></i>
+      ${allLivre ? 'Reçu' : 'Marquer reçu'}
+    </button>
+  `;
+
   return `
-    <div class="batch-container ${isEmpty ? 'batch-empty' : ''}" 
+    <div class="batch-container ${isEmpty ? 'batch-empty' : ''}"
          data-batch-number="${batch.batch_number}"
          ${!isEmpty ? 'data-batch-id="batch-' + batch.batch_number + '"' : ''}>
-      
+
       <div class="batch-header">
         <h4>
-          <i class="fas fa-box"></i> 
+          <i class="fas fa-box"></i>
           BATCH ${batch.batch_number}
         </h4>
+        ${receiveBtn}
         ${deleteBtn}
       </div>
       
@@ -614,6 +631,41 @@ function reattachBatchItemListeners() {
       }
     });
   });
+   // Event listener pour la réception d'un batch entier (impacte le stock)
+   document.querySelectorAll('.batch-receive-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const batchNumber = e.currentTarget.dataset.batch;
+      const targetStatus = e.currentTarget.dataset.targetStatus;
+
+      const items = State.getCurrentOrderItems().filter(i => String(i.batch_number) === String(batchNumber));
+      const pending = items.filter(i =>
+        targetStatus === 'livré' ? i.item_status !== 'livré' : i.item_status === 'livré'
+      );
+
+      if (pending.length === 0) {
+        alert(`Batch ${batchNumber} : rien à faire, toutes les lignes sont déjà dans cet état.`);
+        return;
+      }
+
+      const qty = pending.reduce((sum, i) => sum + i.quantity, 0);
+      const msg = targetStatus === 'livré'
+        ? `Marquer le BATCH ${batchNumber} comme reçu ?\n\n${pending.length} article(s), ${qty} unités seront AJOUTÉES au stock.`
+        : `Annuler la réception du BATCH ${batchNumber} ?\n\n${pending.length} article(s), ${qty} unités seront RETIRÉES du stock.`;
+      if (!confirm(msg)) return;
+
+      e.currentTarget.disabled = true;
+      try {
+        await API.updateSupplierOrderBatchStatus(orderId, batchNumber, targetStatus);
+        const refreshed = await API.fetchSupplierOrderItems(orderId);
+        State.setCurrentOrderItems(refreshed);
+        await initBatchView(orderId, false);
+      } catch (error) {
+        console.error('Erreur réception batch:', error);
+        e.currentTarget.disabled = false;
+      }
+    });
+  });
+
    // Event listeners pour le changement de statut item
    document.querySelectorAll('.item-status-select').forEach(select => {
     select.addEventListener('change', async (e) => {
